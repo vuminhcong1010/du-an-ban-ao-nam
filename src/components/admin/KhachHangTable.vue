@@ -1,5 +1,15 @@
 <template>
     <div class="container mt-4">
+         <!-- Hiển thị thông báo Toast -->
+        <div class="toast-container">
+            <div v-for="toast in toastList" :key="toast.id" class="toast-notification" :class="toast.type">
+                <span v-if="toast.type === 'success'">✅</span>
+                <span v-else-if="toast.type === 'error'">❌</span>
+                <span>{{ toast.message }}</span>
+            </div>
+        </div>
+
+        <!-- Bảng khách hàng -->
         <table class="table table-bordered table-striped table-hover text-center">
             <thead class="thead-dark">
                 <tr>
@@ -126,12 +136,14 @@ export default {
             },
             showModal: false,
             selectedCustomer: null,
+            toastList: [], // Danh sách thông báo
         };
     },
     mounted() {
         this.fetchData();
     },
     methods: {
+        // Fetch data khách hàng
         fetchData() {
             axios
                 .get(`/api/khach-hang?page=${this.page}&size=${this.size}`)
@@ -140,9 +152,11 @@ export default {
                     this.totalPages = res.data.totalPages;
                 });
         },
+        // Định dạng tiền tệ
         formatCurrency(val) {
             return new Intl.NumberFormat("vi-VN").format(val);
         },
+        // Chuyển trang
         prevPage() {
             if (this.page > 0) {
                 this.page--;
@@ -163,12 +177,13 @@ export default {
                 this.fetchData();
             }
         },
+        // Mở modal sửa thông tin khách hàng
         openEditModal(khachHang) {
-            console.log("Khách hàng:", khachHang); // Kiểm tra xem có trường `id` không
             this.selectedCustomer = khachHang;
             this.form = { ...khachHang };
             this.showModal = true;
         },
+        // Đóng modal
         closeModal() {
             this.showModal = false;
             this.selectedCustomer = null;
@@ -182,24 +197,35 @@ export default {
                 trangThai: 1,
             };
         },
+        // Gửi dữ liệu sửa khách hàng
         handleSubmit() {
             if (!this.form.id) {
-                alert("ID khách hàng không hợp lệ!");
+                this.showToastMessage("ID khách hàng không hợp lệ!", "error");
                 return;
             }
             axios
                 .put(`/api/khach-hang/${this.form.id}`, this.form)
                 .then(() => {
-                    alert("Cập nhật thành công!");
+                    this.showToastMessage("Cập nhật thành công!", "success");
                     this.fetchData();
                     this.closeModal();
                 })
                 .catch((err) => {
-                    alert("Cập nhật thất bại: " + err.message);
+                    this.showToastMessage("Cập nhật thất bại: " + err.message, "error");
                 });
+        },
+        // Hiển thị thông báo Toast
+        showToastMessage(message, type = "success") {
+            const id = Date.now();
+            this.toastList.push({ id, message, type });
+
+            setTimeout(() => {
+                this.toastList = this.toastList.filter(toast => toast.id !== id);
+            }, 3000);
         },
     },
 };
+
 </script>
 
 <style scoped>
@@ -239,5 +265,58 @@ select {
 .badge-danger {
     background-color: #dc3545 !important;
     /* Màu đỏ */
+}
+
+.toast-container {
+    position: fixed;
+    top: 20px; /* Đặt thông báo cách cạnh trên một khoảng */
+    right: 20px; /* Đặt thông báo cách cạnh phải một khoảng */
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; /* Đảm bảo thông báo được căn lề phải */
+    gap: 10px;
+}
+
+.toast-notification {
+    min-width: 250px;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    animation: slideInOut 3s forwards;
+}
+
+.toast-notification.success {
+    background-color: #E6F8EC;
+    border: 1px solid #00B63E;
+    color: #00B63E;
+}
+
+.toast-notification.error {
+    background-color: #FFE6E6;
+    border: 1px solid #BE4141;
+    color: #BE4141;
+}
+
+@keyframes slideInOut {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    10%, 90% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
 }
 </style>
