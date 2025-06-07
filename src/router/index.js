@@ -1,5 +1,7 @@
 
-import HoaDon from '@/components/admin/HoaDon.vue'
+import HoaDon from '../components/admin/HoaDon.vue'
+// import QuanLyKhachHang from '../components/admin/KhachHangTable.vue'
+import QuanLyKhachHang from '../views/CustomerManagement.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
@@ -9,6 +11,11 @@ const router = createRouter({
       path: '/hoa-don',
       name: 'hoadon',
       component: HoaDon,
+    },
+    {
+      path: '/khach-hang',
+      name: 'khachhang',
+      component: QuanLyKhachHang,
     },
   ],
 })
