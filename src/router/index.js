@@ -2,6 +2,7 @@
 import HoaDon from '../components/admin/HoaDon.vue'
 // import QuanLyKhachHang from '../components/admin/KhachHangTable.vue'
 import QuanLyKhachHang from '../views/CustomerManagement.vue'
+import QQuanLyKhachHang from '../views/QuanLyKhachHang.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
@@ -16,6 +17,11 @@ const router = createRouter({
       path: '/khach-hang',
       name: 'khachhang',
       component: QuanLyKhachHang,
+    },
+     {
+      path: '/nhan-vien',
+      name: 'khachhang',
+      component: QQuanLyKhachHang,
     },
   ],
 })

@@ -34,22 +34,17 @@
               <label><input type="radio" value="true" v-model="form.gioiTinh" /> Nam</label>
               <label><input type="radio" value="false" v-model="form.gioiTinh" /> Nữ</label>
             </div>
-            <!-- <div class="col-span-2">
-              <label>Trạng thái:</label>
-              <select v-model="form.trangThai">
-                <option :value="1">Đang hoạt động</option>
-                <option :value="0">Ngừng hoạt động</option>
-              </select>
-            </div> -->
+
+            <!-- Tỉnh/Thành Phố -->
             <div>
               <label>Tỉnh/Thành Phố:</label>
-              <select v-model="form.diaChi.idTinhThanhPho" @change="fetchQuanHuyen(form.diaChi.idTinhThanhPho)"
-                required>
+              <select v-model="form.diaChi.idTinhThanhPho" @change="fetchQuanHuyen(form.diaChi.idTinhThanhPho)" required>
                 <option value="">Chọn Tỉnh/Thành Phố</option>
                 <option v-for="tinh in tinhThanhPhos" :key="tinh.id" :value="tinh.id">{{ tinh.tenTinhThanh }}</option>
               </select>
             </div>
 
+            <!-- Quận/Huyện -->
             <div>
               <label>Quận/Huyện:</label>
               <select v-model="form.diaChi.idQuanHuyen" @change="fetchXaPhuong(form.diaChi.idQuanHuyen)" required>
@@ -58,6 +53,7 @@
               </select>
             </div>
 
+            <!-- Xã/Phường -->
             <div>
               <label>Xã/Phường:</label>
               <select v-model="form.diaChi.idXaPhuong" required>
@@ -66,6 +62,7 @@
               </select>
             </div>
 
+            <!-- Địa chỉ chi tiết -->
             <div>
               <label>Địa chỉ chi tiết:</label>
               <input v-model="form.diaChi.diaChiChiTiet" type="text" required />
@@ -85,6 +82,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { fetchTinhThanh, fetchQuanHuyenByTinh, fetchXaPhuongByQuan } from '@/api/DiaChiApi'
+import { createCustomer } from '@/api/KhachHangApi'
 
 const open = ref(false)
 const form = ref({
@@ -102,25 +101,27 @@ const form = ref({
     isMacDinh: false,  // Địa chỉ mặc định
   }
 })
-const tinhThanhPhos = ref([])
-const quanHuyens = ref([])
-const xaPhuongs = ref([])
+const tinhThanhPhos = ref([])  // Danh sách tỉnh/thành phố
+const quanHuyens = ref([])     // Danh sách quận/huyện
+const xaPhuongs = ref([])      // Danh sách xã/phường
 
 // Lấy danh sách tỉnh/thành phố khi component được mount
 onMounted(async () => {
   try {
-    const responseTinhThanh = await axios.get('/api/dia-chi/tinh-thanh')
-    tinhThanhPhos.value = responseTinhThanh.data
+    const responseTinhThanh = await axios.get('http://localhost:8080/api/dia-chi/tinh-thanh');
+    console.log("Dữ liệu tỉnh/thành phố:", responseTinhThanh.data);
+    tinhThanhPhos.value = responseTinhThanh.data;
   } catch (err) {
-    console.error("Lỗi khi lấy danh sách Tỉnh/Thành Phố:", err)
+    console.error("Lỗi khi lấy danh sách Tỉnh/Thành Phố:", err);
+    alert("Có lỗi xảy ra khi lấy danh sách Tỉnh/Thành Phố.");
   }
 })
 
 // Lấy danh sách quận/huyện theo tỉnh
 const fetchQuanHuyen = async (idTinhThanh) => {
   try {
-    const responseQuanHuyen = await axios.get(`/api/dia-chi/quan-huyen-by-tinh?idTinhThanh=${idTinhThanh}`)
-    console.log('Danh sách Quận/Huyện: ', responseQuanHuyen.data)  // Log để kiểm tra dữ liệu trả về
+    const responseQuanHuyen = await axios.get(`http://localhost:8080/api/dia-chi/quan-huyen-by-tinh?idTinhThanh=${idTinhThanh}`)
+    console.log("Dữ liệu quận/huyện:", responseQuanHuyen.data) // Debug
     quanHuyens.value = responseQuanHuyen.data
   } catch (err) {
     console.error("Lỗi khi lấy danh sách Quận/Huyện:", err)
@@ -130,14 +131,15 @@ const fetchQuanHuyen = async (idTinhThanh) => {
 // Lấy danh sách xã/phường theo quận
 const fetchXaPhuong = async (idQuanHuyen) => {
   try {
-    const responseXaPhuong = await axios.get(`/api/dia-chi/xa-phuong-by-quan?idQuanHuyen=${idQuanHuyen}`)
+    const responseXaPhuong = await axios.get(`http://localhost:8080/api/dia-chi/xa-phuong-by-quan?idQuanHuyen=${idQuanHuyen}`)
+    console.log("Dữ liệu xã/phường:", responseXaPhuong.data) // Debug
     xaPhuongs.value = responseXaPhuong.data
   } catch (err) {
     console.error("Lỗi khi lấy danh sách Xã/Phường:", err)
   }
 }
 
-
+// Hàm đóng modal
 const closeModal = () => {
   open.value = false
   Object.assign(form.value, {
@@ -162,11 +164,10 @@ const emit = defineEmits(['added', 'close'])
 
 const handleSubmit = async () => {
   try {
-    await axios.post('/api/khach-hang', form.value)
+    await createCustomer(form.value)  // Gửi yêu cầu POST tạo khách hàng
     alert('Thêm khách hàng thành công!')
     emit('added') // 👈 báo cho cha load lại
     closeModal()
-    // Emit hoặc gọi API refresh lại danh sách nếu cần
   } catch (err) {
     alert('Thêm thất bại: ' + err.response?.data?.message || err.message)
   }
