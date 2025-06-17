@@ -1,34 +1,32 @@
 <template>
-   <div class="search-container">
-    <input
-      v-model="searchInput"
-      @keyup="onSearch"
-      type="text"
-      class="form-control"
-      placeholder="Tìm kiếm theo tên, mã KH, số điện thoại, email..."
-    />
+  <div class="search-container">
+    <input v-model="searchInput" @keyup="onSearch" type="text" class="form-control"
+      placeholder="Tìm kiếm theo tên, mã KH, số điện thoại, email..." />
   </div>
 </template>
 
 <script>
 export default {
-  name: 'SearchKhachHang',
+  name: "SearchKhachHang",
   props: {
-    value: String // dùng để binding v-model từ cha nếu cần
+    value: {
+      type: String,
+      default: ""
+    }
   },
   data() {
     return {
-      searchInput: this.value || ''
+      searchInput: this.value
     };
   },
   watch: {
-    value(newVal) {
-      this.searchInput = newVal;
+    value(newValue) {
+      this.searchInput = newValue;
     }
   },
   methods: {
     onSearch() {
-      this.$emit('search', this.searchInput);
+      this.$emit("search", this.searchInput);
     }
   }
 };
@@ -40,24 +38,15 @@ export default {
 }
 
 .search-container input {
-  width: 400px; /* Chiều rộng cụ thể */
+  width: 400px;
   padding: 0.5rem;
   font-size: 1rem;
   border-radius: 5px;
   border: 1px solid #ccc;
 }
 
-/* .search-container input {
-  width: 250px; 
-  padding: 0.5rem;
-  font-size: 1rem;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  margin-right: 0; 
-} */
-
 .search-container input:focus {
-  border-color: #007bff;  /* Thêm viền màu khi focus */
-  outline: none;  /* Loại bỏ outline mặc định */
+  border-color: #007bff;
+  outline: none;
 }
 </style>

@@ -1,26 +1,18 @@
 <template>
   <div class="mt-4 px-3">
-    <!-- Thanh tìm kiếm + Nút lọc -->
+    <!-- Thanh tìm kiếm -->
     <div class="d-flex align-items-center bg-white p-3 rounded shadow mb-4 gap-2">
       <SearchKhachHang :value="searchQuery" @search="handleSearch" />
-      <button class="btn " @click="handleFilterButtonClick">
-        <!-- <i class="fas fa-filter"></i> -->
-        <img src="../assets/icons8-filter-24.png" alt="Filter Icon" class="icon" />
-      </button>
-       <AddKhachHang class="add" @added="handleAdded" />
+      <AddKhachHang class="add" @added="handleAdded" />
     </div>
 
-    <!-- Popup lọc -->
-    <FilterKhachHang v-if="showFilter" @filterApplied="handleFilter" @close="showFilter = false" />
-
-    <!-- Thêm khách hàng -->
-    <!-- <div class="bg-white p-3 rounded shadow mb-4">
-     
-    </div> -->
+   
 
     <!-- Bảng khách hàng -->
-    <div class=" bg-white p-3 rounded shadow mb-4 ">
+    <div class="bg-white p-3 rounded shadow mb-4">
       <h4>Quản lý khách hàng</h4>
+       <!-- Bộ lọc khách hàng luôn luôn hiển thị -->
+    <FilterKhachHang :filter-data="filterData" @filterApplied="handleFilter" />
       <KhachHangTable :reload="reloadTable" :search-query="searchQuery" :filter-data="filterData" />
     </div>
   </div>
@@ -32,8 +24,6 @@ import AddKhachHang from '../components/admin/AddKhachHang.vue';
 import SearchKhachHang from '../components/admin/SearchKhachHang.vue';
 import FilterKhachHang from '../components/admin/FilterKhachHang.vue';
 
-import { Filter } from 'lucide-vue-next';
-
 export default {
   name: 'CustomerManagement',
   components: {
@@ -44,44 +34,25 @@ export default {
   },
   data() {
     return {
-      reloadTable: false, // Biến để reload bảng khách hàng
-      searchQuery: '',  // Biến để lưu trữ truy vấn tìm kiếm  
-
-      showFilter: false, // Biến để điều khiển hiển thị popup lọc
-      filterData: {} // Biến để lưu trữ dữ liệu lọc
+      reloadTable: false,
+      searchQuery: '',
+      filterData: {},
     };
   },
   methods: {
-    // Hàm này sẽ được gọi khi thêm khách hàng thành công
     handleAdded() {
       this.reloadTable = true;
-      // Reset reload sau 1 chút để KhachHangTable detect được thay đổi
       setTimeout(() => {
         this.reloadTable = false;
       }, 100);
     },
     handleSearch(query) {
-      console.log('Từ khóa tìm kiếm:', query);
-      this.searchQuery = query;  // Cập nhật giá trị tìm kiếm
-    },
-    toggleFilter() {
-      this.showFilterPopup = !this.showFilterPopup;
+      this.searchQuery = query;
     },
     handleFilter(filter) {
       this.filterData = filter;
-      this.showFilterPopup = false;
     },
-    handleClearFilter() {
-      this.filterData = {};
-      this.searchQuery = '';
-    },
-    // Hàm xử lý khi click vào nút lọc
-    handleFilterButtonClick() {
-      // Khi người dùng click nút lọc, làm trống thanh tìm kiếm
-      this.searchQuery = '';
-      this.showFilter = true;  // Hiển thị popup lọc
-    }
-  }
+  },
 };
 </script>
 

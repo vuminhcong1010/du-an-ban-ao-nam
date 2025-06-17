@@ -22,3 +22,26 @@ export const createCustomer = (createKhachHangDTO) => {
       throw error;  // Propagate error to the caller
     });
 };
+
+
+// Hàm gọi API tìm kiếm khách hàng
+export const searchCustomers = (page, size, keyword) => {
+  return axios.get(`${API_URL}/search`, {
+    params: {
+      keyword,
+      page,
+      size
+    }
+  });
+};
+
+// Hàm gọi API để lấy danh sách khách hàng với phân trang và bộ lọc
+export const filterCustomers = (page, size, filterData) => {
+  return axios.get(API_URL + '/filter', {
+    params: {
+      ...filterData,  // Spread the filterData to include all filter parameters
+      page,
+      size
+    }
+  });
+};

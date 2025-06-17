@@ -20,7 +20,7 @@ const router = createRouter({
     },
      {
       path: '/nhan-vien',
-      name: 'khachhang',
+      name: 'khachhangs',
       component: QQuanLyKhachHang,
     },
   ],
