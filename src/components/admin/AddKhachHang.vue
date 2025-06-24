@@ -1,9 +1,17 @@
 <template>
+  <!-- Toast -->
+  <div class="toast-container">
+    <div v-for="toast in toastList" :key="toast.id" class="toast-notification" :class="toast.type">
+      <span v-if="toast.type === 'success'">✅</span>
+      <span v-else-if="toast.type === 'error'">❌</span>
+      <span>{{ toast.message }}</span>
+    </div>
+  </div>
   <div>
     <!-- Nút Add -->
     <button @click="open = true"
       style="background-color: #0a2c57; color: white; border: none; padding: 10px 20px; border-radius: 5px;">
-      ➕ Thêm khách hàng
+      <i class="fa-solid fa-plus"></i> Thêm khách hàng
     </button>
 
     <!-- Modal -->
@@ -19,39 +27,41 @@
         <form @submit.prevent="handleSubmit" class="modal-body">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label>Họ và tên: <span class="text-red-500">*</span></label>
+              <label>Họ và tên <span class="text-red-500">*</span></label>
               <input v-model="form.tenKhachHang" type="text"
                 :class="{ error: showError && !isFullName(form.tenKhachHang) }" />
-              <span v-if="showError && !isFullName(form.tenKhachHang)" class="text-red-500">Vui lòng nhập đầy đủ Họ và
-                Tên</span>
+              <span v-if="showError && !isFullName(form.tenKhachHang)" class="text-red-500">Vui lòng nhập tên chính
+                xác</span>
             </div>
 
+            <!-- SỐ ĐIỆN THOẠI -->
             <div>
-              <label>Email: <span class="text-red-500">*</span></label>
-              <input v-model="form.email" type="email" :class="{ error: showError && (errors.email || !form.email) }" />
-              <span v-if="showError && errors.email" class="text-red-500">Email không hợp lệ</span>
-              <span v-if="showError && !form.email" class="text-red-500">Trường này là bắt buộc</span>
-            </div>
-
-            <div>
-              <label>Số điện thoại: <span class="text-red-500">*</span></label>
+              <label>Số điện thoại <span class="text-red-500">*</span></label>
               <input v-model="form.soDienThoai" type="text"
                 :class="{ error: showError && (errors.soDienThoai || !form.soDienThoai) }" />
               <span v-if="showError && errors.soDienThoai" class="text-red-500">Số điện thoại không hợp lệ</span>
-              <span v-if="showError && !form.soDienThoai" class="text-red-500">Trường này là bắt buộc</span>
+              <span v-if="showError && !form.soDienThoai" class="text-red-500"> (Trường này là bắt buộc)</span>
+            </div>
+
+            <!-- EMAIL -->
+            <div>
+              <label>Email <span class="text-red-500">*</span></label>
+              <input v-model="form.email" type="email" :class="{ error: showError && (errors.email || !form.email) }" />
+              <span v-if="showError && errors.email" class="text-red-500">Email không hợp lệ</span>
+              <span v-if="showError && !form.email" class="text-red-500"> (Trường này là bắt buộc)</span>
             </div>
 
             <div>
-              <label>Ngày sinh: <span class="text-red-500">*</span></label>
-              <input v-model="form.ngaySinh" type="date"
-                :class="{ error: showError && (errors.ngaySinh || !form.ngaySinh) }" />
-              <span v-if="showError && errors.ngaySinh" class="text-red-500">Tuổi phải từ 13 trở lên</span>
-              <span v-if="showError && !form.ngaySinh" class="text-red-500">Trường này là bắt buộc</span>
+              <label>Ngày sinh</label>
+              <input v-model="form.ngaySinh" type="date" />
+              <!-- :class="{ error: showError && (errors.ngaySinh || !form.ngaySinh) }" -->
+              <!-- <span v-if="showError && errors.ngaySinh" class="text-red-500">Tuổi phải từ 13 trở lên</span>
+              <span v-if="showError && !form.ngaySinh" class="text-red-500"> (Trường này là bắt buộc)</span> -->
             </div>
 
             <!-- Gộp label + nhóm radio vào cùng một dòng -->
             <div class="col-span-2 gender-row">
-              <label>Giới tính:</label>
+              <label>Giới tính</label>
               <div class="gender-group">
                 <label><input type="radio" value="true" v-model="form.gioiTinh" /> Nam</label>
                 <label><input type="radio" value="false" v-model="form.gioiTinh" /> Nữ</label>
@@ -60,39 +70,40 @@
 
             <!-- Tỉnh -->
             <div>
-              <label>Tỉnh/Thành Phố: <span class="text-red-500">*</span></label>
-              <select v-model="form.diaChi.idTinhThanhPho" @change="onTinhThanhChange"
-                :class="{ error: showError && !form.diaChi.idTinhThanhPho }">
+              <label>Tỉnh/Thành Phố</label>
+              <select v-model="form.diaChi.idTinhThanhPho" @change="onTinhThanhChange">
+                <!-- :class="{ error: showError && !form.diaChi.idTinhThanhPho }" -->
                 <option value="">Chọn Tỉnh/Thành Phố</option>
                 <option v-for="tinh in tinhThanhPhos" :key="tinh.id" :value="tinh.id">{{ tinh.tenTinhThanh }}</option>
               </select>
-              <span v-if="showError && !form.diaChi.idTinhThanhPho" class="text-red-500">Trường này là bắt buộc</span>
+              <!-- <span v-if="showError && !form.diaChi.idTinhThanhPho" class="text-red-500">Trường này là bắt buộc</span> -->
             </div>
 
             <!-- Quận -->
             <div>
-              <label>Quận/Huyện: <span class="text-red-500">*</span></label>
+              <label>Quận/Huyện </label>
               <select :disabled="!form.diaChi.idTinhThanhPho" v-model="form.diaChi.idQuanHuyen"
-                @change="onQuanHuyenChange" :class="{ error: showError && !form.diaChi.idQuanHuyen }">
+                @change="onQuanHuyenChange">
+                <!-- :class="{ error: showError && !form.diaChi.idQuanHuyen }" -->
                 <option value="">Chọn Quận/Huyện</option>
                 <option v-for="quan in quanHuyens" :key="quan.id" :value="quan.id">{{ quan.tenQuanHuyen }}</option>
               </select>
-              <span v-if="showError && !form.diaChi.idQuanHuyen" class="text-red-500">Trường này là bắt buộc</span>
+              <!-- <span v-if="showError && !form.diaChi.idQuanHuyen" class="text-red-500">Trường này là bắt buộc</span> -->
             </div>
 
             <!-- Xã -->
             <div>
-              <label>Xã/Phường: <span class="text-red-500">*</span></label>
-              <select :disabled="!form.diaChi.idQuanHuyen" v-model="form.diaChi.idXaPhuong"
-                :class="{ error: showError && !form.diaChi.idXaPhuong }">
+              <label>Xã/Phường</label>
+              <select :disabled="!form.diaChi.idQuanHuyen" v-model="form.diaChi.idXaPhuong">
+                <!-- :class="{ error: showError && !form.diaChi.idXaPhuong }" -->
                 <option value="">Chọn Xã/Phường</option>
                 <option v-for="xa in xaPhuongs" :key="xa.id" :value="xa.id">{{ xa.tenXaPhuong }}</option>
               </select>
-              <span v-if="showError && !form.diaChi.idXaPhuong" class="text-red-500">Trường này là bắt buộc</span>
+              <!-- <span v-if="showError && !form.diaChi.idXaPhuong" class="text-red-500">Trường này là bắt buộc</span> -->
             </div>
 
             <div>
-              <label>Địa chỉ chi tiết:</label>
+              <label>Địa chỉ chi tiết</label>
               <input v-model="form.diaChi.diaChiChiTiet" type="text" />
             </div>
           </div>
@@ -206,33 +217,35 @@ const handleSubmit = async () => {
 
   errors.value.email = !validateEmail(form.value.email)
   errors.value.soDienThoai = !validatePhone(form.value.soDienThoai)
-  errors.value.ngaySinh = !validateAge(form.value.ngaySinh)
+  // errors.value.ngaySinh = !validateAge(form.value.ngaySinh)
 
   const isEmpty =
     !form.value.tenKhachHang ||
     !form.value.email ||
-    !form.value.soDienThoai ||
-    !form.value.ngaySinh ||
-    !form.value.diaChi.idTinhThanhPho ||
-    !form.value.diaChi.idQuanHuyen ||
-    !form.value.diaChi.idXaPhuong ||
-    !form.value.diaChi.diaChiChiTiet
+    !form.value.soDienThoai;
 
-  if (errors.value.email || errors.value.soDienThoai || errors.value.ngaySinh || isEmpty) {
+  if (errors.value.email || errors.value.soDienThoai || errors.value.tenKhachHang || isEmpty) {
     return
   }
 
   try {
     await axios.post('/api/khach-hang', form.value)
-    alert('Thêm khách hàng thành công!')
+    // alert('Thêm khách hàng thành công!')
+    addToast('Thêm khách hàng thành công!', 'success')
     emit('added')
     closeModal()
   } catch (err) {
-    alert('Thêm thất bại: ' + (err.response?.data?.message || err.message))
+    // alert('Thêm thất bại: ' + (err.response?.data?.message || err.message))
+    addToast("Lỗi khi thêm khách hàng", "error");
   }
 }
 const isFullName = (name) => {
-  return name && name.trim().split(" ").length >= 2;
+  // Kiểm tra nếu tên không có ký tự đặc biệt (ngoài chữ cái và khoảng trắng)
+  // Kiểm tra nếu tên không có ký tự đặc biệt (ngoài chữ cái và khoảng trắng), bao gồm cả dấu tiếng Việt
+  const regex = /^[a-zA-Zàáảãạăắằẳẵặâấầẩẫậđéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵ\s]+$/;
+
+  // Kiểm tra điều kiện tên có ít nhất 2 từ và không chứa ký tự đặc biệt
+  return name && name.trim().split(" ").length >= 1 && regex.test(name);
 };
 
 const onTinhThanhChange = async () => {
@@ -245,6 +258,15 @@ const onTinhThanhChange = async () => {
 const onQuanHuyenChange = async () => {
   form.value.diaChi.idXaPhuong = ''
   await fetchXaPhuong(form.value.diaChi.idQuanHuyen)
+}
+
+const toastList = ref([])
+const addToast = (message, type = 'success') => {
+  const id = Date.now()
+  toastList.value.push({ id, message, type })
+  setTimeout(() => {
+    toastList.value = toastList.value.filter(toast => toast.id !== id)
+  }, 3000)
 }
 </script>
 
@@ -280,7 +302,7 @@ const onQuanHuyenChange = async () => {
   border-bottom: 1px solid #ddd;
   padding-bottom: 10px;
   margin-bottom: 15px;
-   box-sizing: border-box;
+  box-sizing: border-box;
   width: 100%;
 }
 
@@ -369,5 +391,61 @@ select {
   gap: 10px;
   margin-top: 20px;
 
+}
+
+/* 
+thông báo  */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.toast-notification {
+  min-width: 250px;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  animation: slideInOut 3s forwards;
+}
+
+.toast-notification.success {
+  background-color: #E6F8EC;
+  border: 1px solid #00B63E;
+  color: #00B63E;
+}
+
+.toast-notification.error {
+  background-color: #FFE6E6;
+  border: 1px solid #BE4141;
+  color: #BE4141;
+}
+
+@keyframes slideInOut {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  10%,
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
 }
 </style>
