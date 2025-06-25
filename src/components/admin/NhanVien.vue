@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, ref, inject, computed } from 'vue'
+import { onMounted, ref, inject, computed, watch } from 'vue'
 import search from '@/assets/search.png'
-import { Eye,Edit,Plus,Trash,Delete, Home } from 'lucide-vue-next';
+import { Eye,Edit,Plus,Trash,Delete, Home, EyeOff } from 'lucide-vue-next';
 import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification';
 
 const toggleSidebar = inject('toggleSidebar')
 
@@ -31,6 +32,7 @@ const getData = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/home')
     listNhanVien.value = response.data;
+    // console.log('NhanVien:', listNhanVien.value);
   } catch (error) {
     console.log(error);
   }
@@ -59,7 +61,14 @@ const allColumns = [
   { key: 'trangThai', label: 'Trạng thái' },
   { key: 'tenRole', label: 'Chức vụ' },
 ];
-const visibleColumns = ref(allColumns.map(col => col.key));
+const visibleColumns = ref([
+  'anh',
+  'maNhanVien',
+  'tenKhachHang',
+  'ngayTao',
+  'trangThai',
+  'tenRole'
+]);
 const showColumnBox = ref(false);
 const expandedRow = ref(null);
 const showFilter = ref(false);
@@ -68,11 +77,13 @@ const filterHovered = ref(false);
 // Filter states
 const filterState = ref({
   trangThai: '1',
-  chucVu: '',
+  vaiTro: '',
   ngayTao: '',
   ngaySua: '',
   search: ''
 });
+
+const showPassword = ref({}); // Track password visibility for each employee
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -85,13 +96,10 @@ function formatDate(dateStr) {
 }
 
 const route = useRoute();
-const showSuccess = ref(false);
-const showUpdate = ref(false);
-const showStatusUpdate = ref(false);
+const toast = useToast();
 const showAddRoleModal = ref(false);
 const newRoleName = ref("");
 const addRoleError = ref("");
-const addRoleToasts = ref([]);
 const router = useRouter();
 const showConfirmModal = ref(false);
 const selectedNhanVien = ref(null);
@@ -102,6 +110,7 @@ const nhanVienToDelete = ref(null);
 const statusUpdateMessage = ref('');
 const showBackToWorkModal = ref(false);
 const nhanVienBackToWork = ref(null);
+const isExporting = ref(false);
 
 function openAddRoleModal() {
   showAddRoleModal.value = true;
@@ -113,26 +122,20 @@ function closeAddRoleModal() {
   newRoleName.value = "";
   addRoleError.value = "";
 }
-function showAddRoleToast(message, type = 'success') {
-  const id = Date.now() + Math.random();
-  addRoleToasts.value.unshift({ id, message, type });
-  setTimeout(() => {
-    addRoleToasts.value = addRoleToasts.value.filter(t => t.id !== id);
-  }, 3000);
-}
 async function addVaiTro() {
   addRoleError.value = "";
   if (!newRoleName.value.trim()) {
     addRoleError.value = 'Vui lòng nhập tên chức vụ';
+    toast.error('Vui lòng nhập tên chức vụ');
     return;
   }
   try {
-    await axios.post('http://localhost:8080/api/vai-tro', { tenRole: newRoleName.value });
+    await axios.post('http://localhost:8080/api/addVaiTro', { tenRole: newRoleName.value });
     await getVaiTro();
     closeAddRoleModal();
-    showAddRoleToast('Thêm chức vụ thành công!', 'success');
+    toast.success('Thêm chức vụ thành công!');
   } catch (e) {
-    showAddRoleToast('Thêm chức vụ thất bại!', 'error');
+    toast.error('Thêm chức vụ thất bại!');
   }
 }
 
@@ -153,11 +156,9 @@ async function confirmDoiTrangThai() {
     await axios.put(`http://localhost:8080/api/doiTrangThaiVe0/${selectedNhanVien.value.id}`);
     closeConfirmModal();
     await getData();
-    showStatusUpdate.value = true;
-    statusUpdateMessage.value = 'Cập nhật nhân viên thành công';
-    setTimeout(() => showStatusUpdate.value = false, 3000);
+    toast.success('Cập nhật trạng thái nhân viên thành công!');
   } catch (e) {
-    alert('Có lỗi khi cập nhật trạng thái!');
+    toast.error('Có lỗi khi cập nhật trạng thái!');
   } finally {
     confirmLoading.value = false;
   }
@@ -178,11 +179,9 @@ async function confirmBackToWork() {
     await axios.put(`http://localhost:8080/api/doiTrangThaiVe1/${nhanVienBackToWork.value.id}`);
     closeBackToWorkModal();
     await getData();
-    showStatusUpdate.value = true;
-    statusUpdateMessage.value = 'Cập nhật nhân viên thành công';
-    setTimeout(() => showStatusUpdate.value = false, 3000);
+    toast.success('Nhân viên đã quay lại làm việc!');
   } catch (e) {
-    alert('Có lỗi khi cập nhật trạng thái!');
+    toast.error('Có lỗi khi cập nhật trạng thái!');
   }
 }
 
@@ -201,13 +200,44 @@ async function confirmDeleteNhanVien() {
     await axios.delete(`http://localhost:8080/api/delete/${nhanVienToDelete.value.id}`);
     closeDeleteModal();
     await getData();
-    showStatusUpdate.value = true;
-    statusUpdateMessage.value = 'Xóa nhân viên thành công';
-    setTimeout(() => showStatusUpdate.value = false, 3000);
+    toast.success('Xóa nhân viên thành công!');
   } catch (e) {
-    alert('Có lỗi khi xóa nhân viên!');
+    toast.error('Có lỗi khi xóa nhân viên!');
   }
 }
+
+const exportExcelFile = async () => {
+  if (isExporting.value) return;
+  isExporting.value = true;
+  try {
+    const response = await axios.get('http://localhost:8080/api/nhan-vien/export-excel', {
+      responseType: 'blob',
+    });
+
+    const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+    link.setAttribute('download', `DanhSachNhanVien_${timestamp}.xlsx`);
+    
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    toast.success('Xuất file thành công!');
+
+  } catch (error) {
+    console.error("Lỗi khi xuất file Excel:", error);
+    toast.error('Xuất file thất bại!');
+  } finally {
+    isExporting.value = false;
+  }
+};
 
 const filteredNhanVien = computed(() => {
   if (!Array.isArray(listNhanVien.value)) return [];
@@ -216,10 +246,10 @@ const filteredNhanVien = computed(() => {
     nv => String(nv.trangThai) === String(filterState.value.trangThai)
   );
 
-  // Lọc theo chức vụ
-  if (filterState.value.chucVu && filterState.value.chucVu !== '') {
+  // Lọc theo chức vụ (theo tenRole)
+  if (filterState.value.vaiTro && filterState.value.vaiTro !== '') {
     result = result.filter(
-      nv => nv.idVaiTro && nv.idVaiTro.id != null && String(nv.idVaiTro.id) === String(filterState.value.chucVu)
+      nv => nv.tenRole && String(nv.tenRole) === String(filterState.value.vaiTro)
     );
   }
 
@@ -239,19 +269,72 @@ const filteredNhanVien = computed(() => {
     });
   }
 
+  // Sắp xếp theo ngày tạo và ngày sửa mới nhất lên đầu
+  result.sort((a, b) => {
+    // Ưu tiên theo ngày sửa trước (nếu có)
+    if (a.ngaySua && b.ngaySua) {
+      const dateA = new Date(a.ngaySua);
+      const dateB = new Date(b.ngaySua);
+      if (dateA.getTime() !== dateB.getTime()) {
+        return dateB.getTime() - dateA.getTime(); // Mới nhất lên đầu
+      }
+    }
+    
+    // Nếu ngày sửa bằng nhau hoặc không có, sắp xếp theo ngày tạo
+    if (a.ngayTao && b.ngayTao) {
+      const dateA = new Date(a.ngayTao);
+      const dateB = new Date(b.ngayTao);
+      return dateB.getTime() - dateA.getTime(); // Mới nhất lên đầu
+    }
+    
+    // Nếu không có ngày, giữ nguyên thứ tự
+    return 0;
+  });
+
   return result;
 });
+// Thêm hàm searchNhanVien
+const searchNhanVien = async (keyword) => {
+  try {
+    if (!keyword) {
+      await getData(); // Nếu không có từ khóa thì load lại toàn bộ
+      return;
+    }
+    const response = await axios.get(`http://localhost:8080/api/search?keyword=${encodeURIComponent(keyword)}`);
+    listNhanVien.value = response.data;
+  } catch (error) {
+    console.log('Lỗi tìm kiếm:', error);
+  }
+};
+
+// Theo dõi filterState.search, debounce 300ms
+let searchTimeout = null;
+watch(() => filterState.value.search, (newVal) => {
+  if (searchTimeout) clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    searchNhanVien(newVal);
+  }, 300);
+});
+
+// Function to toggle password visibility
+const togglePasswordVisibility = (nhanVienId) => {
+  showPassword.value[nhanVienId] = !showPassword.value[nhanVienId];
+};
+
+// Function to mask password
+const maskPassword = (password) => {
+  if (!password) return '';
+  return '•'.repeat(password.length);
+};
 
 onMounted(() => {
   getData();
   getVaiTro();
   if (route.query.success === 'true') {
-    showSuccess.value = true;
-    setTimeout(() => showSuccess.value = false, 3000);
+    toast.success('Thêm mới nhân viên thành công');
     window.history.replaceState({}, document.title, route.path);
   } else if (route.query.updated === 'true') {
-    showUpdate.value = true;
-    setTimeout(() => showUpdate.value = false, 3000);
+    toast.success('Cập nhật nhân viên thành công');
     window.history.replaceState({}, document.title, route.path);
   }
 })
@@ -262,31 +345,17 @@ onMounted(() => {
     <div class="nhanvien-header bg-white p-3 rounded shadow mb-4"
          style="display: flex; align-items: center; justify-content: flex-start; box-shadow: 0 5px 10px #d1cac0; border-radius: 12px; padding: 6px 16px !important; position: relative; gap: 16px;">
       <div>
-        <h2 style="margin: 0; font-size: 18px !important;">Danh sách nhân viên</h2>
+        <h2 style="margin: 0; font-size: 18px !important;">Quản Lý nhân viên</h2>
       </div>
       <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
         <router-link to="/nhan-vien/them" class="nv-btn"><span style="font-size: 15px !important;">+</span> Nhân viên</router-link>
         <button class="nv-btn"><span style="font-size: 15px !important;">⭳</span> Nhập file</button>
-        <button class="nv-btn"><span style="font-size: 15px !important;">⭱</span> Xuất file</button>
-        <div style="display: flex; gap: 8px; position: relative;">
-          <button class="nv-btn" @click="showColumnBox = !showColumnBox" style="width: 40px; height: 40px; justify-content: center;"><span style="font-size: 20px;">≡</span></button>
-          <div v-if="showColumnBox" class="column-select-box">
-            <div v-for="col in allColumns" :key="col.key" style="margin-bottom: 6px;">
-              <input type="checkbox" :id="col.key" v-model="visibleColumns" :value="col.key" />
-              <label :for="col.key">{{ col.label }}</label>
-            </div>
-          </div>
-        </div>
+        <button class="nv-btn" @click="exportExcelFile" :disabled="isExporting">
+          <span v-if="isExporting" class="spinner"></span>
+          <span v-else style="font-size: 15px !important;">⭱</span>
+          {{ isExporting ? 'Đang xuất...' : 'Xuất file' }}
+        </button>
       </div>
-    </div>
-    <div v-if="showSuccess" class="toast-success">
-      <span>✔ Thêm mới nhân viên thành công</span>
-    </div>
-    <div v-if="showUpdate" class="toast-success">
-      <span>✔ Cập nhật nhân viên thành công</span>
-    </div>
-    <div v-if="showStatusUpdate" class="toast-success">
-      <span>✔ {{ statusUpdateMessage }}</span>
     </div>
     <div class="filter-bar bg-white p-3 rounded shadow mb-4">
       <div class="filter-title">
@@ -294,7 +363,9 @@ onMounted(() => {
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 13 10 19 14 19 14 13 22 3"></polygon></svg>
         </span>
         <span class="filter-label">Bộ lọc</span>
-        <span class="filter-search-wrapper">
+      </div>
+      <div class="filter-fields" style="display: flex; flex-wrap: nowrap; gap: 16px; align-items: flex-end;">
+        <div class="filter-search-wrapper" style="min-width: 200px; max-width: 220px; flex: 1 1 200px; position: relative;">
           <img :src="search" alt="search" class="filter-search-icon" />
           <input
             class="filter-search"
@@ -302,10 +373,8 @@ onMounted(() => {
             placeholder="Tìm theo mã, tên nhân viên"
             v-model="filterState.search"
           />
-        </span>
-      </div>
-      <div class="filter-fields">
-        <div class="filter-section">
+        </div>
+        <div class="filter-section" style="min-width: 120px; max-width: 150px; flex: 1 1 120px;">
           <label>Trạng thái</label>
           <div class="radio-group">
             <label class="radio-label">
@@ -318,29 +387,41 @@ onMounted(() => {
             </label>
           </div>
         </div>
-        <div class="filter-section filter-section-role">
+        <div class="filter-section filter-section-role" style="min-width: 120px; max-width: 150px; flex: 1 1 120px;">
           <div class="label-row">
             <label>Chức vụ</label>
             <button class="btn-add-role" title="Thêm chức vụ" @click="openAddRoleModal"><span>+</span></button>
           </div>
-          <select v-model="filterState.chucVu">
+          <select v-model="filterState.vaiTro">
             <option value="">Tất cả</option>
-            <option v-for="vaiTro in vaiTroList" :key="vaiTro.id" :value="vaiTro.id">
+            <option v-for="vaiTro in vaiTroList" :key="vaiTro.id" :value="vaiTro.tenRole">
               {{ vaiTro.tenRole }}
             </option>
           </select>
         </div> 
-        <div class="filter-section">
+        <div class="filter-section" style="min-width: 120px; max-width: 150px; flex: 1 1 120px;">
           <label>Ngày tạo</label>
           <input type="date" v-model="filterState.ngayTao">
         </div>
-        <div class="filter-section">
+        <div class="filter-section" style="min-width: 120px; max-width: 150px; flex: 1 1 120px;">
           <label>Ngày sửa</label>
           <input type="date" v-model="filterState.ngaySua">
         </div>
       </div>
     </div>
     <div class="table-wrapper bg-white p-3 rounded shadow mb-4">
+      <div style="margin-bottom: 10px; display: flex; align-items: center;">
+        <button class="column-toggle-btn column-toggle-align" @click="showColumnBox = !showColumnBox">
+          <span style="font-size: 20px;">≡</span>
+        </button>
+        <span style="font-size: 18px !important; font-weight: 600; color: #212529;">Danh sách nhân viên</span>
+        <div v-if="showColumnBox" class="column-select-box">
+          <div v-for="col in allColumns" :key="col.key" style="margin-bottom: 6px;">
+            <input type="checkbox" :id="col.key" v-model="visibleColumns" :value="col.key" />
+            <label :for="col.key">{{ col.label }}</label>
+          </div>
+        </div>
+      </div>
       <div class="table-container">
         <table class="employee-table">
           <thead>
@@ -361,6 +442,9 @@ onMounted(() => {
                   <td v-for="col in allColumns.filter(c => visibleColumns.includes(c.key))" :key="col.key">
                     <template v-if="col.key === 'anh'">
                       <img v-if="nhanVien.anh" :src="nhanVien.anh" style="width: 40px; height: 40px; object-fit: cover; background: #eee;">
+                    </template>
+                    <template v-else-if="col.key === 'matKhau'">
+                      {{ maskPassword(nhanVien.matKhau) }}
                     </template>
                     <template v-else-if="col.key === 'gioiTinh'">
                       {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}
@@ -388,7 +472,21 @@ onMounted(() => {
                       <!-- Thông tin bên phải, chia 2 cột -->
                       <div class="detail-fields">
                         <div v-for="(col, i) in allColumns.filter(c => c.key !== 'anh')" :key="col.key" class="detail-field">
-                          <template v-if="col.key === 'gioiTinh'">
+                          <template v-if="col.key === 'matKhau'">
+                            <b>{{ col.label }}:</b>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                              <span>{{ showPassword[nhanVien.id] ? nhanVien.matKhau : maskPassword(nhanVien.matKhau) }}</span>
+                              <button
+                                @click.stop="togglePasswordVisibility(nhanVien.id)"
+                                class="password-toggle-btn"
+                                :title="showPassword[nhanVien.id] ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'"
+                              >
+                                <Eye v-if="!showPassword[nhanVien.id]" size="16" />
+                                <EyeOff v-else size="16" />
+                              </button>
+                            </div>
+                          </template>
+                          <template v-else-if="col.key === 'gioiTinh'">
                             <b>{{ col.label }}:</b> {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}
                           </template>
                           <template v-else-if="col.key === 'trangThai'">
@@ -413,11 +511,11 @@ onMounted(() => {
                         </template>
                         <template v-else>
                           <div class="info-footer-btns">
-                            <button class="btn-small-action btn-green" title="Quay Lại  làm việc" @click="openBackToWorkModal(nhanVien)">
-                              <svg style="vertical-align: middle; margin-right: 6px;" width="18" height="18" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                            <button class="icon-btn" title="Quay Lại làm việc" @click="openBackToWorkModal(nhanVien)">
+                              <svg class="icon-green" width="22" height="22" fill="none" stroke="#22b34c" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
                             </button>
-                            <button class="btn-small-action btn-red" title="Xóa Nhân Viên " @click="openDeleteModal(nhanVien)">
-                              <svg style="vertical-align: middle; margin-right: 6px;" width="18" height="18" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+                            <button class="icon-btn" title="Xóa Nhân Viên" @click="openDeleteModal(nhanVien)">
+                              <svg class="icon-red" width="22" height="22" fill="none" stroke="#e53935" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
                             </button>
                           </div>
                         </template>
@@ -437,13 +535,6 @@ onMounted(() => {
             </tr>
           </tbody>
         </table>
-      </div>
-    </div>
-    <!-- Toast thông báo thêm chức vụ -->
-    <div class="toast-stack" v-if="addRoleToasts.length">
-      <div v-for="toast in addRoleToasts" :key="toast.id" :class="['toast-error', toast.type === 'success' ? 'toast-success' : '']">
-        <span v-if="toast.type === 'success'">✔ {{ toast.message }}</span>
-        <span v-else>✖ {{ toast.message }}</span>
       </div>
     </div>
     <!-- Modal thêm chức vụ -->
@@ -557,6 +648,26 @@ onMounted(() => {
   font-weight: bold;
   margin-right: 4px;
 }
+.column-toggle-btn.column-toggle-align {
+  height: 32px;
+  min-width: 32px;
+  max-width: 40px;
+  margin-right: 10px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #d1cac0;
+  background: #fff;
+  color: #212529;
+  border-radius: 8px;
+  transition: all 0.18s cubic-bezier(.4,0,.2,1);
+}
+.column-toggle-btn.column-toggle-align:hover {
+  background: #e3f2fd;
+  border-color: #339cf1;
+  color: #1976d2;
+}
 .nhanvien-header {
   margin-top: -20px;
 }
@@ -593,6 +704,7 @@ onMounted(() => {
   font-size: 14px;
   white-space: nowrap;
   border-bottom: 1px solid #e0e0e0;
+  text-align: center;
 }
 
 
@@ -604,6 +716,7 @@ onMounted(() => {
   padding: 5px 5px;
   border-bottom: 1px solid #eee;
   font-size: 13px;
+  text-align: center;
 }
 
 .status-badge {
@@ -801,12 +914,19 @@ onMounted(() => {
   align-items: flex-start;
   margin-top: 0;
 }
-.filter-section {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.filter-fields filter-fields-row {
+  flex-wrap: nowrap !important;
+  gap: 12px !important;
+}
+.filter-search-wrapper filter-search-inline {
   min-width: 180px;
+  max-width: 220px;
   flex: 1 1 180px;
+}
+.filter-section {
+  min-width: 120px !important;
+  max-width: 180px !important;
+  flex: 1 1 120px !important;
 }
 .filter-section label {
   font-size: 13px;
@@ -851,14 +971,6 @@ onMounted(() => {
   box-shadow: 0 2px 8px #339cf122;
   color: #339cf1;
 }
-.filter-search-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 1 1 300px;
-  max-width: 350px;
-  min-width: 200px;
-}
 .filter-search-icon {
   position: absolute;
   left: 12px;
@@ -899,23 +1011,6 @@ onMounted(() => {
 }
 *:not(input):not(textarea):not(select) {
   caret-color: transparent !important;
-}
-.toast-success {
-  position: absolute;
-  right: 32px;
-  top: 70px;
-  z-index: 9999;
-  background: #43d477;
-  color: #fff;
-  padding: 12px 28px;
-  border-radius: 8px;
-  font-weight: 500;
-  box-shadow: 0 2px 12px #0002;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  animation: fadeIn 0.3s;
 }
 .modal-overlay {
   position: fixed;
@@ -1007,43 +1102,74 @@ onMounted(() => {
 .btn-cancel:hover {
   background: #495057;
 }
-.toast-stack {
-  position: absolute;
-  right: 32px;
-  top: 70px;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: flex-end;
-}
-.toast-error {
-  background: #e74c3c;
-  color: #fff;
-  padding: 12px 28px;
-  border-radius: 8px;
-  font-weight: 500;
-  box-shadow: 0 2px 12px #0002;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  min-width: 260px;
-  animation: fadeIn 0.3s;
-}
-.toast-success {
-  background: #43d477 !important;
-  color: #fff !important;
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
-.info-footer-btns {
-  width: 100%;
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.nv-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.password-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: #666;
+  transition: all 0.2s ease;
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 24px;
-  padding-top: 12px;
-  border-top: 1px solid #eee;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle-btn:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.password-toggle-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #e3eafc;
+}
+
+.file-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 20px;
+  border-radius: 10px;
+  border: 1.5px solid #1976d2;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  color: #1976d2;
+  font-size: 15px;
+  transition: all 0.18s cubic-bezier(.4,0,.2,1);
+  text-decoration: none;
+  user-select: none;
+  caret-color: transparent;
+  box-shadow: 0 2px 8px #0a2a5c11;
+}
+.file-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #e3eafc;
+}
+.file-btn:hover {
+  background: #e3f2fd;
+  border-color: #339cf1;
+  color: #0a2a5c;
+  box-shadow: 0 4px 16px #0a2a5c22;
 }
 .btn-small-action {
   min-width: 110px;
@@ -1074,4 +1200,42 @@ onMounted(() => {
 .btn-red:hover {
   background: #b71c1c;
 }
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.18s;
+  font-size: 20px;
+}
+.icon-btn:focus {
+  outline: none;
+}
+.icon-btn:hover {
+  background: #f0f0f0;
+}
+.icon-btn .icon-red {
+  color: #e53935;
+}
+.icon-btn .icon-green {
+  color: #22b34c;
+}
+.info-footer-btns {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
 </style>
+
+

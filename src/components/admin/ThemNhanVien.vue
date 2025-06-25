@@ -30,6 +30,19 @@ const formData = ref({
 const vaiTroList = ref([])
 const errorToasts = ref([]);
 const fieldErrors = ref({});
+const allNhanVien = ref([]);
+
+// Danh sách tỉnh/thành phố Việt Nam
+const provinces = [
+  'An Giang', 'Bà Rịa - Vũng Tàu', 'Bắc Giang', 'Bắc Kạn', 'Bạc Liêu', 'Bắc Ninh', 'Bến Tre', 'Bình Định',
+  'Bình Dương', 'Bình Phước', 'Bình Thuận', 'Cà Mau', 'Cần Thơ', 'Cao Bằng', 'Đà Nẵng', 'Đắk Lắk', 'Đắk Nông',
+  'Điện Biên', 'Đồng Nai', 'Đồng Tháp', 'Gia Lai', 'Hà Giang', 'Hà Nam', 'Hà Nội', 'Hà Tĩnh', 'Hải Dương',
+  'Hải Phòng', 'Hậu Giang', 'Hòa Bình', 'Hưng Yên', 'Khánh Hòa', 'Kiên Giang', 'Kon Tum', 'Lai Châu',
+  'Lâm Đồng', 'Lạng Sơn', 'Lào Cai', 'Long An', 'Nam Định', 'Nghệ An', 'Ninh Bình', 'Ninh Thuận', 'Phú Thọ',
+  'Phú Yên', 'Quảng Bình', 'Quảng Nam', 'Quảng Ngãi', 'Quảng Ninh', 'Quảng Trị', 'Sóc Trăng', 'Sơn La',
+  'Tây Ninh', 'Thái Bình', 'Thái Nguyên', 'Thanh Hóa', 'Thừa Thiên Huế', 'Tiền Giang', 'TP Hồ Chí Minh',
+  'Trà Vinh', 'Tuyên Quang', 'Vĩnh Long', 'Vĩnh Phúc', 'Yên Bái'
+];
 
 const getVaiTro = async () => {
   try {
@@ -39,6 +52,15 @@ const getVaiTro = async () => {
     console.error("Lỗi khi load chức vụ:", error)
   }
 }
+
+const getAllNhanVien = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/api/home');
+    allNhanVien.value = response.data;
+  } catch (error) {
+    console.error("Lỗi khi load danh sách nhân viên:", error);
+  }
+};
 
 function showErrorToast(message) {
   const id = Date.now() + Math.random();
@@ -50,7 +72,14 @@ function showErrorToast(message) {
 
 function validateForm() {
   const errors = {};
-  if (!formData.value.maNhanVien) errors.maNhanVien = 'Vui lòng nhập mã nhân viên';
+  if (!formData.value.maNhanVien) {
+    errors.maNhanVien = 'Vui lòng nhập mã nhân viên';
+  } else if (!route.params.id) { // Chỉ kiểm tra trùng khi thêm mới
+    const isDuplicate = allNhanVien.value.some(nv => nv.maNhanVien === formData.value.maNhanVien);
+    if (isDuplicate) {
+      errors.maNhanVien = 'Mã nhân viên đã tồn tại';
+    }
+  }
   if (!formData.value.tenKhachHang) errors.tenKhachHang = 'Vui lòng nhập tên nhân viên';
   if (!formData.value.tenTaiKhoan) errors.tenTaiKhoan = 'Vui lòng nhập tên tài khoản';
   if (!formData.value.matKhau) errors.matKhau = 'Vui lòng nhập mật khẩu';
@@ -74,8 +103,13 @@ const handleSubmit = async () => {
     const pad = n => n.toString().padStart(2, '0');
     const getNowString = () =>
       `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    if (!formData.value.ngayTao) formData.value.ngayTao = getNowString();
-    if (!formData.value.ngaySua) formData.value.ngaySua = getNowString();
+    
+    // Luôn cập nhật ngày sửa theo thời gian hiện tại khi bấm lưu
+    const currentTime = getNowString();
+    
+    if (!formData.value.ngayTao) formData.value.ngayTao = currentTime;
+    // Luôn cập nhật ngày sửa theo thời gian hiện tại
+    formData.value.ngaySua = currentTime;
 
     const form = new FormData();
     form.append('maNhanVien', formData.value.maNhanVien);
@@ -88,7 +122,7 @@ const handleSubmit = async () => {
     form.append('gioiTinh', formData.value.gioiTinh);
     form.append('trangThai', formData.value.trangThai);
     form.append('ngayTao', formData.value.ngayTao);
-    form.append('ngaySua', formData.value.ngaySua);
+    form.append('ngaySua', currentTime); // Sử dụng thời gian hiện tại
     form.append('idVaiTro', formData.value.idVaiTro.id);
     if (formData.value.anhFile) {
       form.append('anh', formData.value.anhFile);
@@ -110,7 +144,7 @@ const handleSubmit = async () => {
         gioiTinh: formData.value.gioiTinh,
         trangThai: formData.value.trangThai,
         ngayTao: formData.value.ngayTao,
-        ngaySua: formData.value.ngaySua,
+        ngaySua: currentTime, // Sử dụng thời gian hiện tại thay vì formData.value.ngaySua
         idVaiTro: Number(formData.value.idVaiTro.id),
         anh: formData.value.anh || "https://example.com/image.jpg"
       }, {
@@ -159,6 +193,30 @@ const triggerFileInput = () => {
   document.getElementById('avatarInput').click();
 };
 
+const generateMaNhanVien = () => {
+  if (!allNhanVien.value || allNhanVien.value.length === 0) {
+    formData.value.maNhanVien = 'NV001';
+    if (fieldErrors.value.maNhanVien) fieldErrors.value.maNhanVien = '';
+    return;
+  }
+
+  const existingIds = allNhanVien.value.map(nv => nv.maNhanVien);
+  let maxId = 0;
+  existingIds.forEach(id => {
+    if (id && id.toUpperCase().startsWith('NV')) {
+      const numPart = parseInt(id.substring(2), 10);
+      if (!isNaN(numPart) && numPart > maxId) {
+        maxId = numPart;
+      }
+    }
+  });
+
+  const newIdNumber = maxId + 1;
+  const newId = `NV${String(newIdNumber).padStart(3, '0')}`;
+  formData.value.maNhanVien = newId;
+  if (fieldErrors.value.maNhanVien) fieldErrors.value.maNhanVien = '';
+};
+
 onMounted(async () => {
   const now = new Date();
   const pad = n => n.toString().padStart(2, '0');
@@ -167,13 +225,22 @@ onMounted(async () => {
   formData.value.ngayTao = getNowString();
   formData.value.ngaySua = getNowString();
 
+  await getVaiTro(); // Đảm bảo đã có vaiTroList
+  await getAllNhanVien();
+
   if (route.params.id) {
     try {
       const res = await axios.get(`http://localhost:8080/api/${route.params.id}`);
       Object.assign(formData.value, res.data);
 
       if (res.data.idVaiTro) {
-        formData.value.idVaiTro = { id: res.data.idVaiTro.id };
+        formData.value.idVaiTro = { id: String(res.data.idVaiTro.id) };
+      } else if (res.data.tenRole) {
+
+        const found = vaiTroList.value.find(vt => vt.tenRole === res.data.tenRole);
+        if (found) {
+          formData.value.idVaiTro = { id: String(found.id) };
+        }
       }
     } catch (e) {
     }
@@ -213,7 +280,10 @@ getVaiTro()
             <div class="form-grid">
               <div class="form-group">
                 <label>Mã nhân viên</label>
-                <input type="text" v-model="formData.maNhanVien">
+                <div class="input-with-button">
+                  <input type="text" v-model="formData.maNhanVien" :readonly="!!route.params.id" placeholder="Nhập hoặc tạo mã...">
+                  <button v-if="!route.params.id" type="button" @click="generateMaNhanVien" class="btn-gen-id">Tạo mã</button>
+                </div>
                 <span v-if="fieldErrors.maNhanVien" class="error-msg">{{ fieldErrors.maNhanVien }}</span>
               </div>
 
@@ -249,7 +319,10 @@ getVaiTro()
 
               <div class="form-group">
                 <label>Địa chỉ</label>
-                <input type="text" v-model="formData.diaChi">
+                <select v-model="formData.diaChi">
+                  <option value="">Chọn tỉnh/thành phố</option>
+                  <option v-for="province in provinces" :key="province" :value="province">{{ province }}</option>
+                </select>
                 <span v-if="fieldErrors.diaChi" class="error-msg">{{ fieldErrors.diaChi }}</span>
               </div>
 
@@ -497,5 +570,39 @@ getVaiTro()
   color: #e74c3c;
   font-size: 13px;
   margin-top: 2px;
+}
+
+.input-with-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-with-button input {
+  flex: 1;
+}
+
+.btn-gen-id {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd;
+  background: #fff;
+  color: #222;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+
+.btn-gen-id:hover {
+  background: #f5faff;
+  border-color: #339cf1;
+  color: #339cf1;
+}
+
+input:read-only {
+  background-color: #f1f3f5;
+  cursor: not-allowed;
+  opacity: 0.8;
 }
 </style>
