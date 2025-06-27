@@ -1,8 +1,11 @@
-import HoaDon from '@/components/admin/HoaDon.vue'
-import NhanVien from '@/components/admin/NhanVien.vue'
-import ThemNhanVien from '@/components/admin/ThemNhanVien.vue'
-import { createRouter, createWebHistory } from 'vue-router'
-import ChatLieu from '@/components/admin/ChatLieu.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import HoaDon from '@/components/admin/HoaDon.vue';
+import QuanLyKhachHang from "../views/CustomerManagement.vue";
+import KhachHangAddPage from "@/components/admin/KhachHangAddPage.vue";
+import KhachHangEditPage from "@/components/admin/KhachHangEditPage.vue";
+import NhanVien from '@/components/admin/NhanVien.vue';
+import ThemNhanVien from '@/components/admin/ThemNhanVien.vue';
+import ChatLieu from '@/components/admin/ChatLieu.vue';
 import TayAo from '@/components/admin/TayAo.vue';
 import CoAo from '@/components/admin/CoAo.vue';
 import Mau from '@/components/admin/Mau.vue';
@@ -11,8 +14,9 @@ import KieuAo from '@/components/admin/KieuAo.vue';
 import SanPham from "@/components/admin/SanPham.vue";
 import ThemSanPham from "@/components/admin/ThemSanPham.vue";
 import ChiTietSanPham from '@/components/admin/ChiTietSanPham.vue';
-import UpdateSanPham from '@/components/admin/UpdateSanPham.vue';
 import DanhMuc from '@/components/admin/DanhMuc.vue';
+import Test1 from '@/components/admin/Test1.vue';
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -22,7 +26,6 @@ const router = createRouter({
       component: HoaDon,
     },
     {
-
       path: "/san-pham/chat-lieu",
       name: "chat-lieu",
       component: ChatLieu,
@@ -71,10 +74,32 @@ const router = createRouter({
       path: "/san-pham/danh-muc",
       name: "danh-muc",
       component: DanhMuc
-
+    },
+    {
+      path: "/test",
+      name: "test",
+      component: Test1
+    },
+    {
+      path: "/khach-hang",
+      name: "khachhang",
+      component: QuanLyKhachHang,
+    },
+    {
+      path: "/khach-hang/add",
+      name: "AddKhachHang",
+      component: KhachHangAddPage,
+    },
+    {
+      path: "/khach-hang/edit/:id", // Đường dẫn với tham số ID để sửa
+      name: "EditKhachHang",
+      component: KhachHangEditPage,
+      props: true, // Quan trọng: Truyền params làm props cho component
+    },
+    {
       path: '/nhan-vien',
       name: 'nhanvien',
-      component:NhanVien,
+      component: NhanVien,
     },
     {
       path: '/nhan-vien/them',
@@ -89,4 +114,4 @@ const router = createRouter({
   ],
 });
 
-export default router
+export default router;

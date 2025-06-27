@@ -4,6 +4,9 @@ import axios from 'axios';
 
 import { Eye,Plus,Trash,Delete, Edit } from 'lucide-vue-next';
 
+import vSelect from 'vue-select'
+import 'vue-select/dist/vue-select.css';
+
 
 const res = ref();
 let page = ref();
@@ -79,36 +82,62 @@ function reset(){
   }
 }
 
+// const countries = ref(['Canada', 'United States'])
+// const selected = ref(null)
+// function themQuocGia() {
+//   const tenMoi = prompt('Nhập quốc gia mới:')
+//   if (tenMoi && !countries.value.some(c => c.name === tenMoi)) {
+//     const quocGiaMoi = { name: tenMoi }
+//     countries.value.push(quocGiaMoi)
+//     selected.value = quocGiaMoi // ✅ Set selected ngay sau khi thêm
+//   }
+// }
 </script>
 
 <template>
   <div class="container my-4">
-    
-    <div class="bg-white p-3 rounded shadow mb-4">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-semibold">Bộ lọc</h5>
+    <!-- <v-select
+    v-model="selected"
+    :options="countries"
+    :reduce="item => item"
+    label="name"
+    placeholder="Chọn quốc gia"
+  >
+    <template #no-options>
+      <div class="d-flex justify-content-between align-items-center">
+        <button class="btn" @click="themQuocGia">+ Thêm</button>
       </div>
-      <label class="ps-4 pt-3">Tìm kiếm</label>
-      <div class="container rounded d-flex align-items-center gap-2 m-2 me-5">
-        
-        <input type="text" class="form-control" placeholder="Tìm Kiếm Theo Giá" style="width: 40%">
-        <button class="btn text-white" style="background-color: #0a2c57;color: white;">Tìm Kiếm</button>
-        <button class="btn btn-light">Làm Mới</button>
-
-          <!-- <div class="btn-group ms-5" role="group">
-            <button type="button" class="btn btn-outline-primary active">Thương hiệu</button>
-            <button type="button" class="btn btn-outline-secondary">trạng thái</button>
-          </div> -->
-        
+    </template>
+  </v-select> -->
+         
+    <div class="bg-white p-3 rounded shadow mb-4">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="fw-semibold">Quản lý chất liệu:</h5>
+            <button class="btn" data-bs-toggle="modal" data-bs-target="#exampleModal" style="background-color: #0a2c57;">
+          <Plus size="18" style="color: white;" />
+        </button>
+          </div>
+            
         </div>
+        <div class="bg-white p-3 rounded shadow mb-4">
+          
+          <div class="row g-3 align-items-end">
+    <!-- Tìm kiếm -->
+    <div class="col-12">
+      <label class="form-label fw-bold">Bộ lọc</label>
+      <input type="text" class="form-control" placeholder="Tìm theo mã, tên">
     </div>
+
+    <!-- Trạng thái -->
+
+
+
+  </div>
+        </div>
      
       <div class="bg-white p-3 rounded shadow mb-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-semibold m-0">Quản lý chất liệu</h5>
-        <button class="btn" data-bs-toggle="modal" data-bs-target="#exampleModal" style="background-color: #0a2c57;">
-          <Plus size="18" style="color: white;" />
-        </button>
+        <h5 class="fw-semibold m-0">Danh sách chất liệu</h5>
       </div>
       <table class="table table-hover text-center align-middle">
         <thead class="table-light">

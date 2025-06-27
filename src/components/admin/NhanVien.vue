@@ -473,9 +473,9 @@ onMounted(() => {
                       <div class="detail-fields">
                         <div v-for="(col, i) in allColumns.filter(c => c.key !== 'anh')" :key="col.key" class="detail-field">
                           <template v-if="col.key === 'matKhau'">
-                            <b>{{ col.label }}:</b>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                              <span>{{ showPassword[nhanVien.id] ? nhanVien.matKhau : maskPassword(nhanVien.matKhau) }}</span>
+                            <div class="password-flex-row">
+                              <b class="detail-label" style="margin-right: 6px;">{{ col.label }}:</b>
+                              <span class="password-value">{{ showPassword[nhanVien.id] ? nhanVien.matKhau : maskPassword(nhanVien.matKhau) }}</span>
                               <button
                                 @click.stop="togglePasswordVisibility(nhanVien.id)"
                                 class="password-toggle-btn"
@@ -487,19 +487,19 @@ onMounted(() => {
                             </div>
                           </template>
                           <template v-else-if="col.key === 'gioiTinh'">
-                            <b>{{ col.label }}:</b> {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}
+                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}
                           </template>
                           <template v-else-if="col.key === 'trangThai'">
-                            <b>{{ col.label }}:</b>
+                            <b class="detail-label">{{ col.label }}:</b>
                             <span :class="['status-badge', nhanVien.trangThai == 1 ? 'active' : 'inactive']">
                               {{ nhanVien.trangThai == 1 ? 'Đang làm việc' : 'Đã nghỉ' }}
                             </span>
                           </template>
                           <template v-else-if="col.key === 'ngayTao' || col.key === 'ngaySua'">
-                            <b>{{ col.label }}:</b> {{ formatDate(nhanVien[col.key]) }}
+                            <b class="detail-label">{{ col.label }}:</b> {{ formatDate(nhanVien[col.key]) }}
                           </template>
                           <template v-else>
-                            <b>{{ col.label }}:</b> {{ nhanVien[col.key] }}
+                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien[col.key] }}
                           </template>
                         </div>
                       </div>
@@ -820,10 +820,12 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px 32px;
+  text-align: left;
 }
 .detail-field {
   min-width: 180px;
   margin-bottom: 8px;
+  text-align: left;
 }
 .detail-actions-abs {
   position: absolute;
@@ -1235,6 +1237,25 @@ onMounted(() => {
   margin-top: 24px;
   padding-top: 12px;
   border-top: 1px solid #eee;
+}
+.password-flex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  text-align: left;
+}
+.password-value {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+}
+.detail-label {
+  display: inline-block;
+  min-width: 120px;
+  font-weight: bold;
+  text-align: left;
 }
 </style>
 
