@@ -1,5 +1,8 @@
 
 import HoaDon from '@/components/admin/HoaDon.vue'
+import HoaDonChiTiet from '@/components/admin/HoaDonChiTiet.vue'
+
+
 import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
@@ -10,6 +13,13 @@ const router = createRouter({
       name: 'hoadon',
       component: HoaDon,
     },
+    {
+      path: '/hoa-don-chi-tiet/:maHoaDon',
+      name: 'hoadonchitiet',
+      component: HoaDonChiTiet,
+      props: true,
+    },
+    
   ],
 })
 

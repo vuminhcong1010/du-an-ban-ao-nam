@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { Bell, Mail, User } from 'lucide-vue-next'
-import logo from '@/assets/logo.png';
-
-
+import { Bell, Mail, User } from "lucide-vue-next";
+import logo from "@/assets/logo.png";
 </script>
 
 <template>
-  <header class="bg-white d-flex justify-content-between align-items-center p-3 border-bottom">
-    <div class="fw-bold fs-3" style="color: red">
-      <span> <img :src="logo" alt="logo" style="width: 10%; margin-left: 15px;"> </span>
+  <header
+    class="bg-white d-flex justify-content-between align-items-center p-3 border-bottom" style="height: 85px;"
+  >
+    <div class="fw-bold fs-3 d-flex align-items-center"
+      style="color: red; height: 100%">
+      
+        <img :src="logo" alt="logo" style="width: 90px; margin-left: 28px" />
+      
     </div>
     <div class="d-flex align-items-center gap-3">
       <i class="bi bi-envelope-fill fs-5"> <Mail></Mail> </i>
