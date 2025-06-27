@@ -1,5 +1,6 @@
-
 import HoaDon from '@/components/admin/HoaDon.vue'
+import NhanVien from '@/components/admin/NhanVien.vue'
+import ThemNhanVien from '@/components/admin/ThemNhanVien.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import ChatLieu from '@/components/admin/ChatLieu.vue'
 import TayAo from '@/components/admin/TayAo.vue';
@@ -21,6 +22,7 @@ const router = createRouter({
       component: HoaDon,
     },
     {
+
       path: "/san-pham/chat-lieu",
       name: "chat-lieu",
       component: ChatLieu,
@@ -69,6 +71,20 @@ const router = createRouter({
       path: "/san-pham/danh-muc",
       name: "danh-muc",
       component: DanhMuc
+
+      path: '/nhan-vien',
+      name: 'nhanvien',
+      component:NhanVien,
+    },
+    {
+      path: '/nhan-vien/them',
+      name: 'themnhanvien',
+      component: ThemNhanVien,
+    },
+    {
+      path: '/nhan-vien/sua/:id',
+      name: 'SuaNhanVien',
+      component: () => import('@/components/admin/ThemNhanVien.vue')
     }
   ],
 });

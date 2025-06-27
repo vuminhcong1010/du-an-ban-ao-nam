@@ -6,7 +6,7 @@ import logo from '@/assets/logo.png';
 </script>
 
 <template>
-  <header class="bg-white d-flex justify-content-between align-items-center p-3 border-bottom">
+  <header class="bg-white d-flex justify-content-between align-items-center px-2 border-bottom">
     <div class="fw-bold fs-3" style="color: red">
       <span> <img :src="logo" alt="logo" style="width: 10%; margin-left: 15px;"> </span>
     </div>
