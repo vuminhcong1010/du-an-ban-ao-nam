@@ -10,8 +10,8 @@ import KieuAo from '@/components/admin/KieuAo.vue';
 import SanPham from "@/components/admin/SanPham.vue";
 import ThemSanPham from "@/components/admin/ThemSanPham.vue";
 import ChiTietSanPham from '@/components/admin/ChiTietSanPham.vue';
-import UpdateSanPham from '@/components/admin/UpdateSanPham.vue';
 import DanhMuc from '@/components/admin/DanhMuc.vue';
+import Test1 from '@/components/admin/Test1.vue';
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -69,6 +69,11 @@ const router = createRouter({
       path: "/san-pham/danh-muc",
       name: "danh-muc",
       component: DanhMuc
+    },
+    {
+      path: "/test",
+      name: "test",
+      component: Test1
     }
   ],
 });
