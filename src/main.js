@@ -1,35 +1,26 @@
-
-
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 
 const app = createApp(App)
 
-import BootstrapVue3 from 'bootstrap-vue-3';
-import 'bootstrap/dist/css/bootstrap.css';
-import 'bootstrap-vue-3/dist/bootstrap-vue-3.css';
+// Import BootstrapVue3 and other necessary dependencies
+import BootstrapVue3 from 'bootstrap-vue-3'
+import 'bootstrap/dist/css/bootstrap.css'
+import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import Toast from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 
-
-import Toast from 'vue-toastification'
-import 'vue-toastification/dist/index.css'
+// Configure Toast options
 const options = {
-  timeout: 1800,
+  timeout: 1800,  // Timeout duration for toast messages (in milliseconds)
 }
-app.use(Toast, options);
 
-app.use(BootstrapVue3);
+// Use the necessary plugins
+app.use(Toast, options)
+app.use(BootstrapVue3)
 app.use(router)
 
-
+// Mount the app
 app.mount('#app')
-const options = {
-  // Thời gian hiển thị (ms) — ví dụ 1500ms = 1.5 giây
-  timeout: 1800,
-}
-app.use(Toast, options)
-app.mount('#app')
-
