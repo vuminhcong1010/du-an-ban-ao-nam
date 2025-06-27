@@ -27,7 +27,6 @@ import { Bell, Mail, User } from 'lucide-vue-next'
     </div>
   </header>
 </template>
-
 <style scoped>
 .hamburger-btn {
   background: none;
