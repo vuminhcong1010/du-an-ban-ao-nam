@@ -1,4 +1,4 @@
-// import './assets/main.css'
+
 
 import { createApp } from 'vue'
 import App from './App.vue'
@@ -14,9 +14,16 @@ import Toast from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 
 
-app.use(BootstrapVue3);
+import Toast from 'vue-toastification'
+import 'vue-toastification/dist/index.css'
+const options = {
+  timeout: 1800,
+}
+app.use(Toast, options);
 
+app.use(BootstrapVue3);
 app.use(router)
+
 
 app.mount('#app')
 const options = {
@@ -24,3 +31,5 @@ const options = {
   timeout: 1800,
 }
 app.use(Toast, options)
+app.mount('#app')
+
