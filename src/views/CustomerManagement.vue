@@ -35,7 +35,6 @@
 
 <script>
 import KhachHangTable from '../components/admin/KhachHangTable.vue';
-import AddKhachHang from '../components/admin/AddKhachHang.vue';
 import SearchAndFilterKhachHang from '@/components/admin/SearchAndFilterKhachHang.vue';
 import { useRouter } from 'vue-router'; 
 

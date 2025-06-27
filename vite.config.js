@@ -1,19 +1,8 @@
-import {fileURLToPath, URL} from "node:url";
-
-import {defineConfig} from "vite";
+import { fileURLToPath, URL } from "node:url";
+import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import vueDevTools from "vite-plugin-vue-devtools";
-
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [vue(), vueDevTools()],
-  resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import vueDevTools from 'vite-plugin-vue-devtools';
-import path from 'path';
+import path from "path";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -23,15 +12,17 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'), // Dùng path.resolve cho alias src
+      '@': path.resolve(__dirname, 'src'), // Alias để import từ src dễ dàng
+      // hoặc dùng cách dưới cũng được (tùy bạn thích):
+      // '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8080', // Địa chỉ backend của bạn
-        changeOrigin: true,              // Thay đổi origin của yêu cầu để tránh lỗi CORS
-        // rewrite: (path) => path.replace(/^\/api/, ''), // Loại bỏ '/api' khi gửi yêu cầu tới backend
+        target: 'http://localhost:8080', // Địa chỉ backend Spring Boot
+        changeOrigin: true,              // Tránh lỗi CORS
+        // rewrite: (path) => path.replace(/^\/api/, ''), // Có thể bật nếu cần bỏ "/api"
       },
     },
   },
