@@ -1,17 +1,6 @@
 <template>
-
-  <!-- Toast -->
-  <div class="toast-container">
-    <div v-for="toast in toastList" :key="toast.id" class="toast-notification" :class="toast.type">
-      <span v-if="toast.type === 'success'">✅</span>
-      <span v-else-if="toast.type === 'error'">❌</span>
-      <span>{{ toast.message }}</span>
-    </div>
-  </div>
-
-  <!-- Bảng khách hàng -->
-  <table class="table table-bordered table-striped table-hover text-center mt-3">
-    <thead class="thead-dark">
+  <table class="table table-hover">
+    <thead class="table-light">
       <tr>
         <th>STT</th>
         <th>Mã KH</th>
@@ -46,15 +35,17 @@
           </span>
         </td>
         <td>
-          <button class="btn btn-view-update mr-2" @click="openEditModal(kh)">
-            <img src="@/assets/view_edit.png" alt="View_update Icon" class="icon" /></button>
-          <!-- <button class="btn btn-warning mr-2" @click="openAddressModal(kh)">✏️</button> -->
+          <button class="btn btn-view-update mr-2" @click="navigateToEditCustomer(kh.id)">
+            <Edit style="color: #66FF99;" />
+          </button>
+          <button class="btn btn-view-update mr-2" @click="confirmDeleteCustomer(kh.id)">
+            <Trash style="color: #CC0000;" />
+          </button>
         </td>
       </tr>
     </tbody>
   </table>
 
-  <!-- Phân trang -->
   <div class="mt-4 d-flex align-items-center justify-content-center gap-2">
     <button class="btn btn-secondary" @click="prevPage" :disabled="page === 0">Trước</button>
     <input v-model.number="inputPage" @keyup.enter="goToPage" type="number" min="1" :max="totalPages"
@@ -63,156 +54,81 @@
     <button class="btn btn-secondary" @click="nextPage" :disabled="page >= totalPages - 1">Tiếp</button>
   </div>
 
-  <!-- Modal sửa khách hàng -->
-  <div v-if="showModal" class="modal-backdrop">
-    <div class="modal-box">
-      <h2 class="text-xl font-bold mb-4">Sửa thông tin khách hàng</h2>
-      <form @submit.prevent="handleSubmit">
-        <input v-model="form.id" type="hidden" />
-        <div class="grid grid-cols-2 gap-6"> <!-- Hai cột cho phần nhập thông tin khách hàng và địa chỉ -->
-          <!-- Cột thông tin khách hàng -->
-          <div>
-            <div><label>Họ tên:</label><input v-model="form.tenKhachHang" type="text" required /></div>
-            <div><label>Email:</label><input v-model="form.email" type="email" /></div>
-            <div><label>Số điện thoại:</label><input v-model="form.soDienThoai" type="text" /></div>
-            <div><label>Ngày sinh:</label><input v-model="form.ngaySinh" type="date" /></div>
-            <div class="col-span-2">
-              <label>Giới tính:</label>
-              <label><input type="radio" value="true" v-model="form.gioiTinh" /> Nam</label>
-              <label><input type="radio" value="false" v-model="form.gioiTinh" /> Nữ</label>
-            </div>
-            <div class="col-span-2">
-              <label>Trạng thái:</label>
-              <select v-model="form.trangThai">
-                <option :value="1">Đang hoạt động</option>
-                <option :value="0">Ngừng hoạt động</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Cột địa chỉ -->
-          <div class="space-y-4">
-            <h2 class="text-xl font-bold mb-4">Địa chỉ của khách hàng</h2>
-            <button @click.prevent="addAddress"
-              style="background-color: #0a2c57; color: white; border: none; padding: 10px 20px; border-radius: 5px;">+</button>
-
-            <ul v-if="addresses.length > 0">
-              <li v-for="address in addresses" :key="address.id">
-                {{ address.diaChi }} <!-- Cập nhật tên trường địa chỉ phù hợp -->
-              </li>
-            </ul>
-            <p v-else>Không có địa chỉ nào.</p>
-
-            <!-- Hiển thị phần thêm địa chỉ ngay bên dưới -->
-            <div v-if="showAddressSection" class="address-section space-y-4">
-              <h3>Thêm địa chỉ mới</h3>
-
-              <!-- Tỉnh/Thành phố -->
-              <label>Tỉnh/Thành phố:</label>
-              <select v-model="newAddress.tinhId" @change="loadQuanHuyen">
-                <option v-for="tinh in tinhThanhList" :value="tinh.id" :key="tinh.id">{{ tinh.tenTinhThanh }}</option>
-              </select>
-
-              <!-- Quận/Huyện -->
-              <label>Quận/Huyện:</label>
-              <select v-model="newAddress.quanId" @change="loadXaPhuong">
-                <option v-for="quan in quanHuyenList" :value="quan.id" :key="quan.id">{{ quan.tenQuanHuyen }}</option>
-              </select>
-
-              <!-- Xã/Phường -->
-              <label>Xã/Phường:</label>
-              <select v-model="newAddress.xaId">
-                <option v-for="xa in xaPhuongList" :value="xa.id" :key="xa.id">{{ xa.tenXaPhuong }}</option>
-              </select>
-
-              <!-- Địa chỉ chi tiết -->
-              <label>Địa chỉ chi tiết:</label>
-              <input v-model="newAddress.chiTiet" type="text" placeholder="Số nhà, tên đường..." />
-
-              <div class="popup-actions">
-                <button @click="saveNewAddress">Lưu</button>
-                <button @click="cancelAddress">Hủy</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="mt-4 flex justify-end gap-2">
-          <button type="button" class="btn btn-secondary" @click="closeModal">Huỷ</button>
-          <button type="submit" class="btn btn-success">Lưu</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</template>
+  </template>
 
 <script>
 import axios from "axios";
-import FilterKhachHang from "../admin/FilterKhachHang.vue";
+// import AddressModal from "../admin/AddressModal.vue"; // Có thể bỏ nếu AddressModal không được dùng trực tiếp ở đây nữa
+import { Edit, Trash } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
+import { useToast } from "vue-toastification"; // Import useToast
 
 export default {
   name: "KhachHangTable",
-  components: { FilterKhachHang },
+  components: { Edit, Trash /*, AddressModal */ }, // Bỏ AddressModal nếu không dùng
   props: {
     searchQuery: {
       type: String,
       default: ''
     },
+    filterData: {
+      type: Object,
+      default: () => ({})
+    },
     reload: {
       type: Boolean,
       default: false
     },
-    filterData: {
-      type: Object,
-      default: () => ({})
-    }
+  },
+  setup() {
+    const router = useRouter();
+    const toast = useToast(); // Khởi tạo toast
+
+    const navigateToEditCustomer = (customerId) => {
+      router.push({ name: 'EditKhachHang', params: { id: customerId } });
+    };
+
+    // Hàm showToastMessage mới dùng useToast (như trong AddKhachHang)
+    const showToastMessage = (message, type = "success") => {
+      if (type === "success") {
+        toast.success(message);
+      } else if (type === "error") {
+        toast.error(message);
+      } else if (type === "info") {
+        toast.info(message);
+      } else if (type === "warning") {
+        toast.warning(message);
+      }
+    };
+
+    return { navigateToEditCustomer, showToastMessage }; // Trả về showToastMessage
   },
   mounted() {
     this.fetchKhachHang();
-    this.loadTinhThanh();
-    this.loadQuanHuyen();
-    this.loadXaPhuong();
-    // this.khachHangs = this.khachHangs.reverse(); // Đảo ngược list
   },
   data() {
     return {
       khachHangs: [],
-      addresses: [], // Dữ liệu địa chỉ
       page: 0,
       size: 10,
       totalPages: 1,
       inputPage: 1,
-      showModal: false,
-      toastList: [],
-      form: {
-        id: '',
-        maKhachHang: '',
-        tenKhachHang: '',
-        email: '',
-        soDienThoai: '',
-        gioiTinh: 'true',
-        ngaySinh: '',
-        trangThai: 1,
-        diaChi: {
-          idTinhThanhPho: '', // Tỉnh
-          idQuanHuyen: '',   // Quận
-          idXaPhuong: '',    // Xã
-          diaChiChiTiet: '',
-          isMacDinh: false,  // Địa chỉ mặc định
-        } // Đảm bảo trường địa chỉ có trong form,
-      },
-      showAddressSection: false, // Biến để kiểm soát phần thêm địa chỉ
-      tinhThanhList: [],
-      quanHuyenList: [],
-      xaPhuongList: [],
-      selectedTinh: null,
-      selectedQuan: null,
-      selectedXa: null,
-      newAddress: {
-        tinhId: null,
-        quanId: null,
-        xaId: null,
-        chiTiet: ''
-      } // Modal địa chỉ
+      // toastList: [], // THỪA: Đã chuyển sang dùng useToast
+      // form: { ... } // THỪA: Form này chỉ dùng trong modal chỉnh sửa khách hàng cũ, không dùng cho bảng
+      // addresses: [], // THỪA: Dữ liệu địa chỉ giờ được quản lý trong AddressModal hoặc trang EditKhachHang
+      // showAddressModal: false, // THỪA: Logic modal địa chỉ đã chuyển sang AddressModal và trang EditKhachHang
+      // selectedAddressForEdit: null, // THỪA: Logic modal địa chỉ đã chuyển
+      // isAddingAddress: false, // THỪA
+      // isEditingAddress: false, // THỪA
+      // showAddressSection: false, // THỪA
+      // showEditAddressSection: false, // THỪA: Đây là biến nội bộ của modal khách hàng cũ
+      // tinhThanhList: [], // THỪA: Dùng trong modal địa chỉ, không dùng ở bảng
+      // quanHuyenList: [], // THỪA
+      // xaPhuongList: [], // THỪA
+      // selectedTinh: null, // THỪA
+      // selectedQuan: null, // THỪA
+      // selectedXa: null, // THỪA
+      // newAddress: { ... }, // THỪA
     };
   },
   watch: {
@@ -239,38 +155,22 @@ export default {
   },
   methods: {
     fetchKhachHang() {
-      // Tạo đối tượng params chung để gửi cho cả hai API
       const params = {
         page: this.page,
         size: this.size,
-        ...this.filterData  // Thêm các bộ lọc vào params
+        keyword: this.searchQuery,
+        ...this.filterData
       };
 
-      // Gọi cả API tìm kiếm và lọc song song
-      const searchPromise = this.searchQuery
-        ? axios.get('/api/khach-hang/search', { params: { ...params, keyword: this.searchQuery } }) // Gọi API tìm kiếm nếu có keyword
-        : Promise.resolve(null); // Nếu không có từ khóa tìm kiếm, trả về null
-
-      const filterPromise = axios.get('/api/khach-hang/filter', { params }); // Luôn gọi API lọc
-
-      // Đợi cả hai API hoàn thành đồng thời
-      Promise.all([searchPromise, filterPromise])
-        .then(([searchResponse, filterResponse]) => {
-          if (searchResponse) {
-            // Nếu có kết quả tìm kiếm
-            this.khachHangs = searchResponse.data.content;
-            this.totalPages = searchResponse.data.totalPages;
-          } else if (filterResponse) {
-            // Nếu chỉ có kết quả lọc
-            this.khachHangs = filterResponse.data.content;
-            this.totalPages = filterResponse.data.totalPages;
-          }
-          // this.khachHangs = this.khachHangs.reverse(); 
-          //  // Đây là nơi bạn đảo ngược hoặc loại bỏ sự đảo ngược nếu không muốn
-          // Tôi đã xử lý đảo ngược trong BE
+      axios.get('/api/khach-hang/search-and-filter', { params })
+        .then(response => {
+          console.log(response.data);
+          this.khachHangs = response.data.content;
+          this.totalPages = response.data.totalPages;
         })
-        .catch((err) => {
-          console.error('Lỗi khi gọi API:', err);
+        .catch(error => {
+          console.error('Lỗi khi lấy khách hàng:', error);
+          this.showToastMessage("Lỗi khi tải danh sách khách hàng.", "error"); // Sử dụng showToastMessage
         });
     },
     prevPage() {
@@ -293,224 +193,66 @@ export default {
         this.fetchKhachHang();
       }
     },
-    openEditModal(kh) {
-      this.form = { ...kh };
-      // Lấy và gán địa chỉ vào form.diaChi
-      axios.get(`/api/khach-hang/${kh.id}/dia-chi`)
-        .then(response => {
-          // Gán địa chỉ vào form.diaChi (sử dụng dữ liệu từ API)
-          if (response.data && response.data.length > 0) {
-            this.form.diaChi = response.data[0].diaChi; // Gán địa chỉ đầu tiên vào form
-            this.addresses = response.data;  // Cập nhật danh sách địa chỉ
-          } else {
-            this.form.diaChi = '';  // Nếu không có địa chỉ nào, đặt về giá trị rỗng
-          }
-        })
-        .catch(error => {
-          console.error('Lỗi khi lấy địa chỉ:', error);
-          this.form.diaChi = '';  // Nếu lỗi, đặt địa chỉ thành rỗng
-        });
+    // Các hàm liên quan đến modal chỉnh sửa khách hàng cũ và địa chỉ đã bị loại bỏ:
+    // openEditModal, closeModal, handleSubmit, setDefaultAddress, addAddressToPopup,
+    // editAddressInPopup, deleteAddress, fetchAddresses, handleAddressSaved,
+    // openAddressModal, closeAddressModal, loadTinhThanh, loadQuanHuyen, loadXaPhuong
 
-      this.showModal = true;
-    },
-    closeModal() {
-      this.showModal = false;
-      this.form = {
-        ...kh,
-        maKhachHang: '',
-        tenKhachHang: '',
-        email: '',
-        soDienThoai: '',
-        gioiTinh: 'true',
-        ngaySinh: '',
-        trangThai: 1,
-        diaChi: {
-          idTinhThanhPho: '', // Tỉnh
-          idQuanHuyen: '',   // Quận
-          idXaPhuong: '',    // Xã
-          diaChiChiTiet: '',
-          isMacDinh: false,  // Địa chỉ mặc định
-        } // Đảm bảo trường địa chỉ được reset
-      };
-    },
-
-    handleSubmit() {
-      if (!this.form.id) {
-        this.showToastMessage("ID khách hàng không hợp lệ!", "error");
-        return;
-      }
-
-      // Gửi yêu cầu PUT để cập nhật thông tin khách hàng
-      axios.put(`/api/khach-hang/${this.form.id}`, this.form)
-        .then(() => {
-          this.showToastMessage("Cập nhật thành công!", "success");
-          this.fetchKhachHang(); // Tải lại danh sách khách hàng
-
-          // Không đóng modal chính, chỉ đóng phần thêm địa chỉ
-          this.showAddressSection = false;  // Đóng phần thêm địa chỉ
-
-          // Sau khi cập nhật thành công, lấy lại địa chỉ của khách hàng
-          axios.get(`/api/khach-hang/${this.form.id}/dia-chi`)
-            .then(response => {
-              this.addresses = response.data; // Cập nhật địa chỉ của khách hàng
-              this.showModal = true; // Đóng modal sau khi cập nhật thành công
-            })
-            .catch(error => {
-              console.error('Lỗi khi lấy địa chỉ:', error);
-              this.showToastMessage("Không thể lấy địa chỉ của khách hàng.", "error");
-            });
-        })
-        .catch(err => {
-          this.showToastMessage("Cập nhật thất bại: " + err.message, "error");
-        });
-    },
-    // Hiển thị phần thêm địa chỉ ngay bên dưới nút "+"
-    addAddress() {
-      this.showAddressSection = true; // Mở phần thêm địa chỉ
-    },
-
-    // Lưu địa chỉ mới
-    saveNewAddress() {
-      if (!this.form.id) {
-        this.showToastMessage("ID khách hàng không hợp lệ!", "error");
-        return;
-      }
-
-      // Kiểm tra nếu không có đầy đủ thông tin địa chỉ
-      if (!this.newAddress.tinhId || !this.newAddress.quanId || !this.newAddress.xaId || !this.newAddress.chiTiet) {
-        this.showToastMessage("Vui lòng điền đầy đủ thông tin địa chỉ", "error");
-        return;
-      }
-
-      console.log('Dữ liệu gửi đi:', this.newAddress);
-
-      const requestData = {
-        idTinhThanhPho: this.newAddress.tinhId,
-        idQuanHuyen: this.newAddress.quanId,
-        idXaPhuong: this.newAddress.xaId,
-        diaChiChiTiet: this.newAddress.chiTiet,
-        isMacDinh: false  // Hoặc tùy chọn nếu có
-      };
-
-      // Gửi yêu cầu POST với headers đúng
-      axios.post(`http://localhost:8080/api/khach-hang/${this.form.id}/dia-chi`, requestData, {
-        headers: {
-          'Content-Type': 'application/json' // Đảm bảo gửi đúng Content-Type
+    confirmDeleteCustomer(customerId) {
+        if (confirm("Bạn có chắc chắn muốn xóa khách hàng này không?")) {
+            // Logic xóa khách hàng sẽ được thực hiện ở đây.
+            // Hiện tại chỉ là thông báo "Chức năng xóa khách hàng chưa được triển khai!"
+            this.showToastMessage("Chức năng xóa khách hàng chưa được triển khai!", "info");
+            // Sau khi xóa thành công, gọi lại fetchKhachHang()
+            // this.fetchKhachHang();
         }
-      })
-        .then(response => {
-          console.log('Địa chỉ đã được thêm:', response.data);
-          // this.showToastMessage("Địa chỉ đã được thêm!", "success");
-          this.addresses.push(this.newAddress); // Cập nhật địa chỉ mới vào danh sách
-          this.showAddressSection = false;  // Đóng phần thêm địa chỉ
-        })
-        .catch(err => {
-          console.error('Lỗi khi thêm địa chỉ:', err.response || err);
-          this.showToastMessage("Lỗi khi thêm địa chỉ: " + (err.response?.data?.message || err.message), "error");
-        });
-    },
-
-    // Hủy thêm địa chỉ
-    cancelAddress() {
-      this.showAddressSection = false; // Đóng phần thêm địa chỉ
-    },
-    showToastMessage(message, type = "success") {
-      const id = Date.now();
-      this.toastList.push({ id, message, type });
-      setTimeout(() => {
-        this.toastList = this.toastList.filter(t => t.id !== id);
-      }, 3000);
     },
     formatCurrency(val) {
       return new Intl.NumberFormat("vi-VN").format(val);
     },
-    // Hàm để mở modal và lấy địa chỉ
-    openAddressModal(kh) {
-      axios.get(`/api/khach-hang/${kh.id}/dia-chi`)
-        .then(response => {
-          this.addresses = response.data; // Cập nhật địa chỉ của khách hàng
-          this.showAddressModal = true;
-          this.showAddressModal = true; // Hiển thị modal
-        })
-        .catch(error => {
-          console.error('Lỗi khi lấy địa chỉ:', error);
-          this.showToastMessage("Không thể lấy địa chỉ của khách hàng.", "error");
-        });
-    },
-    // Hàm đóng modal địa chỉ
-    closeAddressModal() {
-      this.showAddressModal = false;
-      this.addresses = []; // Xóa danh sách địa chỉ khi đóng modal
-    },
-    loadTinhThanh() {
-      axios.get('/api/dia-chi/tinh-thanh')
-        .then(res => {
-          this.tinhThanhList = res.data; // Lưu danh sách tỉnh/thành phố vào biến
-        })
-        .catch(err => {
-          console.error('Lỗi khi lấy Tỉnh/Thành Phố:', err);
-        });
-    },
-
-    loadQuanHuyen() {
-      if (!this.newAddress.tinhId) return;  // Kiểm tra xem tỉnh đã được chọn chưa
-
-      // Gọi API lấy quận/huyện theo tỉnh
-      axios.get('/api/dia-chi/quan-huyen-by-tinh', { params: { idTinhThanh: this.newAddress.tinhId } })
-        .then(res => {
-          this.quanHuyenList = res.data; // Lưu danh sách quận huyện
-          this.newAddress.quanId = null;  // Reset quận/huyện khi tỉnh thay đổi
-          this.xaPhuongList = [];  // Reset danh sách xã/phường khi thay đổi quận/huyện
-        })
-        .catch(err => {
-          console.error('Lỗi khi lấy Quận/Huyện:', err);
-        });
-    },
-
-    loadXaPhuong() {
-      if (!this.newAddress.quanId) return;  // Kiểm tra xem quận đã được chọn chưa
-
-      // Gọi API lấy xã/phường theo quận
-      axios.get('/api/dia-chi/xa-phuong-by-quan', { params: { idQuanHuyen: this.newAddress.quanId } })
-        .then(res => {
-          this.xaPhuongList = res.data; // Lưu danh sách xã/phường
-          this.newAddress.xaId = null;  // Reset xã/phường khi quận thay đổi
-        })
-        .catch(err => {
-          console.error('Lỗi khi lấy Xã/Phường:', err);
-        });
-    }
   }
 };
 </script>
 
 <style scoped>
 /* Các kiểu CSS cho bảng khách hàng và phân trang */
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
+.table {
   width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-collapse: collapse;
+  margin-top: 1rem;
 }
 
-.modal-box {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 10px;
-  width: 500px;
+.table th, .table td {
+  padding: 0.75rem;
+  vertical-align: top;
+  border-top: 1px solid #dee2e6;
 }
 
-input,
-select {
-  width: 100%;
-  padding: 0.4rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+.table th {
+  text-align: left;
+  font-weight: 600;
+  background-color: #f8f9fa;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+.table-light thead {
+  background-color: #f8f9fa;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.35em 0.65em;
+  font-size: 0.75em;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 0.25rem;
 }
 
 .badge-success {
@@ -521,131 +263,72 @@ select {
   background-color: #dc3545 !important;
 }
 
-.toast-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-}
-
-.toast-notification {
-  min-width: 250px;
-  gap: 8px;
-  padding: 12px 20px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  font-weight: bold;
-  color: #fff;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  animation: slideInOut 3s forwards;
-}
-
-.toast-notification.success {
-  background-color: #E6F8EC;
-  border: 1px solid #00B63E;
-  color: #00B63E;
-}
-
-.toast-notification.error {
-  background-color: #FFE6E6;
-  border: 1px solid #BE4141;
-  color: #BE4141;
-}
-
-@keyframes slideInOut {
-  0% {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-
-  10%,
-  90% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-}
-
-/* Modal Box: Điều chỉnh chiều rộng của modal */
-.modal-box {
-  width: 80%;
-  /* Đảm bảo modal không quá rộng */
-  max-width: 900px;
-  /* Giới hạn chiều rộng tối đa */
-  margin: 0 auto;
-  /* Canh giữa modal */
-  padding: 20px;
-  background-color: white;
-  border-radius: 8px;
-}
-
-/* Đảm bảo modal có không gian hợp lý */
-.grid {
-  display: grid;
-  gap: 20px;
-  grid-template-columns: 1fr 1fr;
-  /* Hai cột với độ rộng bằng nhau */
-}
-
-/* Cột trái là phần thông tin khách hàng */
-.grid-cols-2 {
-  grid-template-columns: 1fr 1fr;
-  /* Hai cột có độ rộng bằng nhau */
-}
-
-/* Cột phải là phần địa chỉ */
-.space-y-4 {
-  margin-top: 16px;
-}
-
-.address-section {
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 8px;
-  margin-top: 10px;
-}
-
-/* Các nút trong phần thêm địa chỉ */
-.popup-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-start;
-}
-
-/* Style cho button */
-button {
+.btn-view-update {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
   cursor: pointer;
-  padding: 8px 16px;
-  /* background-color: #e0e0e0; */
-  color: white;
-  border: none;
-  border-radius: 5px;
-  margin-top: 10px;
+  transition: all 0.2s ease-in-out;
 }
 
-.btn-clear-filter {
-  background-color: #e0e0e0; /* màu nền mặc định */
-  color: #333;
+.btn-view-update:hover {
+  opacity: 0.8;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
   border: none;
-  padding: 8px 20px;
-  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-control.w-auto {
+  width: auto;
+  max-width: 80px;
+  text-align: center;
+}
+
+/* Loại bỏ các styles liên quan đến modal cũ và địa chỉ */
+/* .modal-backdrop, .modal-box, .modal-header, .modal-footer, .modal-body, .modal-close,
+.gender-row, .gender-group, .address-section, .address-content, .default-label,
+.address-checkbox, .address-actions, .btn-edit, .btn-delete,
+.toast-container, .toast-notification, .toast-notification.success, .toast-notification.error,
+@keyframes slideInOut, .grid, .grid-cols-2, .space-y-4, .popup-actions,
+.btn-clear-filter, .address-list, .address-item, .address-wrapper */
+
+/* Nếu bạn đã chuyển sang dùng vue-toastification, thì không cần các style .toast-container và .toast-notification nữa. */
+/* Tôi sẽ giữ lại một số style cơ bản của button nếu chúng được dùng chung. */
+
+/* Các kiểu CSS cho button (có thể giữ lại nếu dùng chung) */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
   transition: background-color 0.3s ease;
 }
-
-.btn-view-update :hover {
-  background-color: #0a2c57;
-  color: #fff;
-  border: none;
-  padding: 2px 2px;
-  border-radius: 5px;
+/* Các style cho badge (giữ lại vì đang dùng trong bảng) */
+.badge-success {
+  background-color: #28a745 !important;
 }
+.badge-danger {
+  background-color: #dc3545 !important;
+}
+
 </style>
