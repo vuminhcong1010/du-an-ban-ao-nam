@@ -16,8 +16,8 @@ const route = useRoute();
 </script>
 
 <template>
-  <aside class="bg-white border-end vh-100 p-3" style="width: 200px">
-    <ul class="nav flex-column gap-2">
+    <aside class="bg-white border-end h-100 p-3 d-flex flex-column" style="width: 200px">
+  <ul class="nav flex-column gap-2">
       <li>
         <RouterLink
           to="/"
@@ -114,6 +114,11 @@ const route = useRoute();
 
 
 <style scoped>
+.nav-link {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .nav-link:hover {
   background-color: #e2e6ea !important; /* Tối hơn một chút so với bg-light (#f8f9fa) */
 }
