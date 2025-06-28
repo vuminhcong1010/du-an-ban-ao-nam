@@ -1,12 +1,15 @@
 <template>
   <div class="search-filter-container">
     <!-- Gộp thanh tìm kiếm và các ô lọc vào 1 hàng -->
-     <h5 class="mb-4">
-    <FilterIcon style="color: black;" /> Bộ lọc
-  </h5>
+    <h5 class="mb-4"><FilterIcon style="color: black" /> Bộ lọc</h5>
     <div class="search-filter-row">
       <!-- Ô tìm kiếm -->
-      <input v-model="searchQuery" @input="search" type="text" placeholder="Tìm kiếm tên, mã, email, SĐT" />
+      <input
+        v-model="searchQuery"
+        @input="search"
+        type="text"
+        placeholder="Tìm kiếm tên, mã, email, SĐT"
+      />
 
       <!-- Các ô lọc -->
       <select v-model="filters.gioiTinh" @change="applyFilters">
@@ -46,69 +49,69 @@
 </template>
 
 <script>
-import { Eye, Edit, Trash, Search, FilterIcon } from 'lucide-vue-next';  
+import { Eye, Edit, Trash, Search, FilterIcon } from "lucide-vue-next";
 export default {
-    components: {FilterIcon},
-  name: 'SearchAndFilterKhachHang',
+  components: { FilterIcon },
+  name: "SearchAndFilterKhachHang",
   props: {
     value: {
       type: String,
-      default: ''
+      default: "",
     },
     filterData: {
       type: Object,
-      default: () => ({})
-    }
+      default: () => ({}),
+    },
   },
   mounted() {
-  // Cẩn thận: nếu không có default '', combobox sẽ bị trắng
-  this.filters = {
-    gioiTinh: this.filterData.gioiTinh || '',
-    trangThai: this.filterData.trangThai || '',
-    tuoiRange: this.filterData.tuoiRange || '',
-    soDonHangRange: this.filterData.soDonHangRange || '',
-    chiTieuRange: this.filterData.chiTieuRange || ''
-  };
-},
+    // Cẩn thận: nếu không có default '', combobox sẽ bị trắng
+    this.filters = {
+      gioiTinh: this.filterData.gioiTinh || "",
+      trangThai: this.filterData.trangThai || "",
+      tuoiRange: this.filterData.tuoiRange || "",
+      soDonHangRange: this.filterData.soDonHangRange || "",
+      chiTieuRange: this.filterData.chiTieuRange || "",
+    };
+  },
   data() {
     return {
       searchQuery: this.value,
       filters: {
-        gioiTinh: '',
-        trangThai:'',
-        tuoiRange:'',
-        soDonHangRange: '',
-        chiTieuRange:''
-      }
+        gioiTinh: "",
+        trangThai: "",
+        tuoiRange: "",
+        soDonHangRange: "",
+        chiTieuRange: "",
+      },
     };
   },
   methods: {
     // Gọi API khi tìm kiếm thay đổi
     search() {
-      this.$emit('search', this.searchQuery);
+      this.$emit("search", this.searchQuery);
     },
 
     // Gọi API khi bất kỳ bộ lọc nào thay đổi
     applyFilters() {
-      this.$emit('filterApplied', this.filters);
-    }
+      this.$emit("filterApplied", this.filters);
+    },
   },
   watch: {
     value(newQuery) {
       this.searchQuery = newQuery;
     },
-      filterData: {
+    filterData: {
       handler(newFilters) {
         this.filters = {
-          gioiTinh: newFilters.gioiTinh ?? '',
-          trangThai: newFilters.trangThai ?? '',
-          tuoiRange: newFilters.tuoiRange ?? '',
-          soDonHangRange: newFilters.soDonHangRange ?? '',
-          chiTieuRange: newFilters.chiTieuRange ?? ''
+          gioiTinh: newFilters.gioiTinh ?? "",
+          trangThai: newFilters.trangThai ?? "",
+          tuoiRange: newFilters.tuoiRange ?? "",
+          soDonHangRange: newFilters.soDonHangRange ?? "",
+          chiTieuRange: newFilters.chiTieuRange ?? "",
         };
       },
-      immediate: true
-    }
+      immediate: true,
+    },
   },
 };
 </script>

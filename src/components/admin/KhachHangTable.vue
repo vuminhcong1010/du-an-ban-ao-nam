@@ -1,66 +1,97 @@
 <template>
-  <table class="table table-hover">
-    <thead class="table-light">
-      <tr>
-        <th>STT</th>
-        <th>Mã KH</th>
-        <th>Họ tên</th>
-        <th>Giới tính</th>
-        <th>Ngày sinh</th>
-        <th>SDT</th>
-        <th>Email</th>
-        <th>Số đơn đã mua</th>
-        <th>Tổng tiền</th>
-        <th>Trạng thái</th>
-        <th>Hành động</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr v-for="(kh, index) in khachHangs" :key="index">
-        <td>{{ index + 1 + page * size }}</td>
-        <td>{{ kh.maKhachHang }}</td>
-        <td>{{ kh.tenKhachHang }}</td>
-        <td>{{ kh.gioiTinh ? 'Nam' : 'Nữ' }}</td>
-        <td>{{ kh.ngaySinh ? new Date(kh.ngaySinh).toLocaleDateString('vi-VN') : 'Chưa cập nhật' }}</td>
-        <td>{{ kh.soDienThoai }}</td>
-        <td>{{ kh.email || 'Chưa cập nhật' }}</td>
-        <td>{{ kh.soHoaDonDaMua || 0 }}</td>
-        <td>{{ kh.tongTien ? formatCurrency(kh.tongTien) : '0' }}</td>
-        <td>
-          <span :class="{
-            'badge badge-success': kh.trangThai === 1,
-            'badge badge-danger': kh.trangThai === 0
-          }">
-            {{ kh.trangThai === 1 ? 'Đang hoạt động' : 'Dừng hoạt động' }}
-          </span>
-        </td>
-        <td>
-          <button class="btn btn-view-update mr-2" @click="navigateToEditCustomer(kh.id)">
-            <Edit style="color: #66FF99;" />
-          </button>
-          <button class="btn btn-view-update mr-2" @click="confirmDeleteCustomer(kh.id)">
-            <Trash style="color: #CC0000;" />
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div class="mt-4 d-flex align-items-center justify-content-center gap-2">
-    <button class="btn btn-secondary" @click="prevPage" :disabled="page === 0">Trước</button>
-    <input v-model.number="inputPage" @keyup.enter="goToPage" type="number" min="1" :max="totalPages"
-      class="form-control w-auto text-center" />
-    <span>/ {{ totalPages }}</span>
-    <button class="btn btn-secondary" @click="nextPage" :disabled="page >= totalPages - 1">Tiếp</button>
+  <div class="text-muted text-center bg-light rounded">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>STT</th>
+            <th>Mã KH</th>
+            <th>Họ tên</th>
+            <th>Giới tính</th>
+            <th>Ngày sinh</th>
+            <th>SDT</th>
+            <th>Email</th>
+            <th>Số đơn đã mua</th>
+            <th>Tổng tiền</th>
+            <th>Trạng thái</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(kh, index) in khachHangs" :key="index">
+            <td>{{ index + 1 + page * size }}</td>
+            <td>{{ kh.maKhachHang }}</td>
+            <td>{{ kh.tenKhachHang }}</td>
+            <td>{{ kh.gioiTinh ? "Nam" : "Nữ" }}</td>
+            <td>
+              {{
+                kh.ngaySinh
+                  ? new Date(kh.ngaySinh).toLocaleDateString("vi-VN")
+                  : "Chưa cập nhật"
+              }}
+            </td>
+            <td>{{ kh.soDienThoai }}</td>
+            <td>{{ kh.email || "Chưa cập nhật" }}</td>
+            <td>{{ kh.soHoaDonDaMua || 0 }}</td>
+            <td>{{ kh.tongTien ? formatCurrency(kh.tongTien) : "0" }}</td>
+            <td>
+              <span
+                :class="{
+                  'badge badge-success': kh.trangThai === 1,
+                  'badge badge-danger': kh.trangThai === 0,
+                }"
+              >
+                {{ kh.trangThai === 1 ? "Đang hoạt động" : "Dừng hoạt động" }}
+              </span>
+            </td>
+            <td>
+              <button
+                class="btn btn-view-update mr-2"
+                @click="navigateToEditCustomer(kh.id)"
+              >
+                <Edit style="color: #66ff99" />
+              </button>
+              <button
+                class="btn btn-view-update mr-2"
+                @click="confirmDeleteCustomer(kh.id)"
+              >
+                <Trash style="color: #cc0000" />
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  </template>
+  <div class="mt-4 d-flex align-items-center justify-content-center gap-2">
+    <button class="btn btn-secondary" @click="prevPage" :disabled="page === 0">
+      «
+    </button>
+    <input
+      v-model.number="inputPage"
+      @keyup.enter="goToPage"
+      type="number"
+      min="1"
+      :max="totalPages"
+      class="form-control w-auto text-center"
+    />
+    <span>/ {{ totalPages }}</span>
+    <button
+      class="btn btn-secondary"
+      @click="nextPage"
+      :disabled="page >= totalPages - 1"
+    >
+      »
+    </button>
+  </div>
+</template>
 
 <script>
 import axios from "axios";
 // import AddressModal from "../admin/AddressModal.vue"; // Có thể bỏ nếu AddressModal không được dùng trực tiếp ở đây nữa
-import { Edit, Trash } from 'lucide-vue-next';
-import { useRouter } from 'vue-router';
+import { Edit, Trash } from "lucide-vue-next";
+import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification"; // Import useToast
 
 export default {
@@ -69,15 +100,15 @@ export default {
   props: {
     searchQuery: {
       type: String,
-      default: ''
+      default: "",
     },
     filterData: {
       type: Object,
-      default: () => ({})
+      default: () => ({}),
     },
     reload: {
       type: Boolean,
-      default: false
+      default: false,
     },
   },
   setup() {
@@ -85,7 +116,7 @@ export default {
     const toast = useToast(); // Khởi tạo toast
 
     const navigateToEditCustomer = (customerId) => {
-      router.push({ name: 'EditKhachHang', params: { id: customerId } });
+      router.push({ name: "EditKhachHang", params: { id: customerId } });
     };
 
     // Hàm showToastMessage mới dùng useToast (như trong AddKhachHang)
@@ -137,7 +168,7 @@ export default {
       handler() {
         this.page = 0;
         this.fetchKhachHang();
-      }
+      },
     },
     reload(newVal) {
       if (newVal) {
@@ -150,8 +181,8 @@ export default {
       handler() {
         this.page = 0;
         this.fetchKhachHang();
-      }
-    }
+      },
+    },
   },
   methods: {
     fetchKhachHang() {
@@ -159,17 +190,18 @@ export default {
         page: this.page,
         size: this.size,
         keyword: this.searchQuery,
-        ...this.filterData
+        ...this.filterData,
       };
 
-      axios.get('/api/khach-hang/search-and-filter', { params })
-        .then(response => {
+      axios
+        .get("/api/khach-hang/search-and-filter", { params })
+        .then((response) => {
           console.log(response.data);
           this.khachHangs = response.data.content;
           this.totalPages = response.data.totalPages;
         })
-        .catch(error => {
-          console.error('Lỗi khi lấy khách hàng:', error);
+        .catch((error) => {
+          console.error("Lỗi khi lấy khách hàng:", error);
           this.showToastMessage("Lỗi khi tải danh sách khách hàng.", "error"); // Sử dụng showToastMessage
         });
     },
@@ -199,30 +231,34 @@ export default {
     // openAddressModal, closeAddressModal, loadTinhThanh, loadQuanHuyen, loadXaPhuong
 
     confirmDeleteCustomer(customerId) {
-        if (confirm("Bạn có chắc chắn muốn xóa khách hàng này không?")) {
-            // Logic xóa khách hàng sẽ được thực hiện ở đây.
-            // Hiện tại chỉ là thông báo "Chức năng xóa khách hàng chưa được triển khai!"
-            this.showToastMessage("Chức năng xóa khách hàng chưa được triển khai!", "info");
-            // Sau khi xóa thành công, gọi lại fetchKhachHang()
-            // this.fetchKhachHang();
-        }
+      if (confirm("Bạn có chắc chắn muốn xóa khách hàng này không?")) {
+        // Logic xóa khách hàng sẽ được thực hiện ở đây.
+        // Hiện tại chỉ là thông báo "Chức năng xóa khách hàng chưa được triển khai!"
+        this.showToastMessage(
+          "Chức năng xóa khách hàng chưa được triển khai!",
+          "info"
+        );
+        // Sau khi xóa thành công, gọi lại fetchKhachHang()
+        // this.fetchKhachHang();
+      }
     },
     formatCurrency(val) {
       return new Intl.NumberFormat("vi-VN").format(val);
     },
-  }
+  },
 };
 </script>
 
 <style scoped>
 /* Các kiểu CSS cho bảng khách hàng và phân trang */
-.table {
+/* .table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
 }
 
-.table th, .table td {
+.table th,
+.table td {
   padding: 0.75rem;
   vertical-align: top;
   border-top: 1px solid #dee2e6;
@@ -240,7 +276,7 @@ export default {
 
 .table-light thead {
   background-color: #f8f9fa;
-}
+} */
 
 .badge {
   display: inline-block;
@@ -330,5 +366,4 @@ export default {
 .badge-danger {
   background-color: #dc3545 !important;
 }
-
 </style>

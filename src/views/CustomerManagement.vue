@@ -1,47 +1,65 @@
 <template>
-  <div class="mt-4 px-3">
+  <div class="">
     <!-- Thanh tìm kiếm -->
- <!-- Thanh tìm kiếm + các nút -->
-<div class="d-flex align-items-center justify-content-between bg-white p-3 rounded shadow mb-4 gap-2">
-  <h4 class="mb-0">Quản lý khách hàng</h4>
+    <!-- Thanh tìm kiếm + các nút -->
+    <div
+      class="d-flex align-items-center justify-content-between bg-white p-3 rounded border mb-4 gap-2"
+    >
+      <h5 class="fw-bold mb-0">Quản lý khách hàng</h5>
 
-  <div class="d-flex gap-2">
-    <button class="btn-export excel"  @click="exportExcel">📊 Xuất Excel</button>
-    <button class="btn-export pdf" @click="exportPDF">📄 Xuất PDF</button>
-    <!-- <AddKhachHang class="add" @added="handleAdded" /> -->
-    <button @click="navigateToAddCustomer"
-      style="background-color: #0a2c57; color: white; border: none; padding: 10px 20px; border-radius: 5px;">
-      <i class="fa-solid fa-plus"></i> Thêm khách hàng
-    </button>
-  </div>
-</div>
+      <div class="d-flex gap-2">
+        <button class="btn-export excel" @click="exportExcel">
+          📊 Xuất Excel
+        </button>
+        <button class="btn-export pdf" @click="exportPDF">📄 Xuất PDF</button>
+        <!-- <AddKhachHang class="add" @added="handleAdded" /> -->
+        <button
+          @click="navigateToAddCustomer"
+          style="
+            background-color: #0a2c57;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+          "
+        >
+          <i class="fa-solid fa-plus"></i> Thêm khách hàng
+        </button>
+      </div>
+    </div>
 
-   <div class="d-flex align-items-center justify-content-between bg-white p-3 rounded shadow mb-4 gap-2">
-    <SearchAndFilterKhachHang
-      :value="searchQuery"
-      :filter-data="filterData"
-      @search="handleSearch"
-      @filterApplied="handleFilter"
-    />
-</div>
+    <div
+      class="d-flex align-items-center justify-content-between bg-white p-3 rounded border mb-4 gap-2"
+    >
+      <SearchAndFilterKhachHang
+        :value="searchQuery"
+        :filter-data="filterData"
+        @search="handleSearch"
+        @filterApplied="handleFilter"
+      />
+    </div>
 
     <!-- Bảng khách hàng -->
-    <div class="bg-white p-3 rounded shadow mb-4">
-      <h5 class="mb-0">Danh sách khách hàng</h5>
-      <KhachHangTable :reload="reloadTable" :search-query="searchQuery" :filter-data="filterData" />
+    <div class="bg-white p-3 rounded border mb-4">
+      <h5 class="mb-0">Danh sách khách hàng</h5> <br>
+      <KhachHangTable
+        :reload="reloadTable"
+        :search-query="searchQuery"
+        :filter-data="filterData"
+      />
     </div>
   </div>
 </template>
 
 <script>
-import KhachHangTable from '../components/admin/KhachHangTable.vue';
-import SearchAndFilterKhachHang from '@/components/admin/SearchAndFilterKhachHang.vue';
-import { useRouter } from 'vue-router'; 
+import KhachHangTable from "../components/admin/KhachHangTable.vue";
+import SearchAndFilterKhachHang from "@/components/admin/SearchAndFilterKhachHang.vue";
+import { useRouter } from "vue-router";
 
 const router = useRouter(); // Khởi tạo router instance
 
 export default {
-  name: 'CustomerManagement',
+  name: "CustomerManagement",
   components: {
     KhachHangTable,
     // AddKhachHang,
@@ -50,14 +68,14 @@ export default {
   setup() {
     const router = useRouter(); // Khởi tạo router instance trong setup
     const navigateToAddCustomer = () => {
-      router.push({ name: 'AddKhachHang' }); // Chuyển hướng đến route 'AddCustomer'
+      router.push({ name: "AddKhachHang" }); // Chuyển hướng đến route 'AddCustomer'
     };
     return { navigateToAddCustomer }; // Trả về để template có thể sử dụng
   },
   data() {
     return {
       reloadTable: false,
-      searchQuery: '',
+      searchQuery: "",
       filterData: {},
     };
   },
@@ -100,7 +118,8 @@ export default {
 .icon {
   width: 32px;
   height: 32px;
-  transition: transform 0.3s ease, background-color 0.3s ease, border-radius 0.3s ease;
+  transition: transform 0.3s ease, background-color 0.3s ease,
+    border-radius 0.3s ease;
   /* Thêm hiệu ứng mượt mà */
   padding: 5px;
   border-radius: 50%;
@@ -121,8 +140,6 @@ export default {
   margin-left: auto;
   /* Đẩy nút thêm sang bên phải */
 }
-
-
 
 .btn-export {
   padding: 6px 16px;
