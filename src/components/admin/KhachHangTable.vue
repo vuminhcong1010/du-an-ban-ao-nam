@@ -3,14 +3,14 @@
     <thead class="table-light">
       <tr>
         <th>STT</th>
-        <th>Mã KH</th>
+        <th>Mã khách hàng</th>
         <th>Họ tên</th>
         <th>Giới tính</th>
         <th>Ngày sinh</th>
-        <th>SDT</th>
+        <th>Số điện thoại</th>
         <th>Email</th>
         <th>Số đơn đã mua</th>
-        <th>Tổng tiền</th>
+        <th>Tổng chi tiêu</th>
         <th>Trạng thái</th>
         <th>Hành động</th>
       </tr>
@@ -38,9 +38,12 @@
           <button class="btn btn-view-update mr-2" @click="navigateToEditCustomer(kh.id)">
             <Edit style="color: #66FF99;" />
           </button>
-          <button class="btn btn-view-update mr-2" @click="confirmDeleteCustomer(kh.id)">
+          <button class="btn btn-view-update mr-2" 
+          
+          @click="$emit('delete-customer', kh.id)"
+          >
             <Trash style="color: #CC0000;" />
-          </button>
+          </button> 
         </td>
       </tr>
     </tbody>
@@ -83,7 +86,6 @@ export default {
   setup() {
     const router = useRouter();
     const toast = useToast(); // Khởi tạo toast
-
     const navigateToEditCustomer = (customerId) => {
       router.push({ name: 'EditKhachHang', params: { id: customerId } });
     };
@@ -106,6 +108,7 @@ export default {
   mounted() {
     this.fetchKhachHang();
   },
+  emits: ['delete-customer'], 
   data() {
     return {
       khachHangs: [],
@@ -198,15 +201,6 @@ export default {
     // editAddressInPopup, deleteAddress, fetchAddresses, handleAddressSaved,
     // openAddressModal, closeAddressModal, loadTinhThanh, loadQuanHuyen, loadXaPhuong
 
-    confirmDeleteCustomer(customerId) {
-        if (confirm("Bạn có chắc chắn muốn xóa khách hàng này không?")) {
-            // Logic xóa khách hàng sẽ được thực hiện ở đây.
-            // Hiện tại chỉ là thông báo "Chức năng xóa khách hàng chưa được triển khai!"
-            this.showToastMessage("Chức năng xóa khách hàng chưa được triển khai!", "info");
-            // Sau khi xóa thành công, gọi lại fetchKhachHang()
-            // this.fetchKhachHang();
-        }
-    },
     formatCurrency(val) {
       return new Intl.NumberFormat("vi-VN").format(val);
     },
@@ -303,18 +297,6 @@ export default {
   text-align: center;
 }
 
-/* Loại bỏ các styles liên quan đến modal cũ và địa chỉ */
-/* .modal-backdrop, .modal-box, .modal-header, .modal-footer, .modal-body, .modal-close,
-.gender-row, .gender-group, .address-section, .address-content, .default-label,
-.address-checkbox, .address-actions, .btn-edit, .btn-delete,
-.toast-container, .toast-notification, .toast-notification.success, .toast-notification.error,
-@keyframes slideInOut, .grid, .grid-cols-2, .space-y-4, .popup-actions,
-.btn-clear-filter, .address-list, .address-item, .address-wrapper */
-
-/* Nếu bạn đã chuyển sang dùng vue-toastification, thì không cần các style .toast-container và .toast-notification nữa. */
-/* Tôi sẽ giữ lại một số style cơ bản của button nếu chúng được dùng chung. */
-
-/* Các kiểu CSS cho button (có thể giữ lại nếu dùng chung) */
 .btn {
   padding: 8px 16px;
   border: none;
