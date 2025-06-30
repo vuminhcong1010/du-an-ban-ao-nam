@@ -89,7 +89,7 @@
               </span>
             </td>
             <td>
-              <span class="badge rounded-pill" :style="{ backgroundColor: sp.trangThai === 1 ? '#3B82F6' : '#D14343' }">
+              <span class="badge rounded-pill" :style="{ backgroundColor: sp.trangThai === 1 ? '#10b981' : '#D14343' }">
                 {{ sp.trangThai === 1 ? "Đang bán" : "Ngừng bán" }}
               </span>
             </td>

@@ -222,6 +222,23 @@ const xoaSanPham = async (id) => {
     console.error(error);
   }
 };
+
+// xuat file pdf
+function downloadPDF(maHoaDon) {
+  axios.get(`http://localhost:8080/hoa-don/${maHoaDon}/pdf`, {
+    responseType: 'blob'
+  }).then((response) => {
+    const fileURL = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const fileLink = document.createElement('a');
+    fileLink.href = fileURL;
+    fileLink.setAttribute('download', `hoa_don_${maHoaDon}.pdf`);
+    document.body.appendChild(fileLink);
+    fileLink.click();
+    document.body.removeChild(fileLink);
+  }).catch((err) => {
+    console.error("Lỗi tải file PDF:", err);
+  });
+}
 </script>
 
 <template>
@@ -447,7 +464,7 @@ const xoaSanPham = async (id) => {
           <h5 class="fw-semibold">
             <Receipt></Receipt> Đơn hàng: {{ maHoaDon }}
           </h5>
-          <button class="btn" style="border: none; color: #0a2c57">
+          <button class="btn" style="border: none; color: #0a2c57" @click="downloadPDF(maHoaDon)">
             <Printer class="me-1" size="16"></Printer> In hóa đơn
           </button>
         </div>

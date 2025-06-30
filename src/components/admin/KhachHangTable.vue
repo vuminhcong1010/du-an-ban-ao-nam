@@ -64,27 +64,45 @@
     </div>
   </div>
 
-  <div class="mt-4 d-flex align-items-center justify-content-center gap-2">
-    <button class="btn btn-secondary" @click="prevPage" :disabled="page === 0">
-      «
-    </button>
+  <!-- phân trang -->
+
+  <nav class="mt-4">
+  <ul class="pagination justify-content-center">
+    <!-- Nút quay về -->
+    <li class="page-item" :class="{ disabled: page === 0 }">
+      <a class="page-link" href="#" @click.prevent="prevPage">«</a>
+    </li>
+
+    <!-- Danh sách số trang -->
+    <li
+      class="page-item"
+      v-for="p in totalPages"
+      :key="p"
+      :class="{ active: p - 1 === page }"
+    >
+      <a class="page-link" href="#" @click.prevent="goToPage(p - 1)">{{ p }}</a>
+    </li>
+
+    <!-- Nút tiếp theo -->
+    <li class="page-item" :class="{ disabled: page >= totalPages - 1 }">
+      <a class="page-link" href="#" @click.prevent="nextPage">»</a>
+    </li>
+  </ul>
+
+  <!-- Input nhập trang -->
+  <!-- <div class="d-flex justify-content-center mt-2">
     <input
       v-model.number="inputPage"
-      @keyup.enter="goToPage"
+      @keyup.enter="goToPage(inputPage - 1)"
       type="number"
       min="1"
       :max="totalPages"
       class="form-control w-auto text-center"
+      style="width: 70px;"
     />
-    <span>/ {{ totalPages }}</span>
-    <button
-      class="btn btn-secondary"
-      @click="nextPage"
-      :disabled="page >= totalPages - 1"
-    >
-      »
-    </button>
-  </div>
+    <span class="ms-2">/ {{ totalPages }}</span>
+  </div> -->
+</nav>
 </template>
 
 <script>

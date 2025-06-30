@@ -141,7 +141,7 @@
                 <td>{{ formatDate(phieu.ngayBatDau) }}</td>
                 <td>{{ formatDate(phieu.ngayKetThuc) }}</td>
                 <td>
-                  <span :class="getTrangThaiClass(phieu.trangThai)">
+                  <span :class="getTrangThaiClass(phieu.trangThai) " >
                     {{ getTrangThaiText(phieu.trangThai) }}
                   </span>
                 </td>
