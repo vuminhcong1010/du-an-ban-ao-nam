@@ -13,9 +13,7 @@
       <!-- Filter Section -->
       <div class="card-body">
         <h6 style="margin-bottom: 1em">
-          <i>
-            <FilterIcon></FilterIcon>
-          </i> Bộ lọc
+          <i><FilterIcon></FilterIcon></i> Bộ lọc
         </h6>
         <div class="row g-3 align-items-end">
           <!-- Keyword Search -->
@@ -123,7 +121,7 @@
                     :title="phieu.trangThai === 0 ? 'Kích hoạt lại phiếu giảm giá' : 'Hủy phiếu giảm giá'"
                     data-bs-toggle="tooltip" data-bs-placement="top">
                     <input class="form-check-input" type="checkbox" :id="'switchCheckbox-' + phieu.id"
-                      v-model="phieu.isChecked" @change="toggleStatus(phieu)" />
+                      v-model="phieu.isChecked" @change="toggleStatus(phieu)" :disabled="phieu.loading" />
                   </div>
                 </td>
               </tr>
@@ -138,9 +136,7 @@
               <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">«</a>
             </li>
             <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: currentPage === page }">
-              <a class="page-link" href="#" @click.prevent="changePage(page)">{{
-                page
-              }}</a>
+              <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
             </li>
             <li class="page-item" :class="{ disabled: currentPage === totalPages }">
               <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">»</a>
@@ -251,6 +247,7 @@ export default {
         this.allPhieuGiamGias = data.map((phieu) => ({
           ...phieu,
           isChecked: phieu.trangThai !== 0, // Switch ON if not "Đã hủy"
+          loading: false, // Initialize loading state
         }));
         this.phieuGiamGias = [...this.allPhieuGiamGias];
       } catch (err) {
@@ -316,11 +313,11 @@ export default {
       return "badge custom-accent1";
     },
     isSwitchVisible(ngayKetThuc) {
-      const currentDate = new Date('2025-07-01T15:45:00+07:00');
+      const currentDate = new Date('2025-07-01T23:48:00+07:00');
       return new Date(ngayKetThuc) >= currentDate;
     },
     calculateStatus(ngayBatDau, ngayKetThuc) {
-      const now = new Date('2025-07-01T15:45:00+07:00');
+      const now = new Date('2025-07-01T23:48:00+07:00');
       const start = new Date(ngayBatDau);
       const end = new Date(ngayKetThuc);
       if (now < start) {
@@ -334,11 +331,14 @@ export default {
     async toggleStatus(phieu) {
       const originalStatus = phieu.isChecked; // Store original state
       const actionText = phieu.isChecked
-        ? "Kích hoạt lại phiếu giảm giá "
-        : "hủy phiếu giảm giá";
+        ? "Kích hoạt lại phiếu giảm giá"
+        : "Hủy phiếu giảm giá";
       const successMessage = phieu.isChecked
-        ? "kích hoạt lại phiếu giảm giá thành công"
+        ? "Kích hoạt lại phiếu giảm giá thành công"
         : "Hủy phiếu giảm giá thành công";
+      const loadingMessage = phieu.isChecked
+        ? "Đang kích hoạt lại phiếu giảm giá và gửi email..."
+        : "Đang hủy phiếu giảm giá và gửi email...";
 
       const result = await Swal.fire({
         title: "Xác nhận",
@@ -359,6 +359,13 @@ export default {
         return;
       }
 
+      // Set loading state and show toast
+      phieu.loading = true;
+      const toastId = this.toast.info(loadingMessage, {
+        timeout: false, // Keep toast until manually dismissed
+        icon: '<div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div>',
+      });
+
       try {
         const newStatus = phieu.isChecked ? this.calculateStatus(phieu.ngayBatDau, phieu.ngayKetThuc) : 0;
         const response = await fetch(`http://localhost:8080/phieuGiamGias/${phieu.id}/status`, {
@@ -370,16 +377,21 @@ export default {
         });
         const responseData = await response.json();
         if (response.ok) {
+          this.toast.dismiss(toastId); // Dismiss loading toast
           this.toast.success(successMessage);
           phieu.trangThai = newStatus;
         } else {
+          this.toast.dismiss(toastId); // Dismiss loading toast
           this.toast.error(`Có lỗi xảy ra: ${responseData.message}`);
           phieu.isChecked = !phieu.isChecked; // Revert switch state
         }
       } catch (err) {
         console.error("Lỗi khi cập nhật trạng thái phiếu giảm giá:", err);
+        this.toast.dismiss(toastId); // Dismiss loading toast
         this.toast.error("Có lỗi xảy ra: " + err.message);
         phieu.isChecked = !phieu.isChecked; // Revert switch state
+      } finally {
+        phieu.loading = false; // Clear loading state
       }
     },
   },
@@ -467,6 +479,11 @@ export default {
 
 .form-check-input {
   cursor: pointer;
+}
+
+.form-check-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .table th,

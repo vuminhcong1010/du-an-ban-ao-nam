@@ -1,6 +1,7 @@
+```vue
 <template>
-  <div v-if="!isLoading" class="container-fluid mt-4">
-    <div class="card mb-4">
+  <div class="container-fluid mt-4">
+    <div v-if="!isLoading && !isSendingEmail" class="card mb-4">
       <div class="card-body">
         <h2 class="fw-bold mb-4">Sửa Phiếu Giảm Giá</h2>
         <div class="row gx-4">
@@ -185,19 +186,18 @@
           <button @click="$router.push('/phieu-giam-gia')" class="btn btn-danger me-2">
             Quay lại
           </button>
-          <button @click="confirmUpdatePhieuGiamGia" class="btn btn-primary" :disabled="isLoading">
+          <button @click="confirmUpdatePhieuGiamGia" class="btn btn-primary" :disabled="isLoading || isSendingEmail">
             Sửa phiếu giảm giá
           </button>
         </div>
       </div>
     </div>
-  </div>
-<div v-else class="text-center mt-5"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>
-
-  <!-- Lớp phủ loading khi gửi email -->
-  <div v-if="isSendingEmail" class="loading-overlay">
-    <div class="spinner"></div>
-    <p>Đang gửi email phiếu giảm giá...</p>
+    <div v-else class="loading-overlay">
+      <div class="text-center">
+        <div class="spinner"></div>
+        <p>{{ isSendingEmail ? 'Đang sửa phiếu giảm giá và gửi email...' : 'Đang tải...' }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -248,11 +248,12 @@ export default {
         soLuong: "",
         selectedRows: "",
       },
+      dataFetchFailed: false, // Track if data fetching failed
     };
   },
   computed: {
     minDateTime() {
-      const now = new Date('2025-07-01T15:40:00+07:00');
+      const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const day = String(now.getDate()).padStart(2, "0");
@@ -370,6 +371,7 @@ export default {
       } catch (err) {
         console.error("Lỗi:", err);
         this.danhSachKhachHang = [];
+        this.dataFetchFailed = true;
         this.toast.error("Không thể tải danh sách khách hàng: " + err.message);
       }
     },
@@ -412,6 +414,8 @@ export default {
               const chiTietData = await chiTietResponse.json();
               this.selectedRows = chiTietData.map((chiTiet) => chiTiet.idKhachHang.id);
               console.log("Loaded selectedRows:", this.selectedRows);
+            } else {
+              throw new Error("Không thể tải chi tiết phiếu giảm giá");
             }
           }
 
@@ -422,7 +426,8 @@ export default {
         }
       } catch (error) {
         console.error("Lỗi khi tải phiếu giảm giá:", error);
-        this.toast.error("Không thể tải dữ liệu phiếu giảm giá!");
+        this.dataFetchFailed = true;
+        this.toast.error("Không thể tải dữ liệu phiếu giảm giá: " + error.message);
       }
     },
     validateMaPhieu() {
@@ -491,7 +496,7 @@ export default {
       if (!this.ngayBatDau) {
         this.errors.ngayBatDau = "Ngày bắt đầu là bắt buộc!";
       } else {
-        const now = new Date('2025-07-01T15:40:00+07:00');
+        const now = new Date();
         const startDate = new Date(this.ngayBatDau);
         if (startDate < now) {
           this.errors.ngayBatDau = "Ngày bắt đầu không được là ngày trong quá khứ!";
@@ -506,7 +511,7 @@ export default {
       if (!this.ngayKetThuc) {
         this.errors.ngayKetThuc = "Ngày kết thúc là bắt buộc!";
       } else {
-        const now = new Date('2025-07-01T15:40:00+07:00');
+        const now = new Date();
         const endDate = new Date(this.ngayKetThuc);
         if (endDate < now) {
           this.errors.ngayKetThuc = "Ngày kết thúc không được là ngày trong quá khứ!";
@@ -560,7 +565,6 @@ export default {
     },
     async confirmUpdatePhieuGiamGia() {
       this.submitted = true;
-     
       if (this.validateForm()) {
         const result = await Swal.fire({
           title: "Xác nhận",
@@ -584,7 +588,10 @@ export default {
       }
     },
     async updatePhieuGiamGia() {
-      this.isLoading = true;
+      this.isSendingEmail = true;
+      const toastId = this.toast.info("Đang sửa phiếu giảm giá và gửi email... [Loading]", {
+        timeout: false,
+      });
 
       const formatDate = (dateStr) => {
         const date = new Date(dateStr);
@@ -609,6 +616,7 @@ export default {
         soLuong: this.soLuong,
         danhSachKhachHangId: this.loaiPhieu === "Cá nhân" ? this.selectedRows : [],
       };
+
       try {
         const response = await fetch(`http://localhost:8080/phieuGiamGias/${this.id}`, {
           method: "PUT",
@@ -617,43 +625,49 @@ export default {
         });
 
         if (response.ok) {
-          this.isSendingEmail = true;
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate email sending delay
+          this.toast.dismiss(toastId);
           this.toast.success("Sửa phiếu giảm giá thành công");
           this.$router.push("/phieu-giam-gia");
         } else {
-          const errorData = await response.json();
-          console.error("Update failed with error:", errorData);
-          if (errorData.message.includes("Mã phiếu giảm giá")) {
-            this.errors.maPhieu = errorData.message;
-          } else if (errorData.message.includes("Tên phiếu")) {
-            this.errors.tenPhieu = errorData.message;
-          } else if (errorData.message.includes("Loại phiếu")) {
-            this.errors.loaiPhieu = errorData.message;
-          } else if (errorData.message.includes("Phần trăm giảm giá") || errorData.message.includes("Số tiền giảm")) {
-            this.errors.giaTriGiam = errorData.message;
-          } else if (errorData.message.includes("Giá trị tối thiểu")) {
-            this.errors.giaTriToiThieu = errorData.message;
-          } else if (errorData.message.includes("Giá trị tối đa")) {
-            this.errors.giaTriToiDa = errorData.message;
-          } else if (errorData.message.includes("Ngày bắt đầu")) {
-            this.errors.ngayBatDau = errorData.message;
-          } else if (errorData.message.includes("Ngày kết thúc")) {
-            this.errors.ngayKetThuc = errorData.message;
-          } else if (errorData.message.includes("Số lượng")) {
-            this.errors.soLuong = errorData.message;
-          } else if (errorData.message.includes("khách hàng")) {
-            this.errors.selectedRows = errorData.message;
-          } else {
-            this.toast.error("Có lỗi xảy ra khi sửa phiếu giảm giá: " + errorData.message);
+          this.toast.dismiss(toastId);
+          let errorMessage = "Có lỗi xảy ra khi sửa phiếu giảm giá.";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+            console.error("Update failed with error:", errorData);
+            if (errorData.message.includes("Mã phiếu giảm giá")) {
+              this.errors.maPhieu = errorData.message;
+            } else if (errorData.message.includes("Tên phiếu")) {
+              this.errors.tenPhieu = errorData.message;
+            } else if (errorData.message.includes("Loại phiếu")) {
+              this.errors.loaiPhieu = errorData.message;
+            } else if (errorData.message.includes("Phần trăm giảm giá") || errorData.message.includes("Số tiền giảm")) {
+              this.errors.giaTriGiam = errorData.message;
+            } else if (errorData.message.includes("Giá trị tối thiểu")) {
+              this.errors.giaTriToiThieu = errorData.message;
+            } else if (errorData.message.includes("Giá trị tối đa")) {
+              this.errors.giaTriToiDa = errorData.message;
+            } else if (errorData.message.includes("Ngày bắt đầu")) {
+              this.errors.ngayBatDau = errorData.message;
+            } else if (errorData.message.includes("Ngày kết thúc")) {
+              this.errors.ngayKetThuc = errorData.message;
+            } else if (errorData.message.includes("Số lượng")) {
+              this.errors.soLuong = errorData.message;
+            } else if (errorData.message.includes("khách hàng")) {
+              this.errors.selectedRows = errorData.message;
+            } else {
+              this.toast.error(errorMessage);
+            }
+          } catch (jsonError) {
+            this.toast.error(errorMessage + " (Lỗi server không trả về JSON)");
           }
         }
       } catch (error) {
+        this.toast.dismiss(toastId);
         console.error("Lỗi:", error);
         this.toast.error("Có lỗi xảy ra khi sửa phiếu giảm giá: " + error.message);
       } finally {
-        
-        this.isLoading = false;
         this.isSendingEmail = false;
       }
     },
@@ -666,8 +680,10 @@ export default {
   mounted() {
     this.isLoading = true;
     Promise.all([this.getDanhSachKhachHang(), this.getPhieuGiamGiaById()]).finally(() => {
-      console.log("Mounted - Initial state: giaTriOption =", this.giaTriOption, ", giaTriGiam =", this.giaTriGiam);
-      this.isLoading = false;
+      if (!this.dataFetchFailed) {
+        console.log("Mounted - Initial state: giaTriOption =", this.giaTriOption, ", giaTriGiam =", this.giaTriGiam);
+        this.isLoading = false;
+      }
     });
   },
 };
@@ -699,6 +715,7 @@ export default {
   border: 8px solid #f3f3f3;
   border-top: 8px solid #0a2c57;
   border-radius: 50%;
+  margin-left: 40%;
   animation: spin 1s linear infinite;
 }
 
@@ -717,3 +734,4 @@ export default {
   margin-top: 10px;
 }
 </style>
+```

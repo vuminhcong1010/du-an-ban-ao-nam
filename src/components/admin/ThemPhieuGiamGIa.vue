@@ -197,11 +197,11 @@
       </div>
     </div>
   </div>
-  <div v-else class="text-center mt-5"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>
-  <!-- Lớp phủ loading khi gửi email -->
-  <div v-if="isSendingEmail" class="loading-overlay">
-    <div class="spinner"></div>
-    <p>Đang gửi email phiếu giảm giá...</p>
+  <div v-else class="loading-overlay">
+    <div class="text-center">
+      <div class="spinner"></div>
+      <p>Đang tải...</p>
+    </div>
   </div>
 </template>
 
@@ -228,7 +228,6 @@ export default {
       currentPage: 1,
       itemsPerPage: 5,
       isLoading: false,
-      isSendingEmail: false,
       maPhieu: "",
       tenPhieu: "",
       giaTriGiam: null,
@@ -255,7 +254,7 @@ export default {
   },
   computed: {
     minDateTime() {
-      const now = new Date();
+      const now = new Date('2025-07-01T23:57:00+07:00');
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const day = String(now.getDate()).padStart(2, "0");
@@ -369,9 +368,6 @@ export default {
         console.error("Lỗi tải danh sách khách hàng:", err);
         this.danhSachKhachHang = [];
         this.toast.error("Không thể tải danh sách khách hàng: " + err.message);
-      } finally {
-        this.isLoading = false;
-        console.log("Loading state after fetch:", this.isLoading);
       }
     },
     validateMaPhieu() {
@@ -438,7 +434,7 @@ export default {
       if (!this.ngayBatDau) {
         this.errors.ngayBatDau = "Ngày bắt đầu là bắt buộc!";
       } else {
-        const now = new Date('2025-07-01T15:40:00+07:00');
+        const now = new Date('2025-07-01T23:57:00+07:00');
         const startDate = new Date(this.ngayBatDau);
         if (startDate < now) {
           this.errors.ngayBatDau = "Ngày bắt đầu không được là ngày trong quá khứ!";
@@ -453,7 +449,7 @@ export default {
       if (!this.ngayKetThuc) {
         this.errors.ngayKetThuc = "Ngày kết thúc là bắt buộc!";
       } else {
-        const now = new Date('2025-07-01T15:40:00+07:00');
+        const now = new Date('2025-07-01T23:57:00+07:00');
         const endDate = new Date(this.ngayKetThuc);
         if (endDate < now) {
           this.errors.ngayKetThuc = "Ngày kết thúc không được là ngày trong quá khứ!";
@@ -497,12 +493,10 @@ export default {
       this.validateLoaiPhieu();
       this.validateSelectedRows();
       this.validateSoLuong();
-      console.log("Errors:", this.errors);
       return Object.values(this.errors).every((error) => error === "");
     },
     async confirmThemPhieuGiamGia() {
       this.submitted = true;
-      console.log("Form validated:", this.validateForm());
       if (this.validateForm()) {
         const result = await Swal.fire({
           title: "Xác nhận",
@@ -526,6 +520,11 @@ export default {
     },
     async themPhieuGiamGia() {
       this.isLoading = true;
+      const toastId = this.toast.info("Đang thêm phiếu giảm giá và gửi email...", {
+        timeout: false,
+        icon: '<div class = "spinner-border spinner-border-sm" role = "status"><span class = "visually-hidden">Loading...</span></div>',
+      });
+
       const formatDate = (dateStr) => {
         const date = new Date(dateStr);
         const year = date.getFullYear();
@@ -535,6 +534,7 @@ export default {
         const minutes = String(date.getMinutes()).padStart(2, "0");
         return `${year}-${month}-${day}T${hours}:${minutes}`;
       };
+
       const phieu = {
         maPhieuGiamGia: this.maPhieu.trim(),
         tenPhieu: this.tenPhieu.trim(),
@@ -548,22 +548,20 @@ export default {
         soLuong: this.soLuong,
         danhSachKhachHangId: this.loaiPhieu === "Cá nhân" ? this.selectedRows : [],
       };
-      console.log("Sending data:", phieu);
+
       try {
         const response = await fetch("http://localhost:8080/phieuGiamGia", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(phieu),
         });
-        console.log("Response status:", response.status);
         if (response.ok) {
-          this.isSendingEmail = true;
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+          this.toast.dismiss(toastId);
           this.toast.success("Thêm phiếu giảm giá thành công");
           this.$router.push("/phieu-giam-gia");
         } else {
           const errorData = await response.json();
-          console.log("Error data:", errorData);
+          this.toast.dismiss(toastId);
           this.toast.error("Thêm thất bại: " + (errorData.message || "Có lỗi xảy ra"));
           if (errorData.message.includes("Mã phiếu giảm giá")) {
             this.errors.maPhieu = errorData.message;
@@ -590,12 +588,10 @@ export default {
           }
         }
       } catch (error) {
-        console.error("Lỗi:", error);
+        this.toast.dismiss(toastId);
         this.toast.error("Có lỗi xảy ra khi thêm phiếu giảm giá: " + error.message);
       } finally {
         this.isLoading = false;
-        this.isSendingEmail = false;
-        console.log("Loading state after request:", this.isLoading);
       }
     },
     changePage(page) {
@@ -606,10 +602,8 @@ export default {
   },
   mounted() {
     this.isLoading = true;
-    console.log("Loading started:", this.isLoading);
     this.getDanhSachKhachHang().finally(() => {
       this.isLoading = false;
-      console.log("Loading finished:", this.isLoading);
     });
   },
 };
@@ -621,7 +615,17 @@ export default {
   border-color: #0a2c57;
 }
 
-/* Loading Overlay Styles */
+.btn-primary:hover {
+  background-color: #08203e;
+  border-color: #08203e;
+}
+
+.btn-primary:disabled {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  cursor: not-allowed;
+}
+
 .loading-overlay {
   position: fixed;
   top: 0;
