@@ -1,30 +1,32 @@
 <script setup>
-import { onMounted, ref, inject, computed, watch } from "vue";
-import search from "@/assets/search.png";
-import { Eye, Edit, Plus, Trash, Delete, Home, EyeOff } from "lucide-vue-next";
-import axios from "axios";
-import { useRoute, useRouter } from "vue-router";
-import { useToast } from "vue-toastification";
+import { onMounted, ref, inject, computed, watch } from 'vue'
+import search from '@/assets/search.png'
+import { Eye,Edit,Plus,Trash,Delete, Home, EyeOff } from 'lucide-vue-next';
+import axios from 'axios'
+import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification';
+import Swal from 'sweetalert2'
+
 
 const toggleSidebar = inject("toggleSidebar");
 
 const listNhanVien = ref({
   id: "",
   maNhanVien: "",
-  tenKhachHang: "",
-  tenTaiKhoan: "",
-  matKhau: "",
+  tenNhanVien: "",
   anh: "",
-  email: "",
+  cccd: "",
+  ngaySinh: "",
   sdt: "",
-  ngayTao: "",
-  ngaySua: "",
-  diaChi: "",
-  gioiTinh: "",
-  trangThai: "",
-  idVaiTro: {
-    id: "",
-  },
+  gioiTinh: true,
+  tinhThanh: "",
+  quanHuyen: "",
+  xaPhuong: "",
+  thonXom: "",
+  email: "",
+  ghiChu: "",
+  trangThai: 1
+
 });
 
 const vaiTroList = ref([]);
@@ -47,27 +49,29 @@ const getVaiTro = async () => {
 };
 
 const allColumns = [
-  { key: "anh", label: "Ảnh" },
-  { key: "maNhanVien", label: "Mã nhân viên" },
-  { key: "tenKhachHang", label: "Tên nhân viên" },
-  { key: "tenTaiKhoan", label: "Tên tài khoản" },
-  { key: "matKhau", label: "Mật khẩu" },
-  { key: "email", label: "Email" },
-  { key: "sdt", label: "Số điện thoại" },
-  { key: "ngayTao", label: "Ngày tạo" },
-  { key: "ngaySua", label: "Ngày sửa" },
-  { key: "diaChi", label: "Địa chỉ" },
-  { key: "gioiTinh", label: "Giới tính" },
-  { key: "trangThai", label: "Trạng thái" },
-  { key: "tenRole", label: "Chức vụ" },
+
+  { key: 'anh', label: 'Ảnh' },
+  { key: 'maNhanVien', label: 'Mã nhân viên' },
+  { key: 'tenNhanVien', label: 'Tên nhân viên' },
+  { key: 'cccd', label: 'CCCD' },
+  { key: 'ngaySinh', label: 'Ngày sinh' },
+  { key: 'sdt', label: 'Số điện thoại' },
+  { key: 'gioiTinh', label: 'Giới tính' },
+  { key: 'tinhThanh', label: 'Tỉnh/Thành' },
+  { key: 'quanHuyen', label: 'Quận/Huyện' },
+  { key: 'xaPhuong', label: 'Xã/Phường' },
+  { key: 'thonXom', label: 'Thôn/Xóm' },
+  { key: 'email', label: 'Email' },
+  { key: 'ghiChu', label: 'Ghi chú' },
+  { key: 'trangThai', label: 'Trạng thái' },
 ];
 const visibleColumns = ref([
-  "anh",
-  "maNhanVien",
-  "tenKhachHang",
-  "ngayTao",
-  "trangThai",
-  "tenRole",
+  'anh',
+  'maNhanVien',
+  'tenNhanVien',
+  'sdt',
+  'trangThai',
+
 ]);
 const showColumnBox = ref(false);
 const expandedRow = ref(null);
@@ -76,11 +80,11 @@ const filterHovered = ref(false);
 
 // Filter states
 const filterState = ref({
-  trangThai: "1",
-  vaiTro: "",
-  ngayTao: "",
-  ngaySua: "",
-  search: "",
+  trangThai: '1',
+  namSinh: '', // năm sinh
+  tinhThanh: '', // tỉnh thành
+  search: ''
+
 });
 
 const showPassword = ref({}); // Track password visibility for each employee
@@ -101,16 +105,17 @@ const showAddRoleModal = ref(false);
 const newRoleName = ref("");
 const addRoleError = ref("");
 const router = useRouter();
-const showConfirmModal = ref(false);
-const selectedNhanVien = ref(null);
-const confirmMessage = ref("");
-const confirmLoading = ref(false);
-const showDeleteModal = ref(false);
-const nhanVienToDelete = ref(null);
-const statusUpdateMessage = ref("");
-const showBackToWorkModal = ref(false);
-const nhanVienBackToWork = ref(null);
-const isExporting = ref(false);
+const statusUpdateMessage = ref('');
+const showAddressModal = ref(false);
+const addressNhanVien = ref(null);
+const provinces = ref([]);
+const districts = ref([]);
+const wards = ref([]);
+const selectedProvince = ref(null);
+const selectedDistrict = ref(null);
+const selectedWard = ref(null);
+const fileInput = ref(null);
+
 
 function openAddRoleModal() {
   showAddRoleModal.value = true;
@@ -142,6 +147,29 @@ async function addVaiTro() {
 }
 
 function openConfirmModal(nhanVien) {
+  Swal.fire({
+    icon: 'warning',
+    title: 'Xác nhận nhân viên ngừng làm việc?',
+    html: `Hệ thống sẽ ghi nhận nhân viên <b>${nhanVien.tenNhanVien}</b> ngừng làm việc. Tuy nhiên, các dữ liệu của nhân viên này sẽ vẫn được giữ lại.`,
+    showCancelButton: true,
+    confirmButtonText: 'Đồng ý',
+    cancelButtonText: 'Bỏ qua',
+    reverseButtons: true,
+    customClass: {
+      confirmButton: 'swal2-confirm btn-save',
+      cancelButton: 'swal2-cancel btn-cancel'
+    }
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        await axios.put(`http://localhost:8080/api/doiTrangThaiVe0/${nhanVien.id}`);
+        await getData();
+        toast.success('Cập nhật trạng thái nhân viên thành công!');
+      } catch (e) {
+        toast.error('Có lỗi khi cập nhật trạng thái!');
+      }
+    }
+  });
   selectedNhanVien.value = nhanVien;
   confirmMessage.value = `Hệ thống sẽ ghi nhận nhân viên ${nhanVien.tenKhachHang} ngừng làm việc. Tuy nhiên, các dữ liệu của nhân viên này sẽ vẫn được giữ lại.`;
   showConfirmModal.value = true;
@@ -156,62 +184,60 @@ async function confirmDoiTrangThai() {
   confirmLoading.value = true;
   try {
     await axios.put(
-      `http://localhost:8080/api/doiTrangThaiVe0/${selectedNhanVien.value.id}`
-    );
-    closeConfirmModal();
-    await getData();
-    toast.success("Cập nhật trạng thái nhân viên thành công!");
-  } catch (e) {
-    toast.error("Có lỗi khi cập nhật trạng thái!");
-  } finally {
-    confirmLoading.value = false;
-  }
-}
 
-function openBackToWorkModal(nhanVien) {
-  nhanVienBackToWork.value = nhanVien;
-  showBackToWorkModal.value = true;
-}
-function closeBackToWorkModal() {
-  showBackToWorkModal.value = false;
-  nhanVienBackToWork.value = null;
-}
-
-async function confirmBackToWork() {
-  if (!nhanVienBackToWork.value) return;
-  try {
-    await axios.put(
-      `http://localhost:8080/api/doiTrangThaiVe1/${nhanVienBackToWork.value.id}`
-    );
-    closeBackToWorkModal();
-    await getData();
-    toast.success("Nhân viên đã quay lại làm việc!");
-  } catch (e) {
-    toast.error("Có lỗi khi cập nhật trạng thái!");
-  }
 }
 
 function openDeleteModal(nhanVien) {
-  nhanVienToDelete.value = nhanVien;
-  showDeleteModal.value = true;
-}
-function closeDeleteModal() {
-  showDeleteModal.value = false;
-  nhanVienToDelete.value = null;
+  Swal.fire({
+    icon: 'error',
+    title: 'Xóa nhân viên',
+    html: 'Hệ thống sẽ <b>xóa hoàn toàn</b> nhân viên này. Bạn có chắc chắn muốn xóa?',
+    showCancelButton: true,
+    confirmButtonText: 'Đồng ý',
+    cancelButtonText: 'Bỏ qua',
+    reverseButtons: true,
+    customClass: {
+      confirmButton: 'swal2-confirm btn-save',
+      cancelButton: 'swal2-cancel btn-cancel'
+    }
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`http://localhost:8080/api/delete/${nhanVien.id}`);
+        await getData();
+        toast.success('Xóa nhân viên thành công!');
+      } catch (e) {
+        toast.error('Có lỗi khi xóa nhân viên!');
+      }
+    }
+  });
 }
 
-async function confirmDeleteNhanVien() {
-  if (!nhanVienToDelete.value) return;
-  try {
-    await axios.delete(
-      `http://localhost:8080/api/delete/${nhanVienToDelete.value.id}`
-    );
-    closeDeleteModal();
-    await getData();
-    toast.success("Xóa nhân viên thành công!");
-  } catch (e) {
-    toast.error("Có lỗi khi xóa nhân viên!");
-  }
+function openBackToWorkModal(nhanVien) {
+  Swal.fire({
+    icon: 'question',
+    title: 'Xác nhận nhân viên quay lại làm việc?',
+    html: `Hệ thống sẽ ghi nhận nhân viên <b>${nhanVien.tenNhanVien}</b> quay lại làm việc.`,
+    showCancelButton: true,
+    confirmButtonText: 'Đồng ý',
+    cancelButtonText: 'Bỏ qua',
+    reverseButtons: true,
+    customClass: {
+      confirmButton: 'swal2-confirm btn-save',
+      cancelButton: 'swal2-cancel btn-cancel'
+    }
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        await axios.put(`http://localhost:8080/api/doiTrangThaiVe1/${nhanVien.id}`);
+        await getData();
+        toast.success('Nhân viên đã quay lại làm việc!');
+      } catch (e) {
+        toast.error('Có lỗi khi cập nhật trạng thái!');
+      }
+    }
+  });
+
 }
 
 const exportExcelFile = async () => {
@@ -257,57 +283,69 @@ const exportExcelFile = async () => {
   }
 };
 
+const confirmExportExcel = async () => {
+  const result = await Swal.fire({
+    icon: 'warning',
+    title: 'Xác nhận xuất Excel?',
+    text: 'Bạn có chắc chắn muốn xuất danh sách nhân viên ra Excel không?',
+    showCancelButton: true,
+    confirmButtonText: 'Có, xuất ngay!',
+    cancelButtonText: 'Hủy bỏ',
+    reverseButtons: true,
+    customClass: {
+      confirmButton: 'swal2-confirm btn-save',
+      cancelButton: 'swal2-cancel btn-cancel'
+    }
+  });
+  if (result.isConfirmed) {
+    await exportExcelFile();
+  }
+};
+
 const filteredNhanVien = computed(() => {
   if (!Array.isArray(listNhanVien.value)) return [];
-  // Lọc theo trạng thái trước
   let result = listNhanVien.value.filter(
     (nv) => String(nv.trangThai) === String(filterState.value.trangThai)
   );
 
-  // Lọc theo chức vụ (theo tenRole)
-  if (filterState.value.vaiTro && filterState.value.vaiTro !== "") {
-    result = result.filter(
-      (nv) =>
-        nv.tenRole && String(nv.tenRole) === String(filterState.value.vaiTro)
-    );
-  }
-
-  // Lọc theo ngày tạo
-  if (filterState.value.ngayTao) {
-    result = result.filter((nv) => {
-      if (!nv.ngayTao) return false;
-      return nv.ngayTao.slice(0, 10) === filterState.value.ngayTao;
+  // Lọc theo năm sinh
+  if (filterState.value.namSinh) {
+    result = result.filter(nv => {
+      if (!nv.ngaySinh) return false;
+      const year = new Date(nv.ngaySinh).getFullYear();
+      return String(year) === String(filterState.value.namSinh);
     });
   }
 
-  // Lọc theo ngày sửa
-  if (filterState.value.ngaySua) {
-    result = result.filter((nv) => {
-      if (!nv.ngaySua) return false;
-      return nv.ngaySua.slice(0, 10) === filterState.value.ngaySua;
-    });
+  // Lọc theo tỉnh thành
+  if (filterState.value.tinhThanh) {
+    result = result.filter(nv => nv.tinhThanh === filterState.value.tinhThanh);
+
   }
 
-  // Sắp xếp theo ngày tạo và ngày sửa mới nhất lên đầu
+  // Tìm kiếm: nếu nhập số 4 chữ số thì tìm theo năm sinh, còn lại tìm theo tên hoặc mã
+  if (filterState.value.search) {
+    const keyword = filterState.value.search.trim().toLowerCase();
+    if (/^\d{4}$/.test(keyword)) {
+      result = result.filter(nv => {
+        if (!nv.ngaySinh) return false;
+        const year = new Date(nv.ngaySinh).getFullYear();
+        return String(year) === keyword;
+      });
+    } else {
+      result = result.filter(nv =>
+        nv.maNhanVien?.toLowerCase().includes(keyword) ||
+        nv.tenNhanVien?.toLowerCase().includes(keyword)
+      );
+    }
+  }
+
+  // Sắp xếp theo mã nhân viên giảm dần (NV011 > NV009 > NV007 ...)
   result.sort((a, b) => {
-    // Ưu tiên theo ngày sửa trước (nếu có)
-    if (a.ngaySua && b.ngaySua) {
-      const dateA = new Date(a.ngaySua);
-      const dateB = new Date(b.ngaySua);
-      if (dateA.getTime() !== dateB.getTime()) {
-        return dateB.getTime() - dateA.getTime(); // Mới nhất lên đầu
-      }
-    }
+    // Lấy số phía sau mã nhân viên
+    const getNumber = (ma) => parseInt(ma?.replace(/\D/g, '') || '0', 10);
+    return getNumber(b.maNhanVien) - getNumber(a.maNhanVien);
 
-    // Nếu ngày sửa bằng nhau hoặc không có, sắp xếp theo ngày tạo
-    if (a.ngayTao && b.ngayTao) {
-      const dateA = new Date(a.ngayTao);
-      const dateB = new Date(b.ngayTao);
-      return dateB.getTime() - dateA.getTime(); // Mới nhất lên đầu
-    }
-
-    // Nếu không có ngày, giữ nguyên thứ tự
-    return 0;
   });
 
   return result;
@@ -351,11 +389,155 @@ const maskPassword = (password) => {
   return "•".repeat(password.length);
 };
 
+function fetchProvinces() {
+  axios.get('https://provinces.open-api.vn/api/p/').then(res => {
+    provinces.value = res.data;
+  });
+}
+
+function fetchDistricts(provinceCode) {
+  if (!provinceCode) { districts.value = []; return; }
+  axios.get(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`).then(res => {
+    districts.value = res.data.districts;
+  });
+}
+
+function fetchWards(districtCode) {
+  if (!districtCode) { wards.value = []; return; }
+  axios.get(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`).then(res => {
+    wards.value = res.data.wards;
+  });
+}
+
+function openAddressModal(nhanVien) {
+  addressNhanVien.value = nhanVien;
+  showAddressModal.value = true;
+  fetchProvinces();
+  // Tìm code tỉnh, quận, xã theo tên hiện tại
+  selectedProvince.value = '';
+  selectedDistrict.value = '';
+  selectedWard.value = '';
+  // Tìm code tỉnh
+  axios.get('https://provinces.open-api.vn/api/p/').then(res => {
+    const province = res.data.find(p => p.name === nhanVien.tinhThanh);
+    if (province) {
+      selectedProvince.value = province.code;
+      fetchDistricts(province.code);
+      // Tìm code quận
+      axios.get(`https://provinces.open-api.vn/api/p/${province.code}?depth=2`).then(res2 => {
+        const district = res2.data.districts.find(d => d.name === nhanVien.quanHuyen);
+        if (district) {
+          selectedDistrict.value = district.code;
+          fetchWards(district.code);
+          // Tìm code xã
+          axios.get(`https://provinces.open-api.vn/api/d/${district.code}?depth=2`).then(res3 => {
+            const ward = res3.data.wards.find(w => w.name === nhanVien.xaPhuong);
+            if (ward) {
+              selectedWard.value = ward.code;
+            }
+          });
+        }
+      });
+    }
+  });
+}
+
+watch(selectedProvince, (newVal) => {
+  fetchDistricts(newVal);
+  selectedDistrict.value = '';
+  wards.value = [];
+  selectedWard.value = '';
+});
+
+watch(selectedDistrict, (newVal) => {
+  fetchWards(newVal);
+  selectedWard.value = '';
+});
+
+function saveAddress() {
+  // Cập nhật lại địa chỉ cho nhân viên (gọi API backend nếu cần)
+  const provinceName = provinces.value.find(p => p.code == selectedProvince.value)?.name || '';
+  const districtName = districts.value.find(d => d.code == selectedDistrict.value)?.name || '';
+  const wardName = wards.value.find(w => w.code == selectedWard.value)?.name || '';
+  addressNhanVien.value.tinhThanh = provinceName;
+  addressNhanVien.value.quanHuyen = districtName;
+  addressNhanVien.value.xaPhuong = wardName;
+  // Nếu cần gọi API backend để lưu, thêm đoạn này:
+  // axios.put(`http://localhost:8080/api/update/${addressNhanVien.value.id}`, { ...addressNhanVien.value })
+  showAddressModal.value = false;
+}
+
+const currentPage = ref(1);
+const pageSize = ref(5);
+const totalPages = computed(() => Math.ceil(filteredNhanVien.value.length / pageSize.value));
+
+const pagedNhanVien = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  return filteredNhanVien.value.slice(start, start + pageSize.value);
+});
+
+function goToPage(page) {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
+}
+watch(filteredNhanVien, () => { currentPage.value = 1; });
+
+async function triggerFileInput() {
+  const result = await Swal.fire({
+    icon: 'question',
+    title: 'Xác nhận nhập file Excel?',
+    text: 'Bạn có chắc chắn muốn nhập dữ liệu nhân viên từ file Excel không?',
+    showCancelButton: true,
+    confirmButtonText: 'Có, nhập ngay!',
+    cancelButtonText: 'Hủy bỏ',
+    reverseButtons: true,
+    customClass: {
+      confirmButton: 'swal2-confirm btn-save',
+      cancelButton: 'swal2-cancel btn-cancel'
+    }
+  });
+  if (result.isConfirmed) {
+    fileInput.value && fileInput.value.click();
+  }
+}
+
+async function handleFileChange(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const response = await axios.post(
+      'http://localhost:8080/api/nhan-vien/import-excel',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    toast.success(response.data || 'Nhập dữ liệu thành công!');
+    await getData(); // Refresh lại danh sách nhân viên
+  } catch (error) {
+    toast.error(
+      error.response?.data || 'Lỗi khi nhập file Excel!'
+    );
+  } finally {
+    // Reset input để có thể chọn lại cùng 1 file nếu muốn
+    event.target.value = '';
+  }
+}
+
+function getImageUrl(path) {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return `http://localhost:8080${path}`;
+}
+
 onMounted(() => {
   getData();
-  getVaiTro();
-  if (route.query.success === "true") {
-    toast.success("Thêm mới nhân viên thành công");
+  fetchProvinces(); // Thêm dòng này để lấy danh sách tỉnh thành cho filter
+  if (route.query.success === 'true') {
+    toast.success('Thêm mới nhân viên thành công');
+
     window.history.replaceState({}, document.title, route.path);
   } else if (route.query.updated === "true") {
     toast.success("Cập nhật nhân viên thành công");
@@ -365,35 +547,30 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="">
-    <div class="bg-white p-3 rounded border mb-4">
-      <div class="d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold mb-0">Quản Lý nhân viên</h5>
-        <div
-          style="
-            margin-left: auto;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-          "
-        >
-          <router-link to="/nhan-vien/them" class="nv-btn"
-            ><span style="font-size: 15px !important">+</span> Nhân
-            viên</router-link
-          >
-          <button class="nv-btn">
-            <span style="font-size: 15px !important">⭳</span> Nhập file
-          </button>
-          <button
-            class="nv-btn"
-            @click="exportExcelFile"
-            :disabled="isExporting"
-          >
-            <span v-if="isExporting" class="spinner"></span>
-            <span v-else style="font-size: 15px !important">⭱</span>
-            {{ isExporting ? "Đang xuất..." : "Xuất file" }}
-          </button>
-        </div>
+  <div class="nhanvien-page-wrapper">
+    <div class="nhanvien-header bg-white p-3 rounded shadow mb-4"
+         style="display: flex; align-items: center; justify-content: flex-start; box-shadow: 0 5px 10px #d1cac0; border-radius: 12px; padding: 6px 16px !important; position: relative; gap: 16px;">
+      <div>
+        <h2 style="margin: 0; font-size: 18px !important;">Quản Lý nhân viên</h2>
+      </div>
+      <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+        <router-link to="/nhan-vien/them" class="nv-btn" title="Thêm nhân viên mới"><span style="font-size: 15px !important;">+</span> Nhân viên</router-link>
+        <button class="nv-btn" @click="triggerFileInput" title="Nhập dữ liệu từ file Excel">
+          <span style="font-size: 15px !important;">⭳</span> Nhập file
+        </button>
+        <input
+          ref="fileInput"
+          type="file"
+          accept=".xlsx,.xls"
+          style="display: none"
+          @change="handleFileChange"
+        />
+        <button class="nv-btn" @click="confirmExportExcel" :disabled="isExporting" title="Xuất danh sách nhân viên ra file Excel">
+          <span v-if="isExporting" class="spinner"></span>
+          <span v-else style="font-size: 15px !important;">⭱</span>
+          {{ isExporting ? 'Đang xuất...' : 'Xuất file' }}
+        </button>
+
       </div>
     </div>
     <div class="filter-bar bg-white p-3 rounded border mb-4">
@@ -414,96 +591,54 @@ onMounted(() => {
         </span>
         <span class="filter-label">Bộ lọc</span>
       </div>
-      <div
-        class="filter-fields"
-        style="
-          display: flex;
-          flex-wrap: nowrap;
-          gap: 16px;
-          align-items: flex-end;
-        "
-      >
-        <div
-          class="filter-search-wrapper"
-          style="
-            min-width: 200px;
-            max-width: 220px;
-            flex: 1 1 200px;
-            position: relative;
-          "
-        >
-          <img :src="search" alt="search" class="filter-search-icon" />
-          <input
-            class="filter-search"
-            type="text"
-            placeholder="Tìm theo mã, tên nhân viên"
-            v-model="filterState.search"
-          />
+      <div class="filter-fields filter-fields-row">
+        <div class="filter-item">
+          <label>Tìm kiếm</label>
+          <div class="filter-search-wrapper">
+            <img :src="search" alt="search" class="filter-search-icon" />
+            <input
+              class="filter-search"
+              type="text"
+              placeholder="Tìm theo mã, tên nhân viên hoặc năm sinh"
+              v-model="filterState.search"
+              title="Tìm kiếm theo mã, tên nhân viên hoặc năm sinh"
+            />
+          </div>
         </div>
-        <div
-          class="filter-section"
-          style="min-width: 120px; max-width: 150px; flex: 1 1 120px"
-        >
+        <div class="filter-item">
+
           <label>Trạng thái</label>
           <div class="radio-group">
             <label class="radio-label">
-              <input type="radio" value="1" v-model="filterState.trangThai" />
+              <input type="radio" value="1" v-model="filterState.trangThai" title="Lọc nhân viên đang làm việc" />
               Đang làm việc
             </label>
             <label class="radio-label">
-              <input type="radio" value="0" v-model="filterState.trangThai" />
+              <input type="radio" value="0" v-model="filterState.trangThai" title="Lọc nhân viên đã nghỉ" />
               Đã nghỉ
             </label>
           </div>
         </div>
-        <div
-          class="filter-section filter-section-role"
-          style="min-width: 120px; max-width: 150px; flex: 1 1 120px"
-        >
-          <div class="label-row">
-            <label>Chức vụ</label>
-            <button
-              class="btn-add-role"
-              title="Thêm chức vụ"
-              @click="openAddRoleModal"
-            >
-              <span>+</span>
-            </button>
-          </div>
-          <select v-model="filterState.vaiTro">
+        <div class="filter-item">
+          <label>Năm sinh</label>
+          <input type="number" v-model="filterState.namSinh" min="1900" max="2100" placeholder="VD: 1999" title="Lọc theo năm sinh nhân viên">
+        </div>
+        <div class="filter-item">
+          <label>Tỉnh/Thành</label>
+          <select v-model="filterState.tinhThanh" title="Lọc theo tỉnh/thành">
             <option value="">Tất cả</option>
-            <option
-              v-for="vaiTro in vaiTroList"
-              :key="vaiTro.id"
-              :value="vaiTro.tenRole"
-            >
-              {{ vaiTro.tenRole }}
+            <option v-for="province in provinces" :key="province.code" :value="province.name">
+              {{ province.name }}
             </option>
           </select>
         </div>
-        <div
-          class="filter-section"
-          style="min-width: 120px; max-width: 150px; flex: 1 1 120px"
-        >
-          <label>Ngày tạo</label>
-          <input type="date" v-model="filterState.ngayTao" />
-        </div>
-        <div
-          class="filter-section"
-          style="min-width: 120px; max-width: 150px; flex: 1 1 120px"
-        >
-          <label>Ngày sửa</label>
-          <input type="date" v-model="filterState.ngaySua" />
-        </div>
       </div>
     </div>
-    <div class="table-wrapper bg-white p-3 border rounded mb-4">
-      <div style="margin-bottom: 10px; display: flex; align-items: center">
-        <button
-          class="column-toggle-btn column-toggle-align"
-          @click="showColumnBox = !showColumnBox"
-        >
-          <span style="font-size: 20px">≡</span>
+    <div class="table-wrapper bg-white p-3 rounded shadow mb-4">
+      <div style="margin-bottom: 10px; display: flex; align-items: center;">
+        <button class="column-toggle-btn column-toggle-align" @click="showColumnBox = !showColumnBox" title="Tùy chọn cột hiển thị">
+          <span style="font-size: 20px;">≡</span>
+
         </button>
         <span
           style="font-size: 18px !important; font-weight: 600; color: #212529"
@@ -525,222 +660,61 @@ onMounted(() => {
           </div>
         </div>
       </div>
+      <div class="table-container">
+        <table class="employee-table">
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th v-for="col in allColumns.filter(c => visibleColumns.includes(c.key))" :key="col.key">{{ col.label }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-if="pagedNhanVien.length">
+              <template v-for="(nhanVien, index) in pagedNhanVien" :key="nhanVien.id">
+                <tr
+                  @click="expandedRow = expandedRow === nhanVien.id ? null : nhanVien.id"
+                  :class="{ 'row-selected': expandedRow === nhanVien.id }"
+                  style="cursor: pointer;"
+                >
+                  <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+                  <td v-for="col in allColumns.filter(c => visibleColumns.includes(c.key))" :key="col.key">
+                    <template v-if="col.key === 'anh'">
+                      <img v-if="nhanVien.anh" :src="getImageUrl(nhanVien.anh)" style="width: 40px; height: 40px; object-fit: cover; background: #eee;">
+                    </template>
+                    <template v-else-if="col.key === 'cccd'">
+                      {{ maskPassword(nhanVien.cccd) }}
+                    </template>
+                    <template v-else-if="col.key === 'gioiTinh'">
+                      {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}
+                    </template>
+                    <template v-else-if="col.key === 'trangThai'">
+                      <span :class="['status-badge', nhanVien.trangThai == 1 ? 'active' : 'inactive']">
+                        {{ nhanVien.trangThai == 1 ? 'Đang làm việc' : 'Đã nghỉ' }}
+                      </span>
+                    </template>
+                    <template v-else-if="col.key === 'ngaySinh'">
+                      {{ formatDate(nhanVien[col.key]) }}
+                    </template>
+                    <template v-else>
+                      {{ nhanVien[col.key] }}
+                    </template>
+                  </td>
+                </tr>
+                <tr v-if="expandedRow === nhanVien.id">
+                  <td :colspan="visibleColumns.length + 2">
+                    <div class="employee-detail-expand detail-2col">
+                      <!-- Ảnh bên trái -->
+                      <div style="min-width: 140px; max-width: 180px;">
+                        <img v-if="nhanVien.anh" :src="getImageUrl(nhanVien.anh)" style="width: 100%; max-width: 160px; height: auto; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">
+                      </div>
+                      <!-- Thông tin bên phải, chia 2 cột -->
+                      <div class="detail-fields">
+                        <div v-for="(col, i) in allColumns.filter(c => c.key !== 'anh')" :key="col.key" class="detail-field">
+                          <template v-if="col.key === 'cccd'">
+                            <div class="password-flex-row">
+                              <b class="detail-label" style="margin-right: 6px;">{{ col.label }}:</b>
+                              <span class="password-value">{{ showPassword[nhanVien.id] ? nhanVien.cccd : maskPassword(nhanVien.cccd) }}</span>
 
-      <!-- table danh sach nhan vie -->
-      <div class="text-muted text-center bg-light rounded">
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead class="table-light">
-              <tr>
-                <th>STT</th>
-                <th
-                  v-for="col in allColumns.filter((c) =>
-                    visibleColumns.includes(c.key)
-                  )"
-                  :key="col.key"
-                >
-                  {{ col.label }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-if="filteredNhanVien.length">
-                <template
-                  v-for="(nhanVien, index) in filteredNhanVien"
-                  :key="nhanVien.id"
-                >
-                  <tr
-                    @click="
-                      expandedRow =
-                        expandedRow === nhanVien.id ? null : nhanVien.id
-                    "
-                    :class="{ 'row-selected': expandedRow === nhanVien.id }"
-                    style="cursor: pointer"
-                  >
-                    <td>{{ index + 1 }}</td>
-                    <td
-                      v-for="col in allColumns.filter((c) =>
-                        visibleColumns.includes(c.key)
-                      )"
-                      :key="col.key"
-                    >
-                      <template v-if="col.key === 'anh'">
-                        <img
-                          v-if="nhanVien.anh"
-                          :src="nhanVien.anh"
-                          style="
-                            width: 40px;
-                            height: 40px;
-                            object-fit: cover;
-                            background: #eee;
-                          "
-                        />
-                      </template>
-                      <template v-else-if="col.key === 'matKhau'">
-                        {{ maskPassword(nhanVien.matKhau) }}
-                      </template>
-                      <template v-else-if="col.key === 'gioiTinh'">
-                        {{ nhanVien.gioiTinh ? "Nam" : "Nữ" }}
-                      </template>
-                      <template v-else-if="col.key === 'trangThai'">
-                        <span
-                          :class="[
-                            'status-badge',
-                            nhanVien.trangThai == 1 ? 'active' : 'inactive',
-                          ]"
-                        >
-                          {{
-                            nhanVien.trangThai == 1
-                              ? "Đang làm việc"
-                              : "Đã nghỉ"
-                          }}
-                        </span>
-                      </template>
-                      <template
-                        v-else-if="
-                          col.key === 'ngayTao' || col.key === 'ngaySua'
-                        "
-                      >
-                        {{ formatDate(nhanVien[col.key]) }}
-                      </template>
-                      <template v-else>
-                        {{ nhanVien[col.key] }}
-                      </template>
-                    </td>
-                  </tr>
-                  <tr v-if="expandedRow === nhanVien.id">
-                    <td :colspan="visibleColumns.length + 2">
-                      <div class="employee-detail-expand detail-2col">
-                        <!-- Ảnh bên trái -->
-                        <div style="min-width: 140px; max-width: 180px">
-                          <img
-                            v-if="nhanVien.anh"
-                            :src="nhanVien.anh"
-                            style="
-                              width: 100%;
-                              max-width: 160px;
-                              height: auto;
-                              object-fit: cover;
-                              border-radius: 8px;
-                              border: 1px solid #eee;
-                            "
-                          />
-                        </div>
-                        <!-- Thông tin bên phải, chia 2 cột -->
-                        <div class="detail-fields">
-                          <div
-                            v-for="(col, i) in allColumns.filter(
-                              (c) => c.key !== 'anh'
-                            )"
-                            :key="col.key"
-                            class="detail-field"
-                          >
-                            <template v-if="col.key === 'matKhau'">
-                              <div class="password-flex-row">
-                                <b
-                                  class="detail-label"
-                                  style="margin-right: 6px"
-                                  >{{ col.label }}:</b
-                                >
-                                <span class="password-value">{{
-                                  showPassword[nhanVien.id]
-                                    ? nhanVien.matKhau
-                                    : maskPassword(nhanVien.matKhau)
-                                }}</span>
-                                <button
-                                  @click.stop="
-                                    togglePasswordVisibility(nhanVien.id)
-                                  "
-                                  class="password-toggle-btn"
-                                  :title="
-                                    showPassword[nhanVien.id]
-                                      ? 'Ẩn mật khẩu'
-                                      : 'Hiển thị mật khẩu'
-                                  "
-                                >
-                                  <Eye
-                                    v-if="!showPassword[nhanVien.id]"
-                                    size="16"
-                                  />
-                                  <EyeOff v-else size="16" />
-                                </button>
-                              </div>
-                            </template>
-                            <template v-else-if="col.key === 'gioiTinh'">
-                              <b class="detail-label">{{ col.label }}:</b>
-                              {{ nhanVien.gioiTinh ? "Nam" : "Nữ" }}
-                            </template>
-                            <template v-else-if="col.key === 'trangThai'">
-                              <b class="detail-label">{{ col.label }}:</b>
-                              <span
-                                :class="[
-                                  'status-badge',
-                                  nhanVien.trangThai == 1
-                                    ? 'active'
-                                    : 'inactive',
-                                ]"
-                              >
-                                {{
-                                  nhanVien.trangThai == 1
-                                    ? "Đang làm việc"
-                                    : "Đã nghỉ"
-                                }}
-                              </span>
-                            </template>
-                            <template
-                              v-else-if="
-                                col.key === 'ngayTao' || col.key === 'ngaySua'
-                              "
-                            >
-                              <b class="detail-label">{{ col.label }}:</b>
-                              {{ formatDate(nhanVien[col.key]) }}
-                            </template>
-                            <template v-else>
-                              <b class="detail-label">{{ col.label }}:</b>
-                              {{ nhanVien[col.key] }}
-                            </template>
-                          </div>
-                        </div>
-                        <!-- Nút thao tác -->
-                        <div class="employee-detail-actions detail-actions-abs">
-                          <template v-if="nhanVien.trangThai == 1">
-                            <button
-                              class="action-btn edit"
-                              title="Sửa"
-                              @click="
-                                router.push(`/nhan-vien/sua/${nhanVien.id}`)
-                              "
-                            >
-                              <Edit />
-                            </button>
-                            <button
-                              class="action-btn delete"
-                              title="Ngừng làm việc"
-                              @click="openConfirmModal(nhanVien)"
-                            >
-                              <Trash />
-                            </button>
-                          </template>
-                          <template v-else>
-                            <div class="info-footer-btns">
-                              <button
-                                class="icon-btn"
-                                title="Quay Lại làm việc"
-                                @click="openBackToWorkModal(nhanVien)"
-                              >
-                                <svg
-                                  class="icon-green"
-                                  width="22"
-                                  height="22"
-                                  fill="none"
-                                  stroke="#22b34c"
-                                  stroke-width="2"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path d="M1 4v6h6" />
-                                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                                </svg>
-                              </button>
                               <button
                                 class="icon-btn"
                                 title="Xóa Nhân Viên"
@@ -763,11 +737,44 @@ onMounted(() => {
                               </button>
                             </div>
                           </template>
+                          <template v-else-if="col.key === 'gioiTinh'">
+                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}
+                          </template>
+                          <template v-else-if="col.key === 'trangThai'">
+                            <b class="detail-label">{{ col.label }}:</b>
+                            <span :class="['status-badge', nhanVien.trangThai == 1 ? 'active' : 'inactive']">
+                              {{ nhanVien.trangThai == 1 ? 'Đang làm việc' : 'Đã nghỉ' }}
+                            </span>
+                          </template>
+                          <template v-else-if="col.key === 'ngaySinh'">
+                            <b class="detail-label">{{ col.label }}:</b> {{ formatDate(nhanVien[col.key]) }}
+                          </template>
+                          <template v-else>
+                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien[col.key] }}
+                          </template>
                         </div>
                       </div>
-                    </td>
-                  </tr>
-                </template>
+                      <!-- Nút thao tác -->
+                      <div class="employee-detail-actions detail-actions-abs">
+                        <template v-if="nhanVien.trangThai == 1">
+                          <button class="action-btn edit" title="Sửa thông tin nhân viên" @click="router.push(`/nhan-vien/sua/${nhanVien.id}`)"><Edit /></button>
+                          <button class="action-btn delete" title="Ngừng làm việc" @click="openConfirmModal(nhanVien)"><Trash /></button>
+                        </template>
+                        <template v-else>
+                          <div class="info-footer-btns">
+                            <button class="icon-btn" title="Quay lại làm việc" @click="openBackToWorkModal(nhanVien)">
+                              <svg class="icon-green" width="22" height="22" fill="none" stroke="#22b34c" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                            </button>
+                            <button class="icon-btn" title="Xóa nhân viên" @click="openDeleteModal(nhanVien)">
+                              <svg class="icon-red" width="22" height="22" fill="none" stroke="#e53935" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
               </template>
               <tr v-else>
                 <td
@@ -809,112 +816,53 @@ onMounted(() => {
           </table>
         </div>
       </div>
-    </div>
-    <!-- Modal thêm chức vụ -->
-    <div v-if="showAddRoleModal" class="modal-overlay">
-      <div class="modal-add-role">
-        <div class="modal-header">
-          <span>Thêm mới chức vụ</span>
-          <button class="modal-close" @click="closeAddRoleModal">
-            &times;
-          </button>
-        </div>
-        <div class="modal-body">
-          <label for="roleName">Tên chức vụ</label>
-          <input
-            id="roleName"
-            v-model="newRoleName"
-            type="text"
-            placeholder="Nhập tên chức vụ"
-          />
-          <span v-if="addRoleError" class="error-msg">{{ addRoleError }}</span>
-        </div>
-        <div class="modal-actions">
-          <button class="btn-save" @click="addVaiTro">
-            <span style="margin-right: 6px">💾</span>Lưu
-          </button>
-          <button class="btn-cancel" @click="closeAddRoleModal">
-            <span style="margin-right: 6px">🚫</span>Bỏ qua
-          </button>
-        </div>
+      <div class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 18px;">
+        <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">«</button>
+        <span v-for="page in totalPages" :key="page" style="margin: 0 4px;">
+          <button @click="goToPage(page)" :class="{ 'active': currentPage === page }">{{ page }}</button>
+        </span>
+        <button @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages">»</button>
       </div>
     </div>
-    <div v-if="showConfirmModal" class="modal-overlay">
-      <div class="modal-add-role" style="min-width: 400px; max-width: 95vw">
+    <div v-if="showAddressModal" class="modal-overlay">
+      <div class="modal-add-role" style="min-width:400px;max-width:95vw;">
         <div class="modal-header">
-          <span><b>Xác nhận nhân viên ngừng làm việc?</b></span>
-          <button class="modal-close" @click="closeConfirmModal">
-            &times;
-          </button>
+          <span><b>Chỉnh sửa địa chỉ</b></span>
+          <button class="modal-close" @click="showAddressModal = false">&times;</button>
         </div>
         <div class="modal-body">
           <div>
-            Hệ thống sẽ ghi nhận nhân viên
-            <b>{{ selectedNhanVien?.tenKhachHang }}</b> ngừng làm việc. Tuy
-            nhiên, các dữ liệu của nhân viên này sẽ vẫn được giữ lại.
+            <label for="province">Tỉnh/Thành</label>
+            <select id="province" v-model="selectedProvince" title="Chọn tỉnh/thành cho địa chỉ nhân viên">
+              <option value="">Chọn tỉnh/thành</option>
+              <option v-for="province in provinces" :key="province.code" :value="province.code">
+                {{ province.name }}
+              </option>
+            </select>
           </div>
-        </div>
-        <div class="modal-actions">
-          <button
-            class="btn-save"
-            :disabled="confirmLoading"
-            @click="confirmDoiTrangThai"
-          >
-            <span style="margin-right: 6px">✔</span>Đồng ý
-          </button>
-          <button
-            class="btn-cancel"
-            :disabled="confirmLoading"
-            @click="closeConfirmModal"
-          >
-            <span style="margin-right: 6px">🚫</span>Bỏ qua
-          </button>
-        </div>
-      </div>
-    </div>
-    <div v-if="showDeleteModal" class="modal-overlay">
-      <div class="modal-add-role" style="min-width: 400px; max-width: 95vw">
-        <div class="modal-header">
-          <span><b>Xóa nhân viên</b></span>
-          <button class="modal-close" @click="closeDeleteModal">&times;</button>
-        </div>
-        <div class="modal-body">
           <div>
-            Hệ thống sẽ <b>xóa hoàn toàn</b> nhân viên này. Bạn có chắc chắn
-            muốn xóa?
+            <label for="district">Quận/Huyện</label>
+            <select id="district" v-model="selectedDistrict" title="Chọn quận/huyện cho địa chỉ nhân viên">
+              <option value="">Chọn quận/huyện</option>
+              <option v-for="district in districts" :key="district.code" :value="district.code">
+                {{ district.name }}
+              </option>
+            </select>
           </div>
-        </div>
-        <div class="modal-actions">
-          <button class="btn-save" @click="confirmDeleteNhanVien">
-            <span style="margin-right: 6px">✔</span>Đồng ý
-          </button>
-          <button class="btn-cancel" @click="closeDeleteModal">
-            <span style="margin-right: 6px">🚫</span>Bỏ qua
-          </button>
-        </div>
-      </div>
-    </div>
-    <div v-if="showBackToWorkModal" class="modal-overlay">
-      <div class="modal-add-role" style="min-width: 400px; max-width: 95vw">
-        <div class="modal-header">
-          <span><b>Xác nhận nhân viên quay lại làm việc?</b></span>
-          <button class="modal-close" @click="closeBackToWorkModal">
-            &times;
-          </button>
-        </div>
-        <div class="modal-body">
           <div>
-            Hệ thống sẽ ghi nhận nhân viên
-            <b>{{ nhanVienBackToWork?.tenKhachHang }}</b> quay lại làm việc.
+            <label for="ward">Xã/Phường</label>
+            <select id="ward" v-model="selectedWard" title="Chọn xã/phường cho địa chỉ nhân viên">
+              <option value="">Chọn xã/phường</option>
+              <option v-for="ward in wards" :key="ward.code" :value="ward.code">
+                {{ ward.name }}
+              </option>
+            </select>
           </div>
         </div>
         <div class="modal-actions">
-          <button class="btn-save" @click="confirmBackToWork">
-            <span style="margin-right: 6px">✔</span>Đồng ý
-          </button>
-          <button class="btn-cancel" @click="closeBackToWorkModal">
-            <span style="margin-right: 6px">🚫</span>Bỏ qua
-          </button>
+          <button class="btn-save" @click="saveAddress" title="Lưu địa chỉ nhân viên">Lưu</button>
+          <button class="btn-cancel" @click="showAddressModal = false" title="Bỏ qua chỉnh sửa địa chỉ">Bỏ qua</button>
+
         </div>
       </div>
     </div>
@@ -943,7 +891,6 @@ onMounted(() => {
   transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
   user-select: none;
-  caret-color: transparent;
   box-shadow: 0 2px 8px #0a2a5c11;
 }
 .nv-btn:focus {
@@ -1236,58 +1183,12 @@ onMounted(() => {
   flex-wrap: nowrap !important;
   gap: 12px !important;
 }
-.filter-search-wrapper filter-search-inline {
-  min-width: 180px;
-  max-width: 220px;
-  flex: 1 1 180px;
-}
-.filter-section {
-  min-width: 120px !important;
-  max-width: 180px !important;
-  flex: 1 1 120px !important;
-}
-.filter-section label {
-  font-size: 13px;
-  color: #222;
-  margin-bottom: 4px;
-  font-weight: 500;
-}
-.filter-section select,
-.filter-section input {
+.filter-search-wrapper {
+  position: relative;
   width: 100%;
-  padding: 7px 8px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 15px;
-}
-.label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-.btn-add-role {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #fff;
-  border: 1.2px solid #d1cac0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: bold;
-  color: #222;
-  cursor: pointer;
-  transition: border 0.18s, box-shadow 0.18s;
-  margin-left: 8px;
-  outline: none;
-  padding: 0;
-}
-.btn-add-role:hover {
-  border-color: #339cf1;
-  box-shadow: 0 2px 8px #339cf122;
-  color: #339cf1;
+  min-width: 180px;
+  max-width: 260px;
+  display: block;
 }
 .filter-search-icon {
   position: absolute;
@@ -1298,15 +1199,16 @@ onMounted(() => {
   height: 18px;
   opacity: 0.6;
   pointer-events: none;
+  z-index: 2;
 }
 .filter-search {
-  padding-left: 36px;
   width: 100%;
   padding: 7px 12px 7px 36px;
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 15px;
   font-weight: 400;
+  box-sizing: border-box;
 }
 .radio-group {
   display: flex;
@@ -1326,9 +1228,6 @@ onMounted(() => {
   accent-color: #1976d2;
   width: 18px;
   height: 18px;
-}
-*:not(input):not(textarea):not(select) {
-  caret-color: transparent !important;
 }
 .modal-overlay {
   position: fixed;
@@ -1481,7 +1380,6 @@ onMounted(() => {
   transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
   user-select: none;
-  caret-color: transparent;
   box-shadow: 0 2px 8px #0a2a5c11;
 }
 .file-btn:focus {
@@ -1577,5 +1475,69 @@ onMounted(() => {
   min-width: 120px;
   font-weight: bold;
   text-align: left;
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+.pagination button {
+  min-width: 36px;
+  height: 36px;
+  border: 1.5px solid #d1cac0;
+  background: #fff;
+  color: #222;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s;
+  outline: none;
+  margin: 0 2px;
+  box-shadow: 0 2px 8px #0001;
+}
+.pagination button.active,
+.pagination button:focus {
+  background: #339cf1;
+  color: #fff;
+  border-color: #339cf1;
+  box-shadow: 0 2px 8px #339cf133;
+}
+.pagination button:hover:not(:disabled):not(.active) {
+  background: #e3eafc;
+  color: #339cf1;
+  border-color: #339cf1;
+}
+.pagination button:disabled {
+  background: #f5f5f5;
+  color: #bbb;
+  border-color: #eee;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.filter-fields-row {
+  display: flex;
+  gap: 32px;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+
+.filter-item {
+  flex: 1 1 0;
+  min-width: 180px;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.filter-item label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 2px;
+  color: #222;
 }
 </style>
