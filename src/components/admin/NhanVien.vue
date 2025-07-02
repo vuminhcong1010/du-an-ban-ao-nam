@@ -27,7 +27,6 @@ const listNhanVien = ref({
   trangThai: 1
 });
 
-const vaiTroList = ref([]);
 const getData = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/home')
@@ -37,14 +36,7 @@ const getData = async () => {
     console.log(error);
   }
 }
-const getVaiTro = async () => {
-  try {
-    const response = await axios.get('http://localhost:8080/api/vai-tro');
-    vaiTroList.value = response.data;
-  } catch (error) {
-    console.error("Lỗi khi load chức vụ:", error);
-  }
-}
+
 
 const allColumns = [
   { key: 'anh', label: 'Ảnh' },
@@ -96,11 +88,7 @@ function formatDate(dateStr) {
 
 const route = useRoute();
 const toast = useToast();
-const showAddRoleModal = ref(false);
-const newRoleName = ref("");
-const addRoleError = ref("");
 const router = useRouter();
-const statusUpdateMessage = ref('');
 const showAddressModal = ref(false);
 const addressNhanVien = ref(null);
 const provinces = ref([]);
@@ -111,32 +99,6 @@ const selectedDistrict = ref(null);
 const selectedWard = ref(null);
 const fileInput = ref(null);
 
-function openAddRoleModal() {
-  showAddRoleModal.value = true;
-  newRoleName.value = "";
-  addRoleError.value = "";
-}
-function closeAddRoleModal() {
-  showAddRoleModal.value = false;
-  newRoleName.value = "";
-  addRoleError.value = "";
-}
-async function addVaiTro() {
-  addRoleError.value = "";
-  if (!newRoleName.value.trim()) {
-    addRoleError.value = 'Vui lòng nhập tên chức vụ';
-    toast.error('Vui lòng nhập tên chức vụ');
-    return;
-  }
-  try {
-    await axios.post('http://localhost:8080/api/addVaiTro', { tenRole: newRoleName.value });
-    await getVaiTro();
-    closeAddRoleModal();
-    toast.success('Thêm chức vụ thành công!');
-  } catch (e) {
-    toast.error('Thêm chức vụ thất bại!');
-  }
-}
 
 function openConfirmModal(nhanVien) {
   Swal.fire({
@@ -334,7 +296,7 @@ watch(() => filterState.value.search, (newVal) => {
   if (searchTimeout) clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     searchNhanVien(newVal);
-  }, 300);
+  }, 30);
 });
 
 // Function to toggle password visibility
