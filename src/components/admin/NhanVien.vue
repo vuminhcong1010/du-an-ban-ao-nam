@@ -9,6 +9,8 @@ import Swal from 'sweetalert2'
 
 const toggleSidebar = inject('toggleSidebar')
 
+const isExporting = ref(false);
+
 const listNhanVien = ref({
   id: "",
   maNhanVien: "",

@@ -1,14 +1,4 @@
 
-
-import HoaDon from '@/components/admin/HoaDon.vue'
-import HoaDonChiTiet from '@/components/admin/HoaDonChiTiet.vue'
-
-
-import { createRouter, createWebHistory } from 'vue-router'
-
-
-import HoaDon from "../components/admin/HoaDon.vue";
-// import QuanLyKhachHang from '../components/admin/KhachHangTable.vue'
 import QuanLyKhachHang from "../views/CustomerManagement.vue";
 import KhachHangAddPage from "@/components/admin/KhachHangAddPage.vue";
 import KhachHangEditPage from "@/components/admin/KhachHangEditPage.vue";
@@ -29,6 +19,7 @@ import Test1 from '@/components/admin/Test1.vue';
 import PhieuGiamGia from "@/components/admin/PhieuGiamGia.vue";
 import ThemPhieuGiamGia from "@/components/admin/ThemPhieuGiamGIa.vue";
 import SuaPhieuGiamGia from "@/components/admin/SuaPhieuGiamGia.vue";
+import HoaDon from "../components/admin/HoaDon.vue";
 import HoaDonChiTiet from '@/components/admin/HoaDonChiTiet.vue'
 import BanHang from "@/components/admin/BanHang.vue";
 
