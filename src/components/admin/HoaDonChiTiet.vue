@@ -470,7 +470,6 @@ function downloadPDF(maHoaDon) {
             <Receipt></Receipt> Đơn hàng: {{ maHoaDon }}
           </h5>
 
-          <button class="btn" style="border: none; color: #0a2c57">
           <button class="btn" style="border: none; color: #0a2c57" @click="downloadPDF(maHoaDon)">
             <Printer class="me-1" size="16"></Printer> In hóa đơn
           </button>
