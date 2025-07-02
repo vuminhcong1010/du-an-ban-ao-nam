@@ -29,7 +29,9 @@ import {
   ArrowUpRight,
 } from "lucide-vue-next";
 import { ref, onMounted, watch } from "vue";
+
 import ThemSanPham from "./ThemSanPham.vue";
+
 
 const buttons = ref([
   ["Hủy đơn hàng", "Xác nhận"],
@@ -222,6 +224,24 @@ const xoaSanPham = async (id) => {
     console.error(error);
   }
 };
+
+
+// xuat file pdf
+function downloadPDF(maHoaDon) {
+  axios.get(`http://localhost:8080/hoa-don/${maHoaDon}/pdf`, {
+    responseType: 'blob'
+  }).then((response) => {
+    const fileURL = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const fileLink = document.createElement('a');
+    fileLink.href = fileURL;
+    fileLink.setAttribute('download', `hoa_don_${maHoaDon}.pdf`);
+    document.body.appendChild(fileLink);
+    fileLink.click();
+    document.body.removeChild(fileLink);
+  }).catch((err) => {
+    console.error("Lỗi tải file PDF:", err);
+  });
+}
 </script>
 
 <template>
@@ -351,7 +371,11 @@ const xoaSanPham = async (id) => {
               Thêm sản phẩm
             </button>
             <teleport to="body">
-              <ThemSanPham
+          
+
+        
+              <ThemSanPhamHoaDon
+
                 v-if="showThemSanPham"
                 :key="showThemSanPham"
                 @close="showThemSanPham = false"
@@ -445,7 +469,9 @@ const xoaSanPham = async (id) => {
           <h5 class="fw-semibold">
             <Receipt></Receipt> Đơn hàng: {{ maHoaDon }}
           </h5>
+
           <button class="btn" style="border: none; color: #0a2c57">
+          <button class="btn" style="border: none; color: #0a2c57" @click="downloadPDF(maHoaDon)">
             <Printer class="me-1" size="16"></Printer> In hóa đơn
           </button>
         </div>
@@ -475,16 +501,20 @@ const xoaSanPham = async (id) => {
         <div class="align-items-center mb-3">
           <h5 class="fw-semibold">
             Khách hàng:
+
             {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.tenKhachHang }}
           </h5>
           <label for="">
             <Phone style="width: 16px; height: 16px; color: #0a2c57"></Phone> :
             {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.soDienThoai }}
+
           </label>
           <br />
           <label for=""
             ><Mail style="width: 16px; height: 16px; color: #0a2c57"></Mail> :
+
             {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.email }}</label
+
           >
         </div>
         <hr />
@@ -624,7 +654,9 @@ const xoaSanPham = async (id) => {
           </div>
 
           <!-- Số tiền -->
+
           <span>4.856.000</span>
+
 
           <!-- Modal lịch sử thanh toán -->
           <LichSuThanhToan
@@ -644,7 +676,9 @@ const xoaSanPham = async (id) => {
                 (
                   tongTienSanPham -
                   listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
+
                   listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen - 4856000
+
                 )?.toLocaleString("vi-VN")
               }}
             </strong>

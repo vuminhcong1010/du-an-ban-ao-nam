@@ -1,4 +1,4 @@
-// import './assets/main.css'
+
 
 import { createApp } from 'vue'
 import App from './App.vue'
@@ -20,6 +20,9 @@ const options = {
 
 app.use(BootstrapVue3);
 app.use(Toast, options)
-app.use(router)
 
+app.use(router)
 app.mount('#app')
+
+
+
