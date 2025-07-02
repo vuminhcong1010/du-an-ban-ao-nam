@@ -7,8 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification';
 import Swal from 'sweetalert2'
 
-
-const toggleSidebar = inject("toggleSidebar");
+const toggleSidebar = inject('toggleSidebar')
 
 const listNhanVien = ref({
   id: "",
@@ -26,30 +25,20 @@ const listNhanVien = ref({
   email: "",
   ghiChu: "",
   trangThai: 1
-
 });
 
-const vaiTroList = ref([]);
 const getData = async () => {
   try {
-    const response = await axios.get("http://localhost:8080/api/home");
+    const response = await axios.get('http://localhost:8080/api/home')
     listNhanVien.value = response.data;
     // console.log('NhanVien:', listNhanVien.value);
   } catch (error) {
     console.log(error);
   }
-};
-const getVaiTro = async () => {
-  try {
-    const response = await axios.get("http://localhost:8080/api/vai-tro");
-    vaiTroList.value = response.data;
-  } catch (error) {
-    console.error("Lỗi khi load chức vụ:", error);
-  }
-};
+}
+
 
 const allColumns = [
-
   { key: 'anh', label: 'Ảnh' },
   { key: 'maNhanVien', label: 'Mã nhân viên' },
   { key: 'tenNhanVien', label: 'Tên nhân viên' },
@@ -71,7 +60,6 @@ const visibleColumns = ref([
   'tenNhanVien',
   'sdt',
   'trangThai',
-
 ]);
 const showColumnBox = ref(false);
 const expandedRow = ref(null);
@@ -84,28 +72,23 @@ const filterState = ref({
   namSinh: '', // năm sinh
   tinhThanh: '', // tỉnh thành
   search: ''
-
 });
 
 const showPassword = ref({}); // Track password visibility for each employee
 
 function formatDate(dateStr) {
-  if (!dateStr) return "";
+  if (!dateStr) return '';
   const d = new Date(dateStr);
 
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
 }
 
 const route = useRoute();
 const toast = useToast();
-const showAddRoleModal = ref(false);
-const newRoleName = ref("");
-const addRoleError = ref("");
 const router = useRouter();
-const statusUpdateMessage = ref('');
 const showAddressModal = ref(false);
 const addressNhanVien = ref(null);
 const provinces = ref([]);
@@ -116,35 +99,6 @@ const selectedDistrict = ref(null);
 const selectedWard = ref(null);
 const fileInput = ref(null);
 
-
-function openAddRoleModal() {
-  showAddRoleModal.value = true;
-  newRoleName.value = "";
-  addRoleError.value = "";
-}
-function closeAddRoleModal() {
-  showAddRoleModal.value = false;
-  newRoleName.value = "";
-  addRoleError.value = "";
-}
-async function addVaiTro() {
-  addRoleError.value = "";
-  if (!newRoleName.value.trim()) {
-    addRoleError.value = "Vui lòng nhập tên chức vụ";
-    toast.error("Vui lòng nhập tên chức vụ");
-    return;
-  }
-  try {
-    await axios.post("http://localhost:8080/api/addVaiTro", {
-      tenRole: newRoleName.value,
-    });
-    await getVaiTro();
-    closeAddRoleModal();
-    toast.success("Thêm chức vụ thành công!");
-  } catch (e) {
-    toast.error("Thêm chức vụ thất bại!");
-  }
-}
 
 function openConfirmModal(nhanVien) {
   Swal.fire({
@@ -170,21 +124,6 @@ function openConfirmModal(nhanVien) {
       }
     }
   });
-  selectedNhanVien.value = nhanVien;
-  confirmMessage.value = `Hệ thống sẽ ghi nhận nhân viên ${nhanVien.tenKhachHang} ngừng làm việc. Tuy nhiên, các dữ liệu của nhân viên này sẽ vẫn được giữ lại.`;
-  showConfirmModal.value = true;
-}
-function closeConfirmModal() {
-  showConfirmModal.value = false;
-  selectedNhanVien.value = null;
-  confirmMessage.value = "";
-}
-async function confirmDoiTrangThai() {
-  if (!selectedNhanVien.value) return;
-  confirmLoading.value = true;
-  try {
-    await axios.put(
-
 }
 
 function openDeleteModal(nhanVien) {
@@ -237,47 +176,36 @@ function openBackToWorkModal(nhanVien) {
       }
     }
   });
-
 }
 
 const exportExcelFile = async () => {
   if (isExporting.value) return;
   isExporting.value = true;
   try {
-    const response = await axios.get(
-      "http://localhost:8080/api/nhan-vien/export-excel",
-      {
-        responseType: "blob",
-      }
-    );
-
-    const blob = new Blob([response.data], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    const response = await axios.get('http://localhost:8080/api/nhan-vien/export-excel', {
+      responseType: 'blob',
     });
+
+    const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = url;
 
     const now = new Date();
-    const timestamp = `${now.getFullYear()}${String(
-      now.getMonth() + 1
-    ).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(
-      now.getHours()
-    ).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}${String(
-      now.getSeconds()
-    ).padStart(2, "0")}`;
-    link.setAttribute("download", `DanhSachNhanVien_${timestamp}.xlsx`);
-
+    const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+    link.setAttribute('download', `DanhSachNhanVien_${timestamp}.xlsx`);
+    
     document.body.appendChild(link);
     link.click();
-
+    
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
 
-    toast.success("Xuất file thành công!");
+    toast.success('Xuất file thành công!');
+
   } catch (error) {
     console.error("Lỗi khi xuất file Excel:", error);
-    toast.error("Xuất file thất bại!");
+    toast.error('Xuất file thất bại!');
   } finally {
     isExporting.value = false;
   }
@@ -305,7 +233,7 @@ const confirmExportExcel = async () => {
 const filteredNhanVien = computed(() => {
   if (!Array.isArray(listNhanVien.value)) return [];
   let result = listNhanVien.value.filter(
-    (nv) => String(nv.trangThai) === String(filterState.value.trangThai)
+    nv => String(nv.trangThai) === String(filterState.value.trangThai)
   );
 
   // Lọc theo năm sinh
@@ -320,7 +248,6 @@ const filteredNhanVien = computed(() => {
   // Lọc theo tỉnh thành
   if (filterState.value.tinhThanh) {
     result = result.filter(nv => nv.tinhThanh === filterState.value.tinhThanh);
-
   }
 
   // Tìm kiếm: nếu nhập số 4 chữ số thì tìm theo năm sinh, còn lại tìm theo tên hoặc mã
@@ -345,7 +272,6 @@ const filteredNhanVien = computed(() => {
     // Lấy số phía sau mã nhân viên
     const getNumber = (ma) => parseInt(ma?.replace(/\D/g, '') || '0', 10);
     return getNumber(b.maNhanVien) - getNumber(a.maNhanVien);
-
   });
 
   return result;
@@ -357,26 +283,21 @@ const searchNhanVien = async (keyword) => {
       await getData(); // Nếu không có từ khóa thì load lại toàn bộ
       return;
     }
-    const response = await axios.get(
-      `http://localhost:8080/api/search?keyword=${encodeURIComponent(keyword)}`
-    );
+    const response = await axios.get(`http://localhost:8080/api/search?keyword=${encodeURIComponent(keyword)}`);
     listNhanVien.value = response.data;
   } catch (error) {
-    console.log("Lỗi tìm kiếm:", error);
+    console.log('Lỗi tìm kiếm:', error);
   }
 };
 
 // Theo dõi filterState.search, debounce 300ms
 let searchTimeout = null;
-watch(
-  () => filterState.value.search,
-  (newVal) => {
-    if (searchTimeout) clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      searchNhanVien(newVal);
-    }, 300);
-  }
-);
+watch(() => filterState.value.search, (newVal) => {
+  if (searchTimeout) clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    searchNhanVien(newVal);
+  }, 30);
+});
 
 // Function to toggle password visibility
 const togglePasswordVisibility = (nhanVienId) => {
@@ -385,8 +306,8 @@ const togglePasswordVisibility = (nhanVienId) => {
 
 // Function to mask password
 const maskPassword = (password) => {
-  if (!password) return "";
-  return "•".repeat(password.length);
+  if (!password) return '';
+  return '•'.repeat(password.length);
 };
 
 function fetchProvinces() {
@@ -537,13 +458,12 @@ onMounted(() => {
   fetchProvinces(); // Thêm dòng này để lấy danh sách tỉnh thành cho filter
   if (route.query.success === 'true') {
     toast.success('Thêm mới nhân viên thành công');
-
     window.history.replaceState({}, document.title, route.path);
-  } else if (route.query.updated === "true") {
-    toast.success("Cập nhật nhân viên thành công");
+  } else if (route.query.updated === 'true') {
+    toast.success('Cập nhật nhân viên thành công');
     window.history.replaceState({}, document.title, route.path);
   }
-});
+})
 </script>
 
 <template>
@@ -570,24 +490,12 @@ onMounted(() => {
           <span v-else style="font-size: 15px !important;">⭱</span>
           {{ isExporting ? 'Đang xuất...' : 'Xuất file' }}
         </button>
-
       </div>
     </div>
-    <div class="filter-bar bg-white p-3 rounded border mb-4">
+    <div class="filter-bar bg-white p-3 rounded shadow mb-4">
       <div class="filter-title">
         <span class="filter-icon">
-          <svg
-            width="20"
-            height="20"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="feather feather-filter"
-          >
-            <polygon points="22 3 2 3 10 13 10 19 14 19 14 13 22 3"></polygon>
-          </svg>
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 13 10 19 14 19 14 13 22 3"></polygon></svg>
         </span>
         <span class="filter-label">Bộ lọc</span>
       </div>
@@ -606,7 +514,6 @@ onMounted(() => {
           </div>
         </div>
         <div class="filter-item">
-
           <label>Trạng thái</label>
           <div class="radio-group">
             <label class="radio-label">
@@ -638,24 +545,11 @@ onMounted(() => {
       <div style="margin-bottom: 10px; display: flex; align-items: center;">
         <button class="column-toggle-btn column-toggle-align" @click="showColumnBox = !showColumnBox" title="Tùy chọn cột hiển thị">
           <span style="font-size: 20px;">≡</span>
-
         </button>
-        <span
-          style="font-size: 18px !important; font-weight: 600; color: #212529"
-          >Danh sách nhân viên</span
-        >
+        <span style="font-size: 18px !important; font-weight: 600; color: #212529;">Danh sách nhân viên</span>
         <div v-if="showColumnBox" class="column-select-box">
-          <div
-            v-for="col in allColumns"
-            :key="col.key"
-            style="margin-bottom: 6px"
-          >
-            <input
-              type="checkbox"
-              :id="col.key"
-              v-model="visibleColumns"
-              :value="col.key"
-            />
+          <div v-for="col in allColumns" :key="col.key" style="margin-bottom: 6px;">
+            <input type="checkbox" :id="col.key" v-model="visibleColumns" :value="col.key" />
             <label :for="col.key">{{ col.label }}</label>
           </div>
         </div>
@@ -714,26 +608,13 @@ onMounted(() => {
                             <div class="password-flex-row">
                               <b class="detail-label" style="margin-right: 6px;">{{ col.label }}:</b>
                               <span class="password-value">{{ showPassword[nhanVien.id] ? nhanVien.cccd : maskPassword(nhanVien.cccd) }}</span>
-
                               <button
-                                class="icon-btn"
-                                title="Xóa Nhân Viên"
-                                @click="openDeleteModal(nhanVien)"
+                                @click.stop="togglePasswordVisibility(nhanVien.id)"
+                                class="password-toggle-btn"
+                                :title="showPassword[nhanVien.id] ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'"
                               >
-                                <svg
-                                  class="icon-red"
-                                  width="22"
-                                  height="22"
-                                  fill="none"
-                                  stroke="#e53935"
-                                  stroke-width="2"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <polyline points="3 6 5 6 21 6" />
-                                  <path
-                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"
-                                  />
-                                </svg>
+                                <Eye v-if="!showPassword[nhanVien.id]" size="16" />
+                                <EyeOff v-else size="16" />
                               </button>
                             </div>
                           </template>
@@ -774,47 +655,18 @@ onMounted(() => {
                     </div>
                   </td>
                 </tr>
-
               </template>
-              <tr v-else>
-                <td
-                  :colspan="visibleColumns.length + 1"
-                  style="
-                    text-align: center;
-                    padding: 40px 0;
-                    color: #8a99a8;
-                    font-size: 18px;
-                    background: #fafbfc;
-                  "
-                >
-                  <div
-                    style="
-                      display: flex;
-                      flex-direction: column;
-                      align-items: center;
-                      gap: 8px;
-                    "
-                  >
-                    <svg
-                      width="48"
-                      height="48"
-                      fill="none"
-                      stroke="#8a99a8"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle cx="12" cy="8" r="4" />
-                      <path d="M16 16a4 4 0 0 0-8 0" />
-                    </svg>
-                    <div>Không tìm thấy kết quả nào phù hợp</div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+            </template>
+            <tr v-else>
+              <td :colspan="visibleColumns.length + 1" style="text-align:center; padding: 40px 0; color: #8a99a8; font-size: 18px; background: #fafbfc;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                  <svg width="48" height="48" fill="none" stroke="#8a99a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M16 16a4 4 0 0 0-8 0"/></svg>
+                  <div>Không tìm thấy kết quả nào phù hợp</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <div class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 18px;">
         <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">«</button>
@@ -862,7 +714,6 @@ onMounted(() => {
         <div class="modal-actions">
           <button class="btn-save" @click="saveAddress" title="Lưu địa chỉ nhân viên">Lưu</button>
           <button class="btn-cancel" @click="showAddressModal = false" title="Bỏ qua chỉnh sửa địa chỉ">Bỏ qua</button>
-
         </div>
       </div>
     </div>
@@ -888,7 +739,7 @@ onMounted(() => {
   font-weight: 600;
   color: #fff;
   font-size: 15px;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.18s cubic-bezier(.4,0,.2,1);
   text-decoration: none;
   user-select: none;
   box-shadow: 0 2px 8px #0a2a5c11;
@@ -920,7 +771,7 @@ onMounted(() => {
   background: #fff;
   color: #212529;
   border-radius: 8px;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.18s cubic-bezier(.4,0,.2,1);
 }
 .column-toggle-btn.column-toggle-align:hover {
   background: #e3f2fd;
@@ -944,6 +795,7 @@ onMounted(() => {
   background: #fff;
 }
 
+
 .table-container {
   overflow-x: auto;
 }
@@ -964,6 +816,7 @@ onMounted(() => {
   border-bottom: 1px solid #e0e0e0;
   text-align: center;
 }
+
 
 .employee-table tbody tr:hover {
   background-color: #f8f9fa;
@@ -1029,7 +882,7 @@ onMounted(() => {
 .table-wrapper {
   background: #fff;
   border-radius: 12px;
-  /* box-shadow: 0 5px 10px #d1cac0; */
+  box-shadow: 0 5px 10px #d1cac0;
   padding: 16px 12px;
   margin-top: 18px;
 }
@@ -1054,14 +907,8 @@ onMounted(() => {
   border: 1.5px solid #609bbb;
 }
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  from { opacity: 0; transform: translateY(-8px);}
+  to { opacity: 1; transform: none;}
 }
 .employee-detail-actions {
   display: flex;
@@ -1231,11 +1078,8 @@ onMounted(() => {
 }
 .modal-overlay {
   position: fixed;
-  top: -450px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.25);
+  top: -450px; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.25);
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -1332,9 +1176,7 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 .nv-btn:disabled {
@@ -1377,7 +1219,7 @@ onMounted(() => {
   font-weight: 600;
   color: #1976d2;
   font-size: 15px;
-  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.18s cubic-bezier(.4,0,.2,1);
   text-decoration: none;
   user-select: none;
   box-shadow: 0 2px 8px #0a2a5c11;
@@ -1541,3 +1383,5 @@ onMounted(() => {
   color: #222;
 }
 </style>
+
+
