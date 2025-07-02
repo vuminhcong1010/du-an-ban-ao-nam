@@ -1,3 +1,12 @@
+
+
+import HoaDon from '@/components/admin/HoaDon.vue'
+import HoaDonChiTiet from '@/components/admin/HoaDonChiTiet.vue'
+
+
+import { createRouter, createWebHistory } from 'vue-router'
+
+
 import HoaDon from "../components/admin/HoaDon.vue";
 // import QuanLyKhachHang from '../components/admin/KhachHangTable.vue'
 import QuanLyKhachHang from "../views/CustomerManagement.vue";
@@ -22,6 +31,7 @@ import ThemPhieuGiamGia from "@/components/admin/ThemPhieuGiamGIa.vue";
 import SuaPhieuGiamGia from "@/components/admin/SuaPhieuGiamGia.vue";
 import HoaDonChiTiet from '@/components/admin/HoaDonChiTiet.vue'
 import BanHang from "@/components/admin/BanHang.vue";
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -31,16 +41,19 @@ const router = createRouter({
       component: HoaDon,
     },
     {
+
       path: "/ban-hang",
       name: "banhang",
       component: BanHang,
     },
     {
+
       path: '/hoa-don-chi-tiet/:maHoaDon',
       name: 'hoadonchitiet',
       component: HoaDonChiTiet,
       props: true,
     },
+
     {
       path: "/san-pham/chat-lieu",
       name: "chat-lieu",

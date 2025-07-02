@@ -222,6 +222,15 @@ function formatDate(dateString) {
                 <td>{{ index + 1 }}</td>
                 <td>{{ item.maHoaDon }}</td>
                 <td>{{ item.tenKhachHang }}</td>
+
+                <td>Nhan vien</td>
+                <td>{{ item.sdt }}</td>
+                <td>{{ formatDate(item.ngayTao) }}</td>
+                <td>
+                  <span class="">{{ item.tongTien }}</span>
+                </td>
+                <td>Loại đơn</td>
+
                 <td>Vu Van A</td>
                 <td>{{ item.sdt }}</td>
                 <td>{{ formatDate(item.ngayTao) }}</td>
@@ -231,6 +240,7 @@ function formatDate(dateString) {
                   }}</span>
                 </td>
                 <td>Online</td>
+
                 <td>
                   <span
                     class="badge rounded-pill text-bg"

@@ -14,11 +14,13 @@ import Toast from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 
 const options = {
+  // Thời gian hiển thị (ms) — ví dụ 1500ms = 1.5 giây
   timeout: 1800,
 }
-app.use(Toast, options);
 
 app.use(BootstrapVue3);
+app.use(Toast, options)
+
 app.use(router)
 app.mount('#app')
 

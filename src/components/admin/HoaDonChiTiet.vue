@@ -29,7 +29,9 @@ import {
   ArrowUpRight,
 } from "lucide-vue-next";
 import { ref, onMounted, watch } from "vue";
-import ThemSanPhamHoaDon from "./ThemSanPhamHoaDon.vue";
+
+import ThemSanPham from "./ThemSanPham.vue";
+
 
 const buttons = ref([
   ["Hủy đơn hàng", "Xác nhận"],
@@ -223,6 +225,7 @@ const xoaSanPham = async (id) => {
   }
 };
 
+
 // xuat file pdf
 function downloadPDF(maHoaDon) {
   axios.get(`http://localhost:8080/hoa-don/${maHoaDon}/pdf`, {
@@ -368,8 +371,11 @@ function downloadPDF(maHoaDon) {
               Thêm sản phẩm
             </button>
             <teleport to="body">
-              
+          
+
+        
               <ThemSanPhamHoaDon
+
                 v-if="showThemSanPham"
                 :key="showThemSanPham"
                 @close="showThemSanPham = false"
@@ -378,7 +384,6 @@ function downloadPDF(maHoaDon) {
             </teleport>
           </div>
         </div>
-        
         <div class="table-responsive">
           <table class="table table-hover">
             <thead class="table-light">
@@ -464,6 +469,8 @@ function downloadPDF(maHoaDon) {
           <h5 class="fw-semibold">
             <Receipt></Receipt> Đơn hàng: {{ maHoaDon }}
           </h5>
+
+          <button class="btn" style="border: none; color: #0a2c57">
           <button class="btn" style="border: none; color: #0a2c57" @click="downloadPDF(maHoaDon)">
             <Printer class="me-1" size="16"></Printer> In hóa đơn
           </button>
@@ -494,16 +501,20 @@ function downloadPDF(maHoaDon) {
         <div class="align-items-center mb-3">
           <h5 class="fw-semibold">
             Khách hàng:
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.tenKhachHang }}
+
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.tenKhachHang }}
           </h5>
           <label for="">
             <Phone style="width: 16px; height: 16px; color: #0a2c57"></Phone> :
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.soDienThoai }}
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.soDienThoai }}
+
           </label>
           <br />
           <label for=""
             ><Mail style="width: 16px; height: 16px; color: #0a2c57"></Mail> :
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.email }}</label
+
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.email }}</label
+
           >
         </div>
         <hr />
@@ -643,7 +654,9 @@ function downloadPDF(maHoaDon) {
           </div>
 
           <!-- Số tiền -->
-          <span>0</span>
+
+          <span>4.856.000</span>
+
 
           <!-- Modal lịch sử thanh toán -->
           <LichSuThanhToan
@@ -663,7 +676,9 @@ function downloadPDF(maHoaDon) {
                 (
                   tongTienSanPham -
                   listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
-                  listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen 
+
+                  listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen - 4856000
+
                 )?.toLocaleString("vi-VN")
               }}
             </strong>
