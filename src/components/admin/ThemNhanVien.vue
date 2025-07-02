@@ -119,13 +119,29 @@ const validateForm = () => {
     fieldErrors.value.tenNhanVien = 'Vui lòng nhập tên nhân viên';
     valid = false;
   }
+  // Validate email
   if (!formData.value.email) {
     fieldErrors.value.email = 'Vui lòng nhập email';
     valid = false;
+  } else {
+    // Regex kiểm tra email hợp lệ
+    const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+    if (!emailRegex.test(formData.value.email)) {
+      fieldErrors.value.email = 'Email không hợp lệ';
+      valid = false;
+    }
   }
+  // Validate số điện thoại
   if (!formData.value.sdt) {
     fieldErrors.value.sdt = 'Vui lòng nhập số điện thoại';
     valid = false;
+  } else {
+    // Regex kiểm tra số điện thoại Việt Nam hợp lệ (10 số, bắt đầu bằng 0)
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(formData.value.sdt)) {
+      fieldErrors.value.sdt = 'Số điện thoại không hợp lệ';
+      valid = false;
+    }
   }
   if (!formData.value.cccd) {
     fieldErrors.value.cccd = 'Vui lòng nhập CCCD';
