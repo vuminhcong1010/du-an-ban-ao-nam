@@ -1,7 +1,7 @@
-
+```vue
 <template>
-  <div v-if="!isLoading" class="container-fluid mt-4">
-    <div class="card mb-4">
+  <div class="container-fluid mt-4">
+    <div v-if="!isLoading && !isSendingEmail" class="card mb-4">
       <div class="card-body">
         <h2 class="fw-bold mb-4">Sửa Phiếu Giảm Giá</h2>
         <div class="row gx-4">
@@ -66,19 +66,25 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Giá trị giảm <span class="text-danger">*</span></label>
-              <input v-model.number="giaTriGiam" type="number" class="form-control mt-2"
-                :placeholder="giaTriOption === 'phanTram' ? 'VD: 10, 20...' : 'VD: 50000, 100000...'"
-                :min="giaTriOption === 'phanTram' ? 0 : 1000" :max="giaTriOption === 'phanTram' ? 100 : null"
-                :step="giaTriOption === 'phanTram' ? '0.01' : '1'" :class="{ 'is-invalid': errors.giaTriGiam }"
-                @input="validateGiaTriGiam" />
-              <div v-if="errors.giaTriGiam" class="invalid-feedback">
+              <div class="input-group">
+                <input v-model.number="giaTriGiam" type="number" class="form-control mt-2"
+                  :placeholder="giaTriOption === 'phanTram' ? 'VD: 10, 20...' : 'VD: 50000, 100000...'"
+                  :min="giaTriOption === 'phanTram' ? 0 : 1000" :max="giaTriOption === 'phanTram' ? 100 : null"
+                  :step="giaTriOption === 'phanTram' ? '0.01' : '1'" :class="{ 'is-invalid': errors.giaTriGiam }"
+                  @input="validateGiaTriGiam" />
+                <span class="input-group-text mt-2" id="giaTri-addon">
+                  {{ giaTriOption === 'phanTram' ? '%' : 'VND' }}
+                </span>
+              </div>
+              <div v-if="errors.giaTriGiam" class="invalid-feedback d-block">
                 {{ errors.giaTriGiam }}
               </div>
             </div>
             <div class="mb-3">
               <label class="form-label">Giá trị đơn tối đa <span class="text-danger">*</span></label>
               <input v-model.number="giaTriToiDa" type="number" class="form-control" placeholder="VD: 500000" min="0"
-                step="0.01" :class="{ 'is-invalid': errors.giaTriToiDa }" @input="validateGiaTriToiDa" />
+                step="0.01" :class="{ 'is-invalid': errors.giaTriToiDa }" :readonly="giaTriOption === 'vnd'"
+                @input="validateGiaTriToiDa" />
               <div v-if="errors.giaTriToiDa" class="invalid-feedback">
                 {{ errors.giaTriToiDa }}
               </div>
@@ -180,17 +186,24 @@
           <button @click="$router.push('/phieu-giam-gia')" class="btn btn-danger me-2">
             Quay lại
           </button>
-          <button @click="confirmUpdatePhieuGiamGia" class="btn btn-primary" :disabled="isLoading">
+          <button @click="confirmUpdatePhieuGiamGia" class="btn btn-primary" :disabled="isLoading || isSendingEmail">
             Sửa phiếu giảm giá
           </button>
         </div>
       </div>
     </div>
+    <div v-else class="loading-overlay">
+      <div class="text-center">
+        <div class="spinner"></div>
+        <p>{{ isSendingEmail ? 'Đang sửa phiếu giảm giá và gửi email...' : 'Đang tải...' }}</p>
+      </div>
+    </div>
   </div>
-  <div v-else class="text-center mt-5"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>
 </template>
+
 <script>
 import { useToast } from 'vue-toastification';
+import Swal from 'sweetalert2';
 
 export default {
   name: "SuaPhieuGiamGia",
@@ -212,6 +225,7 @@ export default {
       currentPage: 1,
       itemsPerPage: 5,
       isLoading: false,
+      isSendingEmail: false,
       isInitialLoad: true,
       maPhieu: "",
       tenPhieu: "",
@@ -234,6 +248,7 @@ export default {
         soLuong: "",
         selectedRows: "",
       },
+      dataFetchFailed: false, // Track if data fetching failed
     };
   },
   computed: {
@@ -281,8 +296,9 @@ export default {
     giaTriOption(newVal, oldVal) {
       console.log(`giaTriOption changed from ${oldVal} to ${newVal}`);
       if (newVal !== oldVal && !this.isInitialLoad) {
-        console.log('Resetting giaTriGiam due to giaTriOption change');
+        console.log('Resetting giaTriGiam and giaTriToiDa due to giaTriOption change');
         this.giaTriGiam = null;
+        this.giaTriToiDa = null;
       }
       this.validateGiaTriOption();
     },
@@ -299,11 +315,39 @@ export default {
       }
       this.validateLoaiPhieu();
     },
+    maPhieu() {
+      this.validateMaPhieu();
+    },
+    tenPhieu() {
+      this.validateTenPhieu();
+    },
     giaTriGiam(newVal) {
       console.log(`giaTriGiam changed to ${newVal}`);
+      if (this.giaTriOption === 'vnd') {
+        this.giaTriToiDa = newVal; // Synchronize giaTriToiDa with giaTriGiam for VND
+      }
       if (!this.isInitialLoad) {
         this.validateGiaTriGiam();
       }
+    },
+    giaTriToiThieu() {
+      this.validateGiaTriToiThieu();
+    },
+    giaTriToiDa() {
+      this.validateGiaTriToiDa();
+    },
+    ngayBatDau() {
+      this.validateNgayBatDau();
+      this.validateNgayKetThuc();
+    },
+    ngayKetThuc() {
+      this.validateNgayKetThuc();
+    },
+    selectedRows() {
+      this.validateSelectedRows();
+    },
+    soLuong() {
+      this.validateSoLuong();
     },
   },
   methods: {
@@ -327,6 +371,7 @@ export default {
       } catch (err) {
         console.error("Lỗi:", err);
         this.danhSachKhachHang = [];
+        this.dataFetchFailed = true;
         this.toast.error("Không thể tải danh sách khách hàng: " + err.message);
       }
     },
@@ -351,7 +396,8 @@ export default {
           if (phieu.soTienGiam != null && !isNaN(parseFloat(phieu.soTienGiam))) {
             this.giaTriOption = "vnd";
             this.giaTriGiam = Math.max(0, Number(parseFloat(phieu.soTienGiam).toFixed(2))); // Ensure non-negative
-            console.log("Set giaTriOption to 'vnd', giaTriGiam to", this.giaTriGiam);
+            this.giaTriToiDa = this.giaTriGiam; // Synchronize for VND
+            console.log("Set giaTriOption to 'vnd', giaTriGiam to", this.giaTriGiam, ", giaTriToiDa to", this.giaTriToiDa);
           } else if (phieu.phamTramGiamGia != null && !isNaN(parseFloat(phieu.phamTramGiamGia))) {
             this.giaTriOption = "phanTram";
             this.giaTriGiam = Math.max(0, Math.min(100, Number(parseFloat(phieu.phamTramGiamGia).toFixed(2)))); // Clamp 0-100
@@ -368,6 +414,8 @@ export default {
               const chiTietData = await chiTietResponse.json();
               this.selectedRows = chiTietData.map((chiTiet) => chiTiet.idKhachHang.id);
               console.log("Loaded selectedRows:", this.selectedRows);
+            } else {
+              throw new Error("Không thể tải chi tiết phiếu giảm giá");
             }
           }
 
@@ -378,7 +426,8 @@ export default {
         }
       } catch (error) {
         console.error("Lỗi khi tải phiếu giảm giá:", error);
-        this.toast.error("Không thể tải dữ liệu phiếu giảm giá!");
+        this.dataFetchFailed = true;
+        this.toast.error("Không thể tải dữ liệu phiếu giảm giá: " + error.message);
       }
     },
     validateMaPhieu() {
@@ -414,6 +463,7 @@ export default {
         if (this.giaTriGiam < 1000) {
           this.errors.giaTriGiam = "Giá trị giảm phải từ 1000 trở lên!";
           this.giaTriGiam = Math.max(1000, this.giaTriGiam); // Enforce minimum 1000
+          this.giaTriToiDa = this.giaTriGiam; // Synchronize for VND
         } else {
           this.errors.giaTriGiam = "";
         }
@@ -435,8 +485,9 @@ export default {
       } else if (this.giaTriToiDa < 0) {
         this.errors.giaTriToiDa = "Giá trị tối đa không được âm!";
         this.giaTriToiDa = 0;
-      } else if (this.giaTriToiThieu !== null && this.giaTriToiDa < this.giaTriToiThieu) {
-        this.errors.giaTriToiDa = "Giá trị tối đa phải lớn hơn hoặc bằng giá trị tối thiểu!";
+      } else if (this.giaTriOption === "vnd" && this.giaTriToiDa !== this.giaTriGiam) {
+        this.errors.giaTriToiDa = "Giá trị tối đa phải bằng giá trị giảm khi chọn VNĐ!";
+        this.giaTriToiDa = this.giaTriGiam; // Force synchronization for VND
       } else {
         this.errors.giaTriToiDa = "";
       }
@@ -445,26 +496,30 @@ export default {
       if (!this.ngayBatDau) {
         this.errors.ngayBatDau = "Ngày bắt đầu là bắt buộc!";
       } else {
+        const now = new Date();
         const startDate = new Date(this.ngayBatDau);
-        const currentDate = new Date(this.minDateTime);
-        
+        if (startDate < now) {
+          this.errors.ngayBatDau = "Ngày bắt đầu không được là ngày trong quá khứ!";
+        } else if (this.ngayKetThuc && startDate > new Date(this.ngayKetThuc)) {
+          this.errors.ngayBatDau = "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc!";
+        } else {
           this.errors.ngayBatDau = "";
-        
+        }
       }
     },
     validateNgayKetThuc() {
       if (!this.ngayKetThuc) {
         this.errors.ngayKetThuc = "Ngày kết thúc là bắt buộc!";
-      } else if (this.ngayBatDau) {
-        const startDate = new Date(this.ngayBatDau);
+      } else {
+        const now = new Date();
         const endDate = new Date(this.ngayKetThuc);
-        if (endDate <= startDate) {
-          this.errors.ngayKetThuc = "Ngày kết thúc phải lớn hơn ngày bắt đầu!";
+        if (endDate < now) {
+          this.errors.ngayKetThuc = "Ngày kết thúc không được là ngày trong quá khứ!";
+        } else if (this.ngayBatDau && endDate < new Date(this.ngayBatDau)) {
+          this.errors.ngayKetThuc = "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu!";
         } else {
           this.errors.ngayKetThuc = "";
         }
-      } else {
-        this.errors.ngayKetThuc = "";
       }
     },
     validateLoaiPhieu() {
@@ -508,15 +563,35 @@ export default {
       console.log("Form validation errors:", this.errors);
       return Object.values(this.errors).every((error) => error === "");
     },
-    confirmUpdatePhieuGiamGia() {
+    async confirmUpdatePhieuGiamGia() {
       this.submitted = true;
-      console.log("Submitting form with giaTriGiam:", this.giaTriGiam, "giaTriOption:", this.giaTriOption);
       if (this.validateForm()) {
-        this.updatePhieuGiamGia();
+        const result = await Swal.fire({
+          title: "Xác nhận",
+          text: "Bạn có muốn sửa phiếu giảm giá không?",
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonText: "Đồng ý",
+          cancelButtonText: "Hủy",
+          buttonsStyling: true,
+          customClass: {
+            confirmButton: 'btn btn-primary',
+            cancelButton: 'btn btn-danger me-2'
+          }
+        });
+
+        if (result.isConfirmed) {
+          await this.updatePhieuGiamGia();
+        }
+      } else {
+        this.toast.error("Vui lòng kiểm tra và sửa các lỗi trong biểu mẫu!");
       }
     },
     async updatePhieuGiamGia() {
-      this.isLoading = true;
+      this.isSendingEmail = true;
+      const toastId = this.toast.info("Đang sửa phiếu giảm giá và gửi email... [Loading]", {
+        timeout: false,
+      });
 
       const formatDate = (dateStr) => {
         const date = new Date(dateStr);
@@ -542,8 +617,6 @@ export default {
         danhSachKhachHangId: this.loaiPhieu === "Cá nhân" ? this.selectedRows : [],
       };
 
-      console.log("Sending update request with payload:", JSON.stringify(phieu, null, 2));
-
       try {
         const response = await fetch(`http://localhost:8080/phieuGiamGias/${this.id}`, {
           method: "PUT",
@@ -552,40 +625,50 @@ export default {
         });
 
         if (response.ok) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate email sending delay
+          this.toast.dismiss(toastId);
           this.toast.success("Sửa phiếu giảm giá thành công");
           this.$router.push("/phieu-giam-gia");
         } else {
-          const errorData = await response.json();
-          console.error("Update failed with error:", errorData);
-          if (errorData.message.includes("Mã phiếu giảm giá")) {
-            this.errors.maPhieu = errorData.message;
-          } else if (errorData.message.includes("Tên phiếu")) {
-            this.errors.tenPhieu = errorData.message;
-          } else if (errorData.message.includes("Loại phiếu")) {
-            this.errors.loaiPhieu = errorData.message;
-          } else if (errorData.message.includes("Phần trăm giảm giá") || errorData.message.includes("Số tiền giảm")) {
-            this.errors.giaTriGiam = errorData.message;
-          } else if (errorData.message.includes("Giá trị tối thiểu")) {
-            this.errors.giaTriToiThieu = errorData.message;
-          } else if (errorData.message.includes("Giá trị tối đa")) {
-            this.errors.giaTriToiDa = errorData.message;
-          } else if (errorData.message.includes("Ngày bắt đầu")) {
-            this.errors.ngayBatDau = errorData.message;
-          } else if (errorData.message.includes("Ngày kết thúc")) {
-            this.errors.ngayKetThuc = errorData.message;
-          } else if (errorData.message.includes("Số lượng")) {
-            this.errors.soLuong = errorData.message;
-          } else if (errorData.message.includes("khách hàng")) {
-            this.errors.selectedRows = errorData.message;
-          } else {
-            this.toast.error("Có lỗi xảy ra khi sửa phiếu giảm giá: " + errorData.message);
+          this.toast.dismiss(toastId);
+          let errorMessage = "Có lỗi xảy ra khi sửa phiếu giảm giá.";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+            console.error("Update failed with error:", errorData);
+            if (errorData.message.includes("Mã phiếu giảm giá")) {
+              this.errors.maPhieu = errorData.message;
+            } else if (errorData.message.includes("Tên phiếu")) {
+              this.errors.tenPhieu = errorData.message;
+            } else if (errorData.message.includes("Loại phiếu")) {
+              this.errors.loaiPhieu = errorData.message;
+            } else if (errorData.message.includes("Phần trăm giảm giá") || errorData.message.includes("Số tiền giảm")) {
+              this.errors.giaTriGiam = errorData.message;
+            } else if (errorData.message.includes("Giá trị tối thiểu")) {
+              this.errors.giaTriToiThieu = errorData.message;
+            } else if (errorData.message.includes("Giá trị tối đa")) {
+              this.errors.giaTriToiDa = errorData.message;
+            } else if (errorData.message.includes("Ngày bắt đầu")) {
+              this.errors.ngayBatDau = errorData.message;
+            } else if (errorData.message.includes("Ngày kết thúc")) {
+              this.errors.ngayKetThuc = errorData.message;
+            } else if (errorData.message.includes("Số lượng")) {
+              this.errors.soLuong = errorData.message;
+            } else if (errorData.message.includes("khách hàng")) {
+              this.errors.selectedRows = errorData.message;
+            } else {
+              this.toast.error(errorMessage);
+            }
+          } catch (jsonError) {
+            this.toast.error(errorMessage + " (Lỗi server không trả về JSON)");
           }
         }
       } catch (error) {
+        this.toast.dismiss(toastId);
         console.error("Lỗi:", error);
         this.toast.error("Có lỗi xảy ra khi sửa phiếu giảm giá: " + error.message);
       } finally {
-        this.isLoading = false;
+        this.isSendingEmail = false;
       }
     },
     changePage(page) {
@@ -597,8 +680,10 @@ export default {
   mounted() {
     this.isLoading = true;
     Promise.all([this.getDanhSachKhachHang(), this.getPhieuGiamGiaById()]).finally(() => {
-      console.log("Mounted - Initial state: giaTriOption =", this.giaTriOption, ", giaTriGiam =", this.giaTriGiam);
-      this.isLoading = false;
+      if (!this.dataFetchFailed) {
+        console.log("Mounted - Initial state: giaTriOption =", this.giaTriOption, ", giaTriGiam =", this.giaTriGiam);
+        this.isLoading = false;
+      }
     });
   },
 };
@@ -609,4 +694,44 @@ export default {
   background-color: #0a2c57;
   border-color: #0a2c57;
 }
+
+/* Loading Overlay Styles */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.spinner {
+  width: 64px;
+  height: 64px;
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #0a2c57;
+  border-radius: 50%;
+  margin-left: 40%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-overlay p {
+  color: white;
+  font-size: 1.2rem;
+  margin-top: 10px;
+}
 </style>
+```
