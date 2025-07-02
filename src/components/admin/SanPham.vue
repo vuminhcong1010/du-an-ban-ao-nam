@@ -1,9 +1,9 @@
 <template>
-  <div class="container my-4">
+  <div class="">
     <!-- Header -->
-    <div class="bg-white p-3 rounded shadow mb-4">
+    <div class="bg-white p-3 rounded border mb-4">
       <div class="d-flex justify-content-between align-items-center">
-        <h5 class="fw-semibold">Quản lý sản phẩm:</h5>
+        <h5 class="fw-bold mb-0">Quản lý sản phẩm:</h5>
         <a href="/san-pham/add" class="btn ms-auto" style="background-color: #0a2c57; color: white">
           <i class="fa-solid fa-plus pe-2"></i>Thêm sản phẩm
         </a>
@@ -11,7 +11,7 @@
     </div>
 
     <!-- Bộ lọc -->
-    <div class="bg-white p-3 rounded shadow mb-4">
+    <div class="bg-white p-3 rounded border mb-4">
       <div class="row g-3">
         <div class="col-md-12">
           <label class="form-label fw-bold">Bộ lọc</label>
@@ -62,7 +62,7 @@
     </div>
 
     <!-- Danh sách sản phẩm -->
-    <div class="bg-white p-3 rounded shadow mb-4">
+    <div class="bg-white p-3 rounded border mb-4">
       <table class="table table-hover text-center align-middle">
         <thead class="table-light">
           <tr>
@@ -89,7 +89,7 @@
               </span>
             </td>
             <td>
-              <span class="badge rounded-pill" :style="{ backgroundColor: sp.trangThai === 1 ? '#3B82F6' : '#D14343' }">
+              <span class="badge rounded-pill" :style="{ backgroundColor: sp.trangThai === 1 ? '#10b981' : '#D14343' }">
                 {{ sp.trangThai === 1 ? "Đang bán" : "Ngừng bán" }}
               </span>
             </td>

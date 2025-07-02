@@ -1,34 +1,38 @@
 <template>
-  <div class="container-fluid">
-    <div class="card mb-2 shadow-sm">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold mb-0" style="margin-left: 15px;margin-top: 10px;">Quản lý phiếu giảm giá</h2>
-        <router-link to="/phieu-giam-gia/them" class="btn btn-primary btn-sm "
-          style="margin-top: 20px; margin-right: 15px; height: 35px;">
-          <i class="fa-solid fa-plus me-2 "></i><span class="fw-bold">Thêm phiếu giảm giá</span>
+  <div class="">
+    <div class="bg-white p-3 rounded border mb-4">
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">Quản lý phiếu giảm giá</h5>
+        <router-link to="/phieu-giam-gia/them" class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-plus me-2"></i
+          ><span class="fw-bold">Thêm phiếu giảm giá</span>
         </router-link>
       </div>
     </div>
-
-    
+    <!-- style="margin-left: 15px;margin-top: 10px;" -->
 
     <!-- Voucher List Section -->
-    <div class="card shadow-sm">
+    <div class="bg-white p-3 rounded border mb-4">
       <!-- Filter Section -->
       <div class="card-body">
-        <h4 class="fw-bold mb-4">
-          <FilterIcon class="me-2" :size="20" /> Bộ lọc
-        </h4>
+        <h6 style="margin-bottom: 1em">
+          <i> <FilterIcon></FilterIcon> </i> Bộ lọc
+        </h6>
         <div class="row g-3 align-items-end">
           <!-- Keyword Search -->
           <div class="col-md-6">
-            <label class="form-label fw-bold">Tìm kiếm</label>
-            <input v-model="keyword" @keyup.enter="applyFilter" type="text" class="form-control"
-              placeholder="Nhập tên, mã hoặc giá trị giảm" />
+            <label class="form-label ">Tìm kiếm</label>
+            <input
+              v-model="keyword"
+              @keyup.enter="applyFilter"
+              type="text"
+              class="form-control"
+              placeholder="Nhập tên, mã hoặc giá trị giảm"
+            />
           </div>
           <!-- Status -->
           <div class="col-md-6">
-            <label class="form-label fw-bold">Trạng thái</label>
+            <label class="form-label ">Trạng thái</label>
             <select v-model="trangThai" class="form-select">
               <option value="">Tất cả</option>
               <option value="0">Đã hủy</option>
@@ -41,39 +45,57 @@
         <div class="row g-3 align-items-end mt-2">
           <!-- Start Date -->
           <div class="col-md-4">
-            <label class="form-label fw-bold">Ngày bắt đầu</label>
+            <label class="form-label ">Ngày bắt đầu</label>
             <input type="date" v-model="ngayBatDau" class="form-control" />
           </div>
           <!-- End Date -->
           <div class="col-md-4">
-            <label class="form-label fw-bold">Ngày kết thúc</label>
+            <label class="form-label ">Ngày kết thúc</label>
             <input type="date" v-model="ngayKetThuc" class="form-control" />
           </div>
           <!-- Voucher Type -->
           <div class="col-md-4">
-            <label class="form-label fw-bold">Loại phiếu giảm giá</label>
+            <label class="form-label ">Loại phiếu giảm giá</label>
             <div class="d-flex gap-2">
               <div class="form-check">
-                <input type="radio" v-model="loaiPhieu" value="" id="loaiTatCa" class="form-check-input" />
+                <input
+                  type="radio"
+                  v-model="loaiPhieu"
+                  value=""
+                  id="loaiTatCa"
+                  class="form-check-input"
+                />
                 <label class="form-check-label" for="loaiTatCa">Tất cả</label>
               </div>
               <div class="form-check">
-                <input type="radio" v-model="loaiPhieu" value="Công khai" id="loaiCongKhai" class="form-check-input" />
-                <label class="form-check-label" for="loaiCongKhai">Công khai</label>
+                <input
+                  type="radio"
+                  v-model="loaiPhieu"
+                  value="Công khai"
+                  id="loaiCongKhai"
+                  class="form-check-input"
+                />
+                <label class="form-check-label" for="loaiCongKhai"
+                  >Công khai</label
+                >
               </div>
               <div class="form-check">
-                <input type="radio" v-model="loaiPhieu" value="Cá nhân" id="loaiCaNhan" class="form-check-input" />
+                <input
+                  type="radio"
+                  v-model="loaiPhieu"
+                  value="Cá nhân"
+                  id="loaiCaNhan"
+                  class="form-check-input"
+                />
                 <label class="form-check-label" for="loaiCaNhan">Cá nhân</label>
               </div>
             </div>
           </div>
         </div>
       </div>
-     
+      <br> <br>
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4 class="fw-bold mb-0">Danh sách phiếu giảm giá</h4>
-        </div>
+        
 
         <div class="table-responsive">
           <table class="table table-hover">
@@ -94,7 +116,10 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(phieu, index) in paginatedPhieuGiamGias" :key="phieu.id">
+              <tr
+                v-for="(phieu, index) in paginatedPhieuGiamGias"
+                :key="phieu.id"
+              >
                 <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
                 <td>{{ phieu.maPhieuGiamGia }}</td>
                 <td>{{ phieu.tenPhieu }}</td>
@@ -106,7 +131,9 @@
                   }}
                 </td>
                 <td>
-                  <span :class="getLoaiPhieuClass(phieu.loaiPhieu)">{{ phieu.loaiPhieu }}</span>
+                  <span :class="getLoaiPhieuClass(phieu.loaiPhieu)">{{
+                    phieu.loaiPhieu
+                  }}</span>
                 </td>
                 <td>{{ formatCurrency(phieu.giamToiThieu) }}</td>
                 <td>{{ formatCurrency(phieu.giamToiDa) }}</td>
@@ -114,19 +141,36 @@
                 <td>{{ formatDate(phieu.ngayBatDau) }}</td>
                 <td>{{ formatDate(phieu.ngayKetThuc) }}</td>
                 <td>
-                  <span :class="getTrangThaiClass(phieu.trangThai)">
+                  <span :class="getTrangThaiClass(phieu.trangThai) " >
                     {{ getTrangThaiText(phieu.trangThai) }}
                   </span>
                 </td>
-                <td class="d-flex align-items-center justify-content-center gap-2">
-                  <router-link :to="{ name: 'SuaPhieuGiamGia', params: { id: phieu.id } }" class="btn btn-flat btn-sm"
-                    title="Chỉnh sửa phiếu giảm giá" data-bs-toggle="tooltip" data-bs-placement="top">
+                <td
+                  class="d-flex align-items-center justify-content-center gap-2"
+                >
+                  <router-link
+                    :to="{ name: 'SuaPhieuGiamGia', params: { id: phieu.id } }"
+                    class="btn btn-flat btn-sm"
+                    title="Chỉnh sửa phiếu giảm giá"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                  >
                     <Edit :size="18" class="edit-icon" />
                   </router-link>
-                  <div class="form-check form-switch" title="Hủy phiếu giảm giá" data-bs-toggle="tooltip"
-                    data-bs-placement="top">
-                    <input class="form-check-input" type="checkbox" :id="'switchCheckbox-' + phieu.id"
-                      v-model="phieu.isChecked" @change="toggleStatus(phieu)" :disabled="phieu.trangThai === 0">
+                  <div
+                    class="form-check form-switch"
+                    title="Hủy phiếu giảm giá"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                  >
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      :id="'switchCheckbox-' + phieu.id"
+                      v-model="phieu.isChecked"
+                      @change="toggleStatus(phieu)"
+                      :disabled="phieu.trangThai === 0"
+                    />
                   </div>
                 </td>
               </tr>
@@ -136,15 +180,35 @@
 
         <!-- Pagination -->
         <nav class="d-flex justify-content-center mt-3">
-          <ul class="pagination mb-0">
+          <ul class="pagination justify-content-center">
             <li class="page-item" :class="{ disabled: currentPage === 1 }">
-              <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">Trước</a>
+              <a
+                class="page-link"
+                href="#"
+                @click.prevent="changePage(currentPage - 1)"
+                >«</a
+              >
             </li>
-            <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: currentPage === page }">
-              <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
+            <li
+              class="page-item"
+              v-for="page in totalPages"
+              :key="page"
+              :class="{ active: currentPage === page }"
+            >
+              <a class="page-link" href="#" @click.prevent="changePage(page)">{{
+                page
+              }}</a>
             </li>
-            <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-              <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">Tiếp</a>
+            <li
+              class="page-item"
+              :class="{ disabled: currentPage === totalPages }"
+            >
+              <a
+                class="page-link"
+                href="#"
+                @click.prevent="changePage(currentPage + 1)"
+                >»</a
+              >
             </li>
           </ul>
         </nav>
@@ -155,7 +219,7 @@
 
 <script>
 import { FilterIcon, Edit } from "lucide-vue-next";
-import { useToast } from 'vue-toastification';
+import { useToast } from "vue-toastification";
 import * as bootstrap from "bootstrap";
 
 export default {
@@ -201,7 +265,8 @@ export default {
               phieu.phamTramGiamGia.toString().includes(keywordLower)) ||
             (phieu.soTienGiam &&
               phieu.soTienGiam.toString().includes(keywordLower)) ||
-            (phieu.soLuong && phieu.soLuong.toString().includes(keywordLower)) ||
+            (phieu.soLuong &&
+              phieu.soLuong.toString().includes(keywordLower)) ||
             (phieu.giamToiThieu &&
               phieu.giamToiThieu.toString().includes(keywordLower)) ||
             (phieu.giamToiDa &&
@@ -228,7 +293,9 @@ export default {
       }
 
       if (this.loaiPhieu) {
-        filtered = filtered.filter((phieu) => phieu.loaiPhieu === this.loaiPhieu);
+        filtered = filtered.filter(
+          (phieu) => phieu.loaiPhieu === this.loaiPhieu
+        );
       }
 
       return filtered;
@@ -245,14 +312,16 @@ export default {
           throw new Error("Không thể tải danh sách phiếu giảm giá");
         }
         const data = await response.json();
-        this.allPhieuGiamGias = data.map(phieu => ({
+        this.allPhieuGiamGias = data.map((phieu) => ({
           ...phieu,
-          isChecked: phieu.trangThai !== 0 // Switch ON if not "Đã hủy"
+          isChecked: phieu.trangThai !== 0, // Switch ON if not "Đã hủy"
         }));
         this.phieuGiamGias = [...this.allPhieuGiamGias];
       } catch (err) {
         console.error("Lỗi khi lấy danh sách phiếu giảm giá:", err);
-        this.toast.error("Không thể tải danh sách phiếu giảm giá: " + err.message); // Use toast for consistency
+        this.toast.error(
+          "Không thể tải danh sách phiếu giảm giá: " + err.message
+        ); // Use toast for consistency
       }
     },
     startPolling() {
@@ -329,12 +398,16 @@ export default {
             this.toast.success("Xóa phiếu giảm giá thành công"); // Updated to toast.success
             phieu.trangThai = 0;
           } else {
-            this.toast.error(`Có lỗi xảy ra khi hủy phiếu giảm giá: ${responseData.message}`); // Updated to toast.error
+            this.toast.error(
+              `Có lỗi xảy ra khi hủy phiếu giảm giá: ${responseData.message}`
+            ); // Updated to toast.error
             phieu.isChecked = true; // Revert switch
           }
         } catch (err) {
           console.error("Lỗi khi hủy phiếu giảm giá:", err);
-          this.toast.error("Có lỗi xảy ra khi hủy phiếu giảm giá: " + err.message); // Updated to toast.error
+          this.toast.error(
+            "Có lỗi xảy ra khi hủy phiếu giảm giá: " + err.message
+          ); // Updated to toast.error
           phieu.isChecked = true; // Revert switch
         }
       } else {
@@ -355,8 +428,10 @@ export default {
     this.startPolling();
     // Initialize Bootstrap tooltips
     this.$nextTick(() => {
-      const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-      tooltipTriggerList.forEach(tooltipTriggerEl => {
+      const tooltipTriggerList = document.querySelectorAll(
+        '[data-bs-toggle="tooltip"]'
+      );
+      tooltipTriggerList.forEach((tooltipTriggerEl) => {
         new bootstrap.Tooltip(tooltipTriggerEl);
       });
     });
@@ -389,7 +464,7 @@ export default {
 }
 
 .custom-primary {
-  background-color: #CC0000;
+  background-color: #cc0000;
   color: white;
   border-radius: 50rem !important;
   /* tương đương với rounded-pill */
@@ -403,7 +478,7 @@ export default {
 }
 
 .custom-accent {
-  background-color: #66FF99;
+  background-color: #66ff99;
   color: #0a2c57;
   /* Dark text for readability */
   border-radius: 50rem !important;
@@ -411,7 +486,7 @@ export default {
 }
 
 .custom-accent1 {
-  background-color: #66FF99;
+  background-color: #66ff99;
   color: white;
   border-radius: 50rem !important;
   /* tương đương với rounded-pill */
@@ -429,7 +504,7 @@ export default {
 }
 
 .edit-icon {
-  color: #66FF99;
+  color: #66ff99;
 }
 
 .form-check-input {

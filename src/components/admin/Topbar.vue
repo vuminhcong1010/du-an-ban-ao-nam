@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { Bell, Mail, User, Menu } from 'lucide-vue-next'
-
-defineProps<{ toggleSidebarCollapse: () => void }>()
+import { Bell, Mail, User } from "lucide-vue-next";
+import logo from "@/assets/logo.png";
 </script>
 
 <template>
-  <header class="bg-white d-flex justify-content-between align-items-center px-2 border-bottom">
-    <div class="d-flex align-items-center gap-2">
-      <img src="/src/assets/logo.png" alt="COOLMEN logo" class="topbar-logo" />
+  <header
+    class="bg-white d-flex justify-content-between align-items-center p-3 border-bottom" style="height: 85px;"
+  >
+    <div class="fw-bold fs-3 d-flex align-items-center"
+      style="color: red; height: 100%">
+      
+        <img :src="logo" alt="logo" style="width: 90px; margin-left: 28px" />
+      
     </div>
     <div class="d-flex align-items-center gap-3">
       <i class="bi bi-envelope-fill fs-5"> <Mail></Mail> </i>
@@ -17,25 +21,3 @@ defineProps<{ toggleSidebarCollapse: () => void }>()
     </div>
   </header>
 </template>
-<style scoped>
-.hamburger-btn {
-  background: none;
-  border: none;
-  padding: 4px 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  transition: background 0.18s;
-}
-.hamburger-btn:hover {
-  background: #f0f0f0;
-}
-.topbar-logo {
-  max-height: 38px;
-  max-width: 120px;
-  object-fit: contain;
-  margin-right: 12px;
-}
-</style>

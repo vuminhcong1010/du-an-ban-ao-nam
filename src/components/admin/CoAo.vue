@@ -79,9 +79,9 @@ function reset(){
 </script>
 
 <template>
-  <div class="container my-4">
+  <div class="">
       
-    <div class="bg-white p-3 rounded shadow mb-4">
+    <div class="bg-white p-3 rounded border mb-4">
           <div class="d-flex justify-content-between align-items-center">
             <h5 class="fw-semibold">Quản lý cổ áo:</h5>
             <button class="btn" data-bs-toggle="modal" data-bs-target="#exampleModal" style="background-color: #0a2c57;">
@@ -90,7 +90,7 @@ function reset(){
           </div>
             
         </div>
-        <div class="bg-white p-3 rounded shadow mb-4">
+        <div class="bg-white p-3 rounded border mb-4">
           
           <div class="row g-3 align-items-end">
     <!-- Tìm kiếm -->
@@ -103,7 +103,7 @@ function reset(){
   </div>
         </div>
      
-      <div class="bg-white p-3 rounded shadow mb-4">
+      <div class="bg-white p-3 rounded border mb-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-semibold m-0">Danh sách cổ áo</h5>
         

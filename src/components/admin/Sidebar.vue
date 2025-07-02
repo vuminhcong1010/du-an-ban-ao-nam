@@ -11,9 +11,39 @@ import {
   UserCog
 } from 'lucide-vue-next';
 import { RouterLink, useRoute } from 'vue-router';
-// import logo from '@/assets/logo.png';
+import { ref, computed } from 'vue';
 
 const route = useRoute();
+const expanded = ref<string | null>(null);
+
+const menuItems = [
+  { to: '/', label: 'Trang Chủ', icon: Home },
+  { to: '/ban-hang', label: 'Bán Hàng', icon: DollarSign },
+  { to: '/hoa-don', label: 'Hóa Đơn', icon: FileText },
+  {
+    to: '/san-pham',
+    label: 'Sản Phẩm',
+    icon: Package,
+    children: [
+      { to: '/san-pham/co-ao', label: 'Cổ áo' },
+      { to: '/san-pham/tay-ao', label: 'Tay áo' },
+      { to: '/san-pham/kieu-ao', label: 'Kiểu áo' },
+      { to: '/san-pham/kich-co', label: 'Kích cỡ' },
+      { to: '/san-pham/danh-muc', label: 'Danh mục' },
+      { to: '/san-pham/mau', label: 'Màu' }
+    ]
+  },
+  { to: '/phieu-giam-gia', label: 'Phiếu Giảm Giá', icon: Ticket },
+  { to: '/dot-giam-gia', label: 'Đợt Giảm Giá', icon: Percent },
+  { to: '/nhan-vien', label: 'Nhân Viên', icon: UserCog },
+  { to: '/khach-hang', label: 'Khách Hàng', icon: User },
+  { to: '/thong-ke', label: 'Thống Kê', icon: BarChart }
+];
+
+
+const isRouteMatch = (item: any) => {
+  return route.path === item.to || item.children?.some((child: any) => child.to === route.path);
+};
 </script>
 
 <template>
@@ -23,35 +53,29 @@ const route = useRoute();
         <RouterLink
           :to="item.to"
           class="nav-link d-flex align-items-center gap-2 text-dark small rounded px-2 py-1 sidebar-menu-link"
-          :class="{ 'bg-light': route.path === item.to }"
+          :class="{ 'bg-light': isRouteMatch(item) }"
+          @click="item.children && (expanded = expanded === item.to ? null : item.to)"
         >
           <component :is="item.icon" :size="20" class="sidebar-icon" />
           <span>{{ item.label }}</span>
         </RouterLink>
+
+        <!-- Submenu con -->
+        <ul v-if="item.children && expanded === item.to" class="ps-4">
+          <li v-for="child in item.children" :key="child.to">
+            <RouterLink
+              :to="child.to"
+              class="nav-link text-dark small px-2 py-1"
+              :class="{ 'text-primary fw-bold': route.path === child.to }"
+            >
+               {{ child.label }}
+            </RouterLink>
+          </li>
+        </ul>
       </li>
     </ul>
   </aside>
 </template>
-
-<script lang="ts">
-export default {
-  data() {
-    return {
-      menuItems: [
-        { to: '/', label: 'Trang Chủ', icon: Home },
-        { to: '/ban-hang', label: 'Bán Hàng', icon: DollarSign },
-        { to: '/hoa-don', label: 'Hóa Đơn', icon: FileText },
-        { to: '/san-pham', label: 'Sản Phẩm', icon: Package },
-        { to: '/phieu-giam-gia', label: 'Phiếu Giảm Giá', icon: Ticket },
-        { to: '/dot-giam-gia', label: 'Đợt Giảm Giá', icon: Percent },
-        { to: '/nhan-vien', label: 'Nhân Viên', icon: UserCog },
-        { to: '/khach-hang', label: 'Khách Hàng', icon: User },
-        { to: '/thong-ke', label: 'Thống Kê', icon: BarChart },
-      ]
-    }
-  }
-}
-</script>
 
 <style scoped>
 .sidebar-custom {

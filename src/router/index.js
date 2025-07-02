@@ -20,6 +20,8 @@ import Test1 from '@/components/admin/Test1.vue';
 import PhieuGiamGia from "@/components/admin/PhieuGiamGia.vue";
 import ThemPhieuGiamGia from "@/components/admin/ThemPhieuGiamGIa.vue";
 import SuaPhieuGiamGia from "@/components/admin/SuaPhieuGiamGia.vue";
+import HoaDonChiTiet from '@/components/admin/HoaDonChiTiet.vue'
+import BanHang from "@/components/admin/BanHang.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -27,6 +29,17 @@ const router = createRouter({
       path: "/hoa-don",
       name: "hoadon",
       component: HoaDon,
+    },
+    {
+      path: "/ban-hang",
+      name: "banhang",
+      component: BanHang,
+    },
+    {
+      path: '/hoa-don-chi-tiet/:maHoaDon',
+      name: 'hoadonchitiet',
+      component: HoaDonChiTiet,
+      props: true,
     },
     {
       path: "/san-pham/chat-lieu",
