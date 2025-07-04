@@ -7,6 +7,7 @@
       <h2 class="page-title">Sửa khách hàng</h2>
     </div>
 
+
     <form @submit.prevent="handleSubmit" class="customer-form">
       <div class="form-grid-container-edit">
         <div class="image-column">
@@ -20,6 +21,7 @@
           <label for="fileUpload" class="button-upload-image">Đổi ảnh</label>
         </div>
 
+
         <div class="personal-info-section">
           <div class="input-group">
             <label>Họ và tên <span class="required-star">*</span></label>
@@ -31,6 +33,7 @@
             />
             <span v-if="showError && !isFullName(form.tenKhachHang)" class="error-message">Vui lòng nhập tên chính xác</span>
           </div>
+
 
           <div class="input-group">
             <label>Email <span class="required-star">*</span></label>
@@ -44,6 +47,7 @@
             <span v-else-if="showError && !form.email" class="error-message">Trường này là bắt buộc</span>
           </div>
 
+
           <div class="input-group">
             <label>Số điện thoại <span class="required-star">*</span></label>
             <input
@@ -56,11 +60,13 @@
             <span v-else-if="showError && !form.soDienThoai" class="error-message">Trường này là bắt buộc</span>
           </div>
 
+
           <div class="input-group">
             <label>Ngày sinh</label>
             <input v-model="form.ngaySinh" type="date" class="form-input" placeholder="dd/mm/yyyy" />
             <span v-if="showError && form.ngaySinh && !isAdult(form.ngaySinh)" class="error-message">Khách hàng phải từ 16 tuổi trở lên.</span>
           </div>
+
 
           <div class="input-group gender-row">
             <label>Giới tính</label>
@@ -74,6 +80,7 @@
             </div>
           </div>
 
+
           <div class="input-group">
             <label>Trạng thái</label>
             <select v-model="form.trangThai" class="form-input">
@@ -83,12 +90,14 @@
           </div>
         </div>
 
+
         <div class="address-column">
           <h3>Địa chỉ của khách hàng
             <button type="button" @click="openAddressModalForAdd" class="add-address-button">
-              <i class="fas fa-plus"></i> 
+              <i class="fas fa-plus"></i>
             </button>
           </h3>
+
 
           <ul v-if="addresses.length > 0" class="address-list">
             <li v-for="(address, index) in addresses" :key="address.id" class="address-item">
@@ -114,11 +123,13 @@
         </div>
       </div>
 
+
       <div class="form-footer">
         <button type="button" class="btn btn-secondary" @click="goBack">Huỷ</button>
         <button type="submit" class="btn btn-primary">Cập nhật</button>
       </div>
     </form>
+
 
     <AddressModal
     :show="showAddressModal"
@@ -129,29 +140,36 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
+import apiClient from '@/api/axios';
 import { useToast } from "vue-toastification";
 import AddressModal from '../../components/admin/AddressModal.vue'; // Điều chỉnh lại đường dẫn
 import { Edit, Trash } from 'lucide-vue-next';
+
 
 const components = {
   Edit, Trash, AddressModal
 };
 
+
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 
+
 const showError = ref(false);
+
 
 const errors = ref({
   email: false,
   soDienThoai: false,
     ngaySinh: false, // <-- Thêm lỗi cho ngày sinh
 });
+
 
 const form = ref({
   id: '',
@@ -163,10 +181,15 @@ const form = ref({
   trangThai: 1,
 });
 
+
 const addresses = ref([]); // Mảng chứa TẤT CẢ các địa chỉ của khách hàng
+
 
 const showAddressModal = ref(false);
 const selectedAddressForEdit = ref(null);
+
+
+
 
 
 
@@ -176,15 +199,18 @@ onMounted(async () => {
     if (route.params.id) {
       form.value.id = route.params.id;
 
+
       // Bước 1: Fetch thông tin khách hàng
       console.log('--- Đang tải thông tin khách hàng cho ID:', route.params.id, '---');
       await fetchCustomerDetails(route.params.id);
       console.log('--- Thông tin khách hàng đã tải xong. Form hiện tại:', JSON.parse(JSON.stringify(form.value)), '---');
 
+
       // Bước 2: Fetch địa chỉ
       console.log('--- Đang tải địa chỉ khách hàng ---');
       await fetchAddresses();
       console.log('--- Địa chỉ khách hàng đã tải xong. Danh sách địa chỉ:', JSON.parse(JSON.stringify(addresses.value)), '---');
+
 
     } else {
       toast.error("Không tìm thấy ID khách hàng để chỉnh sửa.");
@@ -197,11 +223,13 @@ onMounted(async () => {
   }
 });
 
+
 // --- Data Fetching Methods ---
 const fetchCustomerDetails = async (id) => {
   try {
-    const response = await axios.get(`/api/khach-hang/${id}`);
+    const response = await apiClient.get(`/api/khach-hang/${id}`);
     const customerData = response.data;
+
 
     // Gán thông tin khách hàng vào form
     form.value.tenKhachHang = customerData.tenKhachHang ?? '';
@@ -210,6 +238,7 @@ const fetchCustomerDetails = async (id) => {
     form.value.gioiTinh = customerData.gioiTinh ?? true; // Đảm bảo giá trị 'gioiTinh' là chuỗi
     form.value.ngaySinh = customerData.ngaySinh?.split('T')[0] ?? '';
     form.value.trangThai = customerData.trangThai ?? 1;
+
 
     // Đảm bảo thông tin địa chỉ được gán đúng vào form
     if (customerData.diaChi && customerData.diaChi.length > 0) {
@@ -232,18 +261,21 @@ const fetchCustomerDetails = async (id) => {
       };
     }
 
+
   } catch (error) {
     console.error('Lỗi khi tải chi tiết khách hàng:', error.response?.status, error.response?.data || error.message);
     toast.error("Không thể tải chi tiết khách hàng.");
   }
 };
 
+
 const fetchAddresses = async () => {
   if (form.value.id) {
     try {
-      const response = await axios.get(`/api/khach-hang/${form.value.id}/dia-chi`);
+      const response = await apiClient.get(`/api/khach-hang/${form.value.id}/dia-chi`);
       const apiAddresses = response.data || [];
       console.log('API Response (Addresses):', apiAddresses); // DEBUG: Xem chính xác API địa chỉ trả về gì
+
 
       addresses.value = apiAddresses.map(addr => {
         const isDefault = !!addr.isMacDinh;
@@ -263,6 +295,7 @@ const fetchAddresses = async () => {
         };
       });
 
+
       // Giữ nguyên thông tin khách hàng nếu không có thay đổi
       console.log('Addresses.value sau khi gán địa chỉ:', JSON.parse(JSON.stringify(addresses.value)));
     } catch (error) {
@@ -273,11 +306,13 @@ const fetchAddresses = async () => {
   }
 };
 
+
 // --- Validation Methods ---
 const validatePhone = (phone) => /^(0[3|5|7|8|9])[0-9]{8}$/.test(phone);
 const validateEmail = (email) => /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(email);
 const isFullName = (name) => {
      const regex = /^[a-zA-ZÀÁẠẢÃĂẮẰẲẶẬÂẤẦẨẪẬĐÈÉẸẺẼÊỀẾỆỂỄÌÍỊỈĨÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠÙÚỤỦŨƯỪỨỰỬỮỲÝỴỶỸ\s]+$/i; // <-- SỬA DÒNG NÀY
+
 
     return name && name.trim().split(" ").length >= 1 && regex.test(name);
 };
@@ -298,21 +333,26 @@ const goBack = () => {
   router.push('/khach-hang');
 };
 
+
 const handleSubmit = async () => {
     showError.value = true; // Bật cờ để hiển thị lỗi trên UI (màu đỏ dưới input)
+
 
     // Reset tất cả lỗi trước khi validate lại
     errors.value.email = false;
     errors.value.soDienThoai = false;
     errors.value.ngaySinh = false;
 
+
     let formIsValid = true; // Cờ để theo dõi trạng thái validation tổng thể của form
+
 
     // Validate Họ và tên
     if (!form.value.tenKhachHang || !isFullName(form.value.tenKhachHang)) {
         formIsValid = false;
         // KHÔNG hiển thị toast cụ thể ở đây
     }
+
 
     // Validate Email
     if (!form.value.email) {
@@ -323,6 +363,7 @@ const handleSubmit = async () => {
         formIsValid = false;
     }
 
+
     // Validate Số điện thoại
     if (!form.value.soDienThoai) {
         formIsValid = false;
@@ -332,17 +373,20 @@ const handleSubmit = async () => {
         formIsValid = false;
     }
 
+
     // Validate Ngày sinh (tuổi)
     if (form.value.ngaySinh && !isAdult(form.value.ngaySinh)) {
         errors.value.ngaySinh = true; // Đặt lỗi để hiển thị trên UI
         formIsValid = false;
     }
 
+
     // Nếu form không hợp lệ, hiển thị toast tổng và dừng lại
     if (!formIsValid) {
         toast.error("Cập nhật không thành công! Vui lòng kiểm tra lại thông tin.");
         return; // Dừng hàm nếu có lỗi validation
     }
+
 
     // Nếu form hợp lệ, tiến hành gửi dữ liệu
     try {
@@ -356,6 +400,7 @@ const handleSubmit = async () => {
             trangThai: form.value.trangThai,
         };
 
+
         await axios.put(`/api/khach-hang/${form.value.id}`, customerUpdatePayload);
         toast.success("Cập nhật khách hàng thành công!");
         router.push('/khach-hang');
@@ -367,11 +412,14 @@ const handleSubmit = async () => {
 };
 
 
+
+
 // --- Address Modal Specific Logic ---
 const openAddressModalForAdd = () => {
     selectedAddressForEdit.value = null;
     showAddressModal.value = true;
 };
+
 
 const editAddressInPopup = (address) => {
     selectedAddressForEdit.value = {
@@ -386,13 +434,16 @@ const editAddressInPopup = (address) => {
     showAddressModal.value = true;
 };
 
+
 // const handleAddressUpdate = () => {
 //     fetchAddresses();
 // };
 
+
 // const handleAddressAdded = () => {
 //     fetchAddresses();
 // };
+
 
 // Phương thức mới hoặc đổi tên để xử lý cả thêm và cập nhật địa chỉ
 const handleAddressSaved = () => {
@@ -401,9 +452,12 @@ const handleAddressSaved = () => {
 };
 
 
+
+
 const deleteAddress = async (addressId) => {
     const isOnlyAddress = addresses.value.length === 1;
     const addressToDelete = addresses.value.find(addr => addr.id === addressId);
+
 
     if (isOnlyAddress) {
         toast.error("Không thể xóa địa chỉ cuối cùng của khách hàng.");
@@ -426,6 +480,7 @@ const deleteAddress = async (addressId) => {
     }
 };
 
+
 const setDefaultAddress = async (selectedAddress) => {
     try {
         await axios.put(`/api/dia-chi/${selectedAddress.id}/set-default/${form.value.id}`);
@@ -438,6 +493,7 @@ const setDefaultAddress = async (selectedAddress) => {
 };
 </script>
 
+
 <style scoped>
 /* Tổng thể trang và container form */
 .page-container {
@@ -449,6 +505,7 @@ const setDefaultAddress = async (selectedAddress) => {
   align-items: center;
 }
 
+
 /* Header Section (Quay lại và Tiêu đề) */
 .header-section {
   display: flex;
@@ -458,6 +515,7 @@ const setDefaultAddress = async (selectedAddress) => {
   margin-bottom: 30px; /* Khoảng cách dưới header */
   gap: 25px; /* Khoảng cách giữa nút và tiêu đề */
 }
+
 
 .back-button {
   background-color: #e9ecef;
@@ -475,10 +533,12 @@ const setDefaultAddress = async (selectedAddress) => {
   gap: 8px;
 }
 
+
 .back-button:hover {
   background-color: #dee2e6;
   color: #343a40;
 }
+
 
 .page-title {
   font-size: 2.5rem; /* Kích thước tiêu đề lớn hơn */
@@ -487,6 +547,7 @@ const setDefaultAddress = async (selectedAddress) => {
   margin: 0; /* Đảm bảo không có margin mặc định */
   line-height: 1.2; /* Căn chỉnh dòng */
 }
+
 
 /* Form chính */
 .customer-form {
@@ -501,6 +562,7 @@ const setDefaultAddress = async (selectedAddress) => {
   flex-direction: column;
 }
 
+
 /* Container cho 3 cột chính */
 .form-grid-container-edit {
   display: grid;
@@ -509,6 +571,7 @@ const setDefaultAddress = async (selectedAddress) => {
   margin-bottom: 30px;
   align-items: start; /* Căn chỉnh các cột lên đầu */
 }
+
 
 /* Cột 1: Ảnh đại diện */
 .image-column {
@@ -520,12 +583,14 @@ const setDefaultAddress = async (selectedAddress) => {
   box-sizing: border-box; /* Đảm bảo padding không làm tràn */
 }
 
+
 .label-heading {
   font-weight: 600;
   color: #495057;
   margin-bottom: 1.25rem; /* Tăng khoảng cách */
   font-size: 1.05rem; /* Kích thước font lớn hơn */
 }
+
 
 .profile-image-preview {
   width: 11.5rem; /* Khoảng 180px */
@@ -537,9 +602,11 @@ const setDefaultAddress = async (selectedAddress) => {
   margin-bottom: 1.25rem;
 }
 
+
 .hidden-file-input {
   display: none;
 }
+
 
 .button-upload-image {
   background-color: #0a2c57; /* Màu xanh đậm theo yêu cầu */
@@ -554,9 +621,11 @@ const setDefaultAddress = async (selectedAddress) => {
   font-size: 1rem; /* Kích thước font cho nút */
 }
 
+
 .button-upload-image:hover {
   background-color: #071f3e; /* Màu đậm hơn khi hover */
 }
+
 
 /* Cột 2: Thông tin cá nhân & Trạng thái */
 .personal-info-section,
@@ -568,10 +637,13 @@ const setDefaultAddress = async (selectedAddress) => {
   box-sizing: border-box;
 }
 
+
 /* Cột 3: Địa chỉ */
 .address-column {
     padding-left: 25px; /* Điều chỉnh riêng padding trái cho cột địa chỉ */
 }
+
+
 
 
 /* Common input group styles */
@@ -579,6 +651,7 @@ const setDefaultAddress = async (selectedAddress) => {
   display: flex;
   flex-direction: column;
 }
+
 
 label {
   display: block;
@@ -588,10 +661,12 @@ label {
   font-size: 1.05rem; /* Kích thước font cho label */
 }
 
+
 .required-star {
   color: #dc3545; /* Màu đỏ cho dấu sao bắt buộc */
   margin-left: 4px;
 }
+
 
 .form-input {
   width: 100%;
@@ -604,15 +679,18 @@ label {
   box-sizing: border-box; /* Đảm bảo padding không làm tăng chiều rộng */
 }
 
+
 .form-input:focus {
   border-color: #0a2c57; /* Màu xanh đậm khi focus */
   box-shadow: 0 0 0 3px rgba(10, 44, 87, 0.2); /* Hiệu ứng focus với màu xanh đậm */
   outline: none;
 }
 
+
 .error-input {
   border-color: #dc3545 !important; /* Màu đỏ cho lỗi */
 }
+
 
 .error-message {
   color: #dc3545;
@@ -621,6 +699,7 @@ label {
   display: block;
 }
 
+
 /* Giới tính Radio Buttons */
 .gender-row {
   flex-direction: row; /* Căn hàng ngang cho label và radio group */
@@ -628,10 +707,12 @@ label {
   gap: 20px;
 }
 
+
 .gender-group {
   display: flex;
   gap: 30px; /* Khoảng cách giữa các radio option */
 }
+
 
 .radio-label {
   display: flex;
@@ -642,6 +723,7 @@ label {
   cursor: pointer;
   font-size: 1rem;
 }
+
 
 .radio-input {
   appearance: none; /* Bỏ giao diện mặc định của radio button */
@@ -656,9 +738,11 @@ label {
   flex-shrink: 0; /* Không co lại */
 }
 
+
 .radio-input:checked {
   border-color: #0a2c57; /* Màu xanh đậm khi chọn */
 }
+
 
 .radio-input:checked::before {
   content: '';
@@ -672,12 +756,14 @@ label {
   transform: translate(-50%, -50%);
 }
 
+
 /* Address Section Styles */
 .address-section {
   display: flex;
   flex-direction: column;
   gap: 15px; /* Khoảng cách chung giữa các phần tử trong address section */
 }
+
 
 .address-section h3 {
   font-size: 1.8rem; /* Kích thước lớn hơn */
@@ -690,6 +776,7 @@ label {
   padding-bottom: 10px;
   border-bottom: 1px solid #eee;
 }
+
 
 .add-address-button {
   background-color: #0a2c57;
@@ -706,15 +793,18 @@ label {
   transition: background-color 0.3s;
 }
 
+
 .add-address-button:hover {
   background-color: #071f3e;
 }
+
 
 .address-list {
   list-style: none;
   padding: 0;
   margin-top: 10px; /* Khoảng cách trên danh sách địa chỉ */
 }
+
 
 .address-item {
   display: flex;
@@ -730,10 +820,12 @@ label {
   transition: all 0.2s ease-in-out;
 }
 
+
 .address-item:hover {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
 }
+
 
 .address-wrapper {
   display: flex;
@@ -741,6 +833,7 @@ label {
   flex-grow: 1;
   position: relative;
 }
+
 
 /* --- Chỉnh sửa cho "Mặc định" label --- */
 .default-label {
@@ -757,12 +850,14 @@ label {
   z-index: 10;
 }
 
+
 .address-content {
   display: flex;
   align-items: center;
   gap: 12px; /* Khoảng cách giữa checkbox và text */
   padding-top: 10px; /* Đẩy nội dung xuống để tạo chỗ cho label "Mặc định" */
 }
+
 
 .address-content label {
   font-weight: normal; /* Không in đậm địa chỉ */
@@ -772,6 +867,7 @@ label {
   cursor: pointer;
 }
 
+
 .address-checkbox {
   width: 20px; /* Kích thước lớn hơn */
   height: 20px;
@@ -780,10 +876,12 @@ label {
   flex-shrink: 0; /* Không co lại */
 }
 
+
 .address-actions {
   display: flex;
   gap: 10px; /* Khoảng cách giữa các nút action */
 }
+
 
 .action-button {
   background: #f0f0f0;
@@ -799,13 +897,16 @@ label {
   font-size: 1.1em; /* Kích thước icon */
 }
 
+
 .action-button:hover {
   background-color: #e0e0e0;
   transform: translateY(-1px);
 }
 
+
 .edit-button i { color: #28a745; } /* Icon màu xanh lá */
 .delete-button i { color: #dc3545; } /* Icon màu đỏ */
+
 
 .no-address-message {
   text-align: center;
@@ -813,6 +914,7 @@ label {
   margin-top: 25px;
   font-size: 1.05rem;
 }
+
 
 /* Footer với các nút actions */
 .form-footer {
@@ -824,6 +926,7 @@ label {
   margin-top: auto; /* Đẩy footer xuống dưới cùng của form flex container */
 }
 
+
 .btn {
   padding: 12px 30px; /* Tăng padding */
   border: none;
@@ -834,25 +937,30 @@ label {
   font-size: 1.1rem; /* Kích thước font lớn hơn */
 }
 
+
 .btn-secondary {
   background-color: #6c757d; /* Màu xám Bootstrap secondary */
   color: white;
 }
+
 
 .btn-secondary:hover {
   background-color: #5a6268;
   transform: translateY(-2px);
 }
 
+
 .btn-primary { /* Đổi tên class từ btn-success sang btn-primary và áp dụng màu xanh đậm */
   background-color: #0a2c57; /* Màu xanh đậm theo yêu cầu */
   color: white;
 }
 
+
 .btn-primary:hover {
   background-color: #071f3e; /* Màu đậm hơn khi hover */
   transform: translateY(-2px);
 }
+
 
 /* Responsive adjustments */
 @media (max-width: 1200px) { /* Chuyển sang 2 cột trên các màn hình nhỏ hơn 1200px (tablet lớn) */
@@ -874,6 +982,8 @@ label {
       padding-right: 25px; /* Giữ đường phân cách */
   }
 }
+
+
 
 
 @media (max-width: 768px) { /* Cho mobile */
@@ -953,3 +1063,6 @@ label {
   }
 }
 </style>
+
+
+
