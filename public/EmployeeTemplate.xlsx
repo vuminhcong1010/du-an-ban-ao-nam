@@ -1,0 +1,7 @@
+[Excel file with columns: Tên Nhân Viên, CCCD, Ngày Sinh, SĐT, Giới Tính, Email, Tỉnh/Thành, Quận/Huyện, Xã/Phường, Thôn/Xóm, Ghi Chú]
+
+Dòng 1 (header):
+Tên Nhân Viên | CCCD | Ngày Sinh | SĐT | Giới Tính | Email | Tỉnh/Thành | Quận/Huyện | Xã/Phường | Thôn/Xóm | Ghi Chú
+
+Nguyễn Văn A | 012345 | 1995-05-20 | 0912345678 | Nam | vana@example.com | Hà Nội | Hai Bà Trưng | Bạch Mai | Ngõ 22 | Nhân viên kỹ thuật
+

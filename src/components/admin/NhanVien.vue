@@ -10,6 +10,7 @@ import Swal from 'sweetalert2'
 const toggleSidebar = inject('toggleSidebar')
 
 const isExporting = ref(false);
+const isImporting = ref(false);
 
 const listNhanVien = ref({
   id: "",
@@ -101,6 +102,11 @@ const selectedDistrict = ref(null);
 const selectedWard = ref(null);
 const fileInput = ref(null);
 
+function getImageUrl(path) {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return `http://localhost:8080${path}`;
+}
 
 function openConfirmModal(nhanVien) {
   Swal.fire({
@@ -406,55 +412,6 @@ function goToPage(page) {
 }
 watch(filteredNhanVien, () => { currentPage.value = 1; });
 
-async function triggerFileInput() {
-  const result = await Swal.fire({
-    icon: 'question',
-    title: 'Xác nhận nhập file Excel?',
-    text: 'Bạn có chắc chắn muốn nhập dữ liệu nhân viên từ file Excel không?',
-    showCancelButton: true,
-    confirmButtonText: 'Có, nhập ngay!',
-    cancelButtonText: 'Hủy bỏ',
-    reverseButtons: true,
-    customClass: {
-      confirmButton: 'swal2-confirm btn-save',
-      cancelButton: 'swal2-cancel btn-cancel'
-    }
-  });
-  if (result.isConfirmed) {
-    fileInput.value && fileInput.value.click();
-  }
-}
-
-async function handleFileChange(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const formData = new FormData();
-  formData.append('file', file);
-
-  try {
-    const response = await axios.post(
-      'http://localhost:8080/api/nhan-vien/import-excel',
-      formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
-    );
-    toast.success(response.data || 'Nhập dữ liệu thành công!');
-    await getData(); // Refresh lại danh sách nhân viên
-  } catch (error) {
-    toast.error(
-      error.response?.data || 'Lỗi khi nhập file Excel!'
-    );
-  } finally {
-    // Reset input để có thể chọn lại cùng 1 file nếu muốn
-    event.target.value = '';
-  }
-}
-
-function getImageUrl(path) {
-  if (!path) return '';
-  if (path.startsWith('http')) return path;
-  return `http://localhost:8080${path}`;
-}
-
 onMounted(() => {
   getData();
   fetchProvinces(); // Thêm dòng này để lấy danh sách tỉnh thành cho filter
@@ -466,6 +423,88 @@ onMounted(() => {
     window.history.replaceState({}, document.title, route.path);
   }
 })
+
+let importOption = 'stop';
+
+async function triggerFileInput() {
+  importOption = 'stop';
+  await Swal.fire({
+    title: 'Nhập nhân viên từ File dữ liệu',
+    html: `
+      <div style='text-align:left;'>
+        <div style='margin-bottom:16px;'><b>Xử lý khi gặp lỗi nhập file?</b></div>
+        <div style='margin-bottom:12px;'>
+          <label style='display:flex;align-items:center;gap:8px;'>
+            <input type='radio' name='importOption' value='stop' checked style='accent-color:#1976d2;' /> Dừng nhập file
+          </label>
+          <label style='display:flex;align-items:center;gap:8px;margin-top:6px;'>
+            <input type='radio' name='importOption' value='continue' style='accent-color:#1976d2;' /> Bỏ qua và tiếp tục nhập file
+          </label>
+        </div>
+        <div style='margin-bottom:18px;color:#888;font-size:14px;'><b>Lưu ý:</b> Hệ thống cho phép nhập tối đa 500 nhân viên mỗi lần từ file.</div>
+      </div>
+    `,
+    showCancelButton: true,
+    showDenyButton: true,
+    confirmButtonText: 'Xác nhận nhập',
+    denyButtonText: 'Tải file mẫu',
+    cancelButtonText: 'Hủy',
+    reverseButtons: true,
+    customClass: {
+      confirmButton: 'swal2-confirm btn-save',
+      denyButton: 'swal2-deny btn-cancel',
+      cancelButton: 'swal2-cancel btn-cancel'
+    },
+    didOpen: () => {
+      const radios = Swal.getHtmlContainer().querySelectorAll('input[name="importOption"]');
+      radios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          importOption = e.target.value;
+        });
+      });
+    }
+  }).then(async (result) => {
+    if (result.isDenied) {
+      const link = document.createElement('a');
+      link.href = '/EmployeeTemplate.xlsx';
+      link.download = 'fileMauDanhSachNhanVien.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else if (result.isConfirmed) {
+      // Lấy lại giá trị radio tại thời điểm xác nhận
+      const checkedRadio = document.querySelector('input[name="importOption"]:checked');
+      if (checkedRadio) importOption = checkedRadio.value;
+      fileInput.value && fileInput.value.click();
+    }
+  });
+}
+
+async function handleFileChange(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  isImporting.value = true;
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const response = await axios.post(
+      'http://localhost:8080/api/nhan-vien/import-excel',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    toast.success(response.data || 'Nhập dữ liệu thành công!');
+    await getData();
+  } catch (error) {
+    if(importOption === 'stop') {
+      toast.error('Nhập file thất bại');
+    } else {
+      toast.error('Import file lỗi: Sai mẫu file import. Vui lòng tải về và import đúng file mẫu.');
+    }
+  } finally {
+    isImporting.value = false;
+    event.target.value = '';
+  }
+}
 </script>
 
 <template>
@@ -477,8 +516,10 @@ onMounted(() => {
       </div>
       <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
         <router-link to="/nhan-vien/them" class="nv-btn" title="Thêm nhân viên mới"><span style="font-size: 15px !important;">+</span> Nhân viên</router-link>
-        <button class="nv-btn" @click="triggerFileInput" title="Nhập dữ liệu từ file Excel">
-          <span style="font-size: 15px !important;">⭳</span> Nhập file
+        <button class="nv-btn" @click="triggerFileInput" :disabled="isImporting" title="Nhập dữ liệu từ file Excel">
+          <span v-if="isImporting" class="spinner"></span>
+          <span v-else style="font-size: 15px !important;">⭳</span>
+          {{ isImporting ? 'Đang nhập...' : 'Nhập file' }}
         </button>
         <input
           ref="fileInput"
