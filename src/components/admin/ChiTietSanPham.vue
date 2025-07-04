@@ -136,8 +136,8 @@
             <span v-else class="badge rounded-pill text-bg-warning text-white" style="background-color: #3B82F6;">Ngừng bán</span>
           </td>
           <td>
-            <Trash class="me-3" style="color: #CC0000;" @click="remove(ds.id)" />
-            <Eye class="me-3" data-bs-toggle="modal" data-bs-target="#exampleModal" @click="moModal(ds.id)" style="color: #0a2c57;" />
+            <i class="fa-solid fa-repeat me-3" title="thay đổi trạng thái" style="color: #CC0000; font-size: 1.3rem;" @click="remove(ds.id)"></i>
+            <i class="fa-solid fa-pen-to-square" title="cập nhật thông tin" data-bs-toggle="modal" data-bs-target="#exampleModal" @click="moModal(ds.id)" style="color: #0a2c57;font-size: 1.3rem;"></i>
           </td>
         </tr>
       </tbody>
