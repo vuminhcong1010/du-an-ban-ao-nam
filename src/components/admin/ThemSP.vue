@@ -565,7 +565,7 @@ import vSelect from "vue-select";
 import {Plus} from "lucide-vue-next";
 import {useToast} from "vue-toastification";
 import {useRouter} from "vue-router";
-
+import Swal from 'sweetalert2'
 const router = useRouter();
 const toast = useToast();
 
@@ -1117,8 +1117,24 @@ const removeFile = (rowIndex, fileIndex) => {
 };
 
 const uploadAllImages = async () => {
+  const result = await Swal.fire({
+                    title: 'Xác nhận thêm?',
+                    text: 'Bạn có chắc muốn thêm dữ liệu này không?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Sửa',
+                    cancelButtonText: 'Hủy'
+                });
+    if (!result.isConfirmed) {
+      toast.info('Hủy thao tác thêm');
+      console.log('User cancelled');
+      return;
+    }
   if (validateForm()) {
     let allUploadedUrls = {};
+    
     for (const mauId in groupedByMau.value) {
       const currentFiles = files.value[mauId] || [];
 
@@ -1154,6 +1170,7 @@ const uploadAllImages = async () => {
         }
       }
     }
+
     // Duyệt qua từng nhóm màu (mauId là key trong files)
     for (const mauId in files.value) {
       const currentFiles = files.value[mauId] || [];

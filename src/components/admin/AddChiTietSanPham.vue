@@ -270,6 +270,7 @@ import { ref, watch, onBeforeUnmount } from 'vue'
 import { defineEmits } from 'vue'
 import vSelect from 'vue-select'
 import 'vue-select/dist/vue-select.css';
+import Swal from 'sweetalert2'
 const toast = useToast();
 const props = defineProps({
   idChiTietSanPham: {
@@ -587,6 +588,21 @@ onBeforeUnmount(() => {
 
 // Upload và submit
 async function uploadAllImages() {
+  const result = await Swal.fire({
+                    title: 'Xác nhận thêm?',
+                    text: 'Bạn có chắc muốn thêm dữ liệu này không?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Sửa',
+                    cancelButtonText: 'Hủy'
+                });
+    if (!result.isConfirmed) {
+      toast.info('Hủy thao tác thêm');
+      console.log('User cancelled');
+      return;
+    }
   // Xử lý Cloudinary
   if(validateForm() && validateImage()){
     let imageUrls = []
