@@ -117,22 +117,22 @@
                         v-if="!show"
                       />
 
-                      <button
+                      <!-- <button
                         v-if="files[0]?.[0]"
                         @click="removeFile(0, 0)"
                         class="btn btn-sm btn-danger position-absolute"
                         style="top: 5px; right: 5px;"
                       >
                         <i class="fa-solid fa-trash fa-xs"></i>
-                      </button>
-                      <button
+                      </button> -->
+                      <!-- <button
                         v-else
                         @click="removeUploadedImage(0, 0)"
                         class="btn btn-sm btn-danger position-absolute"
                         style="top: 5px; right: 5px;"
                       >
                         <i class="fa-solid fa-trash fa-xs"></i>
-                      </button>
+                      </button> -->
                     </div>
                   </div>
 

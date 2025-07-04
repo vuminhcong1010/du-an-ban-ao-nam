@@ -323,56 +323,134 @@ const call =async () => {
     console.error("Lỗi khi gọi API:", err);
   }
 }
-const themTayAo = (tenTayAo) =>{  
-  let data = {
-    "tenTayAo": tenTayAo
-  }  
-    axios.post("http://localhost:8080/tay-ao/add",data).then(Response =>{
-      call()
-    }).catch (err =>{
-       console.log(err);
-    })    
-}
-const themKieuAo = (tenKieuAo) =>{  
-  let data = {
-    "tenKieuAo": tenKieuAo
-  }  
-    axios.post("http://localhost:8080/kieu-ao/add",data).then(Response =>{
-      call()
-    }).catch (err =>{
-       console.log(err);
-    })    
-}
-const themMau = (ten) =>{  
-  let data = {
-    "ten": ten
-  }  
-    axios.post("http://localhost:8080/mau/add",data).then(Response =>{
-      call()
-    }).catch (err =>{
-       console.log(err);
-    })    
-}
-const themKichCo = (tenSize) =>{  
-  let data = {
-    "soCo": tenSize
-  }  
-    axios.post("http://localhost:8080/kich-co/add",data).then(Response =>{
-      call()
-    }).catch (err =>{
-       console.log(err);
-    })    
-}
-const themCoAo = (tenCoAo) =>{  
-  let data = {
-    "tenCoAo": tenCoAo
-  }  
-    axios.post("http://localhost:8080/co-ao/add",data).then(Response =>{
-      call()
-    }).catch (err =>{
-       console.log(err);
-    })    
-}
+const themTayAo = (tenTayAo) => {
+  if (!tenTayAo || !tenTayAo.trim()) {
+    toast.error("⚠️ Tên tay áo không được để trống");
+    return;
+  }
+
+  const isDuplicate = tayAo.value.some(item =>
+    item.tenTayAo.toLowerCase().trim() === tenTayAo.toLowerCase().trim()
+  );
+  if (isDuplicate) {
+    toast.error("⚠️ Tên tay áo đã tồn tại");
+    return;
+  }
+
+  let data = { tenTayAo };
+  axios.post("http://localhost:8080/tay-ao/add", data)
+    .then(() => {
+      toast.success("✅ Thêm tay áo thành công");
+      call();
+    })
+    .catch(err => {
+      toast.error("❌ Thêm tay áo thất bại");
+      console.log(err);
+    });
+};
+
+const themKieuAo = (tenKieuAo) => {
+  if (!tenKieuAo || !tenKieuAo.trim()) {
+    toast.error("⚠️ Tên kiểu áo không được để trống");
+    return;
+  }
+
+  const isDuplicate = kieuAo.value.some(item =>
+    item.tenKieuAo.toLowerCase().trim() === tenKieuAo.toLowerCase().trim()
+  );
+  if (isDuplicate) {
+    toast.error("⚠️ Tên kiểu áo đã tồn tại");
+    return;
+  }
+
+  let data = { tenKieuAo };
+  axios.post("http://localhost:8080/kieu-ao/add", data)
+    .then(() => {
+      toast.success("✅ Thêm kiểu áo thành công");
+      call();
+    })
+    .catch(err => {
+      toast.error("❌ Thêm kiểu áo thất bại");
+      console.log(err);
+    });
+};
+
+const themMau = (ten) => {
+  if (!ten || !ten.trim()) {
+    toast.error("⚠️ Tên màu không được để trống");
+    return;
+  }
+
+  const isDuplicate = mau.value.some(item =>
+    item.ten.toLowerCase().trim() === ten.toLowerCase().trim()
+  );
+  if (isDuplicate) {
+    toast.error("⚠️ Màu đã tồn tại");
+    return;
+  }
+
+  let data = { ten };
+  axios.post("http://localhost:8080/mau/add", data)
+    .then(() => {
+      toast.success("✅ Thêm màu thành công");
+      call();
+    })
+    .catch(err => {
+      toast.error("❌ Thêm màu thất bại");
+      console.log(err);
+    });
+};
+
+const themKichCo = (tenSize) => {
+  if (!tenSize || !tenSize.trim()) {
+    toast.error("⚠️ Kích cỡ không được để trống");
+    return;
+  }
+
+  const isDuplicate = size.value.some(item =>
+    item.soCo.toLowerCase().trim() === tenSize.toLowerCase().trim()
+  );
+  if (isDuplicate) {
+    toast.error("⚠️ Kích cỡ đã tồn tại");
+    return;
+  }
+
+  let data = { soCo: tenSize };
+  axios.post("http://localhost:8080/kich-co/add", data)
+    .then(() => {
+      toast.success("✅ Thêm kích cỡ thành công");
+      call();
+    })
+    .catch(err => {
+      toast.error("❌ Thêm kích cỡ thất bại");
+      console.log(err);
+    });
+};
+const themCoAo = (tenCoAo) => {
+  if (!tenCoAo || !tenCoAo.trim()) {
+    toast.error("⚠️ Tên cổ áo không được để trống");
+    return;
+  }
+
+  const isDuplicate = coAo.value.some(item =>
+    item.tenCoAo.toLowerCase().trim() === tenCoAo.toLowerCase().trim()
+  );
+  if (isDuplicate) {
+    toast.error("⚠️ Tên cổ áo đã tồn tại");
+    return;
+  }
+
+  let data = { tenCoAo };
+  axios.post("http://localhost:8080/co-ao/add", data)
+    .then(() => {
+      toast.success("✅ Thêm cổ áo thành công");
+      call();
+    })
+    .catch(err => {
+      toast.error("❌ Thêm cổ áo thất bại");
+      console.log(err);
+    });
+};
 
 
 
@@ -510,7 +588,8 @@ onBeforeUnmount(() => {
 // Upload và submit
 async function uploadAllImages() {
   // Xử lý Cloudinary
-  let imageUrls = []
+  if(validateForm() && validateImage()){
+    let imageUrls = []
   if (selectedFile.value) {
     const formData = new FormData()
     formData.append('file', selectedFile.value)
@@ -533,18 +612,25 @@ async function uploadAllImages() {
   console.log('Request body:', req.value)
   // Gửi request
   try {
-    if(validateForm()){
-         await axios.post("http://localhost:8080/san-pham/chi-tiet-san-pham/add", req.value)
+     await axios.post("http://localhost:8080/san-pham/chi-tiet-san-pham/add", req.value)
      setTimeout(() => {
   }, 1000);
     toast.success("Cập nhật thành công");
     submitAndClose()
-    }else{
-      toast.error("Cập nhật thất bại");
-    }
   } catch (err) {
-    toast.error("k map dduowc");
+    toast.error("Cập nhật thất bại");
   }
+  }else{
+    toast.error("Vui lòng kiểm tra lại thông tin");
+  }
+  
+}
+function validateImage() {
+  if (!selectedFile.value && !existingImageUrl.value) {
+    
+    return false;
+  }
+  return true;
 }
 </script>
 
