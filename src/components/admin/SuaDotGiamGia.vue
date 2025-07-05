@@ -2,7 +2,7 @@
     <div class="container-fluid mt-3">
         <div class="bg-white p-4 rounded shadow">
             <h3 class="fw-bold mb-4">
-                <router-link to="/dot-giam-gia" class="text-decoration-none text-dark">Đợt Giảm Giá</router-link> /
+                <router-link to="/dot-giam-gia" class="text-decoration-none text-dark">  <i class="fa fa-arrow-left me-2"></i>Đợt Giảm Giá</router-link> /
                 <span class="text-primary">Sửa Đợt Giảm Giá</span>
             </h3>
             <div class="row g-4">
