@@ -12,6 +12,8 @@ const endDate = ref("");
 
 const todos = ref([]);
 const revenueFilter = ref(0);
+const currentPage = ref(1);
+const pageSize = 5;
 
 const fetchTodos = async () => {
   try {
@@ -87,6 +89,22 @@ const filteredTodos = computed(() => {
     });
 });
 
+const paginatedTodos = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  const end = start + pageSize;
+  return filteredTodos.value.slice(start, end);
+});
+
+const totalPages = computed(() =>
+  Math.ceil(filteredTodos.value.length / pageSize)
+);
+
+function goToPage(page) {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
+}
+
 function formatDate(dateString) {
   const date = new Date(dateString);
   const day = String(date.getDate()).padStart(2, "0");
@@ -110,13 +128,16 @@ function formatDate(dateString) {
       >
         <Upload class="me-1" size="16" /> Xuất file
       </button>
-      <button
+      <RouterLink to="/ban-hang">
+        <button
         class="btn success"
         style="background-color: #0a2c57; color: white"
         @click="thongBao"
       >
         <Plus class="me-1" size="16" /> Tạo đơn mới
       </button>
+      </RouterLink>
+    
     </div>
   </div>
 
@@ -218,8 +239,8 @@ function formatDate(dateString) {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in filteredTodos" :key="index">
-                <td>{{ index + 1 }}</td>
+              <tr v-for="(item, index) in paginatedTodos" :key="index">
+                <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                 <td>{{ item.maHoaDon }}</td>
                 <td>{{ item.tenKhachHang }}</td>
 
@@ -260,6 +281,29 @@ function formatDate(dateString) {
         </div>
       </div>
     </div>
+
+    <!-- PHÂN TRANG -->
+    <div class="d-flex justify-content-center mt-3">
+      <nav>
+        <ul class="pagination">
+          <li class="page-item" :class="{ disabled: currentPage === 1 }">
+            <button class="page-link" @click="goToPage(currentPage - 1)">Trước</button>
+          </li>
+          <li
+            v-for="page in totalPages"
+            :key="page"
+            class="page-item"
+            :class="{ active: currentPage === page }"
+          >
+            <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+          </li>
+          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+            <button class="page-link" @click="goToPage(currentPage + 1)">Sau</button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <!-- HẾT PHÂN TRANG -->
   </div>
 </template>
 

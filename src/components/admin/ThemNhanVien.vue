@@ -64,6 +64,7 @@ const fetchWards = async (districtCode) => {
   wards.value = res.data.wards;
 };
 
+
 onMounted(async () => {
   await fetchProvinces();
   getAllNhanVien();

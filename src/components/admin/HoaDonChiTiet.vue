@@ -1,3 +1,4 @@
+
 <script setup>
 import { useRoute } from "vue-router";
 import LichSuHoaDon from "./LichSuHoaDon.vue";
@@ -29,9 +30,7 @@ import {
   ArrowUpRight,
 } from "lucide-vue-next";
 import { ref, onMounted, watch } from "vue";
-
-import ThemSanPham from "./ThemSanPham.vue";
-
+import ThemSanPhamHoaDon from "./ThemSanPhamHoaDon.vue";
 
 const buttons = ref([
   ["Hủy đơn hàng", "Xác nhận"],
@@ -196,10 +195,16 @@ import axios from "axios";
 const thayDoiTrangThai = async (moiTrangThai) => {
   const confirm = window.confirm("Bạn có chắc chắn muốn thay đổi trạng thái?");
   if (!confirm) return;
+
   try {
     await axios.put(
       `http://localhost:8080/hoa-don/cap-nhat-trang-thai/${maHoaDon}?trangThai=${moiTrangThai}`
     );
+
+    // Nếu trạng thái hiện tại là 0 và muốn chuyển sang 1 => gọi xuất PDF
+    if (trangThai.value === 0 && moiTrangThai === 1) {
+      downloadPDF(maHoaDon);
+    }
 
     trangThai.value = moiTrangThai;
     toast.success("Đã cập nhật trạng thái!");
@@ -224,7 +229,6 @@ const xoaSanPham = async (id) => {
     console.error(error);
   }
 };
-
 
 // xuat file pdf
 function downloadPDF(maHoaDon) {
@@ -371,11 +375,8 @@ function downloadPDF(maHoaDon) {
               Thêm sản phẩm
             </button>
             <teleport to="body">
-          
-
-        
+              
               <ThemSanPhamHoaDon
-
                 v-if="showThemSanPham"
                 :key="showThemSanPham"
                 @close="showThemSanPham = false"
@@ -384,6 +385,7 @@ function downloadPDF(maHoaDon) {
             </teleport>
           </div>
         </div>
+        
         <div class="table-responsive">
           <table class="table table-hover">
             <thead class="table-light">
@@ -469,7 +471,6 @@ function downloadPDF(maHoaDon) {
           <h5 class="fw-semibold">
             <Receipt></Receipt> Đơn hàng: {{ maHoaDon }}
           </h5>
-
           <button class="btn" style="border: none; color: #0a2c57" @click="downloadPDF(maHoaDon)">
             <Printer class="me-1" size="16"></Printer> In hóa đơn
           </button>
@@ -491,7 +492,7 @@ function downloadPDF(maHoaDon) {
           Chuyển khoản</label
         >
         <br />
-        <label for="">Trạng thái đơn hàng: <Dot></Dot> Đã xác nhận</label>
+        <label for="">Trạng thái đơn hàng: <Dot></Dot> {{ steps[trangThai] }} </label>
         <br />
         <label for="">Trạng thái thanh toán: <Dot></Dot> Chưa thanh toán</label>
         <br />
@@ -500,20 +501,16 @@ function downloadPDF(maHoaDon) {
         <div class="align-items-center mb-3">
           <h5 class="fw-semibold">
             Khách hàng:
-
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.tenKhachHang }}
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.tenKhachHang }}
           </h5>
           <label for="">
             <Phone style="width: 16px; height: 16px; color: #0a2c57"></Phone> :
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.soDienThoai }}
-
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.soDienThoai }}
           </label>
           <br />
           <label for=""
             ><Mail style="width: 16px; height: 16px; color: #0a2c57"></Mail> :
-
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.email }}</label
-
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.email }}</label
           >
         </div>
         <hr />
@@ -653,9 +650,7 @@ function downloadPDF(maHoaDon) {
           </div>
 
           <!-- Số tiền -->
-
-          <span>4.856.000</span>
-
+          <span>0</span>
 
           <!-- Modal lịch sử thanh toán -->
           <LichSuThanhToan
@@ -675,9 +670,7 @@ function downloadPDF(maHoaDon) {
                 (
                   tongTienSanPham -
                   listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
-
-                  listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen - 4856000
-
+                  listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen 
                 )?.toLocaleString("vi-VN")
               }}
             </strong>
@@ -750,3 +743,4 @@ function downloadPDF(maHoaDon) {
   text-align: center;
 }
 </style>
+
