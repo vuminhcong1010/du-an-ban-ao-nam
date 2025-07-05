@@ -119,7 +119,7 @@
           <div class="col-md-6" v-if="loaiPhieu === 'Cá nhân'">
             <div class="mb-2">
               <label class="form-label">Tìm kiếm:</label>
-              <input v-model="searchQuery" type="text" class="form-control"
+              <input v-model="searchQuery" type="text" class="form-control rounded-pill"
                 placeholder="Nhập tên, email hoặc số điện thoại" @input="currentPage = 1" />
               <label class="form-label mt-2" style="margin-right: 20px;">Giới tính:</label>
               <div class="form-check form-check-inline">

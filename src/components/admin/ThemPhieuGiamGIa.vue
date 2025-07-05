@@ -123,7 +123,7 @@
           <div class="col-md-6" v-if="loaiPhieu === 'Cá nhân'">
             <div class="mb-2">
               <label class="form-label">Tìm kiếm:</label>
-              <input v-model="searchQuery" type="text" class="form-control"
+              <input v-model="searchQuery" type="text" class="form-control rounded-pill"
                 placeholder="Nhập tên, email hoặc số điện thoại" @input="currentPage = 1" />
               <label class="form-label mt-2" style="margin-right: 20px;">Giới tính:</label>
               <div class="form-check form-check-inline">
@@ -254,7 +254,7 @@ export default {
   },
   computed: {
     minDateTime() {
-      const now = new Date('2025-07-01T23:57:00+07:00');
+      const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const day = String(now.getDate()).padStart(2, "0");
@@ -434,7 +434,7 @@ export default {
       if (!this.ngayBatDau) {
         this.errors.ngayBatDau = "Ngày bắt đầu là bắt buộc!";
       } else {
-        const now = new Date('2025-07-01T23:57:00+07:00');
+        const now = new Date();
         const startDate = new Date(this.ngayBatDau);
         if (startDate < now) {
           this.errors.ngayBatDau = "Ngày bắt đầu không được là ngày trong quá khứ!";
@@ -449,7 +449,7 @@ export default {
       if (!this.ngayKetThuc) {
         this.errors.ngayKetThuc = "Ngày kết thúc là bắt buộc!";
       } else {
-        const now = new Date('2025-07-01T23:57:00+07:00');
+        const now = new Date();
         const endDate = new Date(this.ngayKetThuc);
         if (endDate < now) {
           this.errors.ngayKetThuc = "Ngày kết thúc không được là ngày trong quá khứ!";

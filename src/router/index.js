@@ -22,6 +22,9 @@ import ThemPhieuGiamGia from "@/components/admin/ThemPhieuGiamGIa.vue";
 import SuaPhieuGiamGia from "@/components/admin/SuaPhieuGiamGia.vue";
 import HoaDonChiTiet from '@/components/admin/HoaDonChiTiet.vue'
 import BanHang from "@/components/admin/BanHang.vue";
+import DotGiamGia from "@/components/admin/DotGiamGia.vue";
+import ThemDotGiamGia from "@/components/admin/ThemDotGiamGia.vue";
+import SuaDotGiamGia from "@/components/admin/SuaDotGiamGia.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -142,6 +145,21 @@ const router = createRouter({
       path: "/phieu-giam-gia/sua/:id",
       name: "SuaPhieuGiamGia",
       component: SuaPhieuGiamGia,
+    },
+      {
+      path: "/dot-giam-gia",
+      name: "dotgiamgia",
+      component: DotGiamGia,
+    },
+     {
+      path: "/dot-giam-gia/them",
+      name: "themdotgiamgia",
+      component: ThemDotGiamGia,
+    },
+     {
+      path: "/dot-giam-gia/sua/:id",
+      name: "suadoigiamgia",
+      component: SuaDotGiamGia,
     },
   ],
 });

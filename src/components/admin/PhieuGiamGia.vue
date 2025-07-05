@@ -2,13 +2,13 @@
   <div class="">
     <div class="bg-white p-3 rounded border mb-4">
       <div class="d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold mb-0">Quản lý phiếu giảm giá</h5>
+        <h3 class="fw-bold mb-0">Quản lý phiếu giảm giá</h3>
         <router-link to="/phieu-giam-gia/them" class="btn btn-primary btn-sm">
           <i class="fa-solid fa-plus me-2"></i><span class="fw-bold">Thêm phiếu giảm giá</span>
         </router-link>
       </div>
     </div>
-    <!-- Voucher List Section -->
+
     <div class="bg-white p-3 rounded border mb-4">
       <!-- Filter Section -->
       <div class="card-body">
@@ -19,33 +19,10 @@
           <!-- Keyword Search -->
           <div class="col-md-6">
             <label class="form-label">Tìm kiếm</label>
-            <input v-model="keyword" @keyup.enter="applyFilter" type="text" class="form-control"
+            <input v-model="keyword" @keyup.enter="applyFilter" type="text" class="form-control rounded-pill"
               placeholder="Nhập tên, mã hoặc giá trị giảm" />
           </div>
-          <!-- Status -->
-          <div class="col-md-6">
-            <label class="form-label">Trạng thái</label>
-            <select v-model="trangThai" class="form-select">
-              <option value="">Tất cả</option>
-              <option value="0">Đã hủy</option>
-              <option value="1">Đang diễn ra</option>
-              <option value="2">Chưa diễn ra</option>
-              <option value="3">Đã kết thúc</option>
-            </select>
-          </div>
-        </div>
-        <div class="row g-3 align-items-end mt-2">
-          <!-- Start Date -->
-          <div class="col-md-4">
-            <label class="form-label">Ngày bắt đầu</label>
-            <input type="date" v-model="ngayBatDau" class="form-control" />
-          </div>
-          <!-- End Date -->
-          <div class="col-md-4">
-            <label class="form-label">Ngày kết thúc</label>
-            <input type="date" v-model="ngayKetThuc" class="form-control" />
-          </div>
-          <!-- Voucher Type -->
+             <!-- Voucher Type -->
           <div class="col-md-4">
             <label class="form-label">Loại phiếu giảm giá</label>
             <div class="d-flex gap-2">
@@ -63,11 +40,37 @@
               </div>
             </div>
           </div>
+         
+        </div>
+        <div class="row g-3 align-items-end mt-2">
+          <!-- Start Date -->
+          <div class="col-md-4">
+            <label class="form-label">Ngày bắt đầu</label>
+            <input type="date" v-model="ngayBatDau" class="form-control rounded-pill" />
+          </div>
+          <!-- End Date -->
+          <div class="col-md-4">
+            <label class="form-label">Ngày kết thúc</label>
+            <input type="date" v-model="ngayKetThuc" class="form-control rounded-pill" />
+          </div>
+        <!-- Status -->
+          <div class="col-md-4">
+            <label class="form-label">Trạng thái</label>
+            <select v-model="trangThai" class="form-select rounded-pill">
+              <option value="">Tất cả</option>
+              <option value="0">Đã hủy</option>
+              <option value="1">Đang diễn ra</option>
+              <option value="2">Chưa diễn ra</option>
+              <option value="3">Đã kết thúc</option>
+            </select>
+          </div>
         </div>
       </div>
-      <br><br>
-      <div class="card-body">
+     
+      <div class="card-body " style="margin-top: 20px;">
+        <h4 class="fw-bold mb-3">Danh sách phiếu giảm giá</h4>
         <div class="table-responsive">
+
           <table class="table table-hover">
             <thead class="table-light">
               <tr>
