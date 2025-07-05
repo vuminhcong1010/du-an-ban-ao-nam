@@ -475,8 +475,10 @@ export default {
                             try {
                                 const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`);
                                 const images = await response.json();
+                                   const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`; // Giá trị mặc định tạm thời
                                 return {
                                     ...variant,
+                                    maChiTietSanPham,
                                     images: images || [],
                                     mainImage: images.length > 0 ? images[0].duongDanAnh : 'https://via.placeholder.com/50'
                                 };
