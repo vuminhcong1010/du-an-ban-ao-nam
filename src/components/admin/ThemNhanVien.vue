@@ -42,6 +42,7 @@ const selectedWard = ref('');
 const showQRModal = ref(false)
 const showCCCD = ref(false)
 
+
 const getAllNhanVien = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/home');
@@ -64,7 +65,6 @@ const fetchWards = async (districtCode) => {
   wards.value = res.data.wards;
 };
 
-
 onMounted(async () => {
   await fetchProvinces();
   getAllNhanVien();
@@ -77,17 +77,17 @@ onMounted(async () => {
       if (formData.value.anh && !formData.value.anh.startsWith('http')) {
         formData.value.anh = `http://localhost:8080${formData.value.anh}`;
       }
-      // Tìm code tỉnh
+      // Tìm code tỉnh (chuẩn hóa tên)
       const province = provinces.value.find(p => p.name === res.data.tinhThanh);
       if (province) {
         selectedProvince.value = province.code;
         await fetchDistricts(province.code);
-        // Tìm code quận
+        // Tìm code quận (chuẩn hóa tên)
         const district = districts.value.find(d => d.name === res.data.quanHuyen);
         if (district) {
           selectedDistrict.value = district.code;
           await fetchWards(district.code);
-          // Tìm code xã
+          // Tìm code xã (chuẩn hóa tên)
           const ward = wards.value.find(w => w.name === res.data.xaPhuong);
           if (ward) {
             selectedWard.value = ward.code;
@@ -144,9 +144,14 @@ const validateForm = () => {
       valid = false;
     }
   }
-  if (!formData.value.cccd) {
-    fieldErrors.value.cccd = 'Vui lòng nhập CCCD';
-    valid = false;
+  // BỎ validate bắt buộc cho cccd
+  if (formData.value.cccd) {
+    // Nếu nhập cccd thì kiểm tra trùng
+    const existed = allNhanVien.value.some(nv => nv.cccd === formData.value.cccd && (!route.params.id || nv.id != route.params.id));
+    if (existed) {
+      fieldErrors.value.cccd = 'CCCD đã tồn tại';
+      valid = false;
+    }
   }
   if (!formData.value.ngaySinh) {
     fieldErrors.value.ngaySinh = 'Vui lòng chọn ngày sinh';
@@ -164,10 +169,7 @@ const validateForm = () => {
     fieldErrors.value.xaPhuong = 'Vui lòng chọn xã/phường';
     valid = false;
   }
-  if (!formData.value.thonXom) {
-    fieldErrors.value.thonXom = 'Vui lòng nhập thôn/xóm';
-    valid = false;
-  }
+  // BỎ validate bắt buộc cho thôn xóm
   return valid;
 };
 
@@ -210,18 +212,10 @@ const handleSubmit = async () => {
       router.push({ path: '/nhan-vien', query: { success: 'true' } });
     }
   } catch (error) {
-    if (route.params.id) {
-      if (error.response && Array.isArray(error.response.data)) {
-        error.response.data.forEach(msg => toast.error(msg));
-      } else {
-        toast.error('Cập nhật nhân viên thất bại!');
-      }
+    if (error.response && error.response.data) {
+      toast.error(error.response.data);
     } else {
-      if (error.response && Array.isArray(error.response.data)) {
-        error.response.data.forEach(msg => toast.error(msg));
-      } else {
-        toast.error('Thêm nhân viên thất bại!');
-      }
+      toast.error(route.params.id ? 'Cập nhật nhân viên thất bại!' : 'Thêm nhân viên thất bại!');
     }
   }
 }
@@ -284,11 +278,6 @@ const confirmAndSubmit = async () => {
   }
 };
 
-function normalizeName(name) {
-  if (!name) return '';
-  return name.replace(/^(Tỉnh|Thành phố|TP\.|Huyện|Quận|Xã|Phường|Thị trấn)\s*/i, '').trim();
-}
-
 function handleQRScanned(data) {
   console.log('DATA QR:', data);
   if (data) {
@@ -314,18 +303,18 @@ function handleQRScanned(data) {
       const parts = data.queQuan.split(',').map(s => s.trim());
       formData.value.thonXom = parts[0] || '';
       // Tự động chọn tỉnh/thành, quận/huyện, xã/phường nếu trùng tên (chuẩn hóa tên)
-      const provinceName = normalizeName(parts[3] || '');
-      const province = provinces.value.find(p => normalizeName(p.name) === provinceName);
+      const provinceName = parts[3] || '';
+      const province = provinces.value.find(p => p.name === provinceName);
       if (province) {
         selectedProvince.value = province.code;
         setTimeout(() => {
-          const districtName = normalizeName(parts[2] || '');
-          const district = districts.value.find(d => normalizeName(d.name) === districtName);
+          const districtName = parts[2] || '';
+          const district = districts.value.find(d => d.name === districtName);
           if (district) {
             selectedDistrict.value = district.code;
             setTimeout(() => {
-              const wardName = normalizeName(parts[1] || '');
-              const ward = wards.value.find(w => normalizeName(w.name) === wardName);
+              const wardName = parts[1] || '';
+              const ward = wards.value.find(w => w.name === wardName);
               if (ward) {
                 selectedWard.value = ward.code;
               }
