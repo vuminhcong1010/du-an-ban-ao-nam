@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref, inject, computed, watch } from 'vue'
 import search from '@/assets/search.png'
-import { Eye,Edit,Plus,Trash,Delete, Home, EyeOff } from 'lucide-vue-next';
+import { Eye, Edit, Plus, Trash, Delete, Home, EyeOff } from 'lucide-vue-next';
 import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification';
@@ -202,10 +202,10 @@ const exportExcelFile = async () => {
     const now = new Date();
     const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
     link.setAttribute('download', `DanhSachNhanVien_${timestamp}.xlsx`);
-    
+
     document.body.appendChild(link);
     link.click();
-    
+
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
 
@@ -487,11 +487,18 @@ async function handleFileChange(event) {
   const formData = new FormData();
   formData.append('file', file);
   try {
+     Swal.fire({
+      icon: 'info',
+      title: 'Đang gửi mail về nhân viên...',
+      timer: 3500,
+      showConfirmButton: false
+    });
     const response = await axios.post(
       'http://localhost:8080/api/nhan-vien/import-excel',
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
+   
     toast.success(response.data || 'Nhập dữ liệu thành công!');
     await getData();
   } catch (error) {
@@ -510,25 +517,21 @@ async function handleFileChange(event) {
 <template>
   <div class="nhanvien-page-wrapper">
     <div class="nhanvien-header bg-white p-3 rounded shadow mb-4"
-         style="display: flex; align-items: center; justify-content: flex-start; box-shadow: 0 5px 10px #d1cac0; border-radius: 12px; padding: 6px 16px !important; position: relative; gap: 16px;">
+      style="display: flex; align-items: center; justify-content: flex-start; box-shadow: 0 5px 10px #d1cac0; border-radius: 12px; padding: 6px 16px !important; position: relative; gap: 16px;">
       <div>
         <h2 style="margin: 0; font-size: 18px !important;">Quản Lý nhân viên</h2>
       </div>
       <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
-        <router-link to="/nhan-vien/them" class="nv-btn" title="Thêm nhân viên mới"><span style="font-size: 15px !important;">+</span> Nhân viên</router-link>
+        <router-link to="/nhan-vien/them" class="nv-btn" title="Thêm nhân viên mới"><span
+            style="font-size: 15px !important;">+</span> Nhân viên</router-link>
         <button class="nv-btn" @click="triggerFileInput" :disabled="isImporting" title="Nhập dữ liệu từ file Excel">
           <span v-if="isImporting" class="spinner"></span>
           <span v-else style="font-size: 15px !important;">⭳</span>
           {{ isImporting ? 'Đang nhập...' : 'Nhập file' }}
         </button>
-        <input
-          ref="fileInput"
-          type="file"
-          accept=".xlsx,.xls"
-          style="display: none"
-          @change="handleFileChange"
-        />
-        <button class="nv-btn" @click="confirmExportExcel" :disabled="isExporting" title="Xuất danh sách nhân viên ra file Excel">
+        <input ref="fileInput" type="file" accept=".xlsx,.xls" style="display: none" @change="handleFileChange" />
+        <button class="nv-btn" @click="confirmExportExcel" :disabled="isExporting"
+          title="Xuất danh sách nhân viên ra file Excel">
           <span v-if="isExporting" class="spinner"></span>
           <span v-else style="font-size: 15px !important;">⭱</span>
           {{ isExporting ? 'Đang xuất...' : 'Xuất file' }}
@@ -538,7 +541,10 @@ async function handleFileChange(event) {
     <div class="filter-bar bg-white p-3 rounded shadow mb-4">
       <div class="filter-title">
         <span class="filter-icon">
-          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 13 10 19 14 19 14 13 22 3"></polygon></svg>
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" class="feather feather-filter">
+            <polygon points="22 3 2 3 10 13 10 19 14 19 14 13 22 3"></polygon>
+          </svg>
         </span>
         <span class="filter-label">Bộ lọc</span>
       </div>
@@ -547,13 +553,8 @@ async function handleFileChange(event) {
           <label>Tìm kiếm</label>
           <div class="filter-search-wrapper">
             <img :src="search" alt="search" class="filter-search-icon" />
-            <input
-              class="filter-search"
-              type="text"
-              placeholder="Tìm theo mã, tên nhân viên hoặc năm sinh"
-              v-model="filterState.search"
-              title="Tìm kiếm theo mã, tên nhân viên hoặc năm sinh"
-            />
+            <input class="filter-search" type="text" placeholder="Tìm theo mã, tên nhân viên hoặc năm sinh"
+              v-model="filterState.search" title="Tìm kiếm theo mã, tên nhân viên hoặc năm sinh" />
           </div>
         </div>
         <div class="filter-item">
@@ -571,7 +572,8 @@ async function handleFileChange(event) {
         </div>
         <div class="filter-item">
           <label>Năm sinh</label>
-          <input type="number" v-model="filterState.namSinh" min="1900" max="2100" placeholder="VD: 1999" title="Lọc theo năm sinh nhân viên">
+          <input type="number" v-model="filterState.namSinh" min="1900" max="2100" placeholder="VD: 1999"
+            title="Lọc theo năm sinh nhân viên">
         </div>
         <div class="filter-item">
           <label>Tỉnh/Thành</label>
@@ -586,7 +588,8 @@ async function handleFileChange(event) {
     </div>
     <div class="table-wrapper bg-white p-3 rounded shadow mb-4">
       <div style="margin-bottom: 10px; display: flex; align-items: center;">
-        <button class="column-toggle-btn column-toggle-align" @click="showColumnBox = !showColumnBox" title="Tùy chọn cột hiển thị">
+        <button class="column-toggle-btn column-toggle-align" @click="showColumnBox = !showColumnBox"
+          title="Tùy chọn cột hiển thị">
           <span style="font-size: 20px;">≡</span>
         </button>
         <span style="font-size: 18px !important; font-weight: 600; color: #212529;">Danh sách nhân viên</span>
@@ -602,21 +605,20 @@ async function handleFileChange(event) {
           <thead>
             <tr>
               <th>STT</th>
-              <th v-for="col in allColumns.filter(c => visibleColumns.includes(c.key))" :key="col.key">{{ col.label }}</th>
+              <th v-for="col in allColumns.filter(c => visibleColumns.includes(c.key))" :key="col.key">{{ col.label }}
+              </th>
             </tr>
           </thead>
           <tbody>
             <template v-if="pagedNhanVien.length">
               <template v-for="(nhanVien, index) in pagedNhanVien" :key="nhanVien.id">
-                <tr
-                  @click="expandedRow = expandedRow === nhanVien.id ? null : nhanVien.id"
-                  :class="{ 'row-selected': expandedRow === nhanVien.id }"
-                  style="cursor: pointer;"
-                >
+                <tr @click="expandedRow = expandedRow === nhanVien.id ? null : nhanVien.id"
+                  :class="{ 'row-selected': expandedRow === nhanVien.id }" style="cursor: pointer;">
                   <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                   <td v-for="col in allColumns.filter(c => visibleColumns.includes(c.key))" :key="col.key">
                     <template v-if="col.key === 'anh'">
-                      <img v-if="nhanVien.anh" :src="getImageUrl(nhanVien.anh)" style="width: 40px; height: 40px; object-fit: cover; background: #eee;">
+                      <img v-if="nhanVien.anh" :src="getImageUrl(nhanVien.anh)"
+                        style="width: 40px; height: 40px; object-fit: cover; background: #eee;">
                     </template>
                     <template v-else-if="col.key === 'cccd'">
                       {{ maskPassword(nhanVien.cccd) }}
@@ -642,20 +644,20 @@ async function handleFileChange(event) {
                     <div class="employee-detail-expand detail-2col">
                       <!-- Ảnh bên trái -->
                       <div style="min-width: 140px; max-width: 180px;">
-                        <img v-if="nhanVien.anh" :src="getImageUrl(nhanVien.anh)" style="width: 100%; max-width: 160px; height: auto; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">
+                        <img v-if="nhanVien.anh" :src="getImageUrl(nhanVien.anh)"
+                          style="width: 100%; max-width: 160px; height: auto; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">
                       </div>
                       <!-- Thông tin bên phải, chia 2 cột -->
                       <div class="detail-fields">
-                        <div v-for="(col, i) in allColumns.filter(c => c.key !== 'anh')" :key="col.key" class="detail-field">
+                        <div v-for="(col, i) in allColumns.filter(c => c.key !== 'anh')" :key="col.key"
+                          class="detail-field">
                           <template v-if="col.key === 'cccd'">
                             <div class="password-flex-row">
                               <b class="detail-label" style="margin-right: 6px;">{{ col.label }}:</b>
-                              <span class="password-value">{{ showPassword[nhanVien.id] ? nhanVien.cccd : maskPassword(nhanVien.cccd) }}</span>
-                              <button
-                                @click.stop="togglePasswordVisibility(nhanVien.id)"
-                                class="password-toggle-btn"
-                                :title="showPassword[nhanVien.id] ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'"
-                              >
+                              <span class="password-value">{{ showPassword[nhanVien.id] ? nhanVien.cccd :
+                                maskPassword(nhanVien.cccd) }}</span>
+                              <button @click.stop="togglePasswordVisibility(nhanVien.id)" class="password-toggle-btn"
+                                :title="showPassword[nhanVien.id] ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'">
                                 <Eye v-if="!showPassword[nhanVien.id]" size="16" />
                                 <EyeOff v-else size="16" />
                               </button>
@@ -681,16 +683,30 @@ async function handleFileChange(event) {
                       <!-- Nút thao tác -->
                       <div class="employee-detail-actions detail-actions-abs">
                         <template v-if="nhanVien.trangThai == 1">
-                          <button class="action-btn edit" title="Sửa thông tin nhân viên" @click="router.push(`/nhan-vien/sua/${nhanVien.id}`)"><Edit /></button>
-                          <button class="action-btn delete" title="Ngừng làm việc" @click="openConfirmModal(nhanVien)"><Trash /></button>
+                          <button class="action-btn edit" title="Sửa thông tin nhân viên"
+                            @click="router.push(`/nhan-vien/sua/${nhanVien.id}`)">
+                            <Edit />
+                          </button>
+                          <button class="action-btn delete" title="Ngừng làm việc" @click="openConfirmModal(nhanVien)">
+                            <Trash />
+                          </button>
                         </template>
                         <template v-else>
                           <div class="info-footer-btns">
                             <button class="icon-btn" title="Quay lại làm việc" @click="openBackToWorkModal(nhanVien)">
-                              <svg class="icon-green" width="22" height="22" fill="none" stroke="#22b34c" stroke-width="2" viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                              <svg class="icon-green" width="22" height="22" fill="none" stroke="#22b34c"
+                                stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M1 4v6h6" />
+                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                              </svg>
                             </button>
                             <button class="icon-btn" title="Xóa nhân viên" @click="openDeleteModal(nhanVien)">
-                              <svg class="icon-red" width="22" height="22" fill="none" stroke="#e53935" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+                              <svg class="icon-red" width="22" height="22" fill="none" stroke="#e53935" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path
+                                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                              </svg>
                             </button>
                           </div>
                         </template>
@@ -701,9 +717,14 @@ async function handleFileChange(event) {
               </template>
             </template>
             <tr v-else>
-              <td :colspan="visibleColumns.length + 1" style="text-align:center; padding: 40px 0; color: #8a99a8; font-size: 18px; background: #fafbfc;">
+              <td :colspan="visibleColumns.length + 1"
+                style="text-align:center; padding: 40px 0; color: #8a99a8; font-size: 18px; background: #fafbfc;">
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                  <svg width="48" height="48" fill="none" stroke="#8a99a8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M16 16a4 4 0 0 0-8 0"/></svg>
+                  <svg width="48" height="48" fill="none" stroke="#8a99a8" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M16 16a4 4 0 0 0-8 0" />
+                  </svg>
                   <div>Không tìm thấy kết quả nào phù hợp</div>
                 </div>
               </td>
@@ -711,7 +732,8 @@ async function handleFileChange(event) {
           </tbody>
         </table>
       </div>
-      <div class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 18px;">
+      <div class="pagination"
+        style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 18px;">
         <button @click="goToPage(currentPage - 1)" :disabled="currentPage === 1">«</button>
         <span v-for="page in totalPages" :key="page" style="margin: 0 4px;">
           <button @click="goToPage(page)" :class="{ 'active': currentPage === page }">{{ page }}</button>
@@ -770,6 +792,7 @@ async function handleFileChange(event) {
   margin-right: auto;
   width: 100%;
 }
+
 .nv-btn {
   display: flex;
   align-items: center;
@@ -782,25 +805,29 @@ async function handleFileChange(event) {
   font-weight: 600;
   color: #fff;
   font-size: 15px;
-  transition: all 0.18s cubic-bezier(.4,0,.2,1);
+  transition: all 0.18s cubic-bezier(.4, 0, .2, 1);
   text-decoration: none;
   user-select: none;
   box-shadow: 0 2px 8px #0a2a5c11;
 }
+
 .nv-btn:focus {
   outline: none;
   box-shadow: 0 0 0 2px #e3eafc;
 }
+
 .nv-btn:hover {
   background: #143d6d;
   color: #fff;
   box-shadow: 0 4px 16px #0a2a5c22;
 }
+
 .nv-btn span {
   font-size: 18px !important;
   font-weight: bold;
   margin-right: 4px;
 }
+
 .column-toggle-btn.column-toggle-align {
   height: 32px;
   min-width: 32px;
@@ -814,16 +841,19 @@ async function handleFileChange(event) {
   background: #fff;
   color: #212529;
   border-radius: 8px;
-  transition: all 0.18s cubic-bezier(.4,0,.2,1);
+  transition: all 0.18s cubic-bezier(.4, 0, .2, 1);
 }
+
 .column-toggle-btn.column-toggle-align:hover {
   background: #e3f2fd;
   border-color: #339cf1;
   color: #1976d2;
 }
+
 .nhanvien-header {
   margin-top: -20px;
 }
+
 .nhanvien-header input {
   border: 1.5px solid #ddd !important;
   box-shadow: none;
@@ -831,6 +861,7 @@ async function handleFileChange(event) {
   background: #fff;
   transition: border 0.18s;
 }
+
 .nhanvien-header input:focus {
   border: 1.5px solid #339cf1 !important;
   box-shadow: 0 0 0 2px #e3eafc;
@@ -896,6 +927,7 @@ async function handleFileChange(event) {
   gap: 8px;
   justify-content: center;
 }
+
 .action-btn {
   width: 28px;
   height: 28px;
@@ -909,19 +941,24 @@ async function handleFileChange(event) {
   padding: 0;
   transition: background 0.15s;
 }
+
 .action-btn.view {
   color: #1a237e;
 }
+
 .action-btn.edit {
   color: #4eeaaf;
 }
+
 .action-btn.delete {
   color: #e53935;
 }
+
 .action-btn:hover {
   background: #f5f5f5;
   border-radius: 4px;
 }
+
 .table-wrapper {
   background: #fff;
   border-radius: 12px;
@@ -929,6 +966,7 @@ async function handleFileChange(event) {
   padding: 16px 12px;
   margin-top: 18px;
 }
+
 .column-select-box {
   position: absolute;
   right: 0;
@@ -940,6 +978,7 @@ async function handleFileChange(event) {
   z-index: 100;
   min-width: 220px;
 }
+
 .employee-detail-expand {
   background: #fff;
   border-radius: 10px;
@@ -949,25 +988,37 @@ async function handleFileChange(event) {
   animation: fadeIn 0.2s;
   border: 1.5px solid #609bbb;
 }
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-8px);}
-  to { opacity: 1; transform: none;}
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
+
 .employee-detail-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
   margin-top: 20px;
 }
+
 .row-selected {
   background: #e3f2fd !important;
 }
+
 .detail-2col {
   position: relative;
   display: flex;
   gap: 32px;
   align-items: flex-start;
 }
+
 .detail-fields {
   flex: 1;
   display: grid;
@@ -975,11 +1026,13 @@ async function handleFileChange(event) {
   gap: 8px 32px;
   text-align: left;
 }
+
 .detail-field {
   min-width: 180px;
   margin-bottom: 8px;
   text-align: left;
 }
+
 .detail-actions-abs {
   position: absolute;
   right: 24px;
@@ -1000,6 +1053,7 @@ async function handleFileChange(event) {
   margin-top: 10px;
   z-index: 30;
 }
+
 .filter-arrow-btn {
   width: 36px;
   height: 36px;
@@ -1015,15 +1069,18 @@ async function handleFileChange(event) {
   outline: none;
   padding: 0;
 }
+
 .filter-arrow-btn:hover {
   box-shadow: 0 4px 16px #0002;
   border-color: #339cf1;
 }
+
 .arrow-icon {
   font-size: 18px;
   color: #222;
   font-weight: bold;
 }
+
 .filter-toggle-label {
   background: #182952;
   color: #fff;
@@ -1036,13 +1093,16 @@ async function handleFileChange(event) {
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .filter-toggle-label:hover {
   background: #29407a;
 }
+
 .filter-bar {
   display: block;
   width: 100%;
 }
+
 .filter-title {
   display: flex;
   align-items: center;
@@ -1052,15 +1112,18 @@ async function handleFileChange(event) {
   margin-bottom: 16px;
   width: 100%;
 }
+
 .filter-icon {
   display: inline-block;
   vertical-align: middle;
   margin-right: 8px;
 }
+
 .filter-label {
   display: inline-block;
   vertical-align: middle;
 }
+
 .filter-fields {
   width: 100%;
   display: flex;
@@ -1069,10 +1132,12 @@ async function handleFileChange(event) {
   align-items: flex-start;
   margin-top: 0;
 }
+
 .filter-fields filter-fields-row {
   flex-wrap: nowrap !important;
   gap: 12px !important;
 }
+
 .filter-search-wrapper {
   position: relative;
   width: 100%;
@@ -1080,6 +1145,7 @@ async function handleFileChange(event) {
   max-width: 260px;
   display: block;
 }
+
 .filter-search-icon {
   position: absolute;
   left: 12px;
@@ -1091,6 +1157,7 @@ async function handleFileChange(event) {
   pointer-events: none;
   z-index: 2;
 }
+
 .filter-search {
   width: 100%;
   padding: 7px 12px 7px 36px;
@@ -1100,12 +1167,14 @@ async function handleFileChange(event) {
   font-weight: 400;
   box-sizing: border-box;
 }
+
 .radio-group {
   display: flex;
   gap: 24px;
   align-items: center;
   margin-top: 2px;
 }
+
 .radio-label {
   display: flex;
   align-items: center;
@@ -1114,20 +1183,26 @@ async function handleFileChange(event) {
   font-weight: 400;
   cursor: pointer;
 }
+
 .radio-label input[type="radio"] {
   accent-color: #1976d2;
   width: 18px;
   height: 18px;
 }
+
 .modal-overlay {
   position: fixed;
-  top: -450px; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.25);
+  top: -450px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.25);
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .modal-add-role {
   background: #fff;
   border-radius: 14px;
@@ -1138,6 +1213,7 @@ async function handleFileChange(event) {
   position: relative;
   animation: fadeIn 0.2s;
 }
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -1146,6 +1222,7 @@ async function handleFileChange(event) {
   font-weight: bold;
   margin-bottom: 18px;
 }
+
 .modal-close {
   background: none;
   border: none;
@@ -1154,17 +1231,20 @@ async function handleFileChange(event) {
   cursor: pointer;
   margin-left: 12px;
 }
+
 .modal-body {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-bottom: 18px;
 }
+
 .modal-body label {
   font-size: 15px;
   font-weight: 500;
   color: #222;
 }
+
 .modal-body input {
   padding: 8px 12px;
   border: 1.5px solid #ddd;
@@ -1172,11 +1252,13 @@ async function handleFileChange(event) {
   font-size: 15px;
   margin-top: 2px;
 }
+
 .modal-actions {
   display: flex;
   gap: 16px;
   justify-content: flex-end;
 }
+
 .btn-save {
   background: #22b34c;
   color: #fff;
@@ -1190,9 +1272,11 @@ async function handleFileChange(event) {
   align-items: center;
   transition: background 0.18s;
 }
+
 .btn-save:hover {
   background: #17913b;
 }
+
 .btn-cancel {
   background: #6c757d;
   color: #fff;
@@ -1206,9 +1290,11 @@ async function handleFileChange(event) {
   align-items: center;
   transition: background 0.18s;
 }
+
 .btn-cancel:hover {
   background: #495057;
 }
+
 .spinner {
   width: 14px;
   height: 14px;
@@ -1219,7 +1305,9 @@ async function handleFileChange(event) {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .nv-btn:disabled {
@@ -1262,21 +1350,24 @@ async function handleFileChange(event) {
   font-weight: 600;
   color: #1976d2;
   font-size: 15px;
-  transition: all 0.18s cubic-bezier(.4,0,.2,1);
+  transition: all 0.18s cubic-bezier(.4, 0, .2, 1);
   text-decoration: none;
   user-select: none;
   box-shadow: 0 2px 8px #0a2a5c11;
 }
+
 .file-btn:focus {
   outline: none;
   box-shadow: 0 0 0 2px #e3eafc;
 }
+
 .file-btn:hover {
   background: #e3f2fd;
   border-color: #339cf1;
   color: #0a2a5c;
   box-shadow: 0 4px 16px #0a2a5c22;
 }
+
 .btn-small-action {
   min-width: 110px;
   font-size: 14px;
@@ -1292,20 +1383,25 @@ async function handleFileChange(event) {
   transition: background 0.18s, box-shadow 0.18s;
   box-shadow: 0 1px 4px #0001;
 }
+
 .btn-green {
   background: #22b34c;
   color: #fff;
 }
+
 .btn-green:hover {
   background: #17913b;
 }
+
 .btn-red {
   background: #e53935;
   color: #fff;
 }
+
 .btn-red:hover {
   background: #b71c1c;
 }
+
 .icon-btn {
   width: 36px;
   height: 36px;
@@ -1319,18 +1415,23 @@ async function handleFileChange(event) {
   transition: background 0.18s;
   font-size: 20px;
 }
+
 .icon-btn:focus {
   outline: none;
 }
+
 .icon-btn:hover {
   background: #f0f0f0;
 }
+
 .icon-btn .icon-red {
   color: #e53935;
 }
+
 .icon-btn .icon-green {
   color: #22b34c;
 }
+
 .info-footer-btns {
   width: 100%;
   display: flex;
@@ -1342,6 +1443,7 @@ async function handleFileChange(event) {
   padding-top: 12px;
   border-top: 1px solid #eee;
 }
+
 .password-flex-row {
   display: flex;
   align-items: center;
@@ -1349,18 +1451,21 @@ async function handleFileChange(event) {
   white-space: nowrap;
   text-align: left;
 }
+
 .password-value {
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   display: inline-block;
 }
+
 .detail-label {
   display: inline-block;
   min-width: 120px;
   font-weight: bold;
   text-align: left;
 }
+
 .pagination {
   display: flex;
   justify-content: center;
@@ -1368,6 +1473,7 @@ async function handleFileChange(event) {
   gap: 8px;
   margin-top: 18px;
 }
+
 .pagination button {
   min-width: 36px;
   height: 36px;
@@ -1383,6 +1489,7 @@ async function handleFileChange(event) {
   margin: 0 2px;
   box-shadow: 0 2px 8px #0001;
 }
+
 .pagination button.active,
 .pagination button:focus {
   background: #339cf1;
@@ -1390,11 +1497,13 @@ async function handleFileChange(event) {
   border-color: #339cf1;
   box-shadow: 0 2px 8px #339cf133;
 }
+
 .pagination button:hover:not(:disabled):not(.active) {
   background: #e3eafc;
   color: #339cf1;
   border-color: #339cf1;
 }
+
 .pagination button:disabled {
   background: #f5f5f5;
   color: #bbb;
@@ -1402,6 +1511,7 @@ async function handleFileChange(event) {
   cursor: not-allowed;
   box-shadow: none;
 }
+
 .filter-fields-row {
   display: flex;
   gap: 32px;
@@ -1426,5 +1536,3 @@ async function handleFileChange(event) {
   color: #222;
 }
 </style>
-
-

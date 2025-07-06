@@ -69,7 +69,7 @@ onMounted(async () => {
   await fetchProvinces();
   getAllNhanVien();
 
-  if (route.params.id)  {
+  if (route.params.id) {
     try {
       const res = await axios.get(`http://localhost:8080/api/${route.params.id}`);
       Object.assign(formData.value, res.data);
@@ -94,7 +94,7 @@ onMounted(async () => {
           }
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 });
 
@@ -199,7 +199,7 @@ const handleSubmit = async () => {
     if (formData.value.anhFile) {
       form.append('anh', formData.value.anhFile);
     }
-
+    
     if (route.params.id) {
       await axios.put(`http://localhost:8080/api/update/${route.params.id}`, form, {
         headers: {
@@ -208,7 +208,14 @@ const handleSubmit = async () => {
       });
       router.push({ path: '/nhan-vien', query: { updated: 'true' } });
     } else {
+      Swal.fire({
+      icon: 'info',
+      title: 'Đang gửi mail về nhân viên...',
+      timer: 3700,
+      showConfirmButton: false
+    });
       await axios.post('http://localhost:8080/api/addNhanVien', form);
+
       router.push({ path: '/nhan-vien', query: { success: 'true' } });
     }
   } catch (error) {
@@ -285,9 +292,9 @@ function handleQRScanned(data) {
     formData.value.tenNhanVien = data.hoTen || '';
     // Ngày sinh về yyyy-MM-dd (sửa slice cho đúng)
     if (data.ngaySinh && data.ngaySinh.length === 8) {
-      const dd = data.ngaySinh.slice(0,2);
-      const mm = data.ngaySinh.slice(2,4);
-      const yyyy = data.ngaySinh.slice(4,8);
+      const dd = data.ngaySinh.slice(0, 2);
+      const mm = data.ngaySinh.slice(2, 4);
+      const yyyy = data.ngaySinh.slice(4, 8);
       formData.value.ngaySinh = `${yyyy}-${mm}-${dd}`;
     } else if (data.ngaySinh && data.ngaySinh.length === 10) {
       formData.value.ngaySinh = data.ngaySinh;
@@ -324,7 +331,7 @@ function handleQRScanned(data) {
       }
     }
     showQRModal.value = false;
-    Swal.fire({icon:'success',title:'Đã quét thành công!',text:'Thông tin đã được điền vào form.'});
+    Swal.fire({ icon: 'success', title: 'Đã quét thành công!', text: 'Thông tin đã được điền vào form.' });
   }
 }
 </script>
@@ -341,7 +348,14 @@ function handleQRScanned(data) {
           <h2>{{ route.params.id ? 'Sửa nhân viên' : 'Thêm nhân viên mới' }}</h2>
         </div>
         <button class="qr-btn" @click="showQRModal = true" title="Quét mã QR CCCD">
-          <svg width="28" height="28" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" stroke="#339cf1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="7" y="7" width="3" height="3" rx="1"/><rect x="14" y="7" width="3" height="3" rx="1"/><rect x="7" y="14" width="3" height="3" rx="1"/><rect x="14" y="14" width="3" height="3" rx="1"/></svg>
+          <svg width="28" height="28" viewBox="0 0 24 24">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"
+              stroke="#339cf1" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+            <rect x="7" y="7" width="3" height="3" rx="1" />
+            <rect x="14" y="7" width="3" height="3" rx="1" />
+            <rect x="7" y="14" width="3" height="3" rx="1" />
+            <rect x="14" y="14" width="3" height="3" rx="1" />
+          </svg>
         </button>
       </div>
     </div>
@@ -359,8 +373,10 @@ function handleQRScanned(data) {
               <img v-if="formData.anh" :src="formData.anh" alt="avatar" />
               <span v-else class="avatar-placeholder">📷</span>
             </div>
-            <input type="file" id="avatarInput" @change="onFileChange" accept="image/*" style="display: none;" title="Chọn ảnh đại diện nhân viên" />
-            <button type="button" class="btn-upload" @click="triggerFileInput" title="Chọn ảnh đại diện">Chọn ảnh</button>
+            <input type="file" id="avatarInput" @change="onFileChange" accept="image/*" style="display: none;"
+              title="Chọn ảnh đại diện nhân viên" />
+            <button type="button" class="btn-upload" @click="triggerFileInput" title="Chọn ảnh đại diện">Chọn
+              ảnh</button>
           </div>
           <div class="form-fields">
             <div class="form-grid">
@@ -382,16 +398,20 @@ function handleQRScanned(data) {
               <div class="form-group">
                 <label>Giới tính</label>
                 <div class="radio-group">
-                  <label><input type="radio" value="true" v-model="formData.gioiTinh" title="Chọn giới tính Nam"> Nam</label>
-                  <label><input type="radio" value="false" v-model="formData.gioiTinh" title="Chọn giới tính Nữ"> Nữ</label>
+                  <label><input type="radio" value="true" v-model="formData.gioiTinh" title="Chọn giới tính Nam">
+                    Nam</label>
+                  <label><input type="radio" value="false" v-model="formData.gioiTinh" title="Chọn giới tính Nữ">
+                    Nữ</label>
                 </div>
               </div>
 
               <div class="form-group">
                 <label>CCCD</label>
                 <div style="display:flex;align-items:center;gap:8px;">
-                  <input :type="showCCCD ? 'text' : 'password'" v-model="formData.cccd" style="flex:1;" title="Nhập số CCCD nhân viên">
-                  <button type="button" @click="showCCCD = !showCCCD" style="background:none;border:none;cursor:pointer;">
+                  <input :type="showCCCD ? 'text' : 'password'" v-model="formData.cccd" style="flex:1;"
+                    title="Nhập số CCCD nhân viên">
+                  <button type="button" @click="showCCCD = !showCCCD"
+                    style="background:none;border:none;cursor:pointer;">
                     <Eye v-if="!showCCCD" size="18" />
                     <EyeOff v-else size="18" />
                   </button>
@@ -429,7 +449,8 @@ function handleQRScanned(data) {
 
               <div class="form-group">
                 <label>Thôn/Xóm</label>
-                <input type="text" v-model="formData.thonXom" placeholder="Nhập thôn/xóm" title="Nhập thôn/xóm nhân viên">
+                <input type="text" v-model="formData.thonXom" placeholder="Nhập thôn/xóm"
+                  title="Nhập thôn/xóm nhân viên">
               </div>
 
               <div class="form-group">
@@ -441,7 +462,9 @@ function handleQRScanned(data) {
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="submit-btn" :title="route.params.id ? 'Lưu thông tin nhân viên' : 'Thêm nhân viên mới'">{{ route.params.id ? 'Lưu' : 'Thêm nhân viên' }}</button>
+          <button type="submit" class="submit-btn"
+            :title="route.params.id ? 'Lưu thông tin nhân viên' : 'Thêm nhân viên mới'">{{ route.params.id ? 'Lưu' :
+              'Thêm nhân viên' }}</button>
         </div>
       </form>
     </div>
