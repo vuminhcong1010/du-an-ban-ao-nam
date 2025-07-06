@@ -495,10 +495,10 @@ async function handleFileChange(event) {
     toast.success(response.data || 'Nhập dữ liệu thành công!');
     await getData();
   } catch (error) {
-    if(importOption === 'stop') {
-      toast.error('Nhập file thất bại');
+    if (error.response && error.response.data) {
+      toast.error(error.response.data);
     } else {
-      toast.error('Import file lỗi: Sai mẫu file import. Vui lòng tải về và import đúng file mẫu.');
+      toast.error('Nhập file thất bại');
     }
   } finally {
     isImporting.value = false;
