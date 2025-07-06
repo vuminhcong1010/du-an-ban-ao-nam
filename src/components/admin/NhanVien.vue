@@ -5,7 +5,7 @@ import { Eye,Edit,Plus,Trash,Delete, Home, EyeOff } from 'lucide-vue-next';
 import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification';
-import Swal from 'sweetalert2'
+import Swal from 'sweetalert2';
 
 const toggleSidebar = inject('toggleSidebar')
 
@@ -319,21 +319,21 @@ const maskPassword = (password) => {
 };
 
 function fetchProvinces() {
-  axios.get('https://provinces.open-api.vn/api/p/').then(res => {
+  axios.get('http://provinces.open-api.vn/api/p/').then(res => {
     provinces.value = res.data;
   });
 }
 
 function fetchDistricts(provinceCode) {
   if (!provinceCode) { districts.value = []; return; }
-  axios.get(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`).then(res => {
+  axios.get(`http://provinces.open-api.vn/api/p/${provinceCode}?depth=2`).then(res => {
     districts.value = res.data.districts;
   });
 }
 
 function fetchWards(districtCode) {
   if (!districtCode) { wards.value = []; return; }
-  axios.get(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`).then(res => {
+  axios.get(`http://provinces.open-api.vn/api/d/${districtCode}?depth=2`).then(res => {
     wards.value = res.data.wards;
   });
 }
@@ -347,19 +347,19 @@ function openAddressModal(nhanVien) {
   selectedDistrict.value = '';
   selectedWard.value = '';
   // Tìm code tỉnh
-  axios.get('https://provinces.open-api.vn/api/p/').then(res => {
+  axios.get('http://provinces.open-api.vn/api/p/').then(res => {
     const province = res.data.find(p => p.name === nhanVien.tinhThanh);
     if (province) {
       selectedProvince.value = province.code;
       fetchDistricts(province.code);
       // Tìm code quận
-      axios.get(`https://provinces.open-api.vn/api/p/${province.code}?depth=2`).then(res2 => {
+      axios.get(`http://provinces.open-api.vn/api/p/${province.code}?depth=2`).then(res2 => {
         const district = res2.data.districts.find(d => d.name === nhanVien.quanHuyen);
         if (district) {
           selectedDistrict.value = district.code;
           fetchWards(district.code);
           // Tìm code xã
-          axios.get(`https://provinces.open-api.vn/api/d/${district.code}?depth=2`).then(res3 => {
+          axios.get(`http://provinces.open-api.vn/api/d/${district.code}?depth=2`).then(res3 => {
             const ward = res3.data.wards.find(w => w.name === nhanVien.xaPhuong);
             if (ward) {
               selectedWard.value = ward.code;

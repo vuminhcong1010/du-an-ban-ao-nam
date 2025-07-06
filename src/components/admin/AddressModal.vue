@@ -1,256 +1,390 @@
+
+
 <template>
-    <div v-if="show" class="modal-backdrop-child">
-        <div class="modal-box-child">
-            <div class="modal-header">
-                <h2 class="text-xl font-semibold">{{ isEditing ? 'Sửa địa chỉ' : 'Thêm địa chỉ mới' }}</h2>
-                <button type="button" @click="closeModal" class="modal-close">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+  <div v-if="show" class="modal-backdrop-child">
+    <div class="modal-box-child">
+      <div class="modal-header">
+        <h2 class="text-xl font-semibold">{{ isEditing ? 'Sửa địa chỉ' : 'Thêm địa chỉ mới' }}</h2>
+        <button type="button" @click="closeModal" class="modal-close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
 
-            <div class="modal-body space-y-4">
 
-                <div v-if="isEditing && fullAddressDisplay" class="current-address-display">
-                    <p>Địa chỉ hiện tại:</p>
-                    <p class="font-bold">{{ fullAddressDisplay }}</p>
-                    <hr class="my-3" />
-                </div>
-
-                <label>Tỉnh/Thành phố:</label>
-                <select v-model="addressForm.tinhId" @change="loadQuanHuyen" class="form-control">
-                    <option value="" disabled>-- Chọn Tỉnh/Thành phố --</option>
-                    <option v-for="tinh in tinhThanhList" :value="tinh.id" :key="tinh.id">{{ tinh.tenTinhThanh }}
-                    </option>
-                </select>
-
-                <label>Quận/Huyện:</label>
-                <select v-model="addressForm.quanId" @change="loadXaPhuong" class="form-control">
-                    <option value="" disabled>-- Chọn Quận/Huyện --</option>
-                    <option v-for="quan in quanHuyenList" :value="quan.id" :key="quan.id">{{ quan.tenQuanHuyen }}
-                    </option>
-                </select>
-
-                <label>Xã/Phường:</label>
-                <select v-model="addressForm.xaId" class="form-control">
-                    <option value="" disabled>-- Chọn Xã/Phường --</option>
-                    <option v-for="xa in xaPhuongList" :value="xa.id" :key="xa.id">{{ xa.tenXaPhuong }}</option>
-                </select>
-
-                <label>Địa chỉ chi tiết:</label>
-                <input v-model="addressForm.chiTiet" type="text" placeholder="Số nhà, tên đường..."
-                    class="form-control" />
-
-                <label class="checkbox-label">
-                    <input type="checkbox" v-model="addressForm.isMacDinh" class="checkbox-input" />
-                    Đặt làm địa chỉ mặc định
-                </label>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @click="closeModal">Hủy</button>
-                <button type="button" class="btn btn-primary" @click="saveAddress">{{ isEditing ? 'Cập nhật' : 'Thêm mới' }}</button>
-            </div>
+      <div class="modal-body space-y-4">
+        <div v-if="isEditing && fullAddressDisplay" class="current-address-display">
+          <p>Địa chỉ hiện tại:</p>
+          <p class="font-bold">{{ fullAddressDisplay }}</p>
+          <hr class="my-3" />
         </div>
+
+
+        <div class="form-group">
+          <label for="province">Tỉnh/Thành phố:<span class="required-star">*</span></label>
+          <select
+            id="province"
+            v-model="addressForm.tinhId"
+            @change="handleTinhChange(true)"
+            class="form-control"
+            :class="{ 'error-input': showError && !addressForm.tinhId }"
+          >
+            <option value="" disabled>-- Chọn Tỉnh/Thành phố --</option>
+            <option v-for="tinh in tinhThanhList" :value="tinh.name" :key="tinh.code">{{ tinh.name }}</option>
+          </select>
+          <span v-if="showError && !addressForm.tinhId" class="error-message">Vui lòng chọn Tỉnh/Thành phố.</span>
+        </div>
+
+
+        <div class="form-group">
+          <label for="district">Quận/Huyện:<span class="required-star">*</span></label>
+          <select
+            id="district"
+            v-model="addressForm.quanId"
+            @change="handleQuanChange(true)"
+            class="form-control"
+            :class="{ 'error-input': showError && !addressForm.quanId }"
+          >
+            <option value="" disabled>-- Chọn Quận/Huyện --</option>
+            <option v-for="quan in quanHuyenList" :value="quan.name" :key="quan.code">{{ quan.name }}</option>
+          </select>
+          <span v-if="showError && !addressForm.quanId" class="error-message">Vui lòng chọn Quận/Huyện.</span>
+        </div>
+
+
+        <div class="form-group">
+          <label for="ward">Xã/Phường:<span class="required-star">*</span></label>
+          <select
+            id="ward"
+            v-model="addressForm.xaId"
+            class="form-control"
+            :class="{ 'error-input': showError && !addressForm.xaId }"
+          >
+            <option value="" disabled>-- Chọn Xã/Phường --</option>
+            <option v-for="xa in xaPhuongList" :value="xa.name" :key="xa.code">{{ xa.name }}</option>
+          </select>
+          <span v-if="showError && !addressForm.xaId" class="error-message">Vui lòng chọn Xã/Phường.</span>
+        </div>
+
+
+        <div class="form-group">
+          <label for="detailAddress">Địa chỉ chi tiết:<span class="required-star">*</span></label>
+          <input
+            id="detailAddress"
+            v-model="addressForm.chiTiet"
+            type="text"
+            placeholder="Số nhà, tên đường..."
+            class="form-control"
+            :class="{ 'error-input': showError && !addressForm.chiTiet }"
+          />
+          <span v-if="showError && !addressForm.chiTiet" class="error-message">Vui lòng nhập địa chỉ chi tiết.</span>
+        </div>
+
+
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="addressForm.isMacDinh" class="checkbox-input" />
+          Đặt làm địa chỉ mặc định
+        </label>
+      </div>
+
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" @click="closeModal">Hủy</button>
+        <button type="button" class="btn btn-primary" @click="saveAddress">
+          {{ isEditing ? 'Cập nhật' : 'Thêm mới' }}
+        </button>
+      </div>
     </div>
+  </div>
 </template>
-<script>
-import axios from 'axios';
-import { useToast } from "vue-toastification"; // Import useToast
 
-export default {
-    props: {
-        show: {
-            type: Boolean,
-            default: false
-        },
-        initialAddress: {
-            type: Object,
-            default: () => null
-        },
-        customerId: {
-            type: String,
-            required: true
+
+<script setup>
+import { ref, watch, defineProps, defineEmits } from 'vue';
+import axios from 'axios'; // Import axios riêng cho API địa lý bên ngoài
+import apiClient from '@/api/axios'; // Giữ lại để tương tác với API backend của bạn
+import { useToast } from 'vue-toastification';
+
+
+// Props
+const props = defineProps({
+  show: {
+    type: Boolean,
+    default: false,
+  },
+  initialAddress: {
+    type: Object,
+    default: () => null,
+  },
+  customerId: {
+    type: [String, Number],
+    required: true,
+  },
+});
+
+
+// Emits
+const emit = defineEmits(['close', 'address-saved']);
+
+
+// State
+const toast = useToast();
+const showError = ref(false);
+const addressForm = ref({
+  id: null,
+  tinhId: '', // Sẽ lưu tên tỉnh
+  quanId: '', // Sẽ lưu tên quận/huyện
+  xaId: '',   // Sẽ lưu tên xã/phường
+  chiTiet: '',
+  isMacDinh: false,
+});
+const tinhThanhList = ref([]);
+const quanHuyenList = ref([]);
+const xaPhuongList = ref([]);
+const isEditing = ref(false);
+const fullAddressDisplay = ref('');
+
+
+// =======================================================================
+// Các hàm gọi API từ provinces.open-api.vn
+// =======================================================================
+const fetchProvinces = async () => {
+  try {
+    const res = await axios.get('http://provinces.open-api.vn/api/p/');
+    tinhThanhList.value = res.data;
+  } catch (err) {
+    console.error('Lỗi khi lấy Tỉnh/Thành Phố:', err);
+    toast.error('Không thể tải danh sách tỉnh/thành phố.');
+  }
+};
+
+
+const fetchDistricts = async (provinceCode) => {
+  if (!provinceCode) {
+    quanHuyenList.value = [];
+    return;
+  }
+  try {
+    const res = await axios.get(`http://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
+    quanHuyenList.value = res.data.districts;
+  } catch (err) {
+    console.error('Lỗi khi lấy Quận/Huyện:', err);
+    toast.error('Không thể tải danh sách quận/huyện.');
+  }
+};
+
+
+const fetchWards = async (districtCode) => {
+  if (!districtCode) {
+    xaPhuongList.value = [];
+    return;
+  }
+  try {
+    const res = await axios.get(`http://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
+    xaPhuongList.value = res.data.wards;
+  } catch (err) {
+    console.error('Lỗi khi lấy Xã/Phường:', err);
+    toast.error('Không thể tải danh sách xã/phường.');
+  }
+};
+
+
+// =======================================================================
+// Handlers cho sự kiện @change trên các select box
+// =======================================================================
+const handleTinhChange = async (resetChild = false) => {
+    // Reset các dropdown con
+    if (resetChild) {
+        addressForm.value.quanId = '';
+        addressForm.value.xaId = '';
+        quanHuyenList.value = [];
+        xaPhuongList.value = [];
+    }
+
+
+    if (addressForm.value.tinhId) {
+        // Tìm code của tỉnh đã chọn để gọi API huyện
+        const selectedTinh = tinhThanhList.value.find(t => t.name === addressForm.value.tinhId);
+        if (selectedTinh) {
+            await fetchDistricts(selectedTinh.code);
+            // Sau khi load huyện, kiểm tra lại nếu có quanId cũ nhưng không tồn tại trong list mới
+            if (!resetChild && addressForm.value.quanId && !quanHuyenList.value.some(q => q.name === addressForm.value.quanId)) {
+                addressForm.value.quanId = '';
+            }
         }
-    },
-    data() {
-        return {
-            addressForm: {
-                id: null,
-                tinhId: '', // Đặt rỗng để placeholder hiển thị
-                quanId: '', // Đặt rỗng để placeholder hiển thị
-                xaId: '', // Đặt rỗng để placeholder hiển thị
-                chiTiet: '',
-                isMacDinh: false
-            },
-            tinhThanhList: [],
-            quanHuyenList: [],
-            xaPhuongList: [],
-            isEditing: false,
-            //toastList: [], // Đảm bảo bạn có toastList nếu bạn đang dùng nó ở đây
-            fullAddressDisplay: ''
-        };
-    },
-      setup() {
-        const toast = useToast();
-        return { toast }; // Trả về toast để các phương thức khác có thể truy cập qua `this.toast`
-    },
-    watch: {
-        show(newVal) {
-            if (newVal) {
-                this.loadTinhThanh(); // Luôn tải danh sách tỉnh/thành phố
-
-                if (this.initialAddress) {
-                    this.isEditing = true;
-                    // Sao chép sâu đối tượng để tránh thay đổi trực tiếp prop
-                    this.addressForm = JSON.parse(JSON.stringify(this.initialAddress));
-                    // this.fullAddressDisplay = this.initialAddress.diaChi || '';
-
-                    // Load các danh sách phụ thuộc và chọn giá trị đúng
-                    if (this.addressForm.tinhId) {
-                        this.loadQuanHuyen().then(() => {
-                            if (this.addressForm.quanId) {
-                                this.loadXaPhuong();
-                            }
-                        });
-                    }
-                    this.fullAddressDisplay = this.initialAddress.diaChi || '';
-                } else {
-                    this.isEditing = false;
-                    // Reset form khi thêm mới
-                    this.addressForm = {
-                        id: null,
-                        tinhId: '',
-                        quanId: '',
-                        xaId: '',
-                        chiTiet: '',
-                        isMacDinh: false
-                    };
-                    this.quanHuyenList = [];
-                    this.xaPhuongList = [];
-                    this.fullAddressDisplay = ''; // Reset khi thêm mới
-                }
-            }
-        },
-        // Các watcher để cập nhật hiển thị địa chỉ đầy đủ (giữ nguyên hoặc đã có)
-        'addressForm.tinhId': 'updateFullAddressDisplay',
-        'addressForm.quanId': 'updateFullAddressDisplay',
-        'addressForm.xaId': 'updateFullAddressDisplay',
-        'addressForm.chiTiet': 'updateFullAddressDisplay',
-    },
-    methods: {
-        closeModal() {
-            this.$emit('close');
-        },
-        async saveAddress() {
-            // Kiểm tra các trường bắt buộc
-            if (!this.addressForm.tinhId || !this.addressForm.quanId || !this.addressForm.xaId || !this.addressForm.chiTiet) {
-                console.error('Thông tin địa chỉ không đầy đủ:', this.addressForm);
-                this.toast.error("Vui lòng điền đầy đủ thông tin địa chỉ.");
-                return;
-            }
-
-            const requestData = {
-                idTinhThanhPho: this.addressForm.tinhId,
-                idQuanHuyen: this.addressForm.quanId,
-                idXaPhuong: this.addressForm.xaId,
-                diaChiChiTiet: this.addressForm.chiTiet,
-                isMacDinh: this.addressForm.isMacDinh
-            };
-
-            try {
-                if (this.isEditing && this.addressForm.id) {
-                    await axios.put(`/api/dia-chi/${this.addressForm.id}`, requestData);
-                    this.toast.success("Cập nhật địa chỉ thành công!"); // Sử dụng this.toast.success()
-                    this.$emit('address-saved'); // Phát sự kiện để component cha tải lại/cập nhật
-                } else {
-                    await axios.post(`/api/khach-hang/${this.customerId}/dia-chi`, requestData);
-                    this.toast.success("Địa chỉ đã được thêm thành công!"); // Sử dụng this.toast.success()
-                    this.$emit('address-saved'); // Phát sự kiện để component cha tải lại/cập nhật
-                }
-                this.closeModal();
-            } catch (err) {
-                console.error('Lỗi khi lưu địa chỉ:', err);
-                this.toast.error("Thao tác thất bại: " + (err.response?.data?.message || err.message)); // Sử dụng this.toast.error()
-            }
-        },
-        // Các hàm loadTinhThanh, loadQuanHuyen, loadXaPhuong giữ nguyên như bạn đã có
-        async loadTinhThanh() {
-            try {
-                const res = await axios.get('/api/dia-chi/tinh-thanh');
-                this.tinhThanhList = res.data;
-            } catch (err) {
-                console.error('Lỗi khi lấy Tỉnh/Thành Phố:', err);
-                this.toast.error("Lỗi khi tải danh sách tỉnh/thành phố.");
-            }
-        },
-        async loadQuanHuyen() {
-            if (!this.addressForm.tinhId) {
-                this.quanHuyenList = [];
-                this.addressForm.quanId = ''; // Reset về rỗng để chọn lại
-                this.xaPhuongList = [];
-                this.addressForm.xaId = ''; // Reset về rỗng để chọn lại
-                return;
-            }
-            try {
-                const res = await axios.get('/api/dia-chi/quan-huyen-by-tinh', { params: { idTinhThanh: this.addressForm.tinhId } });
-                this.quanHuyenList = res.data;
-                // Nếu quanId hiện tại không tồn tại trong danh sách mới, reset nó
-                if (this.addressForm.quanId && !this.quanHuyenList.some(q => q.id === this.addressForm.quanId)) {
-                    this.addressForm.quanId = '';
-                }
-                this.xaPhuongList = [];
-                this.addressForm.xaId = '';
-            } catch (err) {
-                console.error('Lỗi khi lấy Quận/Huyện:', err);
-                this.toast.error("Lỗi khi tải danh sách quận/huyện.");
-            }
-        },
-        async loadXaPhuong() {
-            if (!this.addressForm.quanId) {
-                this.xaPhuongList = [];
-                this.addressForm.xaId = ''; // Reset về rỗng để chọn lại
-                return;
-            }
-            try {
-                const res = await axios.get('/api/dia-chi/xa-phuong-by-quan', { params: { idQuanHuyen: this.addressForm.quanId } });
-                this.xaPhuongList = res.data;
-                // Nếu xaId hiện tại không tồn tại trong danh sách mới, reset nó
-                if (this.addressForm.xaId && !this.xaPhuongList.some(x => x.id === this.addressForm.xaId)) {
-                    this.addressForm.xaId = '';
-                }
-            } catch (err) {
-                console.error('Lỗi khi lấy Xã/Phường:', err);
-                this.toast.error("Lỗi khi tải danh sách xã/phường.");
-            }
-        },
-        updateFullAddressDisplay() {
-// Chắc chắn các danh sách đã có dữ liệu trước khi cố gắng tìm
-            if (this.tinhThanhList.length === 0 || this.quanHuyenList.length === 0 || this.xaPhuongList.length === 0) {
-                 // Nếu đang sửa và các list chưa load xong, có thể dùng initialAddress.diaChi
-                if (this.isEditing && this.initialAddress && this.initialAddress.diaChi) {
-                    this.fullAddressDisplay = this.initialAddress.diaChi;
-                    return;
-                }
-                this.fullAddressDisplay = ''; // Hoặc một giá trị mặc định nào đó
-                return;
-            }
-
-
-            const tinh = this.tinhThanhList.find(t => t.id === this.addressForm.tinhId);
-            const quan = this.quanHuyenList.find(q => q.id === this.addressForm.quanId);
-            const xa = this.xaPhuongList.find(x => x.id === this.addressForm.xaId);
-
-            let parts = [];
-            if (this.addressForm.chiTiet) parts.push(this.addressForm.chiTiet);
-            if (xa) parts.push(xa.tenXaPhuong);
-            if (quan) parts.push(quan.tenQuanHuyen);
-            if (tinh) parts.push(tinh.tenTinhThanh);
-
-            this.fullAddressDisplay = parts.join(', ');
-        },
+    } else {
+        quanHuyenList.value = [];
+        xaPhuongList.value = [];
     }
 };
+
+
+const handleQuanChange = async (resetChild = false) => {
+    // Reset các dropdown con
+    if (resetChild) {
+        addressForm.value.xaId = '';
+        xaPhuongList.value = [];
+    }
+
+
+    if (addressForm.value.quanId) {
+        // Tìm code của huyện đã chọn để gọi API xã
+        const selectedQuan = quanHuyenList.value.find(q => q.name === addressForm.value.quanId);
+        if (selectedQuan) {
+            await fetchWards(selectedQuan.code);
+            // Sau khi load xã, kiểm tra lại nếu có xaId cũ nhưng không tồn tại trong list mới
+            if (!resetChild && addressForm.value.xaId && !xaPhuongList.value.some(x => x.name === addressForm.value.xaId)) {
+                addressForm.value.xaId = '';
+            }
+        }
+    } else {
+        xaPhuongList.value = [];
+    }
+};
+
+
+// Methods
+const closeModal = () => {
+  emit('close');
+  resetForm();
+};
+
+
+const resetForm = () => {
+  addressForm.value = {
+    id: null,
+    tinhId: '',
+    quanId: '',
+    xaId: '',
+    chiTiet: '',
+    isMacDinh: false,
+  };
+  // Không cần fetchProvinces lại ở đây vì nó sẽ được gọi trong watcher khi show modal
+  quanHuyenList.value = [];
+  xaPhuongList.value = [];
+  isEditing.value = false;
+  fullAddressDisplay.value = '';
+  showError.value = false;
+};
+
+
+// Cập nhật hàm hiển thị địa chỉ đầy đủ (không cần thay đổi nhiều)
+const updateFullAddressDisplay = () => {
+  let parts = [];
+  if (addressForm.value.chiTiet) parts.push(addressForm.value.chiTiet);
+  if (addressForm.value.xaId) parts.push(addressForm.value.xaId);
+  if (addressForm.value.quanId) parts.push(addressForm.value.quanId);
+  if (addressForm.value.tinhId) parts.push(addressForm.value.tinhId);
+
+
+  fullAddressDisplay.value = parts.filter(Boolean).join(', ');
+};
+
+
+const saveAddress = async () => {
+  showError.value = true;
+
+
+  if (!addressForm.value.tinhId || !addressForm.value.quanId || !addressForm.value.xaId || !addressForm.value.chiTiet) {
+    toast.error('Vui lòng điền đầy đủ thông tin địa chỉ bắt buộc.');
+    return;
+  }
+
+
+  const requestData = {
+    tinhThanhPho: addressForm.value.tinhId, // Gửi tên tỉnh
+    quanHuyen: addressForm.value.quanId,   // Gửi tên quận/huyện
+    xaPhuong: addressForm.value.xaId,     // Gửi tên xã/phường
+    diaChiChiTiet: addressForm.value.chiTiet,
+    isMacDinh: addressForm.value.isMacDinh,
+  };
+
+
+  try {
+    if (isEditing.value && addressForm.value.id) {
+      await apiClient.put(`/api/dia-chi/${addressForm.value.id}`, requestData);
+      toast.success('Cập nhật địa chỉ thành công!');
+    } else {
+      if (!props.customerId) {
+        toast.error("Không tìm thấy ID khách hàng để thêm địa chỉ.");
+        return;
+      }
+      await apiClient.post(`/api/khach-hang/${props.customerId}/dia-chi`, requestData);
+      toast.success('Địa chỉ đã được thêm thành công!');
+    }
+    emit('address-saved');
+    closeModal();
+  } catch (err) {
+    console.error('Lỗi khi lưu địa chỉ:', err.response?.data || err.message);
+    toast.error('Thao tác thất bại: ' + (err.response?.data?.message || err.message || 'Đã xảy ra lỗi.'));
+  }
+};
+
+
+// Watchers
+watch(
+  () => props.show,
+  async (newVal) => {
+    if (newVal) {
+      await fetchProvinces(); // Tải tất cả tỉnh/thành phố từ API ngoài khi mở modal
+
+
+      if (props.initialAddress) {
+        isEditing.value = true;
+        // Sao chép sâu đối tượng để tránh thay đổi trực tiếp prop
+        addressForm.value = JSON.parse(JSON.stringify(props.initialAddress));
+        fullAddressDisplay.value = props.initialAddress.diaChi || '';
+
+
+        // ===================================================================
+        // Quan trọng: Gán giá trị tên địa lý từ initialAddress vào addressForm
+        // ===================================================================
+        addressForm.value.tinhId = props.initialAddress.tinhThanhPho || '';
+        addressForm.value.quanId = props.initialAddress.quanHuyen || '';
+        addressForm.value.xaId = props.initialAddress.xaPhuong || '';
+        addressForm.value.chiTiet = props.initialAddress.diaChiChiTiet || '';
+        addressForm.value.isMacDinh = props.initialAddress.isMacDinh || false;
+
+
+        // ===================================================================
+        // Logic để tải và chọn lại các giá trị cũ khi chỉnh sửa
+        // ===================================================================
+        if (addressForm.value.tinhId) {
+            // Tìm code của tỉnh từ tên tỉnh đã lưu
+            const selectedTinh = tinhThanhList.value.find(t => t.name === addressForm.value.tinhId);
+            if (selectedTinh) {
+                await fetchDistricts(selectedTinh.code); // Tải huyện dựa trên code của tỉnh
+                if (addressForm.value.quanId) {
+                    // Tìm code của huyện từ tên huyện đã lưu
+                    const selectedQuan = quanHuyenList.value.value.find(q => q.name === addressForm.value.quanId);
+                    if (selectedQuan) {
+                        await fetchWards(selectedQuan.code); // Tải xã dựa trên code của huyện
+                    }
+                }
+            }
+        }
+      } else {
+        isEditing.value = false;
+        resetForm();
+      }
+    }
+  },
+  { immediate: true }
+);
+
+
+// Watch các trường form để cập nhật fullAddressDisplay
+watch(
+  [
+    () => addressForm.value.tinhId,
+    () => addressForm.value.quanId,
+    () => addressForm.value.xaId,
+    () => addressForm.value.chiTiet,
+  ],
+  updateFullAddressDisplay,
+  { deep: true }
+);
 </script>
+
 
 <style scoped>
 /* CSS cho modal con */
@@ -267,6 +401,7 @@ export default {
     z-index: 1050; /* Cao hơn z-index của modal cha (ví dụ 1040) */
 }
 
+
 .modal-box-child {
     background: white;
     padding: 25px; /* Tăng padding */
@@ -278,6 +413,7 @@ export default {
     flex-direction: column;
 }
 
+
 .modal-header {
     display: flex;
     justify-content: space-between;
@@ -287,12 +423,14 @@ export default {
     border-bottom: 1px solid #eee; /* Đường kẻ phân cách */
 }
 
+
 .modal-header h2 {
     font-size: 1.8rem; /* Kích thước tiêu đề lớn hơn */
     font-weight: bold;
     color: #333;
     margin: 0;
 }
+
 
 .modal-close {
     background: none;
@@ -303,15 +441,18 @@ export default {
     transition: color 0.2s ease-in-out;
 }
 
+
 .modal-close:hover {
     color: #343a40;
 }
+
 
 .modal-body {
     display: flex;
     flex-direction: column;
     gap: 15px; /* Khoảng cách giữa các phần tử input */
 }
+
 
 .modal-body label {
     display: block;
@@ -320,6 +461,7 @@ export default {
     color: #495057;
     font-size: 1rem; /* Kích thước font cho label */
 }
+
 
 .form-control {
     width: 100%;
@@ -332,11 +474,13 @@ export default {
     box-sizing: border-box;
 }
 
+
 .form-control:focus {
     border-color: #0a2c57;
     box-shadow: 0 0 0 3px rgba(10, 44, 87, 0.2);
     outline: none;
 }
+
 
 /* Styles mới cho hiển thị địa chỉ cũ */
 .current-address-display {
@@ -360,6 +504,7 @@ export default {
     border-color: #d1d9e0;
 }
 
+
 /* Checkbox label */
 .checkbox-label {
     display: flex;
@@ -372,6 +517,7 @@ export default {
     margin-top: 10px;
 }
 
+
 .checkbox-input {
     width: 20px;
     height: 20px;
@@ -379,6 +525,7 @@ export default {
     accent-color: #0a2c57; /* Màu xanh đậm cho checkbox */
     flex-shrink: 0;
 }
+
 
 .modal-footer {
     display: flex;
@@ -388,6 +535,7 @@ export default {
     padding-top: 20px;
     border-top: 1px solid #eee;
 }
+
 
 .btn {
     padding: 10px 25px; /* Tăng padding nút */
@@ -399,25 +547,30 @@ export default {
     font-size: 1rem; /* Kích thước font cho nút */
 }
 
+
 .btn-secondary {
     background-color: #6c757d;
     color: white;
 }
+
 
 .btn-secondary:hover {
     background-color: #5a6268;
     transform: translateY(-2px);
 }
 
+
 .btn-primary { /* Đã đổi tên từ btn-success sang btn-primary */
     background-color: #0a2c57; /* Màu xanh đậm theo yêu cầu */
     color: white;
 }
 
+
 .btn-primary:hover {
     background-color: #071f3e; /* Màu đậm hơn khi hover */
     transform: translateY(-2px);
 }
+
 
 /* Toast styles (đảm bảo hiển thị đúng nếu bạn sử dụng chung) */
 .toast-container {
@@ -426,6 +579,7 @@ export default {
     right: 20px;
     z-index: 1100; /* Đảm bảo toast hiển thị trên tất cả các modal */
 }
+
 
 .toast-notification {
     padding: 10px 20px;
@@ -437,13 +591,16 @@ export default {
     gap: 10px;
 }
 
+
 .toast-notification.success {
     background-color: #28a745;
 }
 
+
 .toast-notification.error {
     background-color: #dc3545;
 }
+
 
 /* Responsive adjustments */
 @media (max-width: 600px) {
@@ -482,3 +639,6 @@ export default {
     }
 }
 </style>
+
+
+

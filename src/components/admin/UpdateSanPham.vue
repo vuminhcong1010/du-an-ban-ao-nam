@@ -117,22 +117,22 @@
                         v-if="!show"
                       />
 
-                      <button
+                      <!-- <button
                         v-if="files[0]?.[0]"
                         @click="removeFile(0, 0)"
                         class="btn btn-sm btn-danger position-absolute"
                         style="top: 5px; right: 5px;"
                       >
                         <i class="fa-solid fa-trash fa-xs"></i>
-                      </button>
-                      <button
+                      </button> -->
+                      <!-- <button
                         v-else
                         @click="removeUploadedImage(0, 0)"
                         class="btn btn-sm btn-danger position-absolute"
                         style="top: 5px; right: 5px;"
                       >
                         <i class="fa-solid fa-trash fa-xs"></i>
-                      </button>
+                      </button> -->
                     </div>
                   </div>
 
@@ -163,7 +163,7 @@ import axios from 'axios'
 import { ref, watch, onBeforeUnmount } from 'vue'
 import { defineEmits } from 'vue'
 import QRCode from 'qrcode'
-
+import Swal from 'sweetalert2'
 const toast = useToast();
 const props = defineProps({
   idChiTietSanPham: {
@@ -339,6 +339,21 @@ function removeUploadedImage(rowIndex, imageIndex) {
 
 // Upload toàn bộ ảnh
 async function uploadAllImages() {
+  const result = await Swal.fire({
+                    title: 'Xác nhận sửa?',
+                    text: 'Bạn có chắc muốn sửa dữ liệu này không?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Sửa',
+                    cancelButtonText: 'Hủy'
+                });
+    if (!result.isConfirmed) {
+      toast.info('Hủy thao tác sửa');
+      console.log('User cancelled');
+      return;
+    }
   for (let rowIndex = 0; rowIndex < files.value.length; rowIndex++) {
     const currentFiles = files.value[rowIndex] || []
     if (!currentFiles.length) continue

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Bell, Mail, User } from "lucide-vue-next";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.png"; // Import logo image
 </script>
 
 <template>

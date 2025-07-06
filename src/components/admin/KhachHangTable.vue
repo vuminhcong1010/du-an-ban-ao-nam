@@ -9,8 +9,8 @@
         <th>Ngày sinh</th>
         <th>Số điện thoại</th>
         <th>Email</th>
-        <th>Số đơn đã mua</th>
-        <th>Tổng chi tiêu</th>
+        <!-- <th>Số đơn đã mua</th>
+        <th>Tổng chi tiêu</th> -->
         <th>Trạng thái</th>
         <th>Hành động</th>
       </tr>
@@ -24,8 +24,8 @@
         <td>{{ kh.ngaySinh ? new Date(kh.ngaySinh).toLocaleDateString('vi-VN') : 'Chưa cập nhật' }}</td>
         <td>{{ kh.soDienThoai }}</td>
         <td>{{ kh.email || 'Chưa cập nhật' }}</td>
-        <td>{{ kh.soHoaDonDaMua || 0 }}</td>
-        <td>{{ kh.tongTien ? formatCurrency(kh.tongTien) : '0' }}</td>
+        <!-- <td>{{ kh.soHoaDonDaMua || 0 }}</td>
+        <td>{{ kh.tongTien ? formatCurrency(kh.tongTien) : '0' }}</td> -->
         <td>
           <span :class="{
             'badge badge-success': kh.trangThai === 1,
@@ -64,7 +64,6 @@
 
 <script>
 import axios from "axios";
-import apiClient from '@/api/axios';
 // import AddressModal from "../admin/AddressModal.vue"; // Có thể bỏ nếu AddressModal không được dùng trực tiếp ở đây nữa
 import { Edit, Trash } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
@@ -175,7 +174,7 @@ export default {
       };
 
 
-      apiClient.get('/api/khach-hang/search-and-filter', { params })
+      axios.get('/api/khach-hang/search-and-filter', { params })
         .then(response => {
           console.log(response.data);
           this.khachHangs = response.data.content;

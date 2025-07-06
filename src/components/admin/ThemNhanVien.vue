@@ -1,11 +1,11 @@
 <script setup>
 import { ref, inject, onMounted, computed, watch } from 'vue'
 import { ArrowLeft, Eye, EyeOff } from 'lucide-vue-next'
-import axios from 'axios'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import Swal from 'sweetalert2'
 import QRScanner from './QRScanner.vue'
+import axios from 'axios'
 
 const toggleSidebar = inject('toggleSidebar')
 const router = useRouter();
@@ -52,15 +52,15 @@ const getAllNhanVien = async () => {
 };
 
 const fetchProvinces = async () => {
-  const res = await axios.get('https://provinces.open-api.vn/api/p/');
+  const res = await axios.get('http://provinces.open-api.vn/api/p/');
   provinces.value = res.data;
 };
 const fetchDistricts = async (provinceCode) => {
-  const res = await axios.get(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
+  const res = await axios.get(`http://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
   districts.value = res.data.districts;
 };
 const fetchWards = async (districtCode) => {
-  const res = await axios.get(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
+  const res = await axios.get(`http://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
   wards.value = res.data.wards;
 };
 
