@@ -199,7 +199,7 @@ const handleSubmit = async () => {
     if (formData.value.anhFile) {
       form.append('anh', formData.value.anhFile);
     }
-    
+
     if (route.params.id) {
       await axios.put(`http://localhost:8080/api/update/${route.params.id}`, form, {
         headers: {
@@ -208,15 +208,10 @@ const handleSubmit = async () => {
       });
       router.push({ path: '/nhan-vien', query: { updated: 'true' } });
     } else {
-      Swal.fire({
-      icon: 'info',
-      title: 'Đang gửi mail về nhân viên...',
-      timer: 3700,
-      showConfirmButton: false
-    });
+      toast.info('Đang gửi mail về nhân viên...', { timeout: 4000 });
       await axios.post('http://localhost:8080/api/addNhanVien', form);
-
-      router.push({ path: '/nhan-vien', query: { success: 'true' } });
+      // Đợi toast gửi mail xong rồi mới hiện toast thành công và chuyển trang
+        router.push({ path: '/nhan-vien', query: { success: 'true' } });
     }
   } catch (error) {
     if (error.response && error.response.data) {
