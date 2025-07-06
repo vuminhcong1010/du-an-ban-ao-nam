@@ -487,20 +487,17 @@ async function handleFileChange(event) {
   const formData = new FormData();
   formData.append('file', file);
   try {
-     Swal.fire({
-      icon: 'info',
-      title: 'Đang gửi mail về nhân viên...',
-      timer: 3500,
-      showConfirmButton: false
-    });
     const response = await axios.post(
       'http://localhost:8080/api/nhan-vien/import-excel',
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
-   
-    toast.success(response.data || 'Nhập dữ liệu thành công!');
-    await getData();
+
+    toast.info('Đang gửi mail về nhân viên...', { timeout: 3000 });
+    setTimeout(async () => {
+      toast.success(response.data || 'Nhập dữ liệu thành công!');
+      await getData();
+    }, 3000);
   } catch (error) {
     if (error.response && error.response.data) {
       toast.error(error.response.data);
