@@ -25,20 +25,20 @@ import {
   ShoppingCart,
   Receipt,
   CreditCard,
+  Truck,
   Dot,
   ArrowUpRight,
 } from "lucide-vue-next";
 import { ref, onMounted, watch } from "vue";
-
-import ThemSanPham from "./ThemSanPham.vue";
-
+import ThemSanPhamHoaDon from "./ThemSanPhamHoaDon.vue";
 
 const buttons = ref([
   ["Hủy đơn hàng", "Xác nhận"],
   ["Quay lại đang xử lý", "Đẩy giao hàng"],
   ["Quay lại đã xác nhận", "Giao hàng thành công"],
-  ["Quay lại đang giao hàng", "Hoàn hàng"],
+  ["Quay lại đang giao hàng", "Hoàn thành"],
   ["", ""],
+  ["", "haah"],
 ]);
 
 let trangThai = ref(0);
@@ -47,7 +47,8 @@ const steps = [
   "Đã xác nhận",
   "Đang giao hàng",
   "Giao hàng thành công",
-  "Hủy/hoàn",
+  "Hoàn thành",
+  "Đã hủy",
 ];
 
 const reasons = ["Khách muốn huỷ đơn", "Khác"];
@@ -69,13 +70,12 @@ const fetchTodos = async () => {
 
     // Cập nhật trangThai sau khi có dữ liệu
     trangThai.value = json[0]?.idHoaDon?.trangThai; // tìm chỉ số trong mảng steps
-    console(trangThai);
   } catch (error) {
     console.error("Lỗi khi fetch dữ liệu:", error);
   }
 };
 
-// lich su hoa don 
+// lich su hoa don
 const showModalLichSuHoaDon = ref(false);
 const lichSu = ref([]);
 const fetchLichSuHoaDon = async () => {
@@ -92,12 +92,25 @@ const fetchLichSuHoaDon = async () => {
 };
 
 // lich su thanh toan:
+
+const tongTienDaThanhToan = computed(() =>
+  lichSuThanhToan.value.reduce((sum, item) => sum + (item.soTien || 0), 0)
+);
+
+const tongTienDaThanhToanFormatted = computed(() =>
+  new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    minimumFractionDigits: 0,
+  }).format(tongTienDaThanhToan.value)
+);
+
 const showModalLichSuThanhToan = ref(false);
 const lichSuThanhToan = ref([]);
 const fetchLichSuThanhToan = async () => {
   try {
     const response = await fetch(
-      `http://localhost:8080/lich-su-hoa-don/${maHoaDon}`
+      `http://localhost:8080/lich-su-thanh-toan/${maHoaDon}`
     );
     const json = await response.json();
     lichSuThanhToan.value = json;
@@ -106,7 +119,6 @@ const fetchLichSuThanhToan = async () => {
     console.error("Lỗi khi fetch dữ liệu:", error);
   }
 };
-
 
 // show san pham
 const showThemSanPham = ref(false);
@@ -163,6 +175,14 @@ const luuThongTin = async () => {
     comfirm.value = text; // gán cho biến để hiển thị thông báo
     console.log(comfirm.value);
 
+    // Thêm lịch sử
+    await axios.post("http://localhost:8080/lich-su-hoa-don/them", {
+      idHoaDon: { maHoaDon: maHoaDon },
+      noiDungThayDoi: "Thay đổi thông tin người nhận",
+      nguoiThucHien: "admin",
+      ghiChu: `admin đã thực hiện thay đổi thông tin người nhận`,
+    });
+
     // 👉 Hiển thị hộp thoại xác nhận
     const xacNhan = window.confirm("Bạn có chắc chắn muốn lưu thay đổi không?");
     if (xacNhan) {
@@ -192,14 +212,44 @@ const tongTienSanPham = computed(() => {
 });
 
 import axios from "axios";
+
 // thay doi trang thai:
+const prevTrangThaiBeforeCancel = ref(null); // dùng để hiển thị bước trước hủy
+
 const thayDoiTrangThai = async (moiTrangThai) => {
   const confirm = window.confirm("Bạn có chắc chắn muốn thay đổi trạng thái?");
   if (!confirm) return;
+
   try {
-    await axios.put(
-      `http://localhost:8080/hoa-don/cap-nhat-trang-thai/${maHoaDon}?trangThai=${moiTrangThai}`
-    );
+    // Gửi PUT: cập nhật trạng thái + ghi chú
+    await axios({
+      method: "put",
+      url: `http://localhost:8080/hoa-don/cap-nhat-trang-thai/${maHoaDon}?trangThai=${moiTrangThai}`,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      data: {
+        ghiChu: note.value,
+      },
+    });
+
+    // Lưu trạng thái trước khi huỷ/hoàn
+    if (moiTrangThai === 5) {
+      prevTrangThaiBeforeCancel.value = trangThai.value;
+    }
+
+    // Nếu từ trạng thái 0 sang 1 thì gọi in PDF
+    if (trangThai.value === 0 && moiTrangThai === 1) {
+      downloadPDF(maHoaDon);
+    }
+
+    // Ghi lại lịch sử
+    await axios.post("http://localhost:8080/lich-su-hoa-don/them", {
+      idHoaDon: { maHoaDon: maHoaDon },
+      noiDungThayDoi: "Thay đổi trạng thái",
+      nguoiThucHien: "admin",
+      ghiChu: `admin đã thực hiện thay đổi trạng thái từ ${trangThai.value} sang ${moiTrangThai}. Ghi chú: ${note.value}`,
+    });
 
     trangThai.value = moiTrangThai;
     toast.success("Đã cập nhật trạng thái!");
@@ -209,6 +259,21 @@ const thayDoiTrangThai = async (moiTrangThai) => {
   }
 };
 
+
+const visibleSteps = computed(() => {
+  if (trangThai.value === 5) {
+    if (prevTrangThaiBeforeCancel.value !== null) {
+      return [
+        steps[prevTrangThaiBeforeCancel.value],
+        steps[5], // Hủy/hoàn
+      ];
+    }
+    return [steps[5]];
+  }
+
+  return steps.slice(0, trangThai.value + 1);
+});
+
 // xoa san pham:
 const xoaSanPham = async (id) => {
   const confirm = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?");
@@ -217,38 +282,50 @@ const xoaSanPham = async (id) => {
   try {
     await axios.delete(`http://localhost:8080/hoa-don-chi-tiet/xoa/${id}`);
     toast.success("Xóa sản phẩm thành công!");
-
-    // Sau khi xóa, reload lại danh sách
-    await fetchTodos(); // hoặc filter lại listHoaDonChiTiet
+    await fetchTodos(); // reload
+    // Ghi lịch sử
+    await axios.post("http://localhost:8080/lich-su-hoa-don/them", {
+      idHoaDon: { maHoaDon: maHoaDon },
+      noiDungThayDoi: "Xóa sản phẩm",
+      nguoiThucHien: "admin",
+      ghiChu: `admin đã thực hiện xóa sản phẩm `,
+    });
   } catch (error) {
     console.error(error);
+    // toast.error("Lỗi khi xóa sản phẩm!");
   }
 };
 
-
 // xuat file pdf
 function downloadPDF(maHoaDon) {
-  axios.get(`http://localhost:8080/hoa-don/${maHoaDon}/pdf`, {
-    responseType: 'blob'
-  }).then((response) => {
-    const fileURL = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-    const fileLink = document.createElement('a');
-    fileLink.href = fileURL;
-    fileLink.setAttribute('download', `hoa_don_${maHoaDon}.pdf`);
-    document.body.appendChild(fileLink);
-    fileLink.click();
-    document.body.removeChild(fileLink);
-  }).catch((err) => {
-    console.error("Lỗi tải file PDF:", err);
-  });
+  axios
+    .get(`http://localhost:8080/hoa-don/${maHoaDon}/pdf`, {
+      responseType: "blob",
+    })
+    .then((response) => {
+      const fileURL = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" })
+      );
+      const fileLink = document.createElement("a");
+      fileLink.href = fileURL;
+      fileLink.setAttribute("download", `hoa_don_${maHoaDon}.pdf`);
+      document.body.appendChild(fileLink);
+      fileLink.click();
+      document.body.removeChild(fileLink);
+    })
+    .catch((err) => {
+      console.error("Lỗi tải file PDF:", err);
+    });
 }
+
+console.log(trangThai);
 </script>
 
 <template>
   <div class="d-flex justify-content-between">
     <!-- Cột trái -->
     <div class="d-flex flex-column" style="flex: 1">
-      <div class="container-fixed bg-white p-3 rounded shadow mb-4">
+      <div class="container-fixed bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">
             <RouterLink to="/hoa-don">
@@ -279,7 +356,7 @@ function downloadPDF(maHoaDon) {
         <!-- thanh trang thai -->
         <div class="d-flex justify-content-between mb-4 border">
           <div
-            v-for="(step, index) in steps.slice(0, trangThai + 1)"
+            v-for="(step, index) in visibleSteps"
             :key="index"
             class="text-center flex-fill my-2"
           >
@@ -298,24 +375,28 @@ function downloadPDF(maHoaDon) {
           </div>
         </div>
 
-        <!-- Radio buttons -->
-        <div class="mb-3">
-          <div class="form-check" v-for="(reason, idx) in reasons" :key="idx">
-            <input
-              class="form-check-input"
-              type="radio"
-              :id="'reason' + idx"
-              :value="reason"
-              v-model="selectedReason"
-            />
-            <label class="form-check-label" :for="'reason' + idx">
-              {{ reason }}
-            </label>
-          </div>
+        <!-- thong bao don hang hoan thanh -->
+        <div v-if="trangThai === 4 || trangThai === 5" class="text-center mt-5">
+          <img
+            :src="
+              trangThai === 4
+                ? 'https://happyphone.vn/wp-content/uploads/2024/05/icon-dat-hang-thanh-cong-09.jpeg'
+                : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgh95EBJ9V3_ncmkDVQcTHrkelmSkV5L8jVOQoNrJNuc12hwHUtOHKxn1ayHJ3ENokFJQ&usqp=CAU'
+            "
+            :alt="trangThai === 4 ? 'Hoàn thành' : 'Đã hủy'"
+            width="70"
+          />
+          <p class="mt-2">
+            {{
+              trangThai === 4
+                ? "Đơn hàng đã hoàn thành!!"
+                : "Đơn hàng đã bị hủy!!"
+            }}
+          </p>
         </div>
 
         <!-- Textarea -->
-        <div class="mb-3">
+        <div class="mb-3" v-if="trangThai !== 4 && trangThai !== 5">
           <textarea
             class="form-control"
             rows="3"
@@ -323,24 +404,28 @@ function downloadPDF(maHoaDon) {
             v-model="note"
           ></textarea>
         </div>
-        <!-- Button xác nhận khi có nội dung -->
-        <div class="mb-3" v-if="note.trim()">
-          <button class="btn btn-success">✔️ Xác nhận ghi chú</button>
-        </div>
-
+      
         <!-- Buttons -->
         <div class="d-flex gap-2 justify-content-end">
           <button
-            v-if="trangThai !== 0 && trangThai !== 4"
+            v-if="trangThai !== 0 && trangThai !== 4 && trangThai < 2"
             class="btn btn-outline-secondary"
             @click="thayDoiTrangThai(trangThai - 1)"
           >
             {{ buttons[trangThai][0] }}
           </button>
+          <!-- nut huy/hoan -->
+          <button
+            v-if="trangThai === 0 || trangThai === 3"
+            class="btn btn-outline-secondary"
+            @click="thayDoiTrangThai(5)"
+          >
+            {{ trangThai === 0 ? "Hủy" : "Hoàn hàng" }}
+          </button>
 
           <!-- Nút Tiếp tục -->
           <button
-            v-if="trangThai !== 4"
+            v-if="trangThai !== 4 && trangThai != 5"
             class="btn btn-primary"
             @click="thayDoiTrangThai(trangThai + 1)"
             style="background-color: #0a2c57; color: white"
@@ -350,7 +435,7 @@ function downloadPDF(maHoaDon) {
         </div>
       </div>
 
-      <div class="container-fixed bg-white p-3 rounded shadow mb-4">
+      <div class="container-fixed bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">Sản phẩm:</h5>
 
@@ -371,11 +456,7 @@ function downloadPDF(maHoaDon) {
               Thêm sản phẩm
             </button>
             <teleport to="body">
-          
-
-        
               <ThemSanPhamHoaDon
-
                 v-if="showThemSanPham"
                 :key="showThemSanPham"
                 @close="showThemSanPham = false"
@@ -384,6 +465,7 @@ function downloadPDF(maHoaDon) {
             </teleport>
           </div>
         </div>
+
         <div class="table-responsive">
           <table class="table table-hover">
             <thead class="table-light">
@@ -464,57 +546,104 @@ function downloadPDF(maHoaDon) {
 
     <!-- Cột phải -->
     <div class="d-flex flex-column ms-3" style="width: 400px">
-      <div class="bg-white p-3 rounded shadow mb-4">
+      <div class="bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">
-            <Receipt></Receipt> Đơn hàng: {{ maHoaDon }}
+            <Receipt class="me-2" /> Đơn hàng: {{ maHoaDon }}
           </h5>
-
-          <button class="btn" style="border: none; color: #0a2c57">
-          <button class="btn" style="border: none; color: #0a2c57" @click="downloadPDF(maHoaDon)">
-            <Printer class="me-1" size="16"></Printer> In hóa đơn
+          <button
+            class="btn"
+            style="border: none; color: #0a2c57"
+            @click="downloadPDF(maHoaDon)"
+          >
+            <Printer class="me-1" size="16" /> In hóa đơn
           </button>
         </div>
+
         <hr />
-        <label for=""
-          >Hình thức đặt hàng:
+
+        <div class="mb-2">
+          <label class="fw-bold">Hình thức đặt hàng:</label>
           <ShoppingCart
+            class="ms-2"
             style="width: 16px; height: 16px; color: #0a2c57"
-          ></ShoppingCart>
-          Tại cửa hàng</label
-        >
-        <br />
-        <label for=""
-          >Hình thức thanh toán:
-          <CreditCard
+          />
+          {{
+            listHoaDonChiTiet[0]?.idHoaDon?.loaiDon === 0
+              ? " Tại cửa hàng"
+              : " Online"
+          }}
+          
+        </div>
+
+        <div class="mb-2">
+          <label class="fw-bold">Hình thức nhận hàng:</label>
+          <Truck
+            class="ms-2"
             style="width: 16px; height: 16px; color: #0a2c57"
-          ></CreditCard>
-          Chuyển khoản</label
-        >
-        <br />
-        <label for="">Trạng thái đơn hàng: <Dot></Dot> Đã xác nhận</label>
-        <br />
-        <label for="">Trạng thái thanh toán: <Dot></Dot> Chưa thanh toán</label>
-        <br />
+          />
+          {{
+            listHoaDonChiTiet[0]?.idHoaDon?.hinhThucNhanHang === 0
+              ? " Tại cửa hàng"
+              : " Giao hàng"
+          }}
+          
+        </div>
+
+        <div class="mb-2">
+          <label class="fw-bold">Trạng thái đơn hàng:</label>
+          <Dot class="ms-2" style="width: 16px; height: 16px; color: #0a2c57" />
+          {{ steps[trangThai] }}
+          
+        </div>
+
+        <div>
+          <label class="fw-bold">Trạng thái thanh toán:</label>
+          <Dot class="ms-2" style="width: 16px; height: 16px; color: #0a2c57" />
+          <span
+            :class="{
+              'text-success fw-semibold':
+                tongTienSanPham -
+                  listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
+                  listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
+                  tongTienDaThanhToan ===
+                0,
+              'text-danger fw-semibold':
+                tongTienSanPham -
+                  listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
+                  listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
+                  tongTienDaThanhToan !==
+                0,
+            }"
+          >
+            {{
+              tongTienSanPham -
+                listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
+                listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
+                tongTienDaThanhToan ===
+              0
+                ? " Đã thanh toán"
+                : " Chưa thanh toán"
+            }}
+          </span>
+          
+        </div>
       </div>
-      <div class="bg-white p-3 rounded shadow mb-4">
+
+      <div class="bg-white p-3 rounded border mb-4">
         <div class="align-items-center mb-3">
           <h5 class="fw-semibold">
             Khách hàng:
-
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.tenKhachHang }}
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.tenKhachHang }}
           </h5>
           <label for="">
             <Phone style="width: 16px; height: 16px; color: #0a2c57"></Phone> :
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.soDienThoai }}
-
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.soDienThoai }}
           </label>
           <br />
           <label for=""
             ><Mail style="width: 16px; height: 16px; color: #0a2c57"></Mail> :
-
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.idKhachHang?.email }}</label
-
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.email }}</label
           >
         </div>
         <hr />
@@ -609,7 +738,7 @@ function downloadPDF(maHoaDon) {
       </div>
 
       <!-- thông tin thanh toán -->
-      <div class="bg-white p-3 rounded shadow mb-4">
+      <div class="bg-white p-3 rounded border mb-4">
         <div class="justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">Thông tin thanh toán:</h5>
         </div>
@@ -644,24 +773,22 @@ function downloadPDF(maHoaDon) {
             <button
               @click="fetchLichSuThanhToan"
               class="btn btn-link p-0 text-decoration-none"
-              style="color: blue; margin-bottom: 5px;"
+              style="color: blue; margin-bottom: 5px"
               @mouseover="hovering = true"
               @mouseleave="hovering = false"
             >
-              ( <ArrowUpRight style="width: 14px;"></ArrowUpRight> xem lịch sử)
+              ( <ArrowUpRight style="width: 14px"></ArrowUpRight> xem lịch sử)
             </button>
             <span>:</span>
           </div>
 
           <!-- Số tiền -->
-
-          <span>4.856.000</span>
-
+          <span>{{ tongTienDaThanhToanFormatted }}</span>
 
           <!-- Modal lịch sử thanh toán -->
           <LichSuThanhToan
             v-if="showModalLichSuThanhToan"
-            :lich-su="lichSuThanhToan"
+            :lichSuThanhToan="lichSuThanhToan"
             @close="showModalLichSuThanhToan = false"
           />
         </div>
@@ -676,9 +803,8 @@ function downloadPDF(maHoaDon) {
                 (
                   tongTienSanPham -
                   listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
-
-                  listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen - 4856000
-
+                  listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
+                  tongTienDaThanhToan
                 )?.toLocaleString("vi-VN")
               }}
             </strong>

@@ -1,7 +1,10 @@
 <script setup>
+// code mới 
+
 import { Eye, FilterIcon, Upload, Plus } from "lucide-vue-next";
 import { onMounted, ref, computed, watch } from "vue";
 import { useToast } from "vue-toastification";
+
 
 const toast = useToast();
 const deliveryMethod = ref("");
@@ -13,13 +16,13 @@ const endDate = ref("");
 const todos = ref([]);
 const revenueFilter = ref(0);
 
+// phân trang :
+const currentPage = ref(0);
+const totalPages = ref(0);
+const pageSize = 5;
+
 const fetchTodos = async () => {
   try {
-    const response = await fetch("http://localhost:8080/hoa-don");
-    const json = await response.json();
-    todos.value = json;
-
-    // Mặc định lọc theo ngày hôm nay
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
@@ -28,8 +31,14 @@ const fetchTodos = async () => {
     startDate.value = todayStr;
     endDate.value = todayStr;
 
-    // Đặt giá trị mặc định cho revenueFilter bằng maxRevenue
-    revenueFilter.value = Math.max(...json.map((i) => i.tongTien));
+    const response = await fetch(
+      `http://localhost:8080/hoa-don/phan-trang?page=${currentPage.value}&size=${pageSize}`
+    );
+    const json = await response.json();
+    todos.value = json.content;
+    totalPages.value = json.totalPages;
+
+    revenueFilter.value = Math.max(...json.content.map((i) => i.tongTien));
   } catch (error) {
     console.error("Lỗi khi fetch dữ liệu:", error);
   }
@@ -38,6 +47,8 @@ const fetchTodos = async () => {
 onMounted(() => {
   fetchTodos();
 });
+
+watch(currentPage, fetchTodos);
 
 const listTrangThai = [
   "Đang xử lý",
@@ -222,16 +233,7 @@ function formatDate(dateString) {
                 <td>{{ index + 1 }}</td>
                 <td>{{ item.maHoaDon }}</td>
                 <td>{{ item.tenKhachHang }}</td>
-
-                <td>Nhan vien</td>
-                <td>{{ item.sdt }}</td>
-                <td>{{ formatDate(item.ngayTao) }}</td>
-                <td>
-                  <span class="">{{ item.tongTien }}</span>
-                </td>
-                <td>Loại đơn</td>
-
-                <td>Vu Van A</td>
+                <td>Vũ Minh Công</td>
                 <td>{{ item.sdt }}</td>
                 <td>{{ formatDate(item.ngayTao) }}</td>
                 <td>
@@ -239,8 +241,9 @@ function formatDate(dateString) {
                     new Intl.NumberFormat("vi-VN").format(item.tongTien)
                   }}</span>
                 </td>
-                <td>Online</td>
-
+                <td>
+                  {{ item.loaiDon === 0 ? "Tại cửa hàng" : "Online" }}
+                </td>
                 <td>
                   <span
                     class="badge rounded-pill text-bg"
@@ -258,6 +261,35 @@ function formatDate(dateString) {
             </tbody>
           </table>
         </div>
+      </div>
+      <div class="d-flex justify-content-center mt-2">
+        <!-- Phân trang -->
+        <nav>
+          <ul class="pagination justify-content-center">
+            <li class="page-item" :class="{ disabled: currentPage === 0 }">
+              <a class="page-link" href="#" @click.prevent="currentPage--">«</a>
+            </li>
+            <li
+              class="page-item"
+              v-for="p in totalPages"
+              :key="p"
+              :class="{ active: p - 1 === currentPage }"
+            >
+              <a
+                class="page-link"
+                href="#"
+                @click.prevent="currentPage = p - 1"
+                >{{ p }}</a
+              >
+            </li>
+            <li
+              class="page-item"
+              :class="{ disabled: currentPage === totalPages - 1 }"
+            >
+              <a class="page-link" href="#" @click.prevent="currentPage++">»</a>
+            </li>
+          </ul>
+        </nav>
       </div>
     </div>
   </div>

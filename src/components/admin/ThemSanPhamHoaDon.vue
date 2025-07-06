@@ -5,25 +5,63 @@ import { useRoute } from "vue-router";
 const search = ref("");
 const selected = ref({});
 const quantities = ref({});
-
-const route = useRoute();
-const maHoaDon = route.params.maHoaDon;
-
 let listSanPham = ref([]);
-
-const fetchTodos = async () => {
+// phân trang: 
+const currentPage = ref(0);
+const pageSize = ref(5);
+const totalPages = ref(0);
+const fetchSanPhamPaginated = async () => {
   try {
-    const response = await fetch("http://localhost:8080/chi-tiet-san-pham");
-    const json = await response.json();
-    listSanPham.value = json;
+    const response = await fetch(
+      `http://localhost:8080/chi-tiet-san-pham/phan-trang?page=${currentPage.value}&size=${pageSize.value}`
+    );
+    const data = await response.json();
+    listSanPham.value = data.content; // Spring Data trả về `content`, `totalPages`, ...
+    totalPages.value = data.totalPages;
   } catch (error) {
-    console.error("Lỗi khi fetch dữ liệu:", error);
+    console.error("Lỗi khi fetch sản phẩm:", error);
   }
 };
 
 onMounted(() => {
-  fetchTodos();
+  fetchSanPhamPaginated();
 });
+
+// Hàm chuyển trang
+const nextPage = () => {
+  if (currentPage.value < totalPages.value - 1) {
+    currentPage.value++;
+    fetchSanPhamPaginated();
+  }
+};
+
+const prevPage = () => {
+  if (currentPage.value > 0) {
+    currentPage.value--;
+    fetchSanPhamPaginated();
+  }
+};
+
+
+// khác 
+const route = useRoute();
+const maHoaDon = route.params.maHoaDon;
+
+
+
+// const fetchTodos = async () => {
+//   try {
+//     const response = await fetch("http://localhost:8080/chi-tiet-san-pham");
+//     const json = await response.json();
+//     listSanPham.value = json;
+//   } catch (error) {
+//     console.error("Lỗi khi fetch dữ liệu:", error);
+//   }
+// };
+
+// onMounted(() => {
+//   fetchTodos();
+// });
 
 // thêm sản phẩm vào cthd
 
@@ -91,12 +129,31 @@ const apply = async () => {
       },
       body: JSON.stringify(result),
     });
+
+    // 3. Ghi lịch sử cho từng sản phẩm vừa thêm
+    for (const r of result) {
+      await fetch("http://localhost:8080/lich-su-hoa-don/them", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          maHoaDon: maHoaDon, // ✅ đúng tên trường trong DTO
+          noiDungThayDoi: "Thêm sản phẩm",
+          nguoiThucHien: "admin",
+          ghiChu: "", // để backend tự sinh
+          idChiTietSanPham: r.idSanPhamChiTiet,
+        }),
+      });
+    }
   } catch (error) {
     console.error("Lỗi khi lưu hóa đơn chi tiết:", error);
   }
   emit("selected", selectedItems.value);
   emit("close");
 };
+
+
 </script>
 
 <template>
@@ -152,8 +209,8 @@ const apply = async () => {
               <div class="col-md-5 ms-2">
                 <label class="form-label fw-bold">Trạng thái</label>
                 <div class="d-flex gap-3">
-                  <input type="radio"> Đang bán 
-                  <input type="radio"> Ngừng bán 
+                  <input type="radio" /> Đang bán <input type="radio" /> Ngừng
+                  bán
                 </div>
               </div>
 
@@ -192,7 +249,7 @@ const apply = async () => {
               </div>
             </div>
           </div>
-          <br>
+          <br />
 
           <div class="table-responsive">
             <table class="table align-middle">
@@ -213,7 +270,7 @@ const apply = async () => {
               </thead>
               <tbody>
                 <tr v-for="(item, index) in listSanPham" :key="index">
-                  <td>{{ index }}</td>
+                  <td>{{ index + 1  }}</td>
                   <td>
                     <img
                       src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
@@ -261,6 +318,25 @@ const apply = async () => {
               </tbody>
             </table>
           </div>
+          <!-- phân trang  -->
+          <div class="d-flex justify-content-between align-items-center mt-3">
+  <button
+    class="btn btn-outline-primary"
+    :disabled="currentPage === 0"
+    @click="prevPage"
+  >
+    Trang trước
+  </button>
+  <span>Trang {{ currentPage + 1 }} / {{ totalPages }}</span>
+  <button
+    class="btn btn-outline-primary"
+    :disabled="currentPage >= totalPages - 1"
+    @click="nextPage"
+  >
+    Trang sau
+  </button>
+</div>
+
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="$emit('close')">Hủy</button>
