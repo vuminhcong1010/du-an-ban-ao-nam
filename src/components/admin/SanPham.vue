@@ -129,7 +129,7 @@ const allSP = ref([])
 const danhMuc = ref([])
 const danhSachChatLieu = ref([])
 const currentPage = ref(1)
-const pageSize = 10
+const pageSize = 5
 
 const selectedDanhMucId = ref(null)
 const selectedChatLieuId = ref(null)

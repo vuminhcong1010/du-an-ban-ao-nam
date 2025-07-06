@@ -23,7 +23,7 @@ onMounted(async () => {
   try {
     const response = await axios.get("http://localhost:8080/danh-muc");
     res.value = response.data.data;
-     page.value = Math.ceil(response.data.size/10)
+     page.value = Math.ceil(response.data.size/5)
     reset()
   } catch (err) {
     console.error("Lỗi khi gọi API:", err);
@@ -32,7 +32,7 @@ onMounted(async () => {
 const add = () =>{
     axios.post("http://localhost:8080/danh-muc/add",req.value).then(Response =>{
       res.value = Response.data.data
-       page.value = Math.ceil(Response.data.size/10)
+       page.value = Math.ceil(Response.data.size/5)
       reset()
     }).catch (err =>{
        console.log(err);
@@ -43,7 +43,7 @@ const update = () =>{
     console.log(req.value)
     axios.post("http://localhost:8080/danh-muc/update",req.value).then(Response =>{
       res.value = Response.data.data
-      page.value = Math.ceil(Response.data.size / 10);
+      page.value = Math.ceil(Response.data.size / 5);
       reset()
     }).catch (err =>{
        console.log(err);
@@ -53,7 +53,7 @@ const update = () =>{
 const remove = (id) =>{
     axios.get(`http://localhost:8080/danh-muc/delete/${id}`).then(Response =>{
       res.value = Response.data.data; // đây là object chứa { data, size }
-      page.value = Math.ceil(Response.data.size / 10);
+      page.value = Math.ceil(Response.data.size / 5);
     }).catch (err =>{
        console.log(err);
     })    

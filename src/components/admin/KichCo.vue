@@ -21,7 +21,7 @@ onMounted(async () => {
   try {
     const response = await axios.get("http://localhost:8080/kich-co");
     res.value = response.data.data;
-    page.value = Math.ceil(response.data.size/10)
+    page.value = Math.ceil(response.data.size/5)
   } catch (err) {
     console.error("Lỗi khi gọi API:", err);
   }
@@ -29,7 +29,7 @@ onMounted(async () => {
 const add = () =>{
     axios.post("http://localhost:8080/kich-co/add",req.value).then(Response =>{
       res.value = Response.data.data
-      page.value = Math.ceil(Response.data.size/10)
+      page.value = Math.ceil(Response.data.size/5)
       reset()
     }).catch (err =>{
        console.log(err);
@@ -40,7 +40,7 @@ const update = () =>{
     console.log(req.value)
     axios.post("http://localhost:8080/kich-co/update",req.value).then(Response =>{
       res.value = Response.data.data
-      page.value = Math.ceil(Response.data.size/10)
+      page.value = Math.ceil(Response.data.size/5)
       reset()
     }).catch (err =>{
        console.log(err);
@@ -50,7 +50,7 @@ const update = () =>{
 const remove = (id) =>{
     axios.get(`http://localhost:8080/kich-co/delete/${id}`).then(Response =>{
       res.value = Response.data.data
-      page.value = Math.ceil(Response.data.size/10)
+      page.value = Math.ceil(Response.data.size/5)
     }).catch (err =>{
        console.log(err);
     })    
@@ -66,7 +66,7 @@ const paging = (id) =>{
     console.log(id);
     axios.get(`http://localhost:8080/kich-co/${id}`).then(Response =>{
     res.value = Response.data.data
-    page.value = Math.ceil(Response.data.size/10);
+    page.value = Math.ceil(Response.data.size/5);
     })
 }
 function reset(){
