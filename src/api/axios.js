@@ -19,7 +19,7 @@ export const setAxiosAppInstance = (appInstance) => {
 const apiClient = axios.create({
   baseURL: 'http://localhost:8080', // Đảm bảo URL này đúng với backend của bạn
   headers: {
-    'Content-Type': 'application/json',
+    // 'Content-Type': 'application/json',
   },
 });
 

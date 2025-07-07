@@ -2,33 +2,21 @@
   <div class="mt-4 px-3">
     <div class="d-flex align-items-center justify-content-between bg-white p-3 rounded shadow mb-4 gap-2">
       <h4 class="mb-0">Quản lý khách hàng</h4>
-
-
       <div class="d-flex gap-2">
-
-
-
-
         <button @click="showConfirmExport"
           style="background-color: #0a2c57; color: white; border: none; padding: 10px 20px; border-radius: 5px;">
           <i class="fas fa-file-excel"></i> Xuất Excel
         </button>
-
-
         <button @click="navigateToAddCustomer"
           style="background-color: #0a2c57; color: white; border: none; padding: 10px 20px; border-radius: 5px;">
           <i class="fa-solid fa-plus"></i> Thêm khách hàng
         </button>
       </div>
     </div>
-
-
     <div class="d-flex align-items-center justify-content-between bg-white p-3 rounded shadow mb-4 gap-2">
       <SearchAndFilterKhachHang :value="searchQuery" :filter-data="filterData" @search="handleSearch"
         @filterApplied="handleFilter" />
     </div>
-
-
     <div class="bg-white p-3 rounded shadow mb-4">
       <h5 class="mb-0">Danh sách khách hàng</h5>
       <KhachHangTable :reload="reloadTable" :search-query="searchQuery" :filter-data="filterData"
@@ -36,15 +24,15 @@
     </div>
   </div>
 </template>
-
-
 <script>
 import KhachHangTable from '../components/admin/KhachHangTable.vue';
 import SearchAndFilterKhachHang from '@/components/admin/SearchAndFilterKhachHang.vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios'; // <-- Import axios
 import { useToast } from "vue-toastification"; // <-- Import useToast
-import apiClient from '@/api/axios';
+
+
+
 
 
 export default {
@@ -87,6 +75,8 @@ export default {
       const toast = useToast();
 
 
+
+
       const result = await this.$swal.fire({
         title: 'Xác nhận xóa?',
         text: "Bạn có chắc chắn muốn xóa khách hàng này không? Hành động này không thể hoàn tác!",
@@ -108,9 +98,13 @@ export default {
       });
 
 
+
+
       if (result.isConfirmed) {
         try {
           await axios.delete(`/api/khach-hang/${customerId}`); // Gọi API xóa khách hàng
+
+
 
 
           toast.success("Xóa khách hàng thành công!");
@@ -161,6 +155,8 @@ export default {
       });
 
 
+
+
       if (result.isConfirmed) {
         // Người dùng đã nhấn nút "Có, xuất ngay!"
         this.exportToExcel();
@@ -174,14 +170,20 @@ export default {
       const toast = useToast(); // Khởi tạo toast instance trong methods
 
 
+
+
       try {
-        const response = await apiClient.get('/api/khach-hang/export-excel', {
+        const response = await axios.get('/api/khach-hang/export-excel', {
           responseType: 'blob' // Rất quan trọng: Báo cho Axios biết đây là dữ liệu binary (blob)
         });
 
 
+
+
         // Tạo một URL tạm thời cho blob dữ liệu
         const url = window.URL.createObjectURL(new Blob([response.data]));
+
+
 
 
         // Tạo một thẻ <a> ẩn để tải file
@@ -192,6 +194,8 @@ export default {
         link.click(); // Kích hoạt sự kiện click để tải file
         link.remove(); // Xóa thẻ <a> sau khi tải xong
         window.URL.revokeObjectURL(url); // Giải phóng URL tạm thời
+
+
 
 
         //toast.success("Xuất Excel thành công!");

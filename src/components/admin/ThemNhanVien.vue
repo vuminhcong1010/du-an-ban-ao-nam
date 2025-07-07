@@ -664,10 +664,6 @@ function handleQRScanned(data) {
   box-shadow: none !important;
 }
 
-*:not(input):not(textarea):not(select) {
-  /* Đã xóa caret-color để trả lại con trỏ chuột */
-}
-
 .toast-stack {
   position: absolute;
   right: 32px;

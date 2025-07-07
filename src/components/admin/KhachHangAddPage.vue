@@ -408,7 +408,8 @@ const handleSubmit = async () => {
 
 
     toast.success("Thêm khách hàng thành công!");
-    router.push('/khach-hang');
+    // router.push('/khach-hang');
+    router.go(-1);
   } catch (err) {
     console.error('Lỗi khi thêm khách hàng:', err.response?.data || err.message);
     toast.error("Thêm khách hàng không thành công! Đã có lỗi xảy ra từ máy chủ.");
