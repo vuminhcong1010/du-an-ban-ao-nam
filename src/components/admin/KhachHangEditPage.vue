@@ -19,23 +19,14 @@
 
           <div class="input-group">
             <label>Số hóa đơn đã mua</label>
-            <input
-              :value="form.soHoaDonDaMua !== null ? form.soHoaDonDaMua : 'N/A'"
-              type="text"
-              class="form-input"
-              disabled
-            />
+            <input :value="form.soHoaDonDaMua !== null ? form.soHoaDonDaMua : 'N/A'" type="text" class="form-input"
+              disabled />
           </div>
 
 
           <div class="input-group">
             <label>Tổng tiền đã mua</label>
-            <input
-              :value="formatCurrency(form.tongTien)"
-              type="text"
-              class="form-input"
-              disabled
-            />
+            <input :value="formatCurrency(form.tongTien)" type="text" class="form-input" disabled />
           </div>
         </div>
 
@@ -43,66 +34,38 @@
         <div class="personal-info-column">
           <div class="input-group">
             <label>Họ và tên <span class="required-star">*</span></label>
-            <input
-              v-model="form.tenKhachHang"
-              type="text"
-              class="form-input"
-              :class="{ 'error-input': showError && !isFullName(form.tenKhachHang) }"
-            />
-            <span v-if="showError && !isFullName(form.tenKhachHang)" class="error-message"
-              >Vui lòng nhập tên chính xác</span
-            >
+            <input v-model="form.tenKhachHang" type="text" class="form-input"
+              :class="{ 'error-input': showError && !isFullName(form.tenKhachHang) }" />
+            <span v-if="showError && !isFullName(form.tenKhachHang)" class="error-message">Vui lòng nhập tên chính
+              xác</span>
           </div>
 
 
           <div class="input-group">
             <label>Email <span class="required-star">*</span></label>
-            <input
-              v-model="form.email"
-              type="email"
-              class="form-input"
-              :class="{ 'error-input': showError && (errors.email || !form.email) }"
-            />
-            <span v-if="showError && errors.email" class="error-message"
-              >Email không hợp lệ</span
-            >
-            <span v-else-if="showError && !form.email" class="error-message"
-              >Trường này là bắt buộc</span
-            >
+            <input v-model="form.email" type="email" class="form-input"
+              :class="{ 'error-input': showError && (errors.email || !form.email) }" />
+            <span v-if="showError && errors.email" class="error-message">Email không hợp lệ</span>
+            <span v-else-if="showError && !form.email" class="error-message">Trường này là bắt buộc</span>
           </div>
 
 
           <div class="input-group">
             <label>Số điện thoại <span class="required-star">*</span></label>
-            <input
-              v-model="form.soDienThoai"
-              type="text"
-              class="form-input"
-              :class="{
-                'error-input': showError && (errors.soDienThoai || !form.soDienThoai),
-              }"
-            />
-            <span v-if="showError && errors.soDienThoai" class="error-message"
-              >Số điện thoại không hợp lệ</span
-            >
-            <span v-else-if="showError && !form.soDienThoai" class="error-message"
-              >Trường này là bắt buộc</span
-            >
+            <input v-model="form.soDienThoai" type="text" class="form-input" :class="{
+              'error-input': showError && (errors.soDienThoai || !form.soDienThoai),
+            }" />
+            <span v-if="showError && errors.soDienThoai" class="error-message">Số điện thoại không hợp lệ</span>
+            <span v-else-if="showError && !form.soDienThoai" class="error-message">Trường này là bắt buộc</span>
           </div>
 
 
           <div class="input-group">
             <label>Ngày sinh</label>
-            <input
-              v-model="form.ngaySinh"
-              type="date"
-              class="form-input"
-              placeholder="dd/mm/yyyy"
-              :class="{ 'error-input': showError && form.ngaySinh && !isAdult(form.ngaySinh) }"
-            />
-            <span v-if="showError && form.ngaySinh && !isAdult(form.ngaySinh)" class="error-message"
-              >Khách hàng phải từ 16 tuổi trở lên.</span
-            >
+            <input v-model="form.ngaySinh" type="date" class="form-input" placeholder="dd/mm/yyyy"
+              :class="{ 'error-input': showError && form.ngaySinh && !isAdult(form.ngaySinh) }" />
+            <span v-if="showError && form.ngaySinh && !isAdult(form.ngaySinh)" class="error-message">Khách hàng phải từ
+              16 tuổi trở lên.</span>
           </div>
 
 
@@ -133,7 +96,7 @@
           <h3>
             Địa chỉ của khách hàng
             <button type="button" @click="openAddressModalForAdd" class="add-address-button">
-              <i class="fas fa-plus"></i>
+              <i class="fas fa-plus"></i> Thêm địa chỉ mới
             </button>
           </h3>
 
@@ -143,14 +106,9 @@
               <div class="address-wrapper">
                 <div v-if="address.isMacDinh" class="default-label">Mặc định</div>
                 <div class="address-content" :class="{ 'is-default': address.isMacDinh }">
-                  <input
-                    type="checkbox"
-                    :checked="address.isMacDinh"
-                    @change="setDefaultAddress(address)"
-                    :id="'checkbox-' + address.id"
-                    class="address-checkbox"
-                    :disabled="addresses.length === 1 && address.isMacDinh"
-                  />
+                  <input type="checkbox" :checked="address.isMacDinh" @change="setDefaultAddress(address)"
+                    :id="'checkbox-' + address.id" class="address-checkbox"
+                    :disabled="addresses.length === 1 && address.isMacDinh" />
                   <label :for="'checkbox-' + address.id">{{ address.diaChi }}</label>
                 </div>
               </div>
@@ -158,11 +116,8 @@
                 <button type="button" @click="editAddressInPopup(address)" class="action-button edit-button">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button
-                  type="button"
-                  @click="deleteAddress(address.id, address.isMacDinh)"
-                  class="action-button delete-button"
-                >
+                <button type="button" @click="deleteAddress(address.id, address.isMacDinh)"
+                  class="action-button delete-button">
                   <i class="fas fa-trash-alt"></i>
                 </button>
               </div>
@@ -180,22 +135,18 @@
     </form>
 
 
-    <AddressModal
-      :show="showAddressModal"
-      :initialAddress="selectedAddressForEdit"
-      :customerId="form.id"
-      @close="showAddressModal = false"
-      @address-saved="handleAddressSaved"
-    />
+    <AddressModal :show="showAddressModal" :initialAddress="selectedAddressForEdit" :customerId="form.id"
+      @close="showAddressModal = false" @address-saved="handleAddressSaved" />
   </div>
 </template>
 
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, getCurrentInstance } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AddressModal from '../../components/admin/AddressModal.vue';
+import axios from 'axios';
 
 
 const route = useRoute();
@@ -232,6 +183,13 @@ const addresses = ref([]);
 
 const showAddressModal = ref(false);
 const selectedAddressForEdit = ref(null);
+
+
+const MAX_ADDRESSES_LIMIT = 5; // Ví dụ giới hạn là 5
+
+
+// Lấy instance của ứng dụng để truy cập global properties ($swal)
+const { proxy } = getCurrentInstance();
 
 
 // --- Life Cycle Hooks ---
@@ -286,47 +244,47 @@ const fetchCustomerDetails = async (id) => {
 
 
 const fetchAddresses = async () => {
-    if (form.value.id) {
-        try {
-            const response = await axios.get(`/api/khach-hang/${form.value.id}/dia-chi`);
-            const apiAddresses = response.data || [];
-            console.log('API Response (Addresses):', apiAddresses);
+  if (form.value.id) {
+    try {
+      const response = await axios.get(`/api/khach-hang/${form.value.id}/dia-chi`);
+      const apiAddresses = response.data || [];
+      console.log('API Response (Addresses):', apiAddresses);
 
 
-            addresses.value = apiAddresses.map(addr => {
-                const isDefault = !!addr.isMacDinh; // Đảm bảo chuyển đổi đúng kiểu Boolean
+      addresses.value = apiAddresses.map(addr => {
+        const isDefault = !!addr.isMacDinh; // Đảm bảo chuyển đổi đúng kiểu Boolean
 
 
-                return {
-                    ...addr, // Giữ lại tất cả các thuộc tính gốc
-                    isMacDinh: isDefault,
-                    // Dùng trực tiếp các trường string từ DTO để tạo chuỗi địa chỉ đầy đủ
-                    diaChi: [
-                        addr.diaChiChiTiet,
-                        addr.xaPhuong,    // Đây là chuỗi tên Xã/Phường
-                        addr.quanHuyen,   // Đây là chuỗi tên Quận/Huyện
-                        addr.tinhThanhPho // Đây là chuỗi tên Tỉnh/Thành phố
-                    ].filter(Boolean).join(', '), // Lọc bỏ các giá trị null/undefined và ghép lại
+        return {
+          ...addr, // Giữ lại tất cả các thuộc tính gốc
+          isMacDinh: isDefault,
+          // Dùng trực tiếp các trường string từ DTO để tạo chuỗi địa chỉ đầy đủ
+          diaChi: [
+            addr.diaChiChiTiet,
+            addr.xaPhuong,    // Đây là chuỗi tên Xã/Phường
+            addr.quanHuyen,   // Đây là chuỗi tên Quận/Huyện
+            addr.tinhThanhPho // Đây là chuỗi tên Tỉnh/Thành phố
+          ].filter(Boolean).join(', '), // Lọc bỏ các giá trị null/undefined và ghép lại
 
 
-                    // Gán trực tiếp các giá trị chuỗi tên vào các trường mà modal địa chỉ cần
-                    // Không còn idTinhThanhPho, idQuanHuyen, idXaPhuong dưới dạng số nữa
-                    // Mà sẽ dùng tên để hiển thị hoặc cho v-model
-                    tinhThanhPho: addr.tinhThanhPho,
-                    quanHuyen: addr.quanHuyen,
-                    xaPhuong: addr.xaPhuong,
-                    diaChiChiTiet: addr.diaChiChiTiet, // Giữ nguyên tên này cho modal
-                };
-            });
+          // Gán trực tiếp các giá trị chuỗi tên vào các trường mà modal địa chỉ cần
+          // Không còn idTinhThanhPho, idQuanHuyen, idXaPhuong dưới dạng số nữa
+          // Mà sẽ dùng tên để hiển thị hoặc cho v-model
+          tinhThanhPho: addr.tinhThanhPho,
+          quanHuyen: addr.quanHuyen,
+          xaPhuong: addr.xaPhuong,
+          diaChiChiTiet: addr.diaChiChiTiet, // Giữ nguyên tên này cho modal
+        };
+      });
 
 
-            console.log('Addresses.value sau khi gán địa chỉ:', JSON.parse(JSON.stringify(addresses.value)));
-        } catch (error) {
-            console.error('Lỗi khi lấy địa chỉ của khách hàng:', error.response?.status, error.response?.data || error.message);
-            addresses.value = [];
-            toast.error('Không thể tải địa chỉ của khách hàng.');
-        }
+      console.log('Addresses.value sau khi gán địa chỉ:', JSON.parse(JSON.stringify(addresses.value)));
+    } catch (error) {
+      console.error('Lỗi khi lấy địa chỉ của khách hàng:', error.response?.status, error.response?.data || error.message);
+      addresses.value = [];
+      toast.error('Không thể tải địa chỉ của khách hàng.');
     }
+  }
 };
 
 
@@ -372,8 +330,11 @@ const formatCurrency = (value) => {
 
 
 // --- Form Handlers ---
+// const goBack = () => {
+//   router.push('/khach-hang');
+// };
 const goBack = () => {
-  router.push('/khach-hang');
+  router.go(-1); // Thay vì router.push('/khach-hang');
 };
 
 
@@ -435,7 +396,8 @@ const handleSubmit = async () => {
 
     await axios.put(`/api/khach-hang/${form.value.id}`, customerUpdatePayload);
     toast.success('Cập nhật khách hàng thành công!');
-    router.push('/khach-hang');
+    // router.push('/khach-hang');
+    router.go(-1);
   } catch (err) {
     console.error('Lỗi khi cập nhật khách hàng:', err.response?.data || err.message);
     toast.error('Cập nhật không thành công! Đã có lỗi xảy ra từ máy chủ.');
@@ -443,33 +405,42 @@ const handleSubmit = async () => {
 };
 
 
-// --- Address Modal Specific Logic ---
+// SỬA ĐỔI HÀM openAddressModalForAdd TẠI ĐÂY
 const openAddressModalForAdd = () => {
-  selectedAddressForEdit.value = null;
-  showAddressModal.value = true;
+  // 1. Kiểm tra số lượng địa chỉ hiện có của khách hàng
+  if (addresses.value.length >= MAX_ADDRESSES_LIMIT) {
+    // 2. Nếu đã đạt giới hạn, hiển thị toast và KHÔNG mở modal
+    toast.error(`Khách hàng đã đạt số lượng địa chỉ tối đa (${MAX_ADDRESSES_LIMIT}). Không thể thêm địa chỉ mới.`);
+  } else {
+    // 3. Nếu chưa đạt giới hạn, reset form và mở modal để thêm mới
+    selectedAddressForEdit.value = null; // Đảm bảo là thêm mới
+    showAddressModal.value = true;
+  }
 };
 
 
 const editAddressInPopup = (address) => {
   selectedAddressForEdit.value = {
     id: address.id,
-    tinhId: address.idTinhThanhPho,
-    quanId: address.idQuanHuyen,
-    xaId: address.idXaPhuong,
+    // SỬA ĐỔI CÁC DÒNG NÀY: Gán trực tiếp TÊN địa lý từ đối tượng address
+    tinhId: address.tinhThanhPho, // Đảm bảo đây là tên tỉnh/thành phố (String)
+    quanId: address.quanHuyen,    // Đảm bảo đây là tên quận/huyện (String)
+    xaId: address.xaPhuong,       // Đảm bảo đây là tên xã/phường (String)
     chiTiet: address.diaChiChiTiet,
     isMacDinh: address.isMacDinh,
-    diaChi: address.diaChi,
+    diaChi: address.diaChi, // Giữ nguyên để hiển thị địa chỉ đầy đủ
   };
   showAddressModal.value = true;
 };
 
 
-const handleAddressSaved = () => {
+const handleAddressSaved = async () => {
   showAddressModal.value = false;
-  fetchAddresses();
+   await fetchAddresses();
 };
 
 
+// SỬA ĐỔI HÀM deleteAddress TẠI ĐÂY
 const deleteAddress = async (addressId, isMacDinh) => {
   const currentAddressesCount = addresses.value.length;
 
@@ -486,15 +457,41 @@ const deleteAddress = async (addressId, isMacDinh) => {
   }
 
 
-  if (confirm('Bạn có chắc chắn muốn xóa địa chỉ này?')) {
+  // BẮT ĐẦU SỬ DỤNG SWEETALERT2
+  const result = await proxy.$swal.fire({ // SỬ DỤNG proxy.$swal.fire()
+    title: 'Xác nhận xóa địa chỉ?', // Tiêu đề với dấu hỏi
+    text: "Bạn có chắc chắn muốn xóa địa chỉ này không? Hành động này không thể hoàn tác!",
+    icon: 'warning', // Icon cảnh báo
+    showCancelButton: true,
+    confirmButtonColor: '#dc3545', // Màu nút xác nhận (đỏ)
+    cancelButtonColor: '#6c757d', // Màu nút hủy (xám)
+    confirmButtonText: 'Có, xóa ngay!',
+    cancelButtonText: 'Hủy bỏ',
+    reverseButtons: true, // Đảo ngược vị trí nút (Hủy bên trái, Xác nhận bên phải)
+    customClass: { // Sử dụng customClass nếu bạn đã định nghĩa CSS cho SweetAlert2
+      container: 'my-swal-container',
+      popup: 'my-swal-popup',
+      title: 'my-swal-title',
+      content: 'my-swal-content',
+      confirmButton: 'my-swal-delete-button',
+      cancelButton: 'my-swal-cancel-button',
+    },
+  });
+
+
+  // Xử lý kết quả từ SweetAlert2
+  if (result.isConfirmed) {
     try {
-      await axios.delete(`/api/dia-chi/${addressId}`); // Sử dụng apiClient
+      await axios.delete(`/api/dia-chi/${addressId}`);
       toast.success('Xóa địa chỉ thành công!');
-      fetchAddresses();
+      fetchAddresses(); // Tải lại danh sách địa chỉ sau khi xóa
     } catch (error) {
       console.error('Lỗi khi xóa địa chỉ:', error.response?.data || error.message);
-      toast.error('Không thể xóa địa chỉ.');
+      const errorMessage = error.response?.data?.message || error.message || 'Đã xảy ra lỗi.';
+      toast.error('Không thể xóa địa chỉ: ' + errorMessage);
     }
+  } else if (result.dismiss === proxy.$swal.DismissReason.cancel) { // KIỂM TRA LÝ DO HỦY BỎ
+    toast.info("Đã hủy thao tác xóa địa chỉ.");
   }
 };
 
@@ -577,7 +574,8 @@ const setDefaultAddress = async (selectedAddress) => {
   max-width: 1600px;
   margin: 0 auto;
   display: flex;
-  flex-direction: column; /* Đảm bảo form là flex column để các phần tử con xếp chồng */
+  flex-direction: column;
+  /* Đảm bảo form là flex column để các phần tử con xếp chồng */
 }
 
 
@@ -586,9 +584,11 @@ const setDefaultAddress = async (selectedAddress) => {
   display: grid;
   /* Chia 3 cột: 1fr cho thông tin tĩnh, 1.5fr cho thông tin cá nhân, 1.5fr cho địa chỉ */
   grid-template-columns: 1fr 1.5fr 1.5fr;
-  gap: 30px 40px; /* Khoảng cách giữa các cột và hàng */
+  gap: 30px 40px;
+  /* Khoảng cách giữa các cột và hàng */
   margin-bottom: 30px;
-  align-items: start; /* Căn chỉnh các cột lên đầu */
+  align-items: start;
+  /* Căn chỉnh các cột lên đầu */
 }
 
 
@@ -597,8 +597,10 @@ const setDefaultAddress = async (selectedAddress) => {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding-right: 20px; /* Padding bên phải để tạo khoảng cách */
-  border-right: 1px solid #e9ecef; /* Đường phân cách */
+  padding-right: 20px;
+  /* Padding bên phải để tạo khoảng cách */
+  border-right: 1px solid #e9ecef;
+  /* Đường phân cách */
 }
 
 
@@ -609,7 +611,8 @@ const setDefaultAddress = async (selectedAddress) => {
   gap: 20px;
   padding-left: 20px;
   padding-right: 20px;
-  border-right: 1px solid #e9ecef; /* Đường phân cách */
+  border-right: 1px solid #e9ecef;
+  /* Đường phân cách */
 }
 
 
@@ -745,7 +748,8 @@ label {
 
 
 /* Address Section Styles (giữ nguyên, chỉ cần đảm bảo nó không còn padding thừa từ personal-info-section chung) */
-.address-section h3 { /* Có thể bạn muốn đổi tên class này thành .address-column h3 nếu nó chỉ áp dụng cho cột địa chỉ */
+.address-section h3 {
+  /* Có thể bạn muốn đổi tên class này thành .address-column h3 nếu nó chỉ áp dụng cho cột địa chỉ */
   font-size: 1.8rem;
   font-weight: bold;
   color: #333;
@@ -762,20 +766,50 @@ label {
   background-color: #0a2c57;
   color: white;
   border: none;
-  border-radius: 50%;
-  width: 35px;
-  height: 35px;
+  border-radius: 8px;
+  /* Bo tròn các góc, không phải hình tròn hoàn toàn */
+  padding: 10px 18px;
+  /* Thêm padding để có không gian cho text */
+  /* XÓA width và height CỐ ĐỊNH để nút tự co giãn theo nội dung */
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.2em;
+  gap: 8px;
+  /* Khoảng cách giữa icon và text */
+  /* XÓA justify-content: center; nếu bạn muốn icon ở đầu và text theo sau */
+  font-size: 1rem;
+  /* Kích thước font cho text */
+  font-weight: 600;
+  /* In đậm text */
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.2s;
+  /* Thêm transform cho hiệu ứng hover */
 }
 
 
 .add-address-button:hover {
   background-color: #071f3e;
+  transform: translateY(-2px);
+  /* Thêm hiệu ứng nhấc lên khi hover */
+}
+
+
+/* Đảm bảo icon có kích thước phù hợp */
+.add-address-button i {
+  font-size: 1.1em;
+  /* Kích thước icon lớn hơn một chút so với text */
+}
+
+
+/* Điều chỉnh lại cho h3 để nút không bị đẩy ra quá xa */
+.address-column h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* Giữ space-between để nút ở bên phải */
+  gap: 15px;
+  /* Khoảng cách giữa tiêu đề và nút */
+  flex-wrap: wrap;
+  /* Cho phép xuống dòng trên màn hình nhỏ */
 }
 
 
@@ -883,8 +917,14 @@ label {
 }
 
 
-.edit-button i { color: #28a745; }
-.delete-button i { color: #dc3545; }
+.edit-button i {
+  color: #28a745;
+}
+
+
+.delete-button i {
+  color: #dc3545;
+}
 
 
 .no-address-message {
@@ -942,102 +982,159 @@ label {
 
 
 /* Responsive adjustments */
-@media (max-width: 1200px) { /* Chuyển sang 2 cột trên các màn hình nhỏ hơn 1200px (tablet lớn) */
+@media (max-width: 1200px) {
+
+
+  /* Chuyển sang 2 cột trên các màn hình nhỏ hơn 1200px (tablet lớn) */
   .form-grid-container-edit {
-    grid-template-columns: 1fr 1fr; /* Chia thành 2 cột: Cột 1 + 2 gộp, Cột 3 (Địa chỉ) riêng */
+    grid-template-columns: 1fr 1fr;
+    /* Chia thành 2 cột: Cột 1 + 2 gộp, Cột 3 (Địa chỉ) riêng */
     gap: 30px;
   }
+
+
   .static-info-column {
-    border-right: none; /* Bỏ đường phân cách khi gộp */
+    border-right: none;
+    /* Bỏ đường phân cách khi gộp */
     padding-right: 0;
-    margin-bottom: 20px; /* Thêm khoảng cách dưới */
-    border-bottom: 1px solid #eee; /* Đường phân cách ngang */
+    margin-bottom: 20px;
+    /* Thêm khoảng cách dưới */
+    border-bottom: 1px solid #eee;
+    /* Đường phân cách ngang */
   }
+
+
   .personal-info-column {
-    grid-column: 1 / 2; /* Đẩy thông tin cá nhân lên cột 1 */
+    grid-column: 1 / 2;
+    /* Đẩy thông tin cá nhân lên cột 1 */
     padding-left: 0;
     padding-right: 0;
-    border-right: none; /* Bỏ đường phân cách khi gộp */
+    border-right: none;
+    /* Bỏ đường phân cách khi gộp */
   }
+
+
   .address-column {
-    grid-column: 2 / 3; /* Đẩy địa chỉ sang cột 2 */
+    grid-column: 2 / 3;
+    /* Đẩy địa chỉ sang cột 2 */
     padding-left: 0;
   }
 }
 
 
-@media (max-width: 768px) { /* Cho mobile */
+@media (max-width: 768px) {
+
+
+  /* Cho mobile */
   .page-container {
     padding: 15px;
   }
+
+
   .header-section {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
+
+
   .back-button {
     padding: 8px 15px;
     font-size: 0.9rem;
   }
+
+
   .page-title {
     font-size: 1.8rem;
   }
+
+
   .customer-form {
     padding: 20px;
   }
+
+
   .form-grid-container-edit {
-    grid-template-columns: 1fr; /* Chỉ 1 cột */
+    grid-template-columns: 1fr;
+    /* Chỉ 1 cột */
     gap: 20px;
   }
+
+
   .static-info-column {
     padding-right: 0;
     padding-bottom: 20px;
     border-bottom: 1px solid #eee;
-    margin-bottom: 0; /* Đảm bảo không có margin dưới thừa */
+    margin-bottom: 0;
+    /* Đảm bảo không có margin dưới thừa */
   }
+
+
   .personal-info-column {
     padding-left: 0;
     padding-right: 0;
     padding-bottom: 20px;
     border-bottom: 1px solid #eee;
   }
+
+
   .address-column {
     padding-left: 0;
   }
+
+
   label {
     font-size: 0.95rem;
   }
+
+
   .form-input {
     padding: 10px 12px;
     font-size: 0.95rem;
   }
+
+
   .gender-group {
     flex-direction: column;
     gap: 10px;
   }
+
+
   .address-section h3 {
     font-size: 1.5rem;
   }
+
+
   .add-address-button {
     width: 35px;
     height: 35px;
     font-size: 1.4em;
   }
+
+
   .address-item {
     padding: 12px 15px;
   }
+
+
   .address-content label {
     font-size: 0.95rem;
   }
+
+
   .action-button {
     width: 32px;
     height: 32px;
     font-size: 1em;
   }
+
+
   .form-footer {
     padding-top: 20px;
     gap: 10px;
   }
+
+
   .btn {
     padding: 10px 20px;
     font-size: 1rem;

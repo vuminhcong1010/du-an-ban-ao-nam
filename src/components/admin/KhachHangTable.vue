@@ -38,10 +38,7 @@
           <button class="btn btn-view-update mr-2" @click="navigateToEditCustomer(kh.id)">
             <Edit style="color: #66FF99;" />
           </button>
-          <button class="btn btn-view-update mr-2"
-         
-          @click="$emit('delete-customer', kh.id)"
-          >
+          <button class="btn btn-view-update mr-2" @click="$emit('delete-customer', kh.id)">
             <Trash style="color: #CC0000;" />
           </button>
         </td>
@@ -59,7 +56,7 @@
   </div>
 
 
-  </template>
+</template>
 
 
 <script>
@@ -228,7 +225,8 @@ export default {
 }
 
 
-.table th, .table td {
+.table th,
+.table td {
   padding: 0.75rem;
   vertical-align: top;
   border-top: 1px solid #dee2e6;
@@ -330,15 +328,17 @@ export default {
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
+
+
 /* Các style cho badge (giữ lại vì đang dùng trong bảng) */
 .badge-success {
   background-color: #28a745 !important;
 }
+
+
 .badge-danger {
   background-color: #dc3545 !important;
 }
-
-
 </style>
 
 
