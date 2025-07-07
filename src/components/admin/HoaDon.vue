@@ -1,8 +1,11 @@
 <script setup>
+// code mới 
+
 import { Eye, FilterIcon, Upload, Plus } from "lucide-vue-next";
 import { onMounted, ref, computed, watch } from "vue";
 import { useToast } from "vue-toastification";
-import axios from "axios";
+
+
 const toast = useToast();
 const deliveryMethod = ref("");
 const orderCreationMethod = ref("");
@@ -12,16 +15,14 @@ const endDate = ref("");
 
 const todos = ref([]);
 const revenueFilter = ref(0);
-const currentPage = ref(1);
+
+// phân trang :
+const currentPage = ref(0);
+const totalPages = ref(0);
 const pageSize = 5;
 
 const fetchTodos = async () => {
   try {
-    const response = await fetch("http://localhost:8080/hoa-don");
-    const json = await response.json();
-    todos.value = json;
-
-    // Mặc định lọc theo ngày hôm nay
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
@@ -30,8 +31,14 @@ const fetchTodos = async () => {
     startDate.value = todayStr;
     endDate.value = todayStr;
 
-    // Đặt giá trị mặc định cho revenueFilter bằng maxRevenue
-    revenueFilter.value = Math.max(...json.map((i) => i.tongTien));
+    const response = await fetch(
+      `http://localhost:8080/hoa-don/phan-trang?page=${currentPage.value}&size=${pageSize}`
+    );
+    const json = await response.json();
+    todos.value = json.content;
+    totalPages.value = json.totalPages;
+
+    revenueFilter.value = Math.max(...json.content.map((i) => i.tongTien));
   } catch (error) {
     console.error("Lỗi khi fetch dữ liệu:", error);
   }
@@ -40,6 +47,8 @@ const fetchTodos = async () => {
 onMounted(() => {
   fetchTodos();
 });
+
+watch(currentPage, fetchTodos);
 
 const listTrangThai = [
   "Đang xử lý",
@@ -89,22 +98,6 @@ const filteredTodos = computed(() => {
     });
 });
 
-const paginatedTodos = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  const end = start + pageSize;
-  return filteredTodos.value.slice(start, end);
-});
-
-const totalPages = computed(() =>
-  Math.ceil(filteredTodos.value.length / pageSize)
-);
-
-function goToPage(page) {
-  if (page >= 1 && page <= totalPages.value) {
-    currentPage.value = page;
-  }
-}
-
 function formatDate(dateString) {
   const date = new Date(dateString);
   const day = String(date.getDate()).padStart(2, "0");
@@ -128,16 +121,13 @@ function formatDate(dateString) {
       >
         <Upload class="me-1" size="16" /> Xuất file
       </button>
-      <RouterLink to="/ban-hang">
-        <button
+      <button
         class="btn success"
         style="background-color: #0a2c57; color: white"
         @click="thongBao"
       >
         <Plus class="me-1" size="16" /> Tạo đơn mới
       </button>
-      </RouterLink>
-    
     </div>
   </div>
 
@@ -239,20 +229,11 @@ function formatDate(dateString) {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(item, index) in paginatedTodos" :key="index">
-                <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+              <tr v-for="(item, index) in filteredTodos" :key="index">
+                <td>{{ index + 1 }}</td>
                 <td>{{ item.maHoaDon }}</td>
                 <td>{{ item.tenKhachHang }}</td>
-
-                <td>Nhan vien</td>
-                <td>{{ item.sdt }}</td>
-                <td>{{ formatDate(item.ngayTao) }}</td>
-                <td>
-                  <span class="">{{ item.tongTien }}</span>
-                </td>
-                <td>Loại đơn</td>
-
-                <td>Vu Van A</td>
+                <td>Vũ Minh Công</td>
                 <td>{{ item.sdt }}</td>
                 <td>{{ formatDate(item.ngayTao) }}</td>
                 <td>
@@ -260,8 +241,9 @@ function formatDate(dateString) {
                     new Intl.NumberFormat("vi-VN").format(item.tongTien)
                   }}</span>
                 </td>
-                <td>Online</td>
-
+                <td>
+                  {{ item.loaiDon === 0 ? "Tại cửa hàng" : "Online" }}
+                </td>
                 <td>
                   <span
                     class="badge rounded-pill text-bg"
@@ -280,30 +262,36 @@ function formatDate(dateString) {
           </table>
         </div>
       </div>
+      <div class="d-flex justify-content-center mt-2">
+        <!-- Phân trang -->
+        <nav>
+          <ul class="pagination justify-content-center">
+            <li class="page-item" :class="{ disabled: currentPage === 0 }">
+              <a class="page-link" href="#" @click.prevent="currentPage--">«</a>
+            </li>
+            <li
+              class="page-item"
+              v-for="p in totalPages"
+              :key="p"
+              :class="{ active: p - 1 === currentPage }"
+            >
+              <a
+                class="page-link"
+                href="#"
+                @click.prevent="currentPage = p - 1"
+                >{{ p }}</a
+              >
+            </li>
+            <li
+              class="page-item"
+              :class="{ disabled: currentPage === totalPages - 1 }"
+            >
+              <a class="page-link" href="#" @click.prevent="currentPage++">»</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
     </div>
-
-    <!-- PHÂN TRANG -->
-    <div class="d-flex justify-content-center mt-3">
-      <nav>
-        <ul class="pagination">
-          <li class="page-item" :class="{ disabled: currentPage === 1 }">
-            <button class="page-link" @click="goToPage(currentPage - 1)">Trước</button>
-          </li>
-          <li
-            v-for="page in totalPages"
-            :key="page"
-            class="page-item"
-            :class="{ active: currentPage === page }"
-          >
-            <button class="page-link" @click="goToPage(page)">{{ page }}</button>
-          </li>
-          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-            <button class="page-link" @click="goToPage(currentPage + 1)">Sau</button>
-          </li>
-        </ul>
-      </nav>
-    </div>
-    <!-- HẾT PHÂN TRANG -->
   </div>
 </template>
 
