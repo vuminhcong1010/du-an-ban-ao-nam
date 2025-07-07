@@ -36,19 +36,17 @@ const router = createRouter({
       component: HoaDon,
     },
     {
-
-      path: "/ban-hang",
-      name: "banhang",
-      component: BanHang,
-    },
-    {
-
       path: '/hoa-don-chi-tiet/:maHoaDon',
       name: 'hoadonchitiet',
       component: HoaDonChiTiet,
       props: true,
     },
+    {
 
+      path: "/ban-hang",
+      name: "banhang",
+      component: BanHang,
+    },
     {
       path: "/san-pham/chat-lieu",
       name: "chat-lieu",
