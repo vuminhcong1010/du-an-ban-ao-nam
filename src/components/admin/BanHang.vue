@@ -1,14 +1,40 @@
 <script setup>
-import { ref } from "vue";
-import { Plus, UserCog } from "lucide-vue-next";
+import { ref, watch } from "vue";
+import {
+  Plus,
+  UserCog,
+  Tag,
+  Ban,
+  TicketPercent,
+  CreditCard,
+} from "lucide-vue-next";
 import ThemSanPham from "./ThemSanPhamHoaDon.vue";
 
+// Khởi tạo danh sách đơn hàng từ localStorage nếu có
 const orders = ref([]);
+const storedOrders = localStorage.getItem("orders");
+if (storedOrders) {
+  try {
+    orders.value = JSON.parse(storedOrders);
+  } catch (e) {
+    console.error("Lỗi parse orders:", e);
+  }
+}
+
+// Active tab hiện tại (đơn hàng đang thao tác)
 const activeTab = ref(null);
-let nextOrderId = 1;
+const storedActiveTab = localStorage.getItem("activeTab");
+if (storedActiveTab) {
+  activeTab.value = JSON.parse(storedActiveTab);
+}
 
-const hienThiThemSanPham = ref(false);
+// ID đơn tiếp theo
+let nextOrderId =
+  orders.value.length > 0
+    ? Math.max(...orders.value.map((o) => o.id)) + 1
+    : 1;
 
+// Tạo đơn mới
 function createNewOrder() {
   const newOrder = {
     id: nextOrderId++,
@@ -20,6 +46,7 @@ function createNewOrder() {
   activeTab.value = newOrder.id;
 }
 
+// Đóng đơn hàng
 function closeOrder(id) {
   orders.value = orders.value.filter((o) => o.id !== id);
   if (activeTab.value === id) {
@@ -27,17 +54,36 @@ function closeOrder(id) {
   }
 }
 
+// Popup chọn sản phẩm
+const hienThiThemSanPham = ref(false);
+
 const moPopupThemSanPham = () => {
   hienThiThemSanPham.value = true;
 };
 
+// Khi nhận sản phẩm đã chọn từ component ThemSanPham
 const nhanSanPhamDaChon = (danhSachSanPham) => {
   const activeOrder = orders.value.find((o) => o.id === activeTab.value);
   if (activeOrder) {
     activeOrder.items.push(...danhSachSanPham);
   }
 };
+
+// --- Lưu vào localStorage mỗi khi thay đổi ---
+watch(
+  orders,
+  (newVal) => {
+    localStorage.setItem("orders", JSON.stringify(newVal));
+  },
+  { deep: true }
+);
+
+watch(activeTab, (newVal) => {
+  localStorage.setItem("activeTab", JSON.stringify(newVal));
+});
 </script>
+
+
 
 <template>
   <!-- Header -->
@@ -145,6 +191,7 @@ const nhanSanPhamDaChon = (danhSachSanPham) => {
           @close="hienThiThemSanPham = false"
         />
       </div>
+      <!-- PHẦN KHÁCH HÀNG -->
       <div class="bg-white p-3 rounded mb-4 align-items-center border">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">👤 Khách hàng</h5>
@@ -156,20 +203,37 @@ const nhanSanPhamDaChon = (danhSachSanPham) => {
               background-color: #0a2c57;
               color: white;
             "
-            
             title="Chọn khách hàng"
           >
             <UserCog size="20" />
           </button>
         </div>
-        <span>Tên khách hàng: </span> <br>
-        <span>Số điện thoại: </span> 0366166359 <br>
-        <span>Địa chỉ nhận hàng: Nguyễn Cơ Thạch, Mỹ Đình 2, Nam Từ Liêm</span>
+
+        <!-- Thông tin khách -->
+        <div class="mb-2"><strong>Tên khách hàng:</strong> Nguyễn Văn A</div>
+        <div class="mb-2"><strong>Số điện thoại:</strong> 0366166359</div>
+        <div class="mb-2">
+          <strong>Địa chỉ nhận hàng:</strong> Nguyễn Cơ Thạch, Mỹ Đình 2, Nam Từ
+          Liêm
+        </div>
       </div>
 
+      <!-- PHẦN THANH TOÁN -->
       <div class="bg-white p-3 rounded mb-4 align-items-center border">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">💳 Thanh toán</h5>
+        </div>
+
+        <!-- Mã giảm giá -->
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <label class="fw-bold mb-0">Mã giảm giá:</label>
+          <input
+            type="text"
+            class="form-control"
+            style="max-width: 250px"
+            placeholder="Nhập mã giảm giá..."
+          />
+
           <button
             class="btn border rounded-circle d-flex align-items-center justify-content-center"
             style="
@@ -178,14 +242,88 @@ const nhanSanPhamDaChon = (danhSachSanPham) => {
               background-color: #0a2c57;
               color: white;
             "
-            title="Chọn khách hàng"
+            title="Áp dụng mã giảm giá"
           >
-            <UserCog size="20" />
+            <Tag size="18" />
+          </button>
+
+          <button
+            class="btn border rounded-circle d-flex align-items-center justify-content-center"
+            style="
+              width: 36px;
+              height: 36px;
+              background-color: #0a2c57;
+              color: white;
+            "
+            title="Hủy chọn"
+          >
+            <Ban size="18" />
           </button>
         </div>
-        <span>Ma giam gia:</span>
-        <input type="text"> <button style="">🏷️</button>
+
+        <!-- Thông tin phiếu -->
+        <div
+          class="d-flex align-items-center justify-content-between border rounded p-2 mb-3"
+          style="background-color: #f8f9fa"
+        >
+          <div class="d-flex align-items-center gap-2">
+            <TicketPercent size="24" class="text-success" />
+            <div>
+              <div><strong>Mã phiếu HC-af374fbf</strong></div>
+              <div class="text-muted small">
+                Phần trăm tối đa: <strong>5%</strong> &nbsp;|&nbsp; Giá trị tối
+                thiểu: <strong>50.000đ</strong>
+              </div>
+              <div class="text-danger small">
+                (Đang sử dụng) Phiếu công khai - Còn lại: <strong>4</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tổng kết đơn hàng -->
+        <div class="mb-2"><strong>Tiền sản phẩm:</strong> 300.000đ</div>
+        <div class="mb-2"><strong>Giảm giá:</strong> 15.000đ</div>
+
+        <!-- Phương thức thanh toán -->
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <label class="fw-bold mb-0">Phương thức thanh toán:</label>
+          <button
+            class="btn border rounded-circle d-flex align-items-center justify-content-center"
+            style="
+              width: 36px;
+              height: 36px;
+              background-color: #0a2c57;
+              color: white;
+            "
+            title="Chuyển khoản"
+          >
+            <CreditCard size="18" />
+          </button>
+          <span>Chuyển khoản</span>
+        </div>
+
+        <div class="mb-2">
+          <h4><strong>Tổng tiền:</strong></h4>
+          <strong><h1>750.000đ</h1></strong>
+        </div>
+
+        <!-- Nút hoàn tất -->
+        <div class="text-end">
+          <button
+            class="btn"
+            style="
+              background-color: #0a2c57;
+              color: white;
+              min-width: 200px;
+              font-weight: bold;
+            "
+          >
+            Hoàn thành đơn hàng
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
+

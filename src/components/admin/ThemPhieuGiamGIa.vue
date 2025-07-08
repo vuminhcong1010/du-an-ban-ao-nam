@@ -85,7 +85,7 @@
               </div>
             </div>
             <div class="mb-3">
-              <label class="form-label">Giá trị đơn tối đa <span class="text-danger">*</span></label>
+              <label class="form-label">Giá trị giảm tối đa <span class="text-danger">*</span></label>
               <input v-model.number="giaTriToiDa" type="number" class="form-control" placeholder="VD: 500000" min="0"
                 step="0.01" :class="{ 'is-invalid': errors.giaTriToiDa }" :readonly="giaTriOption === 'vnd'"
                 @input="validateGiaTriToiDa" />
