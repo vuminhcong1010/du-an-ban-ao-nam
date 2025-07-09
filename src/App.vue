@@ -1,29 +1,23 @@
-<script setup>
-import { ref, provide } from 'vue'
-import Sidebar from './components/admin/Sidebar.vue'
-import Topbar from './components/admin/Topbar.vue'
-
-const showSidebar = ref(true)
-function toggleSidebar() {
-  showSidebar.value = !showSidebar.value
-}
-provide('toggleSidebar', toggleSidebar)
-</script>
-
+<!-- src/App.vue -->
 <template>
-  <div class="d-flex flex-column" style="height: 100vh; overflow: hidden">
-    <div style="height: 56px">
-      <Topbar />
-    </div>
-    <div class="d-flex flex-grow-1" style="overflow: hidden">
-      <Sidebar v-if="showSidebar" />
-      <main class="flex-grow-1 bg-light p-4" style="overflow-y: auto">
-        <RouterView />
-      </main>
-    </div>
-  </div>
+  <RouterView />
 </template>
 
-<style>
-</style>
+<script setup>
+// Không cần import Sidebar, Topbar, hay provide/ref ở đây nữa
+// Vì DefaultLayout đã xử lý việc đó
+</script>
 
+<style>
+/* Các style global (ví dụ: reset CSS cơ bản) */
+/* Đảm bảo các style này được áp dụng toàn cục cho ứng dụng của bạn */
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden; /* Ngăn scrollbar kép từ body */
+}
+</style>

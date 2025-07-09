@@ -5,6 +5,10 @@ import { Eye,Edit,Plus,Trash,Delete, Home, EyeOff } from 'lucide-vue-next';
 import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification';
+import apiClient from '@/api/axios'; 
+
+
+
 
 const toggleSidebar = inject('toggleSidebar')
 
@@ -30,7 +34,7 @@ const listNhanVien = ref({
 const vaiTroList = ref([]);
 const getData = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/home')
+    const response = await apiClient.get('http://localhost:8080/api/list-nhan-vien');
     listNhanVien.value = response.data;
     // console.log('NhanVien:', listNhanVien.value);
   } catch (error) {
