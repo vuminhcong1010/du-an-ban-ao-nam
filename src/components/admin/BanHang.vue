@@ -12,6 +12,7 @@ import ThemSanPham from "./ThemSanPhamHoaDon.vue";
 
 // Khởi tạo danh sách đơn hàng từ localStorage nếu có
 const orders = ref([]);
+
 const storedOrders = localStorage.getItem("orders");
 if (storedOrders) {
   try {
@@ -39,8 +40,9 @@ function createNewOrder() {
   const newOrder = {
     id: nextOrderId++,
     name: `Đơn ${nextOrderId - 1}`,
-    items: [],
-    customer: null,
+    listSanPham: [],
+    khachHang: null,
+    giamGia: null,
   };
   orders.value.push(newOrder);
   activeTab.value = newOrder.id;
@@ -65,9 +67,16 @@ const moPopupThemSanPham = () => {
 const nhanSanPhamDaChon = (danhSachSanPham) => {
   const activeOrder = orders.value.find((o) => o.id === activeTab.value);
   if (activeOrder) {
-    activeOrder.items.push(...danhSachSanPham);
+    activeOrder.listSanPham.push(...danhSachSanPham);
   }
 };
+
+
+
+
+
+
+
 
 // --- Lưu vào localStorage mỗi khi thay đổi ---
 watch(
@@ -173,7 +182,7 @@ watch(activeTab, (newVal) => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in order.items" :key="index">
+                <tr v-for="(item, index) in order.listSanPham" :key="index">
                   <td>{{ index + 1 }}</td>
                   <td>{{ item.idSanPhamChiTiet }}</td>
                   <td>{{ item.soLuong }}</td>
