@@ -157,20 +157,12 @@ const apply = async () => {
 </script>
 
 <template>
-  <div
-    class="modal fade show d-block"
-    tabindex="-1"
-    style="background-color: rgba(0, 0, 0, 0.5); z-index: 1050"
-  >
+  <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5); z-index: 1050">
     <div class="modal-dialog custom-modal modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Chọn nhiều sản phẩm</h5>
-          <button
-            type="button"
-            class="btn-close"
-            @click="$emit('close')"
-          ></button>
+          <button type="button" class="btn-close" @click="$emit('close')"></button>
         </div>
         <div class="modal-body">
           <!-- <input
@@ -184,22 +176,12 @@ const apply = async () => {
               <div class="col-md-12">
                 <label class="form-label fw-bold">Bộ lọc</label>
                 <div class="d-flex align-items-center gap-2">
-                  <input
-                    type="text"
-                    class="form-control"
-                    placeholder="Tìm theo mã, tên sản phẩm"
-                    v-model="timKiem"
-                  />
-                  <button
-                    type="button"
-                    class="btn"
-                    style="
+                  <input type="text" class="form-control" placeholder="Tìm theo mã, tên sản phẩm" v-model="timKiem" />
+                  <button type="button" class="btn" style="
                       background-color: #0a2c57;
                       color: white;
                       white-space: nowrap;
-                    "
-                    @click="locSanPham"
-                  >
+                    " @click="locSanPham">
                     Tìm kiếm
                   </button>
                 </div>
@@ -217,11 +199,7 @@ const apply = async () => {
               <!-- Danh mục -->
               <div class="col-md-3">
                 <label class="form-label fw-bold">Danh mục</label>
-                <select
-                  class="form-select"
-                  v-model="selectedDanhMucId"
-                  @change="locSanPham"
-                >
+                <select class="form-select" v-model="selectedDanhMucId" @change="locSanPham">
                   <option :value="null">Tất cả danh mục</option>
                   <option v-for="dm in danhMuc" :key="dm.id" :value="dm.id">
                     {{ dm.tenDanhMuc }}
@@ -232,17 +210,9 @@ const apply = async () => {
               <!-- Chất liệu -->
               <div class="col-md-3">
                 <label class="form-label fw-bold">Chất liệu</label>
-                <select
-                  class="form-select"
-                  v-model="selectedChatLieuId"
-                  @change="locSanPham"
-                >
+                <select class="form-select" v-model="selectedChatLieuId" @change="locSanPham">
                   <option :value="null">Tất cả chất liệu</option>
-                  <option
-                    v-for="cl in danhSachChatLieu"
-                    :key="cl.id"
-                    :value="cl.id"
-                  >
+                  <option v-for="cl in danhSachChatLieu" :key="cl.id" :value="cl.id">
                     {{ cl.tenChatLieu }}
                   </option>
                 </select>
@@ -270,12 +240,10 @@ const apply = async () => {
               </thead>
               <tbody>
                 <tr v-for="(item, index) in listSanPham" :key="index">
-                  <td>{{ index + 1  }}</td>
+                  <td>{{ index + 1 }}</td>
                   <td>
-                    <img
-                      src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
-                      style="width: 20px; height: 20px"
-                    />
+                    <img src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
+                      style="width: 20px; height: 20px" />
                   </td>
                   <td>{{ item.maChiTietSapPham }}</td>
                   <td>{{ item.idSanPham.tenSanPham }}</td>
@@ -289,30 +257,17 @@ const apply = async () => {
                     }}
                   </td>
                   <td>
-                    <input
-                      type="number"
-                      min="1"
-                      :max="item.soLuong"
-                      v-model.number="quantities[item.maChiTietSapPham]"
-                      :disabled="
-                        !selectedItems.some(
-                          (i) => i.maChiTietSapPham === item.maChiTietSapPham
-                        )
-                      "
-                      class="form-control form-control-sm"
-                      style="width: 70px"
-                    />
+                    <input type="number" min="1" :max="item.soLuong" v-model.number="quantities[item.maChiTietSapPham]"
+                      :disabled="!selectedItems.some(
+                        (i) => i.maChiTietSapPham === item.maChiTietSapPham
+                      )
+                        " class="form-control form-control-sm" style="width: 70px" />
                   </td>
                   <td class="text-center">
-                    <input
-                      type="checkbox"
-                      :checked="
-                        selectedItems.some(
-                          (i) => i.maChiTietSapPham === item.maChiTietSapPham
-                        )
-                      "
-                      @change="toggleSelection(item)"
-                    />
+                    <input type="checkbox" :checked="selectedItems.some(
+                      (i) => i.maChiTietSapPham === item.maChiTietSapPham
+                    )
+                      " @change="toggleSelection(item)" />
                   </td>
                 </tr>
               </tbody>
@@ -320,22 +275,14 @@ const apply = async () => {
           </div>
           <!-- phân trang  -->
           <div class="d-flex justify-content-between align-items-center mt-3">
-  <button
-    class="btn btn-outline-primary"
-    :disabled="currentPage === 0"
-    @click="prevPage"
-  >
-    Trang trước
-  </button>
-  <span>Trang {{ currentPage + 1 }} / {{ totalPages }}</span>
-  <button
-    class="btn btn-outline-primary"
-    :disabled="currentPage >= totalPages - 1"
-    @click="nextPage"
-  >
-    Trang sau
-  </button>
-</div>
+            <button class="btn btn-outline-primary" :disabled="currentPage === 0" @click="prevPage">
+              Trang trước
+            </button>
+            <span>Trang {{ currentPage + 1 }} / {{ totalPages }}</span>
+            <button class="btn btn-outline-primary" :disabled="currentPage >= totalPages - 1" @click="nextPage">
+              Trang sau
+            </button>
+          </div>
 
         </div>
         <div class="modal-footer">

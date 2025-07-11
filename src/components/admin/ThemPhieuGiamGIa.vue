@@ -254,7 +254,7 @@ export default {
   },
   computed: {
     minDateTime() {
-      const now = new Date('2025-07-01T23:57:00+07:00');
+      const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const day = String(now.getDate()).padStart(2, "0");
@@ -434,7 +434,7 @@ export default {
       if (!this.ngayBatDau) {
         this.errors.ngayBatDau = "Ngày bắt đầu là bắt buộc!";
       } else {
-        const now = new Date('2025-07-01T23:57:00+07:00');
+        const now = new Date();
         const startDate = new Date(this.ngayBatDau);
         if (startDate < now) {
           this.errors.ngayBatDau = "Ngày bắt đầu không được là ngày trong quá khứ!";

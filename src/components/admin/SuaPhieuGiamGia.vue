@@ -447,7 +447,7 @@ export default {
       this.validateGiaTriGiam();
     },
     validateGiaTriGiam() {
-      console.log("Validating giaTriGiam:", this.giaTriGiam, "with giaTriOption:", this.giaTriOption);
+     
       if (this.giaTriGiam === null || this.giaTriGiam === "" || isNaN(this.giaTriGiam)) {
         this.errors.giaTriGiam = "Giá trị giảm là bắt buộc!";
         return;
@@ -462,7 +462,7 @@ export default {
       } else if (this.giaTriOption === "vnd") {
         if (this.giaTriGiam < 1000) {
           this.errors.giaTriGiam = "Giá trị giảm phải từ 1000 trở lên!";
-          this.giaTriGiam = Math.max(1000, this.giaTriGiam); // Enforce minimum 1000
+        
           this.giaTriToiDa = this.giaTriGiam; // Synchronize for VND
         } else {
           this.errors.giaTriGiam = "";

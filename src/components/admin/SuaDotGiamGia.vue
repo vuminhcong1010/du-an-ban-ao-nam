@@ -397,7 +397,7 @@ export default {
                     throw new Error(`Không thể lấy thông tin đợt giảm giá: ${errorText}`);
                 }
                 const { data } = await response.json();
-                console.log('DotGiamGia Data:', data);
+            
 
                 // Map data to form
                 this.dotGiamGia = {
@@ -511,13 +511,13 @@ export default {
             try {
                 // Show confirmation dialog
                 const result = await Swal.fire({
-                    title: 'Xác nhận sửa?',
+                    title: 'Xác nhận ',
                     text: 'Bạn có chắc muốn sửa dữ liệu này không?',
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',
                     cancelButtonColor: '#d33',
-                    confirmButtonText: 'Sửa',
+                    confirmButtonText: 'Đồng ý',
                     cancelButtonText: 'Hủy'
                 });
 

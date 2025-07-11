@@ -655,13 +655,13 @@ export default {
             }
 
             const result = await Swal.fire({
-                title: 'Xác nhận thêm?',
+                title: 'Xác nhận',
                 text: "Bạn có chắc muốn thêm dữ liệu này không?",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Thêm',
+                confirmButtonText: 'Đồng ýgit push -f origin hai',
                 cancelButtonText: 'Hủy'
             });
 

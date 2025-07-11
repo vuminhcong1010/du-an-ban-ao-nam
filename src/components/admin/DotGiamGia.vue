@@ -201,7 +201,7 @@ export default {
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33',
-        confirmButtonText: 'Sửa',
+        confirmButtonText: 'Đồng ý',
         cancelButtonText: 'Hủy'
     });
 
