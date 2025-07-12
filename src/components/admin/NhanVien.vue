@@ -40,7 +40,6 @@ const getData = async () => {
   }
 }
 
-
 const allColumns = [
   { key: 'anh', label: 'Ảnh' },
   { key: 'maNhanVien', label: 'Mã nhân viên' },
@@ -49,6 +48,7 @@ const allColumns = [
   { key: 'ngaySinh', label: 'Ngày sinh' },
   { key: 'sdt', label: 'Số điện thoại' },
   { key: 'gioiTinh', label: 'Giới tính' },
+  { key: 'vaiTro', label: 'Vai trò' }, // Thêm dòng này
   { key: 'tinhThanh', label: 'Tỉnh/Thành' },
   { key: 'quanHuyen', label: 'Quận/Huyện' },
   { key: 'xaPhuong', label: 'Xã/Phường' },
@@ -72,7 +72,7 @@ const filterHovered = ref(false);
 // Filter states
 const filterState = ref({
   trangThai: '1',
-  namSinh: '', // năm sinh
+  vaiTro: '', // vai trò
   tinhThanh: '', // tỉnh thành
   search: ''
 });
@@ -101,6 +101,7 @@ const selectedProvince = ref(null);
 const selectedDistrict = ref(null);
 const selectedWard = ref(null);
 const fileInput = ref(null);
+const roles = ref([]); // Danh sách vai trò
 
 function getImageUrl(path) {
   if (!path) return '';
@@ -244,13 +245,9 @@ const filteredNhanVien = computed(() => {
     nv => String(nv.trangThai) === String(filterState.value.trangThai)
   );
 
-  // Lọc theo năm sinh
-  if (filterState.value.namSinh) {
-    result = result.filter(nv => {
-      if (!nv.ngaySinh) return false;
-      const year = new Date(nv.ngaySinh).getFullYear();
-      return String(year) === String(filterState.value.namSinh);
-    });
+  // Lọc theo tên vai trò
+  if (filterState.value.vaiTro) {
+    result = result.filter(nv => nv.tenVaiTro === filterState.value.vaiTro);
   }
 
   // Lọc theo tỉnh thành
@@ -414,7 +411,10 @@ watch(filteredNhanVien, () => { currentPage.value = 1; });
 
 onMounted(() => {
   getData();
-  fetchProvinces(); // Thêm dòng này để lấy danh sách tỉnh thành cho filter
+  fetchProvinces();
+  axios.get('http://localhost:8080/api/vai-tro/list-vai-Tro').then(res => {
+    roles.value = res.data;
+  });
   if (route.query.success === 'true') {
     toast.success('Thêm mới nhân viên thành công');
     window.history.replaceState({}, document.title, route.path);
@@ -568,9 +568,11 @@ async function handleFileChange(event) {
           </div>
         </div>
         <div class="filter-item">
-          <label>Năm sinh</label>
-          <input type="number" v-model="filterState.namSinh" min="1900" max="2100" placeholder="VD: 1999"
-            title="Lọc theo năm sinh nhân viên">
+          <label>Vai trò</label>
+          <select v-model="filterState.vaiTro" title="Lọc theo vai trò">
+            <option value="">Tất cả</option>
+            <option v-for="role in roles" :key="role.id" :value="role.tenVaiTro">{{ role.tenVaiTro }}</option>
+          </select>
         </div>
         <div class="filter-item">
           <label>Tỉnh/Thành</label>
@@ -631,6 +633,9 @@ async function handleFileChange(event) {
                     <template v-else-if="col.key === 'ngaySinh'">
                       {{ formatDate(nhanVien[col.key]) }}
                     </template>
+                    <template v-else-if="col.key === 'vaiTro'">
+                      {{ nhanVien.tenVaiTro || '' }}
+                    </template>
                     <template v-else>
                       {{ nhanVien[col.key] }}
                     </template>
@@ -646,19 +651,9 @@ async function handleFileChange(event) {
                       </div>
                       <!-- Thông tin bên phải, chia 2 cột -->
                       <div class="detail-fields">
-                        <div v-for="(col, i) in allColumns.filter(c => c.key !== 'anh')" :key="col.key"
-                          class="detail-field">
+                        <div v-for="(col, i) in allColumns.filter(c => c.key !== 'anh')" :key="col.key" class="detail-field">
                           <template v-if="col.key === 'cccd'">
-                            <div class="password-flex-row">
-                              <b class="detail-label" style="margin-right: 6px;">{{ col.label }}:</b>
-                              <span class="password-value">{{ showPassword[nhanVien.id] ? nhanVien.cccd :
-                                maskPassword(nhanVien.cccd) }}</span>
-                              <button @click.stop="togglePasswordVisibility(nhanVien.id)" class="password-toggle-btn"
-                                :title="showPassword[nhanVien.id] ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'">
-                                <Eye v-if="!showPassword[nhanVien.id]" size="16" />
-                                <EyeOff v-else size="16" />
-                              </button>
-                            </div>
+                            <!-- ...existing code... -->
                           </template>
                           <template v-else-if="col.key === 'gioiTinh'">
                             <b class="detail-label">{{ col.label }}:</b> {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}
@@ -672,8 +667,11 @@ async function handleFileChange(event) {
                           <template v-else-if="col.key === 'ngaySinh'">
                             <b class="detail-label">{{ col.label }}:</b> {{ formatDate(nhanVien[col.key]) }}
                           </template>
+                          <template v-else-if="col.key === 'vaiTro'">
+                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien.tenVaiTro || roles.find(r => r.id == nhanVien.idVaiTro)?.tenVaiTro || '' }}
+                          </template>
                           <template v-else>
-                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien[col.key] }}
+                            <b class="detail-label">{{ col.label }}:</b> <span style="white-space:normal">{{ nhanVien[col.key] }}</span>
                           </template>
                         </div>
                       </div>
@@ -1064,7 +1062,6 @@ async function handleFileChange(event) {
   cursor: pointer;
   transition: box-shadow 0.18s, border 0.18s;
   outline: none;
-  padding: 0;
 }
 
 .filter-arrow-btn:hover {
