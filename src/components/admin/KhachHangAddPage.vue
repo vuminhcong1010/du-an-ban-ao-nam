@@ -111,8 +111,9 @@ import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios'; // Use axios for external API calls
 import { useToast } from "vue-toastification";
+import Cookies from 'js-cookie'
 
-
+const token = Cookies.get('token')
 const router = useRouter();
 const toast = useToast();
 
@@ -404,7 +405,11 @@ const handleSubmit = async () => {
     console.log("Payload JSON cuối cùng gửi đi:", JSON.stringify(payload, null, 2));
 
 
-    await axios.post('/api/khach-hang', payload);
+    await axios.post('/api/khach-hang', payload,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
 
 
     toast.success("Thêm khách hàng thành công!");

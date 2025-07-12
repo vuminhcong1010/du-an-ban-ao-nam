@@ -26,7 +26,8 @@ import ThemSP from "@/components/admin/ThemSP.vue";
 import SuaDotGiamGia from "@/components/admin/SuaDotGiamGia.vue";
 import ThemDotGiamGia from "@/components/admin/ThemDotGiamGia.vue";
 import DotGiamGia from "@/components/admin/DotGiamGia.vue";
-
+import DangNhap from "@/components/admin/DangNhap.vue";
+import Cookies from "js-cookie";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -36,13 +37,12 @@ const router = createRouter({
       component: HoaDon,
     },
     {
-      path: '/hoa-don-chi-tiet/:maHoaDon',
-      name: 'hoadonchitiet',
+      path: "/hoa-don-chi-tiet/:maHoaDon",
+      name: "hoadonchitiet",
       component: HoaDonChiTiet,
       props: true,
     },
     {
-
       path: "/ban-hang",
       name: "banhang",
       component: BanHang,
@@ -90,17 +90,17 @@ const router = createRouter({
     {
       path: "/san-pham/chi-tiet-san-pham/:id1",
       name: "chi-tiet-san-pham",
-      component: ChiTietSanPham
+      component: ChiTietSanPham,
     },
     {
       path: "/san-pham/danh-muc",
       name: "danh-muc",
-      component: DanhMuc
+      component: DanhMuc,
     },
     {
       path: "/test",
       name: "test",
-      component: Test1
+      component: Test1,
     },
     {
       path: "/khach-hang",
@@ -119,22 +119,22 @@ const router = createRouter({
       props: true, // Quan trọng: Truyền params làm props cho component
     },
     {
-      path: '/nhan-vien',
-      name: 'nhanvien',
-      component:NhanVien,
+      path: "/nhan-vien",
+      name: "nhanvien",
+      component: NhanVien,
     },
     {
-      path: '/nhan-vien/them',
-      name: 'themnhanvien',
+      path: "/nhan-vien/them",
+      name: "themnhanvien",
       component: ThemNhanVien,
     },
     {
-      path: '/nhan-vien/sua/:id',
-      name: 'SuaNhanVien',
-      component: () => import('@/components/admin/ThemNhanVien.vue')
+      path: "/nhan-vien/sua/:id",
+      name: "SuaNhanVien",
+      component: () => import("@/components/admin/ThemNhanVien.vue"),
     },
 
-     {
+    {
       path: "/phieu-giam-gia",
       name: "phieugiamgia",
       component: PhieuGiamGia,
@@ -154,17 +154,34 @@ const router = createRouter({
       name: "dotgiamgia",
       component: DotGiamGia,
     },
-     {
+    {
       path: "/dot-giam-gia/them",
       name: "themdotgiamgia",
       component: ThemDotGiamGia,
     },
-     {
+    {
       path: "/dot-giam-gia/sua/:id",
       name: "suadoigiamgia",
       component: SuaDotGiamGia,
     },
+    {
+      path: "/login",
+      name: "login",
+      component: DangNhap,
+    },
   ],
 });
+// ✅ Navigation Guard sử dụng cookie
+router.beforeEach((to, from, next) => {
+  const token = Cookies.get('token')
+
+  if (!token && to.path !== '/login') {
+    next('/login')
+  } else if (token && to.path === '/login') {
+    next('/')
+  } else {
+    next()
+  }
+})
 
 export default router;

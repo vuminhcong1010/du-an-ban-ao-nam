@@ -206,6 +206,9 @@ import { Eye, Trash } from 'lucide-vue-next'
 import UpdateSanPham from './UpdateSanPham.vue'
 import AddChiTietSanPham from './AddChiTietSanPham.vue'
 import QRCode from 'qrcode'
+import Cookies from 'js-cookie'
+
+const token = Cookies.get('token')
 const toast = useToast();
 
 // ============================
@@ -256,19 +259,43 @@ const goToPage = (page) => {
 // ============================
 // Gọi API chính
 // ============================
+// function ham() {
+//   const url = thongTin.value
+//     ? `http://localhost:8080/san-pham/bien-the-san-pham/${idChiTietSanPham}`
+//     : "http://localhost:8080/san-pham/get-all-bien-the"
+
+//   axios.get(url)
+//     .then(response => {
+//       allData.value = response.data
+//       maSP.value = `SP${idChiTietSanPham.toString().padStart(4, '0')}` // ✅ sửa idCh thành idChiTietSanPham
+//       apDungBoLoc()
+//     })
+//     .catch(error => {
+//       console.error("Lỗi gọi API:", error)
+//     })
+// }
 function ham() {
+  const token = Cookies.get('token') // Lấy token từ cookie
+
   const url = thongTin.value
     ? `http://localhost:8080/san-pham/bien-the-san-pham/${idChiTietSanPham}`
     : "http://localhost:8080/san-pham/get-all-bien-the"
 
-  axios.get(url)
+  axios.get(url, {
+    headers: {
+      Authorization: `Bearer ${token}` // ✅ Thêm token vào header
+    }
+  })
     .then(response => {
       allData.value = response.data
-      maSP.value = `SP${idChiTietSanPham.toString().padStart(4, '0')}` // ✅ sửa idCh thành idChiTietSanPham
+      maSP.value = `SP${idChiTietSanPham.toString().padStart(4, '0')}`
       apDungBoLoc()
     })
     .catch(error => {
-      console.error("Lỗi gọi API:", error)
+      console.error("❌ Lỗi gọi API:", error)
+      if (error.response?.status === 401) {
+        console.error("🔒 Token hết hạn hoặc không có quyền truy cập")
+      }
     })
 }
 function formatGia(gia) {
@@ -301,7 +328,11 @@ function apDungBoLoc() {
 // ============================
 onMounted(async () => {
   await ham()
-  const response = await axios.get("http://localhost:8080/san-pham/add")
+  const response = await axios.get("http://localhost:8080/san-pham/add"  ,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
   mau.value = response.data.maus
   size.value = response.data.kichCos
   selectedTrangThai.value = 'dangBan'
@@ -343,7 +374,11 @@ function dongModal1() {
 // ============================
 function remove(id) {
   if (confirm('Bạn có chắc chắn muốn xóa?')) {
-    axios.get(`http://localhost:8080/san-pham/delete-chi-tiet-san-pham/${id}`)
+    axios.get(`http://localhost:8080/san-pham/delete-chi-tiet-san-pham/${id}`  ,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     setTimeout(() => ham(), 300)
   }
 }
@@ -397,14 +432,18 @@ let data = ref({
   })
 function updateAllGia(){
   data.value.array = selectedRows.value
-  axios.post("http://localhost:8080/san-pham/update-all",data.value).then(Response =>{
+  axios.post("http://localhost:8080/san-pham/update-all",data.value  ,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
     ham()
     toast.success("Cập nhật thành công")
   }).catch(Error =>{
     toast.error("Cập nhật thất bại")
   })
 
-  
+
 }
 // Khi bấm từng checkbox riêng lẻ
 function toggleRow(id) {

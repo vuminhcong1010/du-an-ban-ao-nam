@@ -80,7 +80,9 @@
 import { ref, watch, defineProps, defineEmits } from 'vue';
 import axios from 'axios'; // Import axios riêng cho API địa lý bên ngoài
 import { useToast } from 'vue-toastification';
+import Cookies from 'js-cookie'
 
+const token = Cookies.get('token')
 
 // Props
 const props = defineProps({
@@ -278,14 +280,22 @@ const saveAddress = async () => {
 
   try {
     if (isEditing.value && addressForm.value.id) {
-      await axios.put(`/api/dia-chi/${addressForm.value.id}`, requestData);
+      await axios.put(`/api/dia-chi/${addressForm.value.id}`, requestData,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
       toast.success('Cập nhật địa chỉ thành công!');
     } else {
       if (!props.customerId) {
         toast.error("Không tìm thấy ID khách hàng để thêm địa chỉ.");
         return;
       }
-      await axios.post(`/api/khach-hang/${props.customerId}/dia-chi`, requestData);
+      await axios.post(`/api/khach-hang/${props.customerId}/dia-chi`, requestData,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
       toast.success('Địa chỉ đã được thêm thành công!');
     }
     emit('address-saved');

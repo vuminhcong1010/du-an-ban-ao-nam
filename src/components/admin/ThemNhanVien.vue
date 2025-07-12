@@ -6,7 +6,9 @@ import { useToast } from 'vue-toastification'
 import Swal from 'sweetalert2'
 import QRScanner from './QRScanner.vue'
 import axios from 'axios'
+import Cookies from 'js-cookie'
 
+const token = Cookies.get('token')
 const toggleSidebar = inject('toggleSidebar')
 const router = useRouter();
 const route = useRoute();
@@ -45,7 +47,11 @@ const showCCCD = ref(false)
 
 const getAllNhanVien = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/home');
+    const response = await axios.get('http://localhost:8080/api/home',{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     allNhanVien.value = response.data;
   } catch (error) {
     console.error("Lỗi khi load danh sách nhân viên:", error);
@@ -71,7 +77,11 @@ onMounted(async () => {
 
   if (route.params.id) {
     try {
-      const res = await axios.get(`http://localhost:8080/api/${route.params.id}`);
+      const res = await axios.get(`http://localhost:8080/api/${route.params.id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
       Object.assign(formData.value, res.data);
       // Nếu có ảnh và đường dẫn không phải http, thêm host vào
       if (formData.value.anh && !formData.value.anh.startsWith('http')) {
@@ -203,13 +213,18 @@ const handleSubmit = async () => {
     if (route.params.id) {
       await axios.put(`http://localhost:8080/api/update/${route.params.id}`, form, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+           Authorization: `Bearer ${token}`
         }
       });
       router.push({ path: '/nhan-vien', query: { updated: 'true' } });
     } else {
       toast.info('Đang gửi mail về nhân viên...', { timeout: 4000 });
-      await axios.post('http://localhost:8080/api/addNhanVien', form);
+      await axios.post('http://localhost:8080/api/addNhanVien', form,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
       // Đợi toast gửi mail xong rồi mới hiện toast thành công và chuyển trang
         router.push({ path: '/nhan-vien', query: { success: 'true' } });
     }

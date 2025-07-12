@@ -123,8 +123,11 @@
 import { ref, computed, onMounted } from "vue"
 import axios from "axios"
 import { Eye, Trash } from "lucide-vue-next"
+import Cookies from 'js-cookie'
+import { useToast } from "vue-toastification";
 
-// State
+const toast = useToast();
+const token = Cookies.get('token')
 const allSP = ref([])
 const danhMuc = ref([])
 const danhSachChatLieu = ref([])
@@ -190,7 +193,11 @@ const chuyenTrangSo = (soTrang) => {
 
 // Xoá sản phẩm
 const remove = async (id) => {
-  await axios.get(`http://localhost:8080/san-pham/delete/${id}`)
+  await axios.get(`http://localhost:8080/san-pham/delete/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
   await fetchData()
 }
 
@@ -199,11 +206,24 @@ const chuyenTrang = (id) => {
   window.location.href = `/san-pham/chi-tiet-san-pham/${id}`
 }
 const fetchData = async () => {
+  toast.success("Đăng nhập thành công")
   try {
     const [spRes, dctRes, dmRes] = await Promise.all([
-      axios.get("http://localhost:8080/san-pham/get-all"),
-      axios.get("http://localhost:8080/test"),
-      axios.get("http://localhost:8080/test1")
+      axios.get("http://localhost:8080/san-pham/get-all",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }),
+      axios.get("http://localhost:8080/test",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }),
+      axios.get("http://localhost:8080/test1",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     ])
 
     const allSanPhams = spRes.data.data

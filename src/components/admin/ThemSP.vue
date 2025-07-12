@@ -566,6 +566,9 @@ import {Plus} from "lucide-vue-next";
 import {useToast} from "vue-toastification";
 import {useRouter} from "vue-router";
 import Swal from 'sweetalert2'
+import Cookies from 'js-cookie'
+
+const token = Cookies.get('token')
 const router = useRouter();
 const toast = useToast();
 
@@ -828,12 +831,16 @@ const themTayAo = async (tenTayAo) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/tay-ao/add", {tenTayAo});
+    await axios.post("http://localhost:8080/tay-ao/add", {tenTayAo},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm tay áo thành công");
   } catch (err) {
     toast.error("❌ Thêm tay áo thất bại");
-    console.error(err);
+    console.error(token);
   }
 };
 
@@ -853,7 +860,11 @@ const themKieuAo = async (tenKieuAo) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/kieu-ao/add", {tenKieuAo});
+    await axios.post("http://localhost:8080/kieu-ao/add", {tenKieuAo},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm kiểu áo thành công");
   } catch (err) {
@@ -877,7 +888,11 @@ const themMau = async (ten) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/mau/add", {ten});
+    await axios.post("http://localhost:8080/mau/add", {ten},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm màu thành công");
   } catch (err) {
@@ -901,7 +916,11 @@ const themKichCo = async (soCo) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/kich-co/add", {soCo});
+    await axios.post("http://localhost:8080/kich-co/add", {soCo},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm kích cỡ thành công");
   } catch (err) {
@@ -925,7 +944,11 @@ const themCoAo = async (tenCoAo) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/co-ao/add", {tenCoAo});
+    await axios.post("http://localhost:8080/co-ao/add", {tenCoAo},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm cổ áo thành công");
   } catch (err) {
@@ -950,7 +973,11 @@ const themDanhMuc = async (tenDanhMuc) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/danh-muc/add", {tenDanhMuc});
+    await axios.post("http://localhost:8080/danh-muc/add", {tenDanhMuc},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm danh mục thành công");
   } catch (err) {
@@ -975,7 +1002,11 @@ const themChatLieu = async (tenChatLieu) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/chat-lieu/add", {tenChatLieu});
+    await axios.post("http://localhost:8080/chat-lieu/add", {tenChatLieu},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm chất liệu thành công");
   } catch (err) {
@@ -1015,7 +1046,11 @@ const themSP = async () => {
     await axios.post(
       "http://localhost:8080/san-pham/them-nhanh-san-pham",
       reqSanPham.value
-    );
+    ,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
 
     // Reset form
     reqSanPham.value = {
@@ -1035,7 +1070,11 @@ const themSP = async () => {
 // Fetch initial data
 const call = async () => {
   try {
-    const response = await axios.get("http://localhost:8080/san-pham/add");
+    const response = await axios.get("http://localhost:8080/san-pham/add",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     chatLieu.value = response.data.chatLieus || [];
     kieuAo.value = response.data.kieuAos || [];
     mau.value = response.data.maus || [];
@@ -1055,6 +1094,8 @@ const call = async () => {
       reqSanPham.value.idChatLieu.id = chatLieu.value[0].id;
   } catch (err) {
     console.error(err);
+    console.log(token);
+    
   }
 };
 
@@ -1079,7 +1120,11 @@ watchEffect(() => {
   if (show.value) {
     let id = req.value.idSanPham.id;
     axios
-      .get(`http://localhost:8080/san-pham/chi-tiet-san-pham/${id}`)
+      .get(`http://localhost:8080/san-pham/chi-tiet-san-pham/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
       .then((response) => {
         req.value.tenSanPham = response.data;
         tenSP.value = response.data;
@@ -1224,7 +1269,11 @@ const uploadAllImages = async () => {
         })),
       };
 
-      await axios.post("http://localhost:8080/san-pham/add", payload);
+      await axios.post("http://localhost:8080/san-pham/add", payload,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
 
       toast.success("Thêm thành công");
       router.push("/san-pham");

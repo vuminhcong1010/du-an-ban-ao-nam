@@ -164,6 +164,9 @@ import { ref, watch, onBeforeUnmount } from 'vue'
 import { defineEmits } from 'vue'
 import QRCode from 'qrcode'
 import Swal from 'sweetalert2'
+import Cookies from 'js-cookie'
+
+const token = Cookies.get('token')
 const toast = useToast();
 const props = defineProps({
   idChiTietSanPham: {
@@ -264,7 +267,11 @@ const validateForm = () => {
 // Fetch dữ liệu sản phẩm khi props thay đổi
 watch(() => props.idChiTietSanPham, async (newVal) => {
   try {
-    const response = await axios.get(`http://localhost:8080/san-pham/find-by-id/${newVal}`)
+    const response = await axios.get(`http://localhost:8080/san-pham/find-by-id/${newVal}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     const data = response.data
     chatLieu.value = data.wrapper.chatLieus
     kieuAo.value = data.wrapper.kieuAos
@@ -389,7 +396,11 @@ async function uploadAllImages() {
   console.log(req.value);
   try {
     if(validateForm()){
-         await axios.post("http://localhost:8080/san-pham/update-chi-tiet-san-pham",req.value)
+         await axios.post("http://localhost:8080/san-pham/update-chi-tiet-san-pham",req.value,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
      setTimeout(() => {
   }, 500);
     toast.success("Cập nhật thành công");

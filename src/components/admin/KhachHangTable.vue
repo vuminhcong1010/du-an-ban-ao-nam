@@ -65,7 +65,9 @@ import axios from "axios";
 import { Edit, Trash } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 import { useToast } from "vue-toastification"; // Import useToast
+import Cookies from 'js-cookie'
 
+const token = Cookies.get('token')
 
 export default {
   name: "KhachHangTable",
@@ -171,7 +173,13 @@ export default {
       };
 
 
-      axios.get('/api/khach-hang/search-and-filter', { params })
+      axios.get('/api/khach-hang/search-and-filter', {
+      params ,
+      headers: {
+      Authorization: `Bearer ${token}`
+    }
+  
+      })
         .then(response => {
           console.log(response.data);
           this.khachHangs = response.data.content;

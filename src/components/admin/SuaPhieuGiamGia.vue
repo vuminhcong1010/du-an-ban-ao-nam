@@ -204,7 +204,7 @@
 <script>
 import { useToast } from 'vue-toastification';
 import Swal from 'sweetalert2';
-
+import Cookies from 'js-cookie'
 export default {
   name: "SuaPhieuGiamGia",
   setup() {
@@ -213,6 +213,7 @@ export default {
   },
   data() {
     return {
+      token: Cookies.get('token'),
       submitted: false,
       id: null,
       giaTriOption: "phanTram",
@@ -364,7 +365,11 @@ export default {
     },
     async getDanhSachKhachHang() {
       try {
-        const response = await fetch("http://localhost:8080/danhSachKhachHang");
+        const response = await fetch("http://localhost:8080/danhSachKhachHang", {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
         if (!response.ok) throw new Error("Không thể tải danh sách khách hàng");
         this.danhSachKhachHang = await response.json();
         this.currentPage = 1;
@@ -377,7 +382,11 @@ export default {
     },
     async getPhieuGiamGiaById() {
       try {
-        const response = await fetch(`http://localhost:8080/phieuGiamGias/${this.$route.params.id}`);
+        const response = await fetch(`http://localhost:8080/phieuGiamGias/${this.$route.params.id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
         if (response.ok) {
           const phieu = await response.json();
           console.log("API Response:", JSON.stringify(phieu, null, 2));
@@ -409,7 +418,11 @@ export default {
           }
 
           if (this.loaiPhieu === "Cá nhân") {
-            const chiTietResponse = await fetch(`http://localhost:8080/chiTietPhieuGiamGias/${this.$route.params.id}`);
+            const chiTietResponse = await fetch(`http://localhost:8080/chiTietPhieuGiamGias/${this.$route.params.id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
             if (chiTietResponse.ok) {
               const chiTietData = await chiTietResponse.json();
               this.selectedRows = chiTietData.map((chiTiet) => chiTiet.idKhachHang.id);
@@ -620,7 +633,10 @@ export default {
       try {
         const response = await fetch(`http://localhost:8080/phieuGiamGias/${this.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            Authorization: `Bearer ${this.token}`,
+            "Content-Type": "application/json"
+           },
           body: JSON.stringify(phieu),
         });
 
