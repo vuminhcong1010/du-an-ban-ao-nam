@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
+import axios from 'axios';
 
 // Props
 const props = defineProps({
@@ -18,7 +19,8 @@ const fetchPhieuGiamGia = async () => {
   try {
     const response = await fetch(`http://localhost:8080/ban_hang/phieuGG/khachHang/${props.khachHangId}`);
     const data = await response.json();
-    listPhieuGiam.value = data;
+    // Chỉ hiển thị phiếu còn số lượng > 0
+    listPhieuGiam.value = data.filter(p => p.soLuong > 0 && p.trangThai === 1);
   } catch (error) {
     console.error("Lỗi fetch phiếu giảm giá:", error);
     alert("Không thể tải danh sách phiếu giảm giá. Vui lòng kiểm tra ID khách hàng.");
@@ -33,10 +35,24 @@ const formatCurrency = (val) => {
 // Emit chọn phiếu
 const emit = defineEmits(["close", "selected"]);
 
-const apply = () => {
+const apply = async () => {
   if (selectedPhieu.value) {
-    emit("selected", selectedPhieu.value);
-    emit("close");
+    try {
+      // Gọi API giảm số lượng
+      await axios.put(`http://localhost:8080/ban_hang/phieuGG/decrease/${selectedPhieu.value.id}`);
+      
+      // Cập nhật số lượng trong danh sách hiển thị
+      const index = listPhieuGiam.value.findIndex(p => p.id === selectedPhieu.value.id);
+      if (index !== -1) {
+        listPhieuGiam.value[index].soLuong -= 1;
+      }
+      
+      emit("selected", selectedPhieu.value);
+      emit("close");
+    } catch (error) {
+      console.error("Lỗi khi giảm số lượng phiếu:", error);
+      alert("Không thể áp dụng phiếu giảm giá. " + (error.response?.data?.message || error.message));
+    }
   } else {
     alert("Vui lòng chọn một phiếu giảm giá.");
   }
