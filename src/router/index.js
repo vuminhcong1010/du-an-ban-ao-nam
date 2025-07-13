@@ -172,16 +172,40 @@ const router = createRouter({
   ],
 });
 // ✅ Navigation Guard sử dụng cookie
-router.beforeEach((to, from, next) => {
-  const token = Cookies.get('token')
 
-  if (!token && to.path !== '/login') {
-    next('/login')
-  } else if (token && to.path === '/login') {
-    next('/')
-  } else {
-    next()
+
+router.beforeEach((to, from, next) => {
+  const token = Cookies.get("token");
+
+  // 1. Chưa có token => bắt đăng nhập
+  if (!token && to.path !== "/login") {
+    return next("/login");
   }
-})
+
+  // 2. Đã đăng nhập nhưng vào lại /login => đá về /
+  if (token && to.path === "/login") {
+    return next("/");
+  }
+
+  // 3. Giải mã token để lấy vai trò (nếu lưu vai trò trong token JWT)
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1])); // payload ở giữa
+      const vaiTro = payload.scope || payload.vaiTro || ""; // tuỳ tên key bạn dùng
+
+      // Nếu là STAFF mà truy cập /nhan-vien thì cấm
+      if (vaiTro === "STAFF" && to.path.startsWith("/nhan-vien")) {
+        
+        return next("/"); // Hoặc next('/403') nếu bạn có trang cấm truy cập
+      }
+    } catch (err) {
+      // Token lỗi => xoá token và chuyển về login
+      Cookies.remove("token");
+      return next("/login");
+    }
+  }
+
+  next();
+});
 
 export default router;
