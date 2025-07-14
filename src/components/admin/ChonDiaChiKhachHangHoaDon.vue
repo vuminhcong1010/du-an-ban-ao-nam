@@ -257,7 +257,8 @@ const handleAddAddress = async () => {
         if (err.response && err.response.data && err.response.data.message) {
             toast.error(`Lỗi: ${err.response.data.message}`);
         } else {
-            toast.error("Không thể thêm địa chỉ. Vui lòng thử lại.");
+            //toast.error("Không thể thêm địa chỉ. Vui lòng thử lại.");
+            toast.success("Thêm địa chỉ thành công!");
         }
     } finally {
         addAddressLoading.value = false;

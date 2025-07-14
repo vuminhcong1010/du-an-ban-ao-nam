@@ -15,7 +15,7 @@ import ThemKhachHangHoaDon from "./ThemKhachHangHoaDon.vue";
 import ChonDiaChiPopup from "./ChonDiaChiKhachHangHoaDon.vue"; // Import component popup chọn địa chỉ
 
 // Khởi tạo danh sách đơn hàng từ localStorage nếu có
-const orders = ref([]);
+const orders = ref([]); // GIỮ NGUYÊN TÊN 'orders' theo yêu cầu
 
 const storedOrders = localStorage.getItem("orders");
 if (storedOrders) {
@@ -23,18 +23,18 @@ if (storedOrders) {
     const parsedOrders = JSON.parse(storedOrders);
     orders.value = parsedOrders.map(order => ({
       ...order,
-      shippingMethod: order.shippingMethod || 'direct',
-      deliveryInfo: order.deliveryInfo || {
+      phuongThucVanChuyen: order.phuongThucVanChuyen || 'direct', // Đã đổi sang tiếng Việt
+      thongTinGiaoHang: order.thongTinGiaoHang || { // Đã đổi sang tiếng Việt
         tenNguoiNhan: '',
         soDienThoaiNguoiNhan: '',
-        diaChiGiaoHang: '',
+        diaChiGiaoHangTongHop: '', // Địa chỉ tổng hợp, đã đổi tên
         tinhThanhPho: '',
         quanHuyen: '',
         xaPhuong: '',
         diaChiChiTiet: '',
-        isMacDinh: false,
+        laMacDinh: false, // Đã đổi tên
       },
-      listSanPham: order.listSanPham || [],
+      listSanPham: order.listSanPham || [], // Giữ nguyên tên listSanPham
     }));
   } catch (e) {
     console.error("Lỗi parse orders từ localStorage:", e);
@@ -42,7 +42,7 @@ if (storedOrders) {
   }
 }
 
-// Active tab hiện tại (đơn hàng đang thao tác)
+// Active tab hiện tại (đơn hàng đang thao tác) - Giữ nguyên tên tiếng Anh
 const activeTab = ref(null);
 const storedActiveTab = localStorage.getItem("activeTab");
 if (storedActiveTab) {
@@ -54,25 +54,26 @@ if (storedActiveTab) {
   }
 }
 
-// ID đơn tiếp theo
+// ID đơn tiếp theo - Giữ nguyên tên tiếng Anh
 let nextOrderId =
   orders.value.length > 0
     ? Math.max(...orders.value.map((o) => o.id)) + 1
     : 1;
 
-// Tạo đơn mới
+// Tạo đơn mới - Giữ nguyên tên tiếng Anh
 function createNewOrder() {
   const newOrder = {
     id: nextOrderId++,
     name: `Đơn ${nextOrderId - 1}`,
-    listSanPham: [],
-    khachHang: null,
-    giamGia: null,
-    shippingMethod: 'direct',
-    deliveryInfo: {
+    listSanPham: [], // Giữ nguyên tên listSanPham
+    khachHang: null, // GIỮ NGUYÊN TÊN TIẾNG VIỆT 'khachHang'
+    giamGia: null, // Giữ nguyên tên giamGia
+    // Thêm các thuộc tính liên quan đến giao hàng với tên tiếng Việt
+    phuongThucVanChuyen: 'direct', // Đã đổi sang tiếng Việt
+    thongTinGiaoHang: { // Đã đổi sang tiếng Việt
       tenNguoiNhan: '',
       soDienThoaiNguoiNhan: '',
-      diaChiGiaoHang: '',
+      diaChiGiaoHangTongHop: '', // Địa chỉ tổng hợp
       tinhThanhPho: '',
       quanHuyen: '',
       xaPhuong: '',
@@ -84,7 +85,7 @@ function createNewOrder() {
   activeTab.value = newOrder.id;
 }
 
-// Đóng đơn hàng
+// Đóng đơn hàng - Giữ nguyên tên tiếng Anh
 function closeOrder(id) {
   orders.value = orders.value.filter((o) => o.id !== id);
   if (activeTab.value === id) {
@@ -92,13 +93,13 @@ function closeOrder(id) {
   }
 }
 
-// Hàm xóa sản phẩm khỏi giỏ hàng
+// Hàm xóa sản phẩm khỏi giỏ hàng - Giữ nguyên tên tiếng Anh
 const removeItem = (order, index) => {
   order.listSanPham.splice(index, 1);
 };
 
 
-// --- Phần Sản phẩm ---
+// --- Phần Sản phẩm --- (Giữ nguyên)
 const hienThiThemSanPham = ref(false);
 
 const moPopupThemSanPham = () => {
@@ -125,39 +126,36 @@ const nhanSanPhamDaChon = (danhSachSanPham) => {
 
 
 
-// --- Phần Khách hàng và Giao hàng ---
-const hienThiThemKhachHangPopup = ref(false);
-const hienThiChonDiaChiPopup = ref(false); // Biến để điều khiển popup chọn địa chỉ
+// --- Phần Khách hàng và Giao hàng (CHỈNH SỬA) ---
+const hienThiThemKhachHangPopup = ref(false); // Biến điều khiển popup khách hàng
+const hienThiChonDiaChiPopup = ref(false); // Biến điều khiển popup chọn địa chỉ
 
-// Computed property để lấy khách hàng của đơn hàng đang active
-const currentActiveOrderCustomer = computed(() => {
-  const activeOrder = orders.value.find((o) => o.id === activeTab.value);
-  return activeOrder ? activeOrder.khachHang : null;
+// Computed property để lấy ĐƠN HÀNG đang active (để dễ truy cập các thuộc tính của đơn hàng trong script)
+// Đổi tên biến này để rõ ràng hơn và tránh nhầm lẫn với việc truy cập trực tiếp trong template
+const donHangDangChon = computed(() => {
+  return orders.value.find((o) => o.id === activeTab.value);
 });
 
 // Computed property để lấy phương thức vận chuyển của đơn hàng đang active
-const currentShippingMethod = computed({
+const phuongThucVanChuyenDangChon = computed({
   get() {
-    const activeOrder = orders.value.find((o) => o.id === activeTab.value);
-    return activeOrder ? activeOrder.shippingMethod : 'direct';
+    return donHangDangChon.value ? donHangDangChon.value.phuongThucVanChuyen : 'direct';
   },
   set(newValue) {
-    const activeOrder = orders.value.find((o) => o.id === activeTab.value);
-    if (activeOrder) {
-      activeOrder.shippingMethod = newValue;
-      handleShippingMethodChange(newValue);
+    if (donHangDangChon.value) {
+      donHangDangChon.value.phuongThucVanChuyen = newValue;
+      xuLyThayDoiPhuongThucVanChuyen(newValue);
     }
   }
 });
 
 // Computed property để lấy/set thông tin giao hàng của đơn hàng đang active
-const currentDeliveryInfo = computed({
+const thongTinGiaoHangDangChon = computed({
   get() {
-    const activeOrder = orders.value.find((o) => o.id === activeTab.value);
-    return activeOrder ? activeOrder.deliveryInfo : {
+    return donHangDangChon.value ? donHangDangChon.value.thongTinGiaoHang : {
       tenNguoiNhan: '',
       soDienThoaiNguoiNhan: '',
-      diaChiGiaoHang: '',
+      diaChiGiaoHangTongHop: '',
       tinhThanhPho: '',
       quanHuyen: '',
       xaPhuong: '',
@@ -166,22 +164,21 @@ const currentDeliveryInfo = computed({
     };
   },
   set(newValue) {
-    const activeOrder = orders.value.find((o) => o.id === activeTab.value);
-    if (activeOrder) {
-      activeOrder.deliveryInfo = newValue;
+    if (donHangDangChon.value) {
+      donHangDangChon.value.thongTinGiaoHang = newValue;
     }
   }
 });
 
 // Hàm điền địa chỉ mặc định từ API
-const fillDefaultDeliveryAddress = async () => {
-  const customer = currentActiveOrderCustomer.value;
-  if (!customer || !customer.id) { // Kiểm tra có khách hàng và ID không
-    // Nếu không có khách hàng, reset deliveryInfo
-    currentDeliveryInfo.value = {
+const dienDiaChiMacDinh = async () => {
+  const khachHangCuaDonHang = donHangDangChon.value ? donHangDangChon.value.khachHang : null;
+  if (!khachHangCuaDonHang || !khachHangCuaDonHang.id) { // Kiểm tra có khách hàng và ID không
+    // Nếu không có khách hàng, reset thongTinGiaoHang
+    thongTinGiaoHangDangChon.value = {
       tenNguoiNhan: '',
       soDienThoaiNguoiNhan: '',
-      diaChiGiaoHang: '',
+      diaChiGiaoHangTongHop: '',
       tinhThanhPho: '',
       quanHuyen: '',
       xaPhuong: '',
@@ -192,34 +189,34 @@ const fillDefaultDeliveryAddress = async () => {
   }
 
   try {
-    const response = await axios.get(`http://localhost:8080/api/dia-chi/mac-dinh/khach-hang/${customer.id}`);
-    const defaultAddress = response.data; // Đây là DiaChiDTO từ BE
+    const response = await axios.get(`http://localhost:8080/api/dia-chi/mac-dinh/khach-hang/${khachHangCuaDonHang.id}`);
+    const diaChiMacDinh = response.data; // Đây là DiaChiDTO từ BE
 
-    if (defaultAddress) {
-      console.log("Địa chỉ mặc định nhận được:", defaultAddress);
-      currentDeliveryInfo.value = {
-        tenNguoiNhan: defaultAddress.tenNguoiNhan || customer.tenKhachHang || '',
-        soDienThoaiNguoiNhan: defaultAddress.soDienThoaiNguoiNhan || customer.soDienThoai || '',
+    if (diaChiMacDinh) {
+      console.log("Địa chỉ mặc định nhận được:", diaChiMacDinh);
+      thongTinGiaoHangDangChon.value = {
+        tenNguoiNhan: diaChiMacDinh.tenNguoiNhan || khachHangCuaDonHang.tenKhachHang || '',
+        soDienThoaiNguoiNhan: diaChiMacDinh.soDienThoaiNguoiNhan || khachHangCuaDonHang.soDienThoai || '',
         // Tạo địa chỉ tổng hợp KHÔNG CÓ TÊN, SĐT. Chỉ có địa chỉ chi tiết, xã, quận, tỉnh
-        diaChiGiaoHang: [
-          defaultAddress.diaChiChiTiet || '',
-          defaultAddress.xaPhuong || '',
-          defaultAddress.quanHuyen || '',
-          defaultAddress.tinhThanhPho || ''
+        diaChiGiaoHangTongHop: [
+          diaChiMacDinh.diaChiChiTiet || '',
+          diaChiMacDinh.xaPhuong || '',
+          diaChiMacDinh.quanHuyen || '',
+          diaChiMacDinh.tinhThanhPho || ''
         ].filter(part => part).join(', '),
-        tinhThanhPho: defaultAddress.tinhThanhPho || '',
-        quanHuyen: defaultAddress.quanHuyen || '',
-        xaPhuong: defaultAddress.xaPhuong || '',
-        diaChiChiTiet: defaultAddress.diaChiChiTiet || '',
+        tinhThanhPho: diaChiMacDinh.tinhThanhPho || '',
+        quanHuyen: diaChiMacDinh.quanHuyen || '',
+        xaPhuong: diaChiMacDinh.xaPhuong || '',
+        diaChiChiTiet: diaChiMacDinh.diaChiChiTiet || '',
         isMacDinh: true, // Đánh dấu là địa chỉ mặc định
       };
     } else {
-      console.log("Không tìm thấy địa chỉ mặc định cho khách hàng:", customer.id);
+      console.log("Không tìm thấy địa chỉ mặc định cho khách hàng:", khachHangCuaDonHang.id);
       // Nếu không có địa chỉ mặc định, vẫn điền tên và sđt của KH, địa chỉ để trống
-      currentDeliveryInfo.value = {
-        tenNguoiNhan: customer.tenKhachHang ?? '',
-        soDienThoaiNguoiNhan: customer.soDienThoai ?? '',
-        diaChiGiaoHang: '', // Để trống vì không có địa chỉ mặc định chi tiết
+      thongTinGiaoHangDangChon.value = {
+        tenNguoiNhan: khachHangCuaDonHang.tenKhachHang ?? '',
+        soDienThoaiNguoiNhan: khachHangCuaDonHang.soDienThoai ?? '',
+        diaChiGiaoHangTongHop: '', // Để trống vì không có địa chỉ mặc định chi tiết
         tinhThanhPho: '',
         quanHuyen: '',
         xaPhuong: '',
@@ -230,29 +227,29 @@ const fillDefaultDeliveryAddress = async () => {
   } catch (error) {
     console.error("Lỗi khi lấy địa chỉ mặc định:", error);
     // Xử lý lỗi, có thể thông báo cho người dùng hoặc điền thông tin cơ bản
-    currentDeliveryInfo.value = {
-        tenNguoiNhan: customer.tenKhachHang ?? '',
-        soDienThoaiNguoiNhan: customer.soDienThoai ?? '',
-        diaChiGiaoHang: '', // Để trống vì không lấy được địa chỉ
-        tinhThanhPho: '',
-        quanHuyen: '',
-        xaPhuong: '',
-        diaChiChiTiet: '',
-        isMacDinh: false,
-      };
+    thongTinGiaoHangDangChon.value = {
+      tenNguoiNhan: khachHangCuaDonHang.tenKhachHang ?? '',
+      soDienThoaiNguoiNhan: khachHangCuaDonHang.soDienThoai ?? '', // Lỗi ở đây, sửa thành khachHangCuaDonHang
+      diaChiGiaoHangTongHop: '', // Để trống vì không lấy được địa chỉ
+      tinhThanhPho: '',
+      quanHuyen: '',
+      xaPhuong: '',
+      diaChiChiTiet: '',
+      isMacDinh: false,
+    };
   }
 };
 
 // Hàm xử lý khi phương thức vận chuyển thay đổi
-const handleShippingMethodChange = (method) => {
-  if (method === 'delivery') {
-    fillDefaultDeliveryAddress(); // Gọi hàm điền địa chỉ khi chuyển sang giao hàng
+const xuLyThayDoiPhuongThucVanChuyen = (phuongThuc) => {
+  if (phuongThuc === 'delivery') {
+    dienDiaChiMacDinh(); // Gọi hàm điền địa chỉ khi chuyển sang giao hàng
   } else {
     // Nếu chuyển sang "Tại quầy", reset thông tin giao hàng
-    currentDeliveryInfo.value = {
+    thongTinGiaoHangDangChon.value = {
       tenNguoiNhan: '',
       soDienThoaiNguoiNhan: '',
-      diaChiGiaoHang: '',
+      diaChiGiaoHangTongHop: '',
       tinhThanhPho: '',
       quanHuyen: '',
       xaPhuong: '',
@@ -264,15 +261,15 @@ const handleShippingMethodChange = (method) => {
 
 // Watch khi activeTab thay đổi, để cập nhật lại thông tin giao hàng dựa trên đơn hàng mới
 watch(activeTab, (newActiveTabId) => {
-  if (newActiveTabId !== null && currentShippingMethod.value === 'delivery') {
-    fillDefaultDeliveryAddress();
+  if (newActiveTabId !== null && phuongThucVanChuyenDangChon.value === 'delivery') {
+    dienDiaChiMacDinh();
   }
 });
 
 // Watch khi khách hàng của đơn hàng active thay đổi
-watch(currentActiveOrderCustomer, (newCustomer) => {
-  if (currentShippingMethod.value === 'delivery') {
-    fillDefaultDeliveryAddress();
+watch(() => donHangDangChon.value?.khachHang, (newKhachHang) => {
+  if (phuongThucVanChuyenDangChon.value === 'delivery') {
+    dienDiaChiMacDinh();
   }
 }, { deep: true });
 
@@ -280,29 +277,29 @@ const moPopupChonKhachHang = () => {
   hienThiThemKhachHangPopup.value = true;
 };
 
-const nhanKhachHangTuPopup = (khachHangDuocChon) => {
-  const activeOrder = orders.value.find((o) => o.id === activeTab.value);
-  if (activeOrder) {
-    activeOrder.khachHang = { ...khachHangDuocChon };
-    // Khi chọn khách hàng, tự động điền tên và số điện thoại vào deliveryInfo
-    activeOrder.deliveryInfo.tenNguoiNhan = khachHangDuocChon.tenKhachHang ?? '';
-    activeOrder.deliveryInfo.soDienThoaiNguoiNhan = khachHangDuocChon.soDienThoai ?? '';
+const xuLyKhachHangDuocChon = (khachHangDuocChon) => {
+  const donHang = donHangDangChon.value;
+  if (donHang) {
+    donHang.khachHang = { ...khachHangDuocChon };
+    // Khi chọn khách hàng, tự động điền tên và số điện thoại vào thongTinGiaoHang
+    donHang.thongTinGiaoHang.tenNguoiNhan = khachHangDuocChon.tenKhachHang ?? '';
+    donHang.thongTinGiaoHang.soDienThoaiNguoiNhan = khachHangDuocChon.soDienThoai ?? '';
 
-    if (activeOrder.shippingMethod === 'delivery') {
-      fillDefaultDeliveryAddress();
+    if (donHang.phuongThucVanChuyen === 'delivery') {
+      dienDiaChiMacDinh();
     }
   }
   hienThiThemKhachHangPopup.value = false;
 };
 
-const clearSelectedCustomer = () => {
-  const activeOrder = orders.value.find((o) => o.id === activeTab.value);
-  if (activeOrder) {
-    activeOrder.khachHang = null;
-    activeOrder.deliveryInfo = {
+const xoaKhachHangDaChon = () => {
+  const donHang = donHangDangChon.value;
+  if (donHang) {
+    donHang.khachHang = null;
+    donHang.thongTinGiaoHang = {
       tenNguoiNhan: '',
       soDienThoaiNguoiNhan: '',
-      diaChiGiaoHang: '',
+      diaChiGiaoHangTongHop: '',
       tinhThanhPho: '',
       quanHuyen: '',
       xaPhuong: '',
@@ -310,14 +307,15 @@ const clearSelectedCustomer = () => {
       isMacDinh: false,
     };
   }
-  if (currentShippingMethod.value === 'delivery') {
-    fillDefaultDeliveryAddress();
+  if (phuongThucVanChuyenDangChon.value === 'delivery') {
+    dienDiaChiMacDinh();
   }
 };
 
 // --- Logic cho popup chọn địa chỉ khác ---
 const moPopupChonDiaChi = () => {
-  if (!currentActiveOrderCustomer.value || !currentActiveOrderCustomer.value.id) {
+  const khachHangCuaDonHang = donHangDangChon.value ? donHangDangChon.value.khachHang : null;
+  if (!khachHangCuaDonHang || !khachHangCuaDonHang.id) {
     alert("Vui lòng chọn khách hàng trước khi chọn địa chỉ!");
     return;
   }
@@ -325,13 +323,13 @@ const moPopupChonDiaChi = () => {
 };
 
 // Hàm nhận địa chỉ đã chọn từ popup
-const nhanDiaChiTuPopup = (diaChiDuocChon) => {
-    if (diaChiDuocChon) {
-        currentDeliveryInfo.value = {
+const xuLyDiaChiDuocChon = (diaChiDuocChon) => {
+    if (diaChiDuocChon && donHangDangChon.value) { // Đảm bảo donHangDangChon.value tồn tại
+        thongTinGiaoHangDangChon.value = {
             // Ưu tiên thông tin từ địa chỉ được chọn, nếu không có thì lấy từ khách hàng hiện tại
-            tenNguoiNhan: diaChiDuocChon.tenNguoiNhan || currentActiveOrderCustomer.value.tenKhachHang || '',
-            soDienThoaiNguoiNhan: diaChiDuocChon.soDienThoaiNguoiNhan || currentActiveOrderCustomer.value.soDienThoai || '',
-            diaChiGiaoHang: [ // Cập nhật địa chỉ tổng hợp
+            tenNguoiNhan: diaChiDuocChon.tenNguoiNhan || (donHangDangChon.value.khachHang?.tenKhachHang || ''),
+            soDienThoaiNguoiNhan: diaChiDuocChon.soDienThoaiNguoiNhan || (donHangDangChon.value.khachHang?.soDienThoai || ''),
+            diaChiGiaoHangTongHop: [ // Cập nhật địa chỉ tổng hợp
                 diaChiDuocChon.diaChiChiTiet || '',
                 diaChiDuocChon.xaPhuong || '',
                 diaChiDuocChon.quanHuyen || '',
@@ -351,8 +349,8 @@ const nhanDiaChiTuPopup = (diaChiDuocChon) => {
 // Hàm này sẽ chỉ được gọi nếu chúng ta muốn "chỉnh sửa" địa chỉ sau khi đã điền
 // Tuy nhiên, theo yêu cầu mới, chúng ta sẽ không cho phép chỉnh sửa trực tiếp các trường chi tiết này nữa
 // Nên hàm này có thể được đơn giản hóa hoặc loại bỏ nếu không dùng
-const updateCombinedAddress = () => {
-  const info = currentDeliveryInfo.value;
+const capNhatDiaChiTongHop = () => {
+  const info = thongTinGiaoHangDangChon.value;
   const parts = [];
   // Thứ tự này quan trọng để tạo chuỗi địa chỉ dễ đọc
   if (info.diaChiChiTiet) parts.push(info.diaChiChiTiet);
@@ -360,23 +358,19 @@ const updateCombinedAddress = () => {
   if (info.quanHuyen) parts.push(info.quanHuyen);
   if (info.tinhThanhPho) parts.push(info.tinhThanhPho);
 
-  currentDeliveryInfo.value.diaChiGiaoHang = parts.filter(part => part).join(', ');
+  thongTinGiaoHangDangChon.value.diaChiGiaoHangTongHop = parts.filter(part => part).join(', ');
 };
-
-
-
-
 
 // --- Lưu vào localStorage mỗi khi thay đổi ---
 watch(
-  orders,
+  orders, // GIỮ NGUYÊN 'orders'
   (newVal) => {
     localStorage.setItem("orders", JSON.stringify(newVal));
   },
   { deep: true }
 );
 
-watch(activeTab, (newVal) => {
+watch(activeTab, (newVal) => { // GIỮ NGUYÊN 'activeTab'
   localStorage.setItem("activeTab", JSON.stringify(newVal));
 });
 </script>
@@ -464,7 +458,7 @@ watch(activeTab, (newVal) => {
         <ThemSanPham v-if="hienThiThemSanPham" :maHoaDon="activeTab" @selected="nhanSanPhamDaChon"
           @close="hienThiThemSanPham = false" />
       </div>
-      <!-- // Phần thông tin Khách hàng -->
+           <!-- PHẦN KHÁCH HÀNG -->
       <div class="row gx-4">
         <div class="col-md-6">
           <div class="bg-white p-3 rounded mb-4 align-items-center border">
@@ -480,20 +474,19 @@ watch(activeTab, (newVal) => {
               </button>
             </div>
 
-            <div v-if="currentActiveOrderCustomer">
-              <div class="mb-2"><strong>Tên khách hàng:</strong> {{ currentActiveOrderCustomer.tenKhachHang }}</div>
-              <div class="mb-2"><strong>Số điện thoại:</strong> {{ currentActiveOrderCustomer.soDienThoai }}</div>
-              <div class="mb-2"><strong>Email:</strong> {{ currentActiveOrderCustomer.email || 'Chưa cập nhật' }}</div>
-              <div class="mb-2"><strong>Giới tính:</strong> {{ currentActiveOrderCustomer.gioiTinh ? 'Nam' : 'Nữ' }}</div>
-              <button class="btn btn-sm btn-outline-danger mt-2" @click="clearSelectedCustomer">Bỏ chọn khách hàng</button>
+            <div v-if="order.khachHang">
+              <div class="mb-2"><strong>Tên khách hàng:</strong> {{ order.khachHang.tenKhachHang }}</div>
+              <div class="mb-2"><strong>Số điện thoại:</strong> {{ order.khachHang.soDienThoai }}</div>
+              <div class="mb-2"><strong>Email:</strong> {{ order.khachHang.email || 'Chưa cập nhật' }}</div>
+              <div class="mb-2"><strong>Giới tính:</strong> {{ order.khachHang.gioiTinh ? 'Nam' : 'Nữ' }}</div>
+              <button class="btn btn-sm btn-outline-danger mt-2" @click="xoaKhachHangDaChon">Bỏ chọn khách hàng</button>
             </div>
             <div v-else class="text-muted">Chưa có khách hàng nào được chọn cho đơn hàng này.</div>
 
-            <ThemKhachHangHoaDon v-if="hienThiThemKhachHangPopup" :currentSelectedCustomer="currentActiveOrderCustomer"
-              @customerSelected="nhanKhachHangTuPopup" @close="hienThiThemKhachHangPopup = false" />
+            <ThemKhachHangHoaDon v-if="hienThiThemKhachHangPopup" :currentSelectedCustomer="order.khachHang"
+              @customerSelected="xuLyKhachHangDuocChon" @close="hienThiThemKhachHangPopup = false" />
           </div>
         </div>
-        <!-- Phần thông tin giao hàng và địa chỉ của khách hàng -->
         <div class="col-md-6">
           <div class="bg-white p-3 rounded mb-4 border">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -506,31 +499,31 @@ watch(activeTab, (newVal) => {
               <div>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input" type="radio" id="shippingDirect" value="direct"
-                    v-model="currentShippingMethod">
+                    v-model="phuongThucVanChuyenDangChon">
                   <label class="form-check-label" for="shippingDirect">Tại quầy</label>
                 </div>
                 <div class="form-check form-check-inline">
                   <input class="form-check-input" type="radio" id="shippingDelivery" value="delivery"
-                    v-model="currentShippingMethod">
+                    v-model="phuongThucVanChuyenDangChon">
                   <label class="form-check-label" for="shippingDelivery">Giao hàng</label>
                 </div>
               </div>
             </div>
 
-            <div v-if="currentShippingMethod === 'delivery'">
+            <div v-if="phuongThucVanChuyenDangChon === 'delivery'">
               <div class="mb-3">
-                <label for="recipientName" class="form-label">Tên người nhận:</label>
-                <input type="text" id="recipientName" class="form-control" v-model="currentDeliveryInfo.tenNguoiNhan" placeholder="Nhập tên người nhận">
+                <label for="tenNguoiNhan" class="form-label">Tên người nhận:</label>
+                <input type="text" id="tenNguoiNhan" class="form-control" v-model="thongTinGiaoHangDangChon.tenNguoiNhan" placeholder="Nhập tên người nhận">
               </div>
               <div class="mb-3">
-                <label for="recipientPhone" class="form-label">Số điện thoại người nhận:</label>
-                <input type="text" id="recipientPhone" class="form-control" v-model="currentDeliveryInfo.soDienThoaiNguoiNhan" placeholder="Nhập số điện thoại người nhận">
+                <label for="soDienThoaiNguoiNhan" class="form-label">Số điện thoại người nhận:</label>
+                <input type="text" id="soDienThoaiNguoiNhan" class="form-control" v-model="thongTinGiaoHangDangChon.soDienThoaiNguoiNhan" placeholder="Nhập số điện thoại người nhận">
               </div>
 
-              <div v-if="currentActiveOrderCustomer && currentDeliveryInfo.diaChiGiaoHang" class="alert alert-info py-2" role="alert">
+              <div v-if="order.khachHang && thongTinGiaoHangDangChon.diaChiGiaoHangTongHop" class="alert alert-info py-2" role="alert">
                   <p class="mb-1"><strong>Địa chỉ giao hàng:</strong></p>
                   <p class="mb-1">
-                      {{ currentDeliveryInfo.diaChiGiaoHang }}
+                      {{ thongTinGiaoHangDangChon.diaChiGiaoHangTongHop }}
                   </p>
                   <button class="btn btn-sm btn-link p-0" @click="moPopupChonDiaChi">Chọn địa chỉ khác</button>
               </div>
@@ -541,8 +534,8 @@ watch(activeTab, (newVal) => {
 
               <ChonDiaChiPopup
                   v-if="hienThiChonDiaChiPopup"
-                  :khachHangId="currentActiveOrderCustomer?.id"
-                  @diaChiSelected="nhanDiaChiTuPopup"
+                  :khachHangId="order.khachHang?.id"
+                  @diaChiSelected="xuLyDiaChiDuocChon"
                   @close="hienThiChonDiaChiPopup = false"
               />
 
