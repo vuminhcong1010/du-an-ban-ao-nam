@@ -20,7 +20,7 @@
         <td>{{ index + 1 + page * size }}</td>
         <td>{{ kh.maKhachHang }}</td>
         <td>{{ kh.tenKhachHang }}</td>
-        <td>{{ kh.gioiTinh ? 'Nam' : 'Nữ' }}</td>
+        <td>{{ kh.gioiTinh === null ? '' : (kh.gioiTinh ? 'Nam' : 'Nữ') }}</td>
         <td>{{ kh.ngaySinh ? new Date(kh.ngaySinh).toLocaleDateString('vi-VN') : 'Chưa cập nhật' }}</td>
         <td>{{ kh.soDienThoai }}</td>
         <td>{{ kh.email || 'Chưa cập nhật' }}</td>
