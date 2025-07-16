@@ -27,10 +27,7 @@
         <!-- <td>{{ kh.soHoaDonDaMua || 0 }}</td>
         <td>{{ kh.tongTien ? formatCurrency(kh.tongTien) : '0' }}</td> -->
         <td>
-          <span :class="{
-            'badge badge-success': kh.trangThai === 1,
-            'badge badge-danger': kh.trangThai === 0
-          }">
+          <span :class="['status-badge', kh.trangThai === 1 ? 'active' : 'inactive']">
             {{ kh.trangThai === 1 ? 'Đang hoạt động' : 'Dừng hoạt động' }}
           </span>
         </td>
@@ -232,6 +229,23 @@ export default {
   border-top: 1px solid #dee2e6;
 }
 
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background-color: #e6f4ea;
+  color: #1e7e34;
+}
+
+.status-badge.inactive {
+  background-color: #fbe9e7;
+  color: #d32f2f;
+}
 
 .table th {
   text-align: left;

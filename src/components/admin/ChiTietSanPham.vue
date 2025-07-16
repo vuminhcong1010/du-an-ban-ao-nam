@@ -132,8 +132,9 @@
           <td>{{ ds.soLuong }}</td>
           <td>{{ formatGia(ds.gia) }}</td>
           <td>
-            <span v-if="ds.trangThai === 1" class="badge rounded-pill" style="background-color: #3B82F6;">Đang bán</span>
-            <span v-else class="badge rounded-pill text-bg-warning text-white" style="background-color: #3B82F6;">Ngừng bán</span>
+            <span :class="['status-badge', ds.trangThai == 1 ? 'active' : 'inactive']">
+              {{ ds.trangThai == 1 ? 'Đang bán' : 'Ngừng bán' }}
+            </span>
           </td>
           <td>
             <i class="fa-solid fa-repeat me-3" title="thay đổi trạng thái" style="color: #CC0000; font-size: 1.3rem;" @click="remove(ds.id)"></i>
@@ -424,3 +425,26 @@ function isChecked(id) {
 }
 
 </script>
+<style scoped>
+
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background-color: #e6f4ea;
+  color: #1e7e34;
+}
+
+.status-badge.inactive {
+  background-color: #fbe9e7;
+  color: #d32f2f;
+}
+
+
+</style>
