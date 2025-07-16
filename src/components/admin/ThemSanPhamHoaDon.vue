@@ -6,7 +6,7 @@ const search = ref("");
 const selected = ref({});
 const quantities = ref({});
 let listSanPham = ref([]);
-// phân trang: 
+// phân trang:
 const currentPage = ref(0);
 const pageSize = ref(5);
 const totalPages = ref(0);
@@ -42,12 +42,9 @@ const prevPage = () => {
   }
 };
 
-
-// khác 
+// khác
 const route = useRoute();
 const maHoaDon = route.params.maHoaDon;
-
-
 
 // const fetchTodos = async () => {
 //   try {
@@ -152,8 +149,6 @@ const apply = async () => {
   emit("selected", selectedItems.value);
   emit("close");
 };
-
-
 </script>
 
 <template>
@@ -270,7 +265,7 @@ const apply = async () => {
               </thead>
               <tbody>
                 <tr v-for="(item, index) in listSanPham" :key="index">
-                  <td>{{ index + 1  }}</td>
+                  <td>{{ index + 1 }}</td>
                   <td>
                     <img
                       src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
@@ -320,23 +315,22 @@ const apply = async () => {
           </div>
           <!-- phân trang  -->
           <div class="d-flex justify-content-between align-items-center mt-3">
-  <button
-    class="btn btn-outline-primary"
-    :disabled="currentPage === 0"
-    @click="prevPage"
-  >
-    Trang trước
-  </button>
-  <span>Trang {{ currentPage + 1 }} / {{ totalPages }}</span>
-  <button
-    class="btn btn-outline-primary"
-    :disabled="currentPage >= totalPages - 1"
-    @click="nextPage"
-  >
-    Trang sau
-  </button>
-</div>
-
+            <button
+              class="btn btn-outline-primary"
+              :disabled="currentPage === 0"
+              @click="prevPage"
+            >
+              Trang trước
+            </button>
+            <span>Trang {{ currentPage + 1 }} / {{ totalPages }}</span>
+            <button
+              class="btn btn-outline-primary"
+              :disabled="currentPage >= totalPages - 1"
+              @click="nextPage"
+            >
+              Trang sau
+            </button>
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="$emit('close')">Hủy</button>

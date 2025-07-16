@@ -26,6 +26,8 @@ import ThemSP from "@/components/admin/ThemSP.vue";
 import SuaDotGiamGia from "@/components/admin/SuaDotGiamGia.vue";
 import ThemDotGiamGia from "@/components/admin/ThemDotGiamGia.vue";
 import DotGiamGia from "@/components/admin/DotGiamGia.vue";
+import BanHangTest from "@/components/admin/BanHangTest.vue";
+
 
 import PhieuGiamGiaBH from "@/components/admin/PhieuGiamGiaBH.vue";
 
@@ -39,6 +41,11 @@ const router = createRouter({
       path: "/hoa-don",
       name: "hoadon",
       component: HoaDon,
+    },
+    {
+      path: "/ban-hang-test",
+      name: "banhangtest",
+      component: BanHangTest,
     },
     {
       path: '/hoa-don-chi-tiet/:maHoaDon',
