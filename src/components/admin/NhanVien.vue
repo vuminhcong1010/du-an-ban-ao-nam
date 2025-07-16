@@ -40,7 +40,6 @@ const getData = async () => {
   }
 }
 
-
 const allColumns = [
   { key: 'anh', label: 'Ảnh' },
   { key: 'maNhanVien', label: 'Mã nhân viên' },
@@ -49,10 +48,8 @@ const allColumns = [
   { key: 'ngaySinh', label: 'Ngày sinh' },
   { key: 'sdt', label: 'Số điện thoại' },
   { key: 'gioiTinh', label: 'Giới tính' },
-  { key: 'tinhThanh', label: 'Tỉnh/Thành' },
-  { key: 'quanHuyen', label: 'Quận/Huyện' },
-  { key: 'xaPhuong', label: 'Xã/Phường' },
-  { key: 'thonXom', label: 'Thôn/Xóm' },
+  { key: 'vaiTro', label: 'Vai trò' },
+  { key: 'diaChi', label: 'Địa chỉ' }, // Thêm dòng này
   { key: 'email', label: 'Email' },
   { key: 'ghiChu', label: 'Ghi chú' },
   { key: 'trangThai', label: 'Trạng thái' },
@@ -72,7 +69,7 @@ const filterHovered = ref(false);
 // Filter states
 const filterState = ref({
   trangThai: '1',
-  namSinh: '', // năm sinh
+  vaiTro: '', // vai trò
   tinhThanh: '', // tỉnh thành
   search: ''
 });
@@ -101,6 +98,7 @@ const selectedProvince = ref(null);
 const selectedDistrict = ref(null);
 const selectedWard = ref(null);
 const fileInput = ref(null);
+const roles = ref([]); // Danh sách vai trò
 
 function getImageUrl(path) {
   if (!path) return '';
@@ -244,13 +242,9 @@ const filteredNhanVien = computed(() => {
     nv => String(nv.trangThai) === String(filterState.value.trangThai)
   );
 
-  // Lọc theo năm sinh
-  if (filterState.value.namSinh) {
-    result = result.filter(nv => {
-      if (!nv.ngaySinh) return false;
-      const year = new Date(nv.ngaySinh).getFullYear();
-      return String(year) === String(filterState.value.namSinh);
-    });
+  // Lọc theo tên vai trò
+  if (filterState.value.vaiTro) {
+    result = result.filter(nv => nv.tenVaiTro === filterState.value.vaiTro);
   }
 
   // Lọc theo tỉnh thành
@@ -414,7 +408,10 @@ watch(filteredNhanVien, () => { currentPage.value = 1; });
 
 onMounted(() => {
   getData();
-  fetchProvinces(); // Thêm dòng này để lấy danh sách tỉnh thành cho filter
+  fetchProvinces();
+  axios.get('http://localhost:8080/api/vai-tro/list-vai-Tro').then(res => {
+    roles.value = res.data;
+  });
   if (route.query.success === 'true') {
     toast.success('Thêm mới nhân viên thành công');
     window.history.replaceState({}, document.title, route.path);
@@ -568,9 +565,11 @@ async function handleFileChange(event) {
           </div>
         </div>
         <div class="filter-item">
-          <label>Năm sinh</label>
-          <input type="number" v-model="filterState.namSinh" min="1900" max="2100" placeholder="VD: 1999"
-            title="Lọc theo năm sinh nhân viên">
+          <label>Vai trò</label>
+          <select v-model="filterState.vaiTro" title="Lọc theo vai trò">
+            <option value="">Tất cả</option>
+            <option v-for="role in roles" :key="role.id" :value="role.tenVaiTro">{{ role.tenVaiTro }}</option>
+          </select>
         </div>
         <div class="filter-item">
           <label>Tỉnh/Thành</label>
@@ -631,6 +630,13 @@ async function handleFileChange(event) {
                     <template v-else-if="col.key === 'ngaySinh'">
                       {{ formatDate(nhanVien[col.key]) }}
                     </template>
+                    <template v-else-if="col.key === 'vaiTro'">
+                      {{ nhanVien.tenVaiTro || '' }}
+                    </template>
+                    <template v-else-if="col.key === 'diaChi'">
+                      <!-- Ghép địa chỉ đúng thứ tự: Thôn/Xóm, Xã/Phường, Quận/Huyện, Tỉnh/Thành -->
+                      {{ [nhanVien.thonXom, nhanVien.xaPhuong, nhanVien.quanHuyen, nhanVien.tinhThanh].filter(Boolean).join(', ') }}
+                    </template>
                     <template v-else>
                       {{ nhanVien[col.key] }}
                     </template>
@@ -644,40 +650,27 @@ async function handleFileChange(event) {
                         <img v-if="nhanVien.anh" :src="getImageUrl(nhanVien.anh)"
                           style="width: 100%; max-width: 160px; height: auto; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">
                       </div>
-                      <!-- Thông tin bên phải, chia 2 cột -->
+                      <!-- Thông tin bên phải, chia 2 cột, render từng trường -->
                       <div class="detail-fields">
-                        <div v-for="(col, i) in allColumns.filter(c => c.key !== 'anh')" :key="col.key"
-                          class="detail-field">
-                          <template v-if="col.key === 'cccd'">
-                            <div class="password-flex-row">
-                              <b class="detail-label" style="margin-right: 6px;">{{ col.label }}:</b>
-                              <span class="password-value">{{ showPassword[nhanVien.id] ? nhanVien.cccd :
-                                maskPassword(nhanVien.cccd) }}</span>
-                              <button @click.stop="togglePasswordVisibility(nhanVien.id)" class="password-toggle-btn"
-                                :title="showPassword[nhanVien.id] ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'">
-                                <Eye v-if="!showPassword[nhanVien.id]" size="16" />
-                                <EyeOff v-else size="16" />
-                              </button>
-                            </div>
-                          </template>
-                          <template v-else-if="col.key === 'gioiTinh'">
-                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}
-                          </template>
-                          <template v-else-if="col.key === 'trangThai'">
-                            <b class="detail-label">{{ col.label }}:</b>
-                            <span :class="['status-badge', nhanVien.trangThai == 1 ? 'active' : 'inactive']">
-                              {{ nhanVien.trangThai == 1 ? 'Đang làm việc' : 'Đã nghỉ' }}
-                            </span>
-                          </template>
-                          <template v-else-if="col.key === 'ngaySinh'">
-                            <b class="detail-label">{{ col.label }}:</b> {{ formatDate(nhanVien[col.key]) }}
-                          </template>
-                          <template v-else>
-                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien[col.key] }}
-                          </template>
+                        <div class="detail-field"><b class="detail-label">Mã nhân viên:</b> {{ nhanVien.maNhanVien }}</div>
+                        <div class="detail-field"><b class="detail-label">Tên nhân viên:</b> {{ nhanVien.tenNhanVien }}</div>
+                        <div class="detail-field"><b class="detail-label">Số điện thoại:</b> {{ nhanVien.sdt }}</div>
+                        <div class="detail-field"><b class="detail-label">Ngày sinh:</b> {{ formatDate(nhanVien.ngaySinh) }}</div>
+                        <div class="detail-field"><b class="detail-label">Giới tính:</b> {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}</div>
+                        <div class="detail-field"><b class="detail-label">Vai trò:</b> {{ nhanVien.tenVaiTro || '' }}</div>
+                        <div class="detail-field"><b class="detail-label">Quận/Huyện:</b> {{ nhanVien.quanHuyen }}</div>
+                        <div class="detail-field"><b class="detail-label">Xã/Phường:</b> {{ nhanVien.xaPhuong }}</div>
+                        <div class="detail-field"><b class="detail-label">Thôn/Xóm:</b> {{ nhanVien.thonXom }}</div>
+                        <div class="detail-field"><b class="detail-label">Tỉnh/Thành:</b> {{ nhanVien.tinhThanh }}</div>
+                        <div class="detail-field"><b class="detail-label">Email:</b> {{ nhanVien.email }}</div>
+                        <div class="detail-field"><b class="detail-label">Ghi chú:</b> {{ nhanVien.ghiChu }}</div>
+                        <div class="detail-field"><b class="detail-label">Trạng thái:</b>
+                          <span :class="['status-badge', nhanVien.trangThai == 1 ? 'active' : 'inactive']">
+                            {{ nhanVien.trangThai == 1 ? 'Đang làm việc' : 'Đã nghỉ' }}
+                          </span>
                         </div>
                       </div>
-                      <!-- Nút thao tác -->
+                      <!-- Nút thao tác giữ nguyên -->
                       <div class="employee-detail-actions detail-actions-abs">
                         <template v-if="nhanVien.trangThai == 1">
                           <button class="action-btn edit" title="Sửa thông tin nhân viên"
@@ -1064,7 +1057,6 @@ async function handleFileChange(event) {
   cursor: pointer;
   transition: box-shadow 0.18s, border 0.18s;
   outline: none;
-  padding: 0;
 }
 
 .filter-arrow-btn:hover {

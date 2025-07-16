@@ -89,8 +89,8 @@
               </span>
             </td>
             <td>
-              <span class="badge rounded-pill" :style="{ backgroundColor: sp.trangThai === 1 ? '#10b981' : '#D14343' }">
-                {{ sp.trangThai === 1 ? "Đang bán" : "Ngừng bán" }}
+              <span :class="['status-badge', sp.trangThai === 1 ? 'active' : 'inactive']">
+                {{ sp.trangThai === 1 ? 'Đang bán' : 'Ngừng bán' }}
               </span>
             </td>
             <td>
@@ -247,5 +247,24 @@ onMounted(fetchData)
 <style scoped>
 .badge {
   font-size: 0.85rem;
+}
+
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background-color: #e6f4ea;
+  color: #1e7e34;
+}
+
+.status-badge.inactive {
+  background-color: #fbe9e7;
+  color: #d32f2f;
 }
 </style>

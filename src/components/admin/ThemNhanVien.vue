@@ -27,7 +27,8 @@ const formData = ref({
   thonXom: '',
   email: '',
   ghiChu: '',
-  trangThai: 1
+  trangThai: 1,
+  idVaiTro: '' // Thêm trường vai trò
 })
 
 const errorToasts = ref([]);
@@ -41,6 +42,7 @@ const selectedDistrict = ref('');
 const selectedWard = ref('');
 const showQRModal = ref(false)
 const showCCCD = ref(false)
+const roles = ref([]); // Danh sách vai trò
 
 
 const getAllNhanVien = async () => {
@@ -68,6 +70,9 @@ const fetchWards = async (districtCode) => {
 onMounted(async () => {
   await fetchProvinces();
   getAllNhanVien();
+  axios.get('http://localhost:8080/api/vai-tro/list-vai-Tro').then(res => {
+    roles.value = res.data;
+  });
 
   if (route.params.id) {
     try {
@@ -76,6 +81,15 @@ onMounted(async () => {
       // Nếu có ảnh và đường dẫn không phải http, thêm host vào
       if (formData.value.anh && !formData.value.anh.startsWith('http')) {
         formData.value.anh = `http://localhost:8080${formData.value.anh}`;
+      }
+      // Gán lại idVaiTro nếu có (tương thích cả vaiTroId hoặc idVaiTro hoặc tenVaiTro)
+      if (res.data.idVaiTro) {
+        formData.value.idVaiTro = res.data.idVaiTro;
+      } else if (res.data.vaiTroId) {
+        formData.value.idVaiTro = res.data.vaiTroId;
+      } else if (res.data.tenVaiTro && roles.value.length) {
+        const found = roles.value.find(r => r.tenVaiTro === res.data.tenVaiTro);
+        if (found) formData.value.idVaiTro = found.id;
       }
       // Tìm code tỉnh (chuẩn hóa tên)
       const province = provinces.value.find(p => p.name === res.data.tinhThanh);
@@ -156,6 +170,19 @@ const validateForm = () => {
   if (!formData.value.ngaySinh) {
     fieldErrors.value.ngaySinh = 'Vui lòng chọn ngày sinh';
     valid = false;
+  } else {
+    // Validate tuổi > 16
+    const birth = new Date(formData.value.ngaySinh);
+    const now = new Date();
+    const age = now.getFullYear() - birth.getFullYear() - (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate()) ? 1 : 0);
+    if (age < 16) {
+      fieldErrors.value.ngaySinh = 'Nhân viên phải lớn hơn 16 tuổi';
+      valid = false;
+    }
+  }
+  if (!formData.value.idVaiTro) {
+    fieldErrors.value.idVaiTro = 'Vui lòng chọn vai trò';
+    valid = false;
   }
   if (!selectedProvince.value) {
     fieldErrors.value.tinhThanh = 'Vui lòng chọn tỉnh/thành';
@@ -196,6 +223,7 @@ const handleSubmit = async () => {
     form.append('xaPhuong', wards.value.find(w => w.code == selectedWard.value)?.name || '');
     form.append('thonXom', formData.value.thonXom);
     form.append('ghiChu', formData.value.ghiChu);
+    form.append('idVaiTro', formData.value.idVaiTro);
     if (formData.value.anhFile) {
       form.append('anh', formData.value.anhFile);
     }
@@ -416,6 +444,15 @@ function handleQRScanned(data) {
               <div class="form-group">
                 <label>Ngày sinh</label>
                 <input type="date" v-model="formData.ngaySinh" title="Chọn ngày sinh nhân viên">
+              </div>
+
+              <div class="form-group">
+                <label>Vai trò</label>
+                <select v-model="formData.idVaiTro" title="Chọn vai trò cho nhân viên">
+                  <option value="">Chọn vai trò</option>
+                  <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.tenVaiTro }}</option>
+                </select>
+                <span v-if="fieldErrors.idVaiTro" class="error-msg">{{ fieldErrors.idVaiTro }}</span>
               </div>
 
               <div class="form-group">

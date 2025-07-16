@@ -12,29 +12,54 @@ import {
 import ThemSanPham from "./ThemSanPhamBanHang.vue";
 import PhieuGiamGiaBH from "./PhieuGiamGiaBH.vue";
 
+import PhieuGiamGiaBH from "./PhieuGiamGiaBH.vue";
+import axios from "axios";
 // Khởi tạo danh sách đơn hàng từ localStorage nếu có
-const orders = ref([]);
+const orders = ref([]); // GIỮ NGUYÊN TÊN 'orders' theo yêu cầu
 
 const storedOrders = localStorage.getItem("orders");
 if (storedOrders) {
   try {
+
     orders.value = JSON.parse(storedOrders);
+
+    const parsedOrders = JSON.parse(storedOrders);
+    orders.value = parsedOrders.map(order => ({
+      ...order,
+      phuongThucVanChuyen: order.phuongThucVanChuyen || 'direct', // Đã đổi sang tiếng Việt
+      thongTinGiaoHang: order.thongTinGiaoHang || { // Đã đổi sang tiếng Việt
+        tenNguoiNhan: '',
+        soDienThoaiNguoiNhan: '',
+        diaChiGiaoHangTongHop: '', // Địa chỉ tổng hợp, đã đổi tên
+        tinhThanhPho: '',
+        quanHuyen: '',
+        xaPhuong: '',
+        diaChiChiTiet: '',
+        laMacDinh: false, // Đã đổi tên
+      },
+      listSanPham: order.listSanPham || [], // Giữ nguyên tên listSanPham
+    }));
   } catch (e) {
     console.error("Lỗi parse orders:", e);
   }
 }
 
-// Active tab hiện tại (đơn hàng đang thao tác)
+// Active tab hiện tại (đơn hàng đang thao tác) - Giữ nguyên tên tiếng Anh
 const activeTab = ref(null);
 const storedActiveTab = localStorage.getItem("activeTab");
 if (storedActiveTab) {
   activeTab.value = JSON.parse(storedActiveTab);
 }
 
-// ID đơn tiếp theo
+// ID đơn tiếp theo - Giữ nguyên tên tiếng Anh
 let nextOrderId =
   orders.value.length > 0 ? Math.max(...orders.value.map((o) => o.id)) + 1 : 1;
 
+// Quản lý popup chọn phiếu giảm giá và ID khách hàng
+const hienThiPhieuGiamGia = ref(false);
+const khachHangId = ref(""); // Lưu ID khách hàng được nhập
+const maGiamGia = ref(""); // Lưu mã giảm giá nhập tay
+const errorMessage = ref(""); // Lưu thông báo lỗi khi validate mã
 // Tạo đơn mới
 async function createNewOrder() {
   try {
@@ -61,9 +86,10 @@ async function createNewOrder() {
   } catch (error) {
     console.error("Lỗi tạo hóa đơn:", error);
   }
+
 }
 
-// Đóng đơn hàng
+// Đóng đơn hàng - Giữ nguyên tên tiếng Anh
 function closeOrder(id) {
   orders.value = orders.value.filter((o) => o.id !== id);
   if (activeTab.value === id) {
@@ -71,7 +97,16 @@ function closeOrder(id) {
   }
 }
 
+
 // Popup chọn sản phẩm
+
+// Hàm xóa sản phẩm khỏi giỏ hàng - Giữ nguyên tên tiếng Anh
+const removeItem = (order, index) => {
+  order.listSanPham.splice(index, 1);
+};
+
+
+// --- Phần Sản phẩm --- (Giữ nguyên)
 const hienThiThemSanPham = ref(false);
 
 const moPopupThemSanPham = () => {
@@ -155,41 +190,38 @@ const huyChonPhieuGiamGia = () => {
   if (activeOrder) {
     activeOrder.giamGia = null; // Xóa phiếu giảm giá
 
+
     errorMessage.value = ""; // Xóa thông báo lỗi
   }
 };
+
 // Format tiền
 const formatCurrency = (val) => {
   return val ? val.toLocaleString("vi-VN") + " VNĐ" : "";
 };
+
 // het phieu giam gia 
 
 // --- Lưu vào localStorage mỗi khi thay đổi ---
 watch(
-  orders,
+  orders, // GIỮ NGUYÊN 'orders'
   (newVal) => {
     localStorage.setItem("orders", JSON.stringify(newVal));
   },
   { deep: true }
 );
 
-watch(activeTab, (newVal) => {
+watch(activeTab, (newVal) => { // GIỮ NGUYÊN 'activeTab'
   localStorage.setItem("activeTab", JSON.stringify(newVal));
 });
+
 </script>
 
 <template>
   <!-- Header -->
-  <div
-    class="bg-white p-3 rounded mb-4 d-flex align-items-center justify-content-between border"
-    style="height: 60px"
-  >
+  <div class="bg-white p-3 rounded mb-4 d-flex align-items-center justify-content-between border" style="height: 60px">
     <h5 class="fw-bold mb-0">Bán hàng tại quầy</h5>
-    <button
-      class="btn success"
-      style="background-color: #0a2c57; color: white"
-      @click="createNewOrder"
-    >
+    <button class="btn success" style="background-color: #0a2c57; color: white" @click="createNewOrder">
       <Plus class="me-1" size="16" /> Tạo đơn mới
     </button>
   </div>
@@ -212,11 +244,7 @@ watch(activeTab, (newVal) => {
 
   <!-- Nếu không có đơn hàng nào -->
   <div v-if="orders.length === 0" class="text-center mt-5">
-    <img
-      src="https://web.nvnstatic.net/tp/T0213/img/tmp/cart-empty.png?v=9"
-      alt="No orders"
-      width="170"
-    />
+    <img src="https://web.nvnstatic.net/tp/T0213/img/tmp/cart-empty.png?v=9" alt="No orders" width="170" />
     <p class="mt-2">Không có bất kỳ đơn hàng nào !!!</p>
   </div>
 
@@ -235,17 +263,12 @@ watch(activeTab, (newVal) => {
       <div class="bg-white p-3 rounded mb-4 align-items-center border">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">🛒 Giỏ hàng</h5>
-          <button
-            class="btn border rounded-circle d-flex align-items-center justify-content-center"
-            style="
+          <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
               width: 36px;
               height: 36px;
               background-color: #0a2c57;
               color: white;
-            "
-            @click="moPopupThemSanPham"
-            title="Thêm sản phẩm"
-          >
+            " @click="moPopupThemSanPham" title="Thêm sản phẩm">
             <Plus size="20" />
           </button>
         </div>
@@ -309,21 +332,18 @@ watch(activeTab, (newVal) => {
           @selected="nhanSanPhamDaChon"
           @close="hienThiThemSanPham = false"
         />
+
       </div>
       <!-- PHẦN KHÁCH HÀNG -->
       <div class="bg-white p-3 rounded mb-4 align-items-center border">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">👤 Khách hàng</h5>
-          <button
-            class="btn border rounded-circle d-flex align-items-center justify-content-center"
-            style="
+          <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
               width: 36px;
               height: 36px;
               background-color: #0a2c57;
               color: white;
-            "
-            title="Chọn khách hàng"
-          >
+            " title="Chọn khách hàng">
             <UserCog size="20" />
           </button>
         </div>
@@ -335,6 +355,98 @@ watch(activeTab, (newVal) => {
         <div class="mb-2">
           <strong>Địa chỉ nhận hàng:</strong> Nguyễn Cơ Thạch, Mỹ Đình 2, Nam Từ
           Liêm
+           <!-- PHẦN KHÁCH HÀNG -->
+      <div class="row gx-4">
+        <div class="col-md-6">
+          <div class="bg-white p-3 rounded mb-4 align-items-center border">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0">👤 Khách hàng</h5>
+              <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
+                  width: 36px;
+                  height: 36px;
+                  background-color: #0a2c57;
+                  color: white;
+                " @click="moPopupChonKhachHang" title="Chọn khách hàng">
+                <UserCog size="20" />
+              </button>
+            </div>
+
+            <div v-if="order.khachHang">
+              <div class="mb-2"><strong>Tên khách hàng:</strong> {{ order.khachHang.tenKhachHang }}</div>
+              <div class="mb-2"><strong>Số điện thoại:</strong> {{ order.khachHang.soDienThoai }}</div>
+              <div class="mb-2"><strong>Email:</strong> {{ order.khachHang.email || 'Chưa cập nhật' }}</div>
+              <div class="mb-2"><strong>Giới tính:</strong> {{ order.khachHang.gioiTinh ? 'Nam' : 'Nữ' }}</div>
+              <button class="btn btn-sm btn-outline-danger mt-2" @click="xoaKhachHangDaChon">Bỏ chọn khách hàng</button>
+            </div>
+            <div v-else class="text-muted">Chưa có khách hàng nào được chọn cho đơn hàng này.</div>
+
+            <ThemKhachHangHoaDon v-if="hienThiThemKhachHangPopup" :currentSelectedCustomer="order.khachHang"
+              @customerSelected="xuLyKhachHangDuocChon" @close="hienThiThemKhachHangPopup = false" />
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="bg-white p-3 rounded mb-4 border">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0">🚚 Thông tin giao hàng</h5>
+              <Truck size="20" class="text-muted" />
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Phương thức vận chuyển:</label>
+              <div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="shippingDirect" value="direct"
+                    v-model="phuongThucVanChuyenDangChon">
+                  <label class="form-check-label" for="shippingDirect">Tại quầy</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="shippingDelivery" value="delivery"
+                    v-model="phuongThucVanChuyenDangChon">
+                  <label class="form-check-label" for="shippingDelivery">Giao hàng</label>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="phuongThucVanChuyenDangChon === 'delivery'">
+              <div class="mb-3">
+                <label for="tenNguoiNhan" class="form-label">Tên người nhận:</label>
+                <input type="text" id="tenNguoiNhan" class="form-control" v-model="thongTinGiaoHangDangChon.tenNguoiNhan" placeholder="Nhập tên người nhận">
+              </div>
+              <div class="mb-3">
+                <label for="soDienThoaiNguoiNhan" class="form-label">Số điện thoại người nhận:</label>
+                <input type="text" id="soDienThoaiNguoiNhan" class="form-control" v-model="thongTinGiaoHangDangChon.soDienThoaiNguoiNhan" placeholder="Nhập số điện thoại người nhận">
+              </div>
+
+              <div v-if="order.khachHang && thongTinGiaoHangDangChon.diaChiGiaoHangTongHop" class="alert alert-info py-2" role="alert">
+                  <p class="mb-1"><strong>Địa chỉ giao hàng:</strong></p>
+                  <p class="mb-1">
+                      {{ thongTinGiaoHangDangChon.diaChiGiaoHangTongHop }}
+                  </p>
+                  <button class="btn btn-sm btn-link p-0" @click="moPopupChonDiaChi">Chọn địa chỉ khác</button>
+              </div>
+              <div v-else class="alert alert-warning py-2" role="alert">
+                  <p class="mb-1">Chưa có địa chỉ giao hàng được chọn.</p>
+                  <button class="btn btn-sm btn-link p-0" @click="moPopupChonDiaChi">Chọn địa chỉ</button>
+              </div>
+
+              <ChonDiaChiPopup
+                  v-if="hienThiChonDiaChiPopup"
+                  :khachHangId="order.khachHang?.id"
+                  @diaChiSelected="xuLyDiaChiDuocChon"
+                  @close="hienThiChonDiaChiPopup = false"
+              />
+
+              <div class="mt-3">
+                  <div class="d-flex align-items-center mb-2">
+                      <strong class="me-2">Đơn vị vận chuyển:</strong> <span>Giao hàng nhanh</span>
+                  </div>
+                  <div class="d-flex align-items-center">
+                      <strong class="me-2">Thời gian dự kiến:</strong> <span>17/5/2025</span>
+                  </div>
+              </div>
+            </div>
+            <div v-else class="text-muted">Đơn hàng sẽ được xử lý tại quầy.</div>
+          </div>
         </div>
       </div>
 
@@ -343,8 +455,6 @@ watch(activeTab, (newVal) => {
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">💳 Thanh toán</h5>
         </div>
-
-        <!-- Mã giảm giá -->
         <div class="mb-3">
           <label class="fw-bold mb-0">ID khách hàng:</label>
           <input type="text" v-model="khachHangId" class="form-control" style="max-width: 250px"
@@ -404,16 +514,12 @@ watch(activeTab, (newVal) => {
         <!-- Phương thức thanh toán -->
         <div class="d-flex align-items-center gap-3 mb-3">
           <label class="fw-bold mb-0">Phương thức thanh toán:</label>
-          <button
-            class="btn border rounded-circle d-flex align-items-center justify-content-center"
-            style="
+          <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
               width: 36px;
               height: 36px;
               background-color: #0a2c57;
               color: white;
-            "
-            title="Chuyển khoản"
-          >
+            " title="Chuyển khoản">
             <CreditCard size="18" />
           </button>
           <span>Chuyển khoản</span>
@@ -421,20 +527,19 @@ watch(activeTab, (newVal) => {
 
         <div class="mb-2">
           <h4><strong>Tổng tiền:</strong></h4>
-          <strong><h1>750.000đ</h1></strong>
+          <strong>
+            <h1>750.000đ</h1>
+          </strong>
         </div>
 
         <!-- Nút hoàn tất -->
         <div class="text-end">
-          <button
-            class="btn"
-            style="
+          <button class="btn" style="
               background-color: #0a2c57;
               color: white;
               min-width: 200px;
               font-weight: bold;
-            "
-          >
+            ">
             Hoàn thành đơn hàng
           </button>
         </div>

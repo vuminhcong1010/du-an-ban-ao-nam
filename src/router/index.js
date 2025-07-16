@@ -29,6 +29,11 @@ import DotGiamGia from "@/components/admin/DotGiamGia.vue";
 import BanHangTest from "@/components/admin/BanHangTest.vue";
 
 
+import PhieuGiamGiaBH from "@/components/admin/PhieuGiamGiaBH.vue";
+
+import ThongKeTongHop from "@/components/admin/ThongKeTongHop.vue";
+
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -170,6 +175,14 @@ const router = createRouter({
       path: "/dot-giam-gia/sua/:id",
       name: "suadoigiamgia",
       component: SuaDotGiamGia,
+    },
+
+      
+
+    {
+      path: '/thong-ke',
+      name: 'thongke',
+      component: ThongKeTongHop,
     },
   ],
 });

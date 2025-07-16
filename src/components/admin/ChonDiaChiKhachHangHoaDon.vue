@@ -48,6 +48,7 @@ const selectDiaChi = (diaChi) => {
 
 const close = () => {
   emits("close");
+
 };
 </script>
 
@@ -126,3 +127,4 @@ const close = () => {
   margin-top: 15px;
 }
 </style>
+
