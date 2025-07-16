@@ -7,8 +7,10 @@ import {
   Ban,
   TicketPercent,
   CreditCard,
+  Trash,
 } from "lucide-vue-next";
-import ThemSanPham from "./ThemSanPhamHoaDon.vue";
+import ThemSanPham from "./ThemSanPhamBanHang.vue";
+import PhieuGiamGiaBH from "./PhieuGiamGiaBH.vue";
 
 // Khởi tạo danh sách đơn hàng từ localStorage nếu có
 const orders = ref([]);
@@ -31,21 +33,34 @@ if (storedActiveTab) {
 
 // ID đơn tiếp theo
 let nextOrderId =
-  orders.value.length > 0
-    ? Math.max(...orders.value.map((o) => o.id)) + 1
-    : 1;
+  orders.value.length > 0 ? Math.max(...orders.value.map((o) => o.id)) + 1 : 1;
 
 // Tạo đơn mới
-function createNewOrder() {
-  const newOrder = {
-    id: nextOrderId++,
-    name: `Đơn ${nextOrderId - 1}`,
-    listSanPham: [],
-    khachHang: null,
-    giamGia: null,
-  };
-  orders.value.push(newOrder);
-  activeTab.value = newOrder.id;
+async function createNewOrder() {
+  try {
+    const response = await fetch("http://localhost:8080/hoa-don/tao-moi", {
+      method: "POST",
+    });
+    const maHoaDon = await response.text(); // backend trả về chuỗi
+
+    const newOrder = {
+      id: nextOrderId++,
+      name: `Đơn ${nextOrderId - 1}`,
+      listSanPham: [],
+      maHoaDon: maHoaDon, // ⚠️ gán mã hóa đơn để truyền cho component ThemSanPham
+      khachHang: {
+        tenKhachHang: "Khach le",
+        diaChi: "",
+        sdt: "",
+      },
+      giamGia: null,
+    };
+
+    orders.value.push(newOrder);
+    activeTab.value = newOrder.id;
+  } catch (error) {
+    console.error("Lỗi tạo hóa đơn:", error);
+  }
 }
 
 // Đóng đơn hàng
@@ -71,12 +86,83 @@ const nhanSanPhamDaChon = (danhSachSanPham) => {
   }
 };
 
+// xóa sản phẩm khỏi giỏ hàng
+const xoaSanPhamKhoiDonHang = (orderId, index) => {
+  const order = orders.value.find((o) => o.id === orderId);
+  if (order) {
+    order.listSanPham.splice(index, 1);
+  }
+};
+
+// khach hang:
+let maHoaDon = ref("HD001");
 
 
+// phieu giam gia: 
+// Quản lý popup chọn phiếu giảm giá và ID khách hàng
+const hienThiPhieuGiamGia = ref(false);
+const khachHangId = ref(""); // Lưu ID khách hàng được nhập
+const maGiamGia = ref(""); // Lưu mã giảm giá nhập tay
+const errorMessage = ref(""); // Lưu thông báo lỗi khi validate mã
 
+// Mở popup chọn phiếu giảm giá
+const moPopupPhieuGiamGia = () => {
+  if (!khachHangId.value || isNaN(khachHangId.value) || khachHangId.value <= 0) {
+    alert("Vui lòng nhập ID khách hàng hợp lệ.");
+    return;
+  }
+  hienThiPhieuGiamGia.value = true;
+};
 
+// Nhận phiếu giảm giá đã chọn từ modal
+const nhanPhieuGiamGiaDaChon = (phieu) => {
+  const activeOrder = orders.value.find((o) => o.id === activeTab.value);
+  if (activeOrder) {
+    activeOrder.giamGia = phieu; // Lưu phiếu giảm giá vào đơn hàng
 
+    errorMessage.value = ""; // Xóa thông báo lỗi
+  }
+  hienThiPhieuGiamGia.value = false; // Đóng modal
+};
+// Validate mã giảm giá nhập tay
+const validateMaGiamGia = async (maGiamGia) => {
+  if (!khachHangId.value || isNaN(khachHangId.value) || khachHangId.value <= 0) {
+    errorMessage.value = "Vui lòng nhập ID khách hàng hợp lệ.";
+    return;
+  }
+  
+  try {
+    const response = await axios.get(
+      `http://localhost:8080/ban_hang/phieuGG/validate/${maGiamGia}?khachHangId=${khachHangId.value}`
+    );
+    const activeOrder = orders.value.find((o) => o.id === activeTab.value);
+    if (activeOrder) {
+      activeOrder.giamGia = response.data; // Lưu phiếu giảm giá vào đơn hàng
+      errorMessage.value = ""; // Xóa thông báo lỗi
+    }
+  } catch (error) {
+    console.error("Error validating voucher:", error.response?.data || error.message);
+    errorMessage.value = error.response?.data?.message || "Mã giảm giá không hợp lệ hoặc không tồn tại.";
+    const activeOrder = orders.value.find((o) => o.id === activeTab.value);
+    if (activeOrder) {
+      activeOrder.giamGia = null; // Xóa phiếu giảm giá nếu không hợp lệ
+    }
+  }
+};
+// Hủy chọn phiếu giảm giá
+const huyChonPhieuGiamGia = () => {
+  const activeOrder = orders.value.find((o) => o.id === activeTab.value);
+  if (activeOrder) {
+    activeOrder.giamGia = null; // Xóa phiếu giảm giá
 
+    errorMessage.value = ""; // Xóa thông báo lỗi
+  }
+};
+// Format tiền
+const formatCurrency = (val) => {
+  return val ? val.toLocaleString("vi-VN") + " VNĐ" : "";
+};
+// het phieu giam gia 
 
 // --- Lưu vào localStorage mỗi khi thay đổi ---
 watch(
@@ -91,8 +177,6 @@ watch(activeTab, (newVal) => {
   localStorage.setItem("activeTab", JSON.stringify(newVal));
 });
 </script>
-
-
 
 <template>
   <!-- Header -->
@@ -118,7 +202,7 @@ watch(activeTab, (newVal) => {
         href="#"
         @click.prevent="activeTab = order.id"
       >
-        {{ order.name }}
+        {{ order.maHoaDon }}
         <span class="ms-1 text-danger" @click.stop="closeOrder(order.id)"
           >×</span
         >
@@ -146,7 +230,7 @@ watch(activeTab, (newVal) => {
       :key="order.id"
       v-show="order.id === activeTab"
     >
-      <h6>Chi tiết {{ order.name }}</h6>
+      <h6>Chi tiết hóa đơn {{ order.maHoaDon }}</h6>
       <!-- Tại đây hiển thị danh sách sản phẩm, khách hàng,... -->
       <div class="bg-white p-3 rounded mb-4 align-items-center border">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -184,10 +268,36 @@ watch(activeTab, (newVal) => {
               <tbody>
                 <tr v-for="(item, index) in order.listSanPham" :key="index">
                   <td>{{ index + 1 }}</td>
-                  <td>{{ item.idSanPhamChiTiet }}</td>
-                  <td>{{ item.soLuong }}</td>
+                  <td></td>
+                  <td>{{ item.idSanPham.tenSanPham }}</td>
+                  <td>
+                    <span>Size: {{ item.idSize.soCo }}</span> <br />
+                    <span>Màu sắc: {{ item.idMau.ten }}</span>
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      class="form-control text-center"
+                      style="width: 70px"
+                      min="1"
+                      v-model.number="item.soLuong"
+                    />
+                  </td>
                   <td>{{ item.gia.toLocaleString() }}đ</td>
                   <td>{{ (item.gia * item.soLuong).toLocaleString() }}đ</td>
+                  <td>
+                    <button
+                      class="btn p-1 border-0 bg-transparent d-flex align-items-center justify-content-center mx-auto"
+                      @click="xoaSanPhamKhoiDonHang(order.id, index)"
+                    >
+                      <i>
+                        <Trash
+                          style="width: 16px; height: 16px; color: #0a2c57"
+                        />
+                      </i>
+                    </button>
+                   
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -195,7 +305,7 @@ watch(activeTab, (newVal) => {
         </div>
         <ThemSanPham
           v-if="hienThiThemSanPham"
-          :maHoaDon="activeTab"
+          :maHoaDon="orders.find((o) => o.id === activeTab)?.maHoaDon"
           @selected="nhanSanPhamDaChon"
           @close="hienThiThemSanPham = false"
         />
@@ -219,7 +329,8 @@ watch(activeTab, (newVal) => {
         </div>
 
         <!-- Thông tin khách -->
-        <div class="mb-2"><strong>Tên khách hàng:</strong> Nguyễn Văn A</div>
+        <div class="mb-2"><strong>Tên nguoi nhan:</strong> Nguyễn Văn A</div>
+        <input type="text" />
         <div class="mb-2"><strong>Số điện thoại:</strong> 0366166359</div>
         <div class="mb-2">
           <strong>Địa chỉ nhận hàng:</strong> Nguyễn Cơ Thạch, Mỹ Đình 2, Nam Từ
@@ -234,61 +345,57 @@ watch(activeTab, (newVal) => {
         </div>
 
         <!-- Mã giảm giá -->
+        <div class="mb-3">
+          <label class="fw-bold mb-0">ID khách hàng:</label>
+          <input type="text" v-model="khachHangId" class="form-control" style="max-width: 250px"
+            placeholder="Nhập ID khách hàng..." />
+        </div>
         <div class="d-flex align-items-center gap-3 mb-3">
           <label class="fw-bold mb-0">Mã giảm giá:</label>
-          <input
-            type="text"
-            class="form-control"
-            style="max-width: 250px"
-            placeholder="Nhập mã giảm giá..."
-          />
-
-          <button
-            class="btn border rounded-circle d-flex align-items-center justify-content-center"
-            style="
-              width: 36px;
-              height: 36px;
-              background-color: #0a2c57;
-              color: white;
-            "
-            title="Áp dụng mã giảm giá"
-          >
+          <input type="text" :value="order.giamGia?.maPhieuGiamGia || ''" class="form-control" style="max-width: 250px"
+            placeholder="Nhập mã giảm giá..." @input="validateMaGiamGia($event.target.value)"
+            @blur="validateMaGiamGia($event.target.value)" @keyup.enter="validateMaGiamGia($event.target.value)" />
+          <button class="btn border rounded-circle d-flex align-items-center justify-content-center"
+            style="width: 36px; height: 36px; background-color: #0a2c57; color: white" title="Áp dụng mã giảm giá"
+            @click="moPopupPhieuGiamGia">
             <Tag size="18" />
           </button>
-
-          <button
-            class="btn border rounded-circle d-flex align-items-center justify-content-center"
-            style="
-              width: 36px;
-              height: 36px;
-              background-color: #0a2c57;
-              color: white;
-            "
-            title="Hủy chọn"
-          >
+          <button class="btn border rounded-circle d-flex align-items-center justify-content-center"
+            style="width: 36px; height: 36px; background-color: #0a2c57; color: white" title="Hủy chọn"
+            @click="huyChonPhieuGiamGia">
             <Ban size="18" />
           </button>
         </div>
-
-        <!-- Thông tin phiếu -->
-        <div
-          class="d-flex align-items-center justify-content-between border rounded p-2 mb-3"
-          style="background-color: #f8f9fa"
-        >
+        <!-- Thông báo lỗi validate -->
+        <div v-if="errorMessage" class="text-danger mb-3">
+          {{ errorMessage }}
+        </div>
+        <!-- Thông tin phiếu giảm giá -->
+        <div v-if="order.giamGia" class="d-flex align-items-center justify-content-between border rounded p-2 mb-3"
+          style="background-color: #f8f9fa">
           <div class="d-flex align-items-center gap-2">
             <TicketPercent size="24" class="text-success" />
             <div>
-              <div><strong>Mã phiếu HC-af374fbf</strong></div>
+              <div><strong>Mã phiếu {{ order.giamGia.maPhieuGiamGia }}</strong></div>
               <div class="text-muted small">
-                Phần trăm tối đa: <strong>5%</strong> &nbsp;|&nbsp; Giá trị tối
-                thiểu: <strong>50.000đ</strong>
+                Giá trị giảm: <strong>{{
+                  order.giamGia.phamTramGiamGia
+                    ? order.giamGia.phamTramGiamGia + "%"
+                    : formatCurrency(order.giamGia.soTienGiam)
+                }}</strong>
+                | Giá trị tối thiểu: <strong>{{ formatCurrency(order.giamGia.giamToiThieu) }}</strong>
+                | Giá trị tối đa: <strong>{{ formatCurrency(order.giamGia.giamToiDa) }}</strong>
               </div>
               <div class="text-danger small">
-                (Đang sử dụng) Phiếu công khai - Còn lại: <strong>4</strong>
+                (Đang sử dụng) Phiếu {{ order.giamGia.loaiPhieu }} - Còn lại: <strong>{{ order.giamGia.soLuong
+                  }}</strong>
               </div>
             </div>
           </div>
         </div>
+        <!-- Modal phiếu giảm giá -->
+        <PhieuGiamGiaBH v-if="hienThiPhieuGiamGia" :khachHangId="khachHangId" :selectedPhieu="order.giamGia"
+          @selected="nhanPhieuGiamGiaDaChon" @close="hienThiPhieuGiamGia = false" />
 
         <!-- Tổng kết đơn hàng -->
         <div class="mb-2"><strong>Tiền sản phẩm:</strong> 300.000đ</div>
@@ -335,4 +442,3 @@ watch(activeTab, (newVal) => {
     </div>
   </div>
 </template>
-
