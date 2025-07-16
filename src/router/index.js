@@ -165,9 +165,19 @@ const router = createRouter({
       component: SuaDotGiamGia,
     },
     {
-      path: "/login",
-      name: "login",
+      path: "/dang-nhap",
+      name: "dang-nhap",
       component: DangNhap,
+    },
+    {
+      path: "/quen-mat-khau",
+      name: "ForgotPassword",
+      component: () => import("@/components/admin/QuenMatKhau.vue"),
+    },
+    {
+      path: "/thong-tin-ca-nhan",
+      name: "ThongTinCaNhan",
+      component: () => import("@/components/admin/ThongTinNhanVien.vue"),
     },
   ],
 });
@@ -177,35 +187,34 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = Cookies.get("token");
 
-  // 1. Chưa có token => bắt đăng nhập
-  if (!token && to.path !== "/login") {
-    return next("/login");
+  // ✅ 1. Chưa có token => chỉ cho phép vào /dang-nhap và /quen-mat-khau
+  if (!token && !["/dang-nhap", "/quen-mat-khau"].includes(to.path)) {
+    return next("/dang-nhap");
   }
 
-  // 2. Đã đăng nhập nhưng vào lại /login => đá về /
-  if (token && to.path === "/login") {
+  // ✅ 2. Đã có token nhưng vào lại /dang-nhap => đá về /
+  if (token && to.path === "/dang-nhap") {
     return next("/");
   }
 
-  // 3. Giải mã token để lấy vai trò (nếu lưu vai trò trong token JWT)
+  // ✅ 3. Nếu có token, giải mã và kiểm tra vai trò
   if (token) {
     try {
-      const payload = JSON.parse(atob(token.split(".")[1])); // payload ở giữa
-      const vaiTro = payload.scope || payload.vaiTro || ""; // tuỳ tên key bạn dùng
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      const vaiTro = payload.scope || payload.vaiTro || "";
 
-      // Nếu là STAFF mà truy cập /nhan-vien thì cấm
+      // Nếu là STAFF mà truy cập /nhan-vien => chặn
       if (vaiTro === "STAFF" && to.path.startsWith("/nhan-vien")) {
-        
-        return next("/"); // Hoặc next('/403') nếu bạn có trang cấm truy cập
+        return next("/");
       }
     } catch (err) {
-      // Token lỗi => xoá token và chuyển về login
       Cookies.remove("token");
-      return next("/login");
+      return next("/dang-nhap");
     }
   }
 
   next();
 });
+
 
 export default router;

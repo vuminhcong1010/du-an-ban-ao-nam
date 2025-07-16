@@ -34,11 +34,11 @@
           <div class="invalid-feedback" v-if="passwordError">{{ passwordError }}</div>
         </div>
 
-        <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+        <button type="submit" class="btn btn-primary w-100" style="background-color: #0a2c57; color: white;">Đăng nhập</button>
       </form>
 
       <div class="text-center mt-3">
-        <router-link to="/forgot-password">Quên mật khẩu?</router-link>
+        <router-link to="/quen-mat-khau">Quên mật khẩu?</router-link>
       </div>
     </div>
   </div>
@@ -220,4 +220,23 @@ const dangNhap = async () => {
     padding: 10px;
     border-radius: 5px;
   }
+
+.btn-primary {
+  width: 100%;
+  padding: 10px;
+  background-color: #0a2c57;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  margin-top: 15px;
+}
+
+.btn-primary:hover {
+  background-color: #071f3e;
+  transform: translateY(-2px);
+}
   </style>

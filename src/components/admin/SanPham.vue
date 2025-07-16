@@ -63,15 +63,17 @@
 
     <!-- Danh sách sản phẩm -->
     <div class="bg-white p-3 rounded border mb-4">
+      <h5 class="fw-semibold m-0 mb-3">Danh sách sản phẩm</h5>
       <table class="table table-hover text-center align-middle">
         <thead class="table-light">
           <tr>
             <th>STT</th>
             <th>Mã SP</th>
             <th>Tên SP</th>
-            <th>Số lượng</th>
+            <!-- <th>Số lượng</th> -->
             <th>Chất liệu</th>
             <th>Danh mục</th>
+            <th>Số lượng</th>
             <th>Trạng thái</th>
             <th>Hành động</th>
           </tr>
@@ -81,13 +83,14 @@
             <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
             <td>{{ sp.maSanPham }}</td>
             <td>{{ sp.tenSanPham }}</td>
-            <td>{{ sp.soLuong }}</td>
+            <!-- <td>{{ sp.soLuong }}</td> -->
             <td>{{ sp.idChatLieu?.tenChatLieu }}</td>
             <td>
               <span v-for="dm in sp.dsDanhMuc" :key="dm.id" class="badge bg-secondary me-1">
                 {{ dm.tenDanhMuc }}
               </span>
             </td>
+            <td>{{ sp.soLuong }}</td>
             <td>
               <span class="badge rounded-pill" :style="{ backgroundColor: sp.trangThai === 1 ? '#10b981' : '#D14343' }">
                 {{ sp.trangThai === 1 ? "Đang bán" : "Ngừng bán" }}
@@ -206,7 +209,6 @@ const chuyenTrang = (id) => {
   window.location.href = `/san-pham/chi-tiet-san-pham/${id}`
 }
 const fetchData = async () => {
-  toast.success("Đăng nhập thành công")
   try {
     const [spRes, dctRes, dmRes] = await Promise.all([
       axios.get("http://localhost:8080/san-pham/get-all",{

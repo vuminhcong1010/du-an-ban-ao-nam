@@ -24,6 +24,7 @@
         <div class="d-flex align-items-center gap-2">
           <input type="text" class="form-control" v-model="keyword" placeholder="Tìm theo mã, tên sản phẩm" />
           <button type="button" class="btn" @click="apDungBoLoc" style="background-color: #0a2c57; color: white; white-space: nowrap;">Tìm kiếm</button>
+          <button type="button" class="btn" @click="lamMoi" style="background-color: #0a2c57; color: white; white-space: nowrap;">Làm mới</button>
         </div>
       </div>
 
@@ -65,7 +66,7 @@
       </div>
 
       <!-- Hiển thị -->
-      <div class="col-md-3 ms-5">
+      <!-- <div class="col-md-3 ms-5">
         <label class="form-label fw-bold me-3">Danh sách hiển thị</label>
         <div class="d-flex align-items-center gap-3">
           <div class="form-check form-check-inline m-0">
@@ -78,7 +79,7 @@
             <label class="form-check-label" for="toanBo">Toàn bộ biến thể</label>
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
   </div>
 
@@ -87,9 +88,18 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
   <h5 class="fw-semibold m-0">Danh sách biến thể sản phẩm</h5>
   <div class="d-flex gap-2">
-    <input type="text" class="form-control" placeholder="Nhập giá" style="width: 200px;" v-model="data.gia">
-    <input type="text" class="form-control" placeholder="Nhập số lượng" style="width: 200px;" v-model="data.soLuong">
-    <button class="btn" style="background-color: #0a2c57; color: white;" type="button" @click="updateAllGia()"> Xác nhận</button>
+    <div class="form-group mb-2 me-3">
+      <lable class="form-label small fw-bold ">Số lượng:</lable>
+      <input type="text" class="form-control" placeholder="Nhập số lượng" style="width: 200px;" v-model="data.soLuong">
+    </div>
+    <div class="form-group mb-2 me-3">
+        <lable class="form-label small fw-bold ">Giá:</lable>
+        <input type="text" class="form-control" placeholder="Nhập giá" style="width: 200px;" v-model="data.gia">
+    </div>
+    
+    
+    <button class="btn mt-4" style="background-color: #0a2c57; color: white;width: 130px;
+                height: 38px;" type="button" @click="updateAllGia()" > Xác nhận</button>
   </div>
 </div>
 
@@ -105,6 +115,7 @@
             />
           </th>
           <th>STT</th>
+          <th>Mã SP</th>
           <th>Mã chi tiết sản phẩm</th>
           <th>Tên SP</th>
           <th>Màu</th>
@@ -124,6 +135,7 @@
               @change="toggleRow(ds.id)"
             />
           </td>
+          <td>{{ ds.idSanPham.maSanPham }}</td>
           <td>{{ index + 1 + (currentPage - 1) * itemsPerPage }}</td>
           <td>{{ ds.maChiTietSapPham }}</td>
           <td>{{ ds.idSanPham.tenSanPham }}</td>
@@ -225,7 +237,8 @@ const res = ref([])
 const send = ref(null)
 const mau = ref([])
 const size = ref([])
-const thongTin = ref(true)
+// const thongTin = ref(false)
+const thongTin = ref(false)
 const maSP = ref()
 
 // ============================
@@ -289,6 +302,10 @@ function ham() {
     .then(response => {
       allData.value = response.data
       maSP.value = `SP${idChiTietSanPham.toString().padStart(4, '0')}`
+      keyword.value = maSP.value
+      console.log(allData.value);
+      
+      // keyword.value = maSP.value
       apDungBoLoc()
     })
     .catch(error => {
@@ -309,8 +326,11 @@ function apDungBoLoc() {
   currentPage.value = 1 // Reset về trang đầu mỗi khi lọc lại
 
   res.value = allData.value.filter(sp => {
-    const matchKeyword = sp.maChiTietSapPham?.toLowerCase().includes(keyword.value.toLowerCase()) ||
-                         sp.idSanPham?.tenSanPham?.toLowerCase().includes(keyword.value.toLowerCase())
+    // const matchKeyword = sp.maChiTietSapPham?.toLowerCase().includes(keyword.value.toLowerCase()) ||
+    //                      sp.idSanPham?.tenSanPham?.toLowerCase().includes(keyword.value.toLowerCase())||
+    //                      sp.idSanPham?.maSanPham?.toLowerCase().includes(keyword.value.toLowerCase())
+    const matchKeyword = sp.idSanPham?.tenSanPham?.toLowerCase().includes(keyword.value.toLowerCase())||
+                         sp.idSanPham?.maSanPham?.toLowerCase().includes(keyword.value.toLowerCase())
 
     const matchTrangThai = selectedTrangThai.value === 'tatCa' ||
       (selectedTrangThai.value === 'dangBan' && sp.trangThai === 1) ||
@@ -335,7 +355,7 @@ onMounted(async () => {
   })
   mau.value = response.data.maus
   size.value = response.data.kichCos
-  selectedTrangThai.value = 'dangBan'
+  selectedTrangThai.value = 'dangBan'  
 })
 
 // ============================
@@ -412,7 +432,10 @@ async function generateAndDownloadAllQR() {
   }
 }
 
-
+function lamMoi(){
+  keyword.value = "";
+  apDungBoLoc()
+}
 
 
 // Khi bấm checkbox tổng
