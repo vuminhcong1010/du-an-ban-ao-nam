@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue';
+import { ref, onMounted, nextTick, watch, onUnmounted, computed } from 'vue';
 import axios from 'axios';
 import { Chart, registerables } from 'chart.js';
 Chart.register(...registerables);
@@ -172,6 +172,204 @@ function onChangeMoc(e) {
   }
 }
 
+const topTimeOptions = [
+  { label: 'Hôm nay', value: 'hom-nay', api: '/hoa-don/thong-ke/top-ban-chay/hom-nay' },
+  { label: 'Hôm qua', value: 'hom-qua', api: '/hoa-don/thong-ke/top-ban-chay/hom-qua' },
+  { label: '7 ngày qua', value: '7-ngay-qua', api: '/hoa-don/thong-ke/top-ban-chay/7-ngay-qua' },
+  { label: 'Tháng này', value: 'thang-nay', api: '/hoa-don/thong-ke/top-ban-chay/thang-nay' },
+  { label: 'Tháng trước', value: 'thang-truoc', api: '/hoa-don/thong-ke/top-ban-chay/thang-truoc' }
+];
+const topViewOptions = [
+  { label: 'Theo doanh thu thuần', value: 'doanh-thu' },
+  { label: 'Theo số lượng', value: 'so-luong' }
+];
+const selectedTopTime = ref('thang-nay');
+const selectedTopView = ref('doanh-thu');
+const topProducts = ref([]);
+const topProductLoading = ref(false);
+const topProductError = ref('');
+const topProductChartRef = ref(null);
+let topProductChartInstance = null;
+
+async function fetchTopProducts() {
+  topProductLoading.value = true;
+  topProductError.value = '';
+  try {
+    const api = topTimeOptions.find(opt => opt.value === selectedTopTime.value).api;
+    const res = await axios.get('http://localhost:8080' + api);
+    topProducts.value = res.data;
+    await nextTick(); // Đảm bảo DOM đã cập nhật
+    renderTopProductChart();
+  } catch (e) {
+    topProductError.value = 'Lỗi khi lấy dữ liệu top sản phẩm';
+  } finally {
+    topProductLoading.value = false;
+  }
+}
+watch([selectedTopTime, selectedTopView], fetchTopProducts);
+onMounted(fetchTopProducts);
+
+function renderTopProductChart() {
+  if (!topProductChartRef.value) return;
+  if (topProductChartInstance) topProductChartInstance.destroy();
+
+  // Luôn render chart, kể cả khi không có data (để giữ layout)
+  const labels = topProducts.value.map(p => p.tenSanPham || p.ten || p.name);
+  let dataArr = [];
+  if (selectedTopView.value === 'doanh-thu') {
+    dataArr = topProducts.value.map(p => p.doanhThu || p.tongTien || 0);
+  } else {
+    dataArr = topProducts.value.map(p => p.soLuong || 0);
+  }
+
+  // Nếu không có data, vẽ chart với data 0 (ẩn trục, không bar)
+  const isEmpty = labels.length === 0 || dataArr.every(v => v === 0);
+
+  topProductChartInstance = new Chart(topProductChartRef.value, {
+    type: 'bar',
+    data: {
+      labels: isEmpty ? [''] : labels,
+      datasets: [{
+        data: isEmpty ? [0] : dataArr,
+        backgroundColor: '#1976d2',
+        borderRadius: 8,
+        barPercentage: 0.5,
+        categoryPercentage: 0.6,
+        maxBarThickness: 36,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          displayColors: false,
+          backgroundColor: '#1976d2',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          bodyFont: { weight: 'bold', size: 15 },
+          padding: 10,
+          borderRadius: 8,
+          callbacks: {
+            title: ctx => ctx[0]?.label || '',
+            label: ctx => selectedTopView.value === 'doanh-thu'
+              ? ctx.parsed.x.toLocaleString('vi-VN') + ' ₫'
+              : ctx.parsed.x + ' sp'
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          max: getTopProductXMax(),
+          ticks: {
+            callback: value => selectedTopView.value === 'doanh-thu'
+              ? (value / 1000000).toFixed(1) + ' tr'
+              : value
+          }
+        },
+        y: {
+          display: !isEmpty
+        }
+      },
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+}
+
+// Thêm các option cho top khách hàng
+const topCustomerTimeOptions = [
+  { label: 'Hôm nay', value: 'hom-nay', api: '/hoa-don/top-khach-hang/hom-nay' },
+  { label: 'Hôm qua', value: 'hom-qua', api: '/hoa-don/top-khach-hang/hom-qua' },
+  { label: '7 ngày qua', value: '7-ngay-qua', api: '/hoa-don/top-khach-hang/7-ngay-qua' },
+  { label: 'Tháng này', value: 'thang-nay', api: '/hoa-don/top-khach-hang/thang-nay' },
+  { label: 'Tháng trước', value: 'thang-truoc', api: '/hoa-don/top-khach-hang/thang-truoc' }
+];
+const selectedTopCustomerTime = ref('thang-nay');
+const topCustomers = ref([]);
+const topCustomerLoading = ref(false);
+const topCustomerError = ref('');
+const topCustomerChartRef = ref(null);
+let topCustomerChartInstance = null;
+
+async function fetchTopCustomers() {
+  topCustomerLoading.value = true;
+  topCustomerError.value = '';
+  try {
+    const api = topCustomerTimeOptions.find(opt => opt.value === selectedTopCustomerTime.value).api;
+    const res = await axios.get('http://localhost:8080' + api);
+    // API trả về { data: [...], message: ... }
+    topCustomers.value = res.data.data || [];
+    await nextTick();
+    renderTopCustomerChart();
+  } catch (e) {
+    topCustomerError.value = 'Lỗi khi lấy dữ liệu top khách hàng';
+  } finally {
+    topCustomerLoading.value = false;
+  }
+}
+
+watch(selectedTopCustomerTime, fetchTopCustomers);
+onMounted(fetchTopCustomers);
+
+const hasTopCustomerData = computed(() => {
+  if (!topCustomers.value || topCustomers.value.length === 0) return false;
+  return topCustomers.value.some(c => (c.tongTien || 0) > 0);
+});
+
+function renderTopCustomerChart() {
+  if (!topCustomerChartRef.value) return;
+  if (topCustomerChartInstance) topCustomerChartInstance.destroy();
+  const labels = topCustomers.value.map(c => c.tenKhachHang || c.ten || c.name);
+  const dataArr = topCustomers.value.map(c => c.tongTien || 0);
+  const isEmpty = labels.length === 0 || dataArr.every(v => v === 0);
+  topCustomerChartInstance = new Chart(topCustomerChartRef.value, {
+    type: 'bar',
+    data: {
+      labels: isEmpty ? [''] : labels,
+      datasets: [{
+        data: isEmpty ? [0] : dataArr,
+        backgroundColor: '#1976d2',
+        borderRadius: 8,
+        barPercentage: 0.5,
+        categoryPercentage: 0.6,
+        maxBarThickness: 36,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          displayColors: false,
+          backgroundColor: '#1976d2',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          bodyFont: { weight: 'bold', size: 15 },
+          padding: 10,
+          borderRadius: 8,
+          callbacks: {
+            title: ctx => ctx[0]?.label || '',
+            label: ctx => ctx.parsed.x.toLocaleString('vi-VN') + ' ₫'
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          max: getTopCustomerXMax(),
+          ticks: {
+            callback: value => (value / 1000000).toFixed(1) + ' tr'
+          }
+        }
+      },
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+}
+
 onMounted(fetchData);
 
 watch(chartRef, (val) => {
@@ -184,35 +382,117 @@ onUnmounted(() => {
     chartInstance = null;
   }
 });
+
+// Thêm hàm kiểm tra có dữ liệu không
+function hasData() {
+  const dataObj = getChartData();
+  if (!dataObj || Object.keys(dataObj).length === 0) return false;
+  // Nếu tất cả value đều 0 thì cũng coi là không có dữ liệu
+  return Object.values(dataObj).some(v => v !== 0);
+}
+
+const hasTopProductData = computed(() => {
+  if (!topProducts.value || topProducts.value.length === 0) return false;
+  if (selectedTopView.value === 'doanh-thu') {
+    return topProducts.value.some(p => (p.doanhThu || p.tongTien || 0) > 0);
+  } else {
+    return topProducts.value.some(p => (p.soLuong || 0) > 0);
+  }
+});
+
+function getTopProductXMax() {
+  if (selectedTopView.value === 'so-luong') {
+    if (selectedTopTime.value === 'hom-nay' || selectedTopTime.value === 'hom-qua') return 100;
+    if (selectedTopTime.value === '7-ngay-qua') return 350;
+    return 500; // tháng này, tháng trước
+  } else {
+    if (selectedTopTime.value === 'hom-nay' || selectedTopTime.value === 'hom-qua') return 100_000_000;
+    if (selectedTopTime.value === '7-ngay-qua') return 300_000_000;
+    return 500_000_000; // tháng này, tháng trước
+  }
+}
+
+function getTopCustomerXMax() {
+  if (selectedTopCustomerTime.value === 'hom-nay' || selectedTopCustomerTime.value === 'hom-qua') return 100_000_000;
+  if (selectedTopCustomerTime.value === '7-ngay-qua') return 300_000_000;
+  return 500_000_000;
+}
 </script>
 
 <template>
-  <div class="thongke-homqua-container">
-    <div class="thongke-homqua-header">
-      <div class="thongke-homqua-title-group">
-        <span class="thongke-homqua-title">DOANH THU THUẦN</span>
-        <span class="thongke-homqua-moc">({{ selectedMoc.label }})</span>
-        <span class="thongke-homqua-total">{{ tongDoanhThu.toLocaleString('vi-VN') }} ₫</span>
+  <div>
+    <!-- Card doanh thu + biểu đồ -->
+    <div class="thongke-homqua-container">
+      <div class="thongke-homqua-header">
+        <div class="thongke-homqua-title-group">
+          <span class="thongke-homqua-title">DOANH THU THUẦN</span>
+          <span class="thongke-homqua-moc">({{ selectedMoc.label }})</span>
+          <span class="thongke-homqua-total">{{ tongDoanhThu.toLocaleString('vi-VN') }} ₫</span>
+        </div>
+        <div class="thongke-bieudo-cbo">
+          <select class="select-blue" :value="selectedMoc.key" @change="onChangeMoc">
+            <option v-for="moc in mocThoiGianList" :key="moc.key" :value="moc.key">{{ moc.label }}</option>
+          </select>
+        </div>
       </div>
-      <div class="thongke-bieudo-cbo">
-        <select :value="selectedMoc.key" @change="onChangeMoc">
-          <option v-for="moc in mocThoiGianList" :key="moc.key" :value="moc.key">{{ moc.label }}</option>
-        </select>
+      <div class="thongke-homqua-tabs">
+        <span v-for="tab in tabList" :key="tab.key"
+          class="tab"
+          :class="{active: activeTab===tab.key}"
+          @click="changeTab(tab.key)"
+        >
+          {{ tab.label }}
+        </span>
+      </div>
+      <div class="thongke-homqua-chart-wrapper">
+        <canvas ref="chartRef" height="80"></canvas>
+        <div v-if="loading" class="chart-overlay">Đang tải...</div>
+        <div v-else-if="error" class="chart-overlay" style="color: #e53935;">{{ error }}</div>
+        <div v-else-if="!hasData()" class="chart-overlay">
+          <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom: 8px;"><rect x="4" y="7" width="16" height="10" rx="2"/><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/></svg>
+          <div>Không có dữ liệu</div>
+        </div>
       </div>
     </div>
-    <div class="thongke-homqua-tabs">
-      <span v-for="tab in tabList" :key="tab.key"
-        class="tab"
-        :class="{active: activeTab===tab.key}"
-        @click="changeTab(tab.key)"
-      >
-        {{ tab.label }}
-      </span>
-    </div>
-    <div v-if="loading" style="padding: 32px 0; text-align: center; color: #888;">Đang tải...</div>
-    <div v-else-if="error" style="padding: 32px 0; text-align: center; color: #e53935;">{{ error }}</div>
-    <div v-else class="thongke-homqua-chart-wrapper">
-      <canvas ref="chartRef" height="80"></canvas>
+    <!-- Hai card top song song -->
+    <div class="top-row">
+      <div class="top-product-section top-col">
+        <div class="top-product-header">
+          <b>Top 10 hàng bán chạy</b>
+          <select class="select-blue" v-model="selectedTopView">
+            <option v-for="opt in topViewOptions" :value="opt.value">{{ opt.label }}</option>
+          </select>
+          <select class="select-blue" v-model="selectedTopTime">
+            <option v-for="opt in topTimeOptions" :value="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+        <div class="top-product-chart-wrapper">
+          <canvas ref="topProductChartRef" style="height: 340px;"></canvas>
+          <div v-if="topProductLoading" class="chart-overlay" style="color: #888;">Đang tải...</div>
+          <div v-else-if="topProductError" class="chart-overlay" style="color: #e53935;">{{ topProductError }}</div>
+          <div v-else-if="!hasTopProductData" class="chart-overlay">
+            <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom: 8px;"><rect x="4" y="7" width="16" height="10" rx="2"/><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/></svg>
+            <div>Không có dữ liệu</div>
+          </div>
+        </div>
+      </div>
+      <div class="top-customer-section top-col">
+        <div class="top-product-header">
+          <b>Top 10 khách mua nhiều nhất</b>
+          <select class="select-blue" v-model="selectedTopCustomerTime">
+            <option v-for="opt in topCustomerTimeOptions" :value="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+        <div class="top-product-chart-wrapper">
+          <canvas ref="topCustomerChartRef" style="height: 340px;"></canvas>
+          <div v-if="topCustomerLoading" class="chart-overlay" style="color: #888;">Đang tải...</div>
+          <div v-else-if="topCustomerError" class="chart-overlay" style="color: #e53935;">{{ topCustomerError }}</div>
+          <div v-else-if="!hasTopCustomerData" class="chart-overlay">
+            <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom: 8px;"><rect x="4" y="7" width="16" height="10" rx="2"/><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/></svg>
+            <div>Không có dữ liệu</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -295,7 +575,80 @@ onUnmounted(() => {
 }
 .thongke-homqua-chart-wrapper {
   width: 100%;
-  min-height: 200px;
-  margin-top: 12px;
+  min-height: 340px;
+  height: 340px;
+  position: relative;
+}
+.top-row {
+  display: flex;
+  gap: 24px;
+  margin-top: 32px;
+}
+.top-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.top-product-section {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #0001;
+  padding: 18px 18px 18px 18px;
+  min-width: 340px;
+  max-width: 520px;
+}
+.top-customer-section {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #0001;
+  padding: 18px 18px 18px 18px;
+  min-width: 340px;
+}
+.top-product-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.top-product-header select {
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  padding: 4px 12px;
+  font-size: 15px;
+  background: #f8fafd;
+  outline: none;
+}
+.top-product-chart-wrapper {
+  position: relative;
+  min-height: 340px;
+  height: 340px;
+  width: 100%;
+}
+.chart-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.85);
+  font-size: 18px;
+  z-index: 2;
+  pointer-events: none;
+}
+.select-blue {
+  font-size: 15px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1.5px solid #1976d2;
+  color: #1976d2;
+  font-weight: bold;
+  outline: none;
+  background: #f8fbff;
+  cursor: pointer;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.select-blue:focus {
+  border-color: #1565c0;
+  box-shadow: 0 0 0 2px #1976d233;
 }
 </style>

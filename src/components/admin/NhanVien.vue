@@ -48,11 +48,8 @@ const allColumns = [
   { key: 'ngaySinh', label: 'Ngày sinh' },
   { key: 'sdt', label: 'Số điện thoại' },
   { key: 'gioiTinh', label: 'Giới tính' },
-  { key: 'vaiTro', label: 'Vai trò' }, // Thêm dòng này
-  { key: 'tinhThanh', label: 'Tỉnh/Thành' },
-  { key: 'quanHuyen', label: 'Quận/Huyện' },
-  { key: 'xaPhuong', label: 'Xã/Phường' },
-  { key: 'thonXom', label: 'Thôn/Xóm' },
+  { key: 'vaiTro', label: 'Vai trò' },
+  { key: 'diaChi', label: 'Địa chỉ' }, // Thêm dòng này
   { key: 'email', label: 'Email' },
   { key: 'ghiChu', label: 'Ghi chú' },
   { key: 'trangThai', label: 'Trạng thái' },
@@ -636,6 +633,10 @@ async function handleFileChange(event) {
                     <template v-else-if="col.key === 'vaiTro'">
                       {{ nhanVien.tenVaiTro || '' }}
                     </template>
+                    <template v-else-if="col.key === 'diaChi'">
+                      <!-- Ghép địa chỉ đúng thứ tự: Thôn/Xóm, Xã/Phường, Quận/Huyện, Tỉnh/Thành -->
+                      {{ [nhanVien.thonXom, nhanVien.xaPhuong, nhanVien.quanHuyen, nhanVien.tinhThanh].filter(Boolean).join(', ') }}
+                    </template>
                     <template v-else>
                       {{ nhanVien[col.key] }}
                     </template>
@@ -649,33 +650,27 @@ async function handleFileChange(event) {
                         <img v-if="nhanVien.anh" :src="getImageUrl(nhanVien.anh)"
                           style="width: 100%; max-width: 160px; height: auto; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">
                       </div>
-                      <!-- Thông tin bên phải, chia 2 cột -->
+                      <!-- Thông tin bên phải, chia 2 cột, render từng trường -->
                       <div class="detail-fields">
-                        <div v-for="(col, i) in allColumns.filter(c => c.key !== 'anh')" :key="col.key" class="detail-field">
-                          <template v-if="col.key === 'cccd'">
-                            <!-- ...existing code... -->
-                          </template>
-                          <template v-else-if="col.key === 'gioiTinh'">
-                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}
-                          </template>
-                          <template v-else-if="col.key === 'trangThai'">
-                            <b class="detail-label">{{ col.label }}:</b>
-                            <span :class="['status-badge', nhanVien.trangThai == 1 ? 'active' : 'inactive']">
-                              {{ nhanVien.trangThai == 1 ? 'Đang làm việc' : 'Đã nghỉ' }}
-                            </span>
-                          </template>
-                          <template v-else-if="col.key === 'ngaySinh'">
-                            <b class="detail-label">{{ col.label }}:</b> {{ formatDate(nhanVien[col.key]) }}
-                          </template>
-                          <template v-else-if="col.key === 'vaiTro'">
-                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien.tenVaiTro || roles.find(r => r.id == nhanVien.idVaiTro)?.tenVaiTro || '' }}
-                          </template>
-                          <template v-else>
-                            <b class="detail-label">{{ col.label }}:</b> <span style="white-space:normal">{{ nhanVien[col.key] }}</span>
-                          </template>
+                        <div class="detail-field"><b class="detail-label">Mã nhân viên:</b> {{ nhanVien.maNhanVien }}</div>
+                        <div class="detail-field"><b class="detail-label">Tên nhân viên:</b> {{ nhanVien.tenNhanVien }}</div>
+                        <div class="detail-field"><b class="detail-label">Số điện thoại:</b> {{ nhanVien.sdt }}</div>
+                        <div class="detail-field"><b class="detail-label">Ngày sinh:</b> {{ formatDate(nhanVien.ngaySinh) }}</div>
+                        <div class="detail-field"><b class="detail-label">Giới tính:</b> {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}</div>
+                        <div class="detail-field"><b class="detail-label">Vai trò:</b> {{ nhanVien.tenVaiTro || '' }}</div>
+                        <div class="detail-field"><b class="detail-label">Quận/Huyện:</b> {{ nhanVien.quanHuyen }}</div>
+                        <div class="detail-field"><b class="detail-label">Xã/Phường:</b> {{ nhanVien.xaPhuong }}</div>
+                        <div class="detail-field"><b class="detail-label">Thôn/Xóm:</b> {{ nhanVien.thonXom }}</div>
+                        <div class="detail-field"><b class="detail-label">Tỉnh/Thành:</b> {{ nhanVien.tinhThanh }}</div>
+                        <div class="detail-field"><b class="detail-label">Email:</b> {{ nhanVien.email }}</div>
+                        <div class="detail-field"><b class="detail-label">Ghi chú:</b> {{ nhanVien.ghiChu }}</div>
+                        <div class="detail-field"><b class="detail-label">Trạng thái:</b>
+                          <span :class="['status-badge', nhanVien.trangThai == 1 ? 'active' : 'inactive']">
+                            {{ nhanVien.trangThai == 1 ? 'Đang làm việc' : 'Đã nghỉ' }}
+                          </span>
                         </div>
                       </div>
-                      <!-- Nút thao tác -->
+                      <!-- Nút thao tác giữ nguyên -->
                       <div class="employee-detail-actions detail-actions-abs">
                         <template v-if="nhanVien.trangThai == 1">
                           <button class="action-btn edit" title="Sửa thông tin nhân viên"

@@ -1,142 +1,309 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import ThongKeBieuDoTongHop from './ThongKeBieuDoTongHop.vue';
 
-const tongHoaDon = ref(0);
-const tongDoanhThu = ref(0);
-const percentChange = ref(0);
-const xuHuong = ref('');
-const loading = ref(true);
-const error = ref('');
 
-const fetchThongKe = async () => {
-  loading.value = true;
+// Hôm nay
+const today = ref({ doanhThu: 0, percent: 0, xuHuong: '', comparedDate: '' });
+const loadingToday = ref(true);
+const errorToday = ref('');
+// Tuần này
+const week = ref({ doanhThu: 0, percent: 0, xuHuong: '', comparedText: '' });
+const loadingWeek = ref(true);
+const errorWeek = ref('');
+// Tháng này
+const month = ref({ doanhThu: 0, percent: 0, xuHuong: '', comparedText: '' });
+const loadingMonth = ref(true);
+const errorMonth = ref('');
+
+
+// Hôm nay
+const fetchToday = async () => {
+  loadingToday.value = true;
   try {
-    // Lấy hóa đơn và doanh thu hôm nay
-    const resHomNay = await axios.get('http://localhost:8080/hoa-don/thong-ke/hom-nay');
-    tongHoaDon.value = resHomNay.data.tongSoHoaDon || 0;
-    tongDoanhThu.value = resHomNay.data.tongTienThuDuoc || 0; // SỬA LẠI DÒNG NÀY
-
-    // Lấy phần trăm tăng giảm so với cùng kỳ
-    const resSoSanh = await axios.get('http://localhost:8080/hoa-don/thong-ke/so-sanh-thang-truoc');
-    percentChange.value = resSoSanh.data.tiLeThayDoi ?? 0;
-    xuHuong.value = resSoSanh.data.xuHuong || '';
+    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/hom-nay');
+    const resCompare = await axios.get('http://localhost:8080/hoa-don/thong-ke/so-sanh-hom-qua');
+    today.value.doanhThu = res.data.tongTienThuDuoc ?? res.data.tongTien ?? 0;
+    today.value.soHoaDon = res.data.tongSoHoaDon ?? res.data.soLuongHoaDon ?? 0;
+    today.value.percent = resCompare.data.tiLeThayDoi ?? 0;
+    today.value.xuHuong = resCompare.data.xuHuong || '';
+    today.value.comparedDate = resCompare.data.ngaySoSanh || '';
   } catch (e) {
-    error.value = 'Lỗi khi lấy dữ liệu thống kê';
+    errorToday.value = 'Lỗi khi lấy dữ liệu hôm nay';
   } finally {
-    loading.value = false;
+    loadingToday.value = false;
+  }
+};
+// Tuần này
+const fetchWeek = async () => {
+  loadingWeek.value = true;
+  try {
+    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/tuan-nay');
+    const resCompare = await axios.get('http://localhost:8080/hoa-don/thong-ke/so-sanh-tuan-truoc');
+    week.value.doanhThu = res.data.tongTienThuDuoc ?? res.data.tongTien ?? 0;
+    week.value.soHoaDon = res.data.tongSoHoaDon ?? res.data.soLuongHoaDon ?? 0;
+    week.value.percent = resCompare.data.tiLeThayDoi ?? 0;
+    week.value.xuHuong = resCompare.data.xuHuong || '';
+    week.value.comparedText = 'So với tuần trước';
+  } catch (e) {
+    errorWeek.value = 'Lỗi khi lấy dữ liệu tuần này';
+  } finally {
+    loadingWeek.value = false;
+  }
+};
+// Tháng này
+const fetchMonth = async () => {
+  loadingMonth.value = true;
+  try {
+    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/thang-nay');
+    const resCompare = await axios.get('http://localhost:8080/hoa-don/thong-ke/so-sanh-thang-truoc');
+    month.value.doanhThu = res.data.tongTienThuDuoc ?? res.data.tongTien ?? 0;
+    month.value.soHoaDon = res.data.tongSoHoaDon ?? res.data.soLuongHoaDon ?? 0;
+    month.value.percent = resCompare.data.tiLeThayDoi ?? 0;
+    month.value.xuHuong = resCompare.data.xuHuong || '';
+    month.value.comparedText = 'So với tháng trước';
+  } catch (e) {
+    errorMonth.value = 'Lỗi khi lấy dữ liệu tháng này';
+  } finally {
+    loadingMonth.value = false;
   }
 };
 
-onMounted(fetchThongKe);
+onMounted(() => {
+  fetchToday();
+  fetchWeek();
+  fetchMonth();
+});
 </script>
 
 <template>
   <div>
-    <div class="thongke-homnay-container">
-      <div style="flex: 1;">
-        <div class="thongke-homnay-title">KẾT QUẢ BÁN HÀNG HÔM NAY</div>
-        <div v-if="loading">Đang tải...</div>
-        <div v-else-if="error" style="color: #e53935;">{{ error }}</div>
-        <div v-else class="thongke-homnay-content">
-          <!-- Tổng hóa đơn -->
-          <div class="thongke-homnay-block">
-            <div class="thongke-homnay-icon">
-              <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><text x="8" y="17" font-size="10" fill="#fff">₫</text></svg>
-            </div>
-            <div class="thongke-homnay-info">
-              <div style="font-size: 15px; font-weight: 600;">{{ tongHoaDon }}</div>
-              <div style="font-size: 12px; color: #888;">Hóa đơn</div>
-              <div style="font-size: 13px; color: #222; font-weight: 500;">{{ tongDoanhThu.toLocaleString('vi-VN') }} ₫</div>
-              <div style="font-size: 12px; color: #888;">Doanh thu hôm nay</div>
+    <div class="thongke-tonghop-row">
+      <!-- Card hôm nay -->
+      <div class="thongke-tonghop-card">
+        <div class="thongke-tonghop-card-content">
+          <div class="thongke-tonghop-left">
+            <div class="thongke-tonghop-title">Doanh số hôm nay</div>
+            <div class="thongke-tonghop-value">{{ today.doanhThu.toLocaleString('vi-VN') }}</div>
+            <div class="thongke-tonghop-sub">Số hóa đơn: {{ today.soHoaDon || 0 }}</div>
+          </div>
+          <div class="thongke-tonghop-right">
+            <div class="thongke-tonghop-compare">So với Hôm Qua</div>
+            <div class="thongke-tonghop-percent" :class="today.percent < 0 ? 'down' : 'up'">
+              <span class="arrow" :class="today.percent < 0 ? 'arrow-down' : 'arrow-up'">
+                {{ today.percent < 0 ? '↓' : '↑' }}
+              </span>
+              <span :class="today.percent < 0 ? 'arrow-down' : 'arrow-up'">
+                {{ today.percent < 0 ? '' : '+' }}{{ today.percent.toFixed(1) }}%
+              </span>
             </div>
           </div>
-          <!-- Phần trăm so với tháng trước -->
-          <div class="thongke-homnay-percent">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <div :style="`background: ${percentChange < 0 ? '#e53935' : '#22b34c'}; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;`">
-                <svg v-if="percentChange < 0" width="14" height="14" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12l4 4 4-4"/></svg>
-                <svg v-else width="14" height="14" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12l4-4 4 4"/></svg>
-              </div>
-              <div class="thongke-homnay-percent-value" :style="`color: ${percentChange < 0 ? '#e53935' : '#22b34c'};`">
-                {{ percentChange < 0 ? '' : '+' }}{{ percentChange.toFixed(3) }}%
-              </div>
+        </div>
+      </div>
+      <!-- Card tuần này -->
+      <div class="thongke-tonghop-card">
+        <div class="thongke-tonghop-card-content">
+          <div class="thongke-tonghop-left">
+            <div class="thongke-tonghop-title">Doanh số tuần này</div>
+            <div class="thongke-tonghop-value">{{ week.doanhThu.toLocaleString('vi-VN') }}</div>
+            <div class="thongke-tonghop-sub">Số hóa đơn: {{ week.soHoaDon || 0 }}</div>
+          </div>
+          <div class="thongke-tonghop-right">
+            <div class="thongke-tonghop-compare">{{ week.comparedText }}</div>
+            <div class="thongke-tonghop-percent" :class="week.percent < 0 ? 'down' : 'up'">
+              <span class="arrow" :class="week.percent < 0 ? 'arrow-down' : 'arrow-up'">
+                {{ week.percent < 0 ? '↓' : '↑' }}
+              </span>
+              <span :class="week.percent < 0 ? 'arrow-down' : 'arrow-up'">
+                {{ week.percent < 0 ? '' : '+' }}{{ week.percent.toFixed(1) }}%
+              </span>
             </div>
-            <div style="font-size: 12px; color: #888; margin-left: 2px; margin-top: 2px;">
-              {{ xuHuong }}
+          </div>
+        </div>
+      </div>
+      <!-- Card tháng này -->
+      <div class="thongke-tonghop-card">
+        <div class="thongke-tonghop-card-content">
+          <div class="thongke-tonghop-left">
+            <div class="thongke-tonghop-title">Doanh số tháng này</div>
+            <div class="thongke-tonghop-value">{{ month.doanhThu.toLocaleString('vi-VN') }}</div>
+            <div class="thongke-tonghop-sub">Số hóa đơn: {{ month.soHoaDon || 0 }}</div>
+          </div>
+          <div class="thongke-tonghop-right">
+            <div class="thongke-tonghop-compare">{{ month.comparedText }}</div>
+            <div class="thongke-tonghop-percent" :class="month.percent < 0 ? 'down' : 'up'">
+              <span class="arrow" :class="month.percent < 0 ? 'arrow-down' : 'arrow-up'">
+                {{ month.percent < 0 ? '↓' : '↑' }}
+              </span>
+              <span :class="month.percent < 0 ? 'arrow-down' : 'arrow-up'">
+                {{ month.percent < 0 ? '' : '+' }}{{ month.percent.toFixed(1) }}%
+              </span>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <ThongKeBieuDoTongHop style="margin-top: 24px;" />
+    <div class="thongke-main-row">
+      <div class="thongke-bieudo-col">
+        <!-- Biểu đồ cột/thống kê cũ -->
+        <ThongKeBieuDoTongHop />
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.thongke-homnay-container {
-  background: #fff;
-  color: #222;
-  border-radius: 10px;
-  padding: 10px 24px;
+.thongke-tonghop-row {
   display: flex;
-  align-items: center;
   gap: 20px;
-  min-height: 60px;
+  margin-bottom: 16px;
+}
+.thongke-tonghop-card {
+  background: #fff;
+  border-radius: 10px;
   box-shadow: 0 2px 8px #0001;
-  font-size: 13px;
-  width: 100%;
-  max-width: none;
-  margin: 0 auto;
-}
-
-.thongke-homnay-title {
-  font-size: 15px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.thongke-homnay-content {
+  flex: 1;
+  padding: 10px 24px 10px 24px; /* giảm padding trên/dưới */
   display: flex;
-  align-items: flex-end;
-  gap: 24px;
+  flex-direction: column;
+  min-width: 220px;
+  min-height: 60px; /* giảm min-height */
+  justify-content: center;
 }
-
-.thongke-homnay-block {
+.thongke-tonghop-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.thongke-tonghop-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.thongke-tonghop-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.thongke-tonghop-title {
+  font-size: 13px; /* nhỏ hơn */
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #222;
+}
+.thongke-tonghop-value {
+  font-size: 20px; /* nhỏ hơn */
+  font-weight: bold;
+  margin-bottom: 2px;
+  color: #222;
+}
+.thongke-tonghop-sub {
+  font-size: 12px; /* nhỏ hơn */
+  color: #888;
+  margin-top: 2px;
+}
+.thongke-tonghop-compare {
+  font-size: 12px; /* nhỏ hơn */
+  color: #888;
+  margin-bottom: 6px;
+}
+.thongke-tonghop-percent {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 80px;
-  border-right: 1px solid #eee;
-  padding-right: 24px;
+  gap: 4px;
+  font-size: 13px; /* nhỏ hơn */
+  font-weight: 600;
+  background: #eafaf1;
+  border-radius: 16px;
+  padding: 2px 10px 2px 6px;
+  width: fit-content;
+  min-width: 50px;
+  justify-content: flex-end;
 }
-
-.thongke-homnay-icon {
-  background: #1976d2;
-  border-radius: 50%;
-  width: 26px;
-  height: 26px;
+.thongke-tonghop-percent.up .arrow,
+.thongke-tonghop-percent.up .arrow-up {
+  color: #22b34c;
+}
+.thongke-tonghop-percent.down {
+  background: #fdeaea;
+}
+.thongke-tonghop-percent.down .arrow,
+.thongke-tonghop-percent.down .arrow-down {
+  color: #e53935;
+}
+.arrow {
+  font-size: 15px; /* nhỏ hơn */
+  font-weight: bold;
+}
+.arrow-up {
+  color: #22b34c;
+}
+.arrow-down {
+  color: #e53935;
+}
+.thongke-main-row {
+  display: flex;
+  gap: 20px;
+  margin-top: 24px;
+}
+.thongke-bieudo-col {
+  
+  margin-top: -30px;
+  flex: 2;
+}
+.thongke-pie-col {
+  flex: 1;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #0001;
+  padding: 24px;
+  margin-top: -6px;
+}
+.thongke-pie-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.piechart-center-wrap {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 12px auto;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
-.thongke-homnay-info {
-  font-size: 12px;
+.piechart-center-content {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
 }
-
-.thongke-homnay-percent {
+.piechart-center-value {
+  font-size: 32px;
+  font-weight: bold;
+}
+.piechart-center-label {
+  font-size: 14px;
+  color: #888;
+}
+.thongke-pie-legend {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  min-width: 100px;
-  margin-left: 12px;
+  gap: 4px;
 }
-
-.thongke-homnay-percent-value {
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 1;
+.legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
 }
 </style>
