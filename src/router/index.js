@@ -26,7 +26,11 @@ import ThemSP from "@/components/admin/ThemSP.vue";
 import SuaDotGiamGia from "@/components/admin/SuaDotGiamGia.vue";
 import ThemDotGiamGia from "@/components/admin/ThemDotGiamGia.vue";
 import DotGiamGia from "@/components/admin/DotGiamGia.vue";
+
+import PhieuGiamGiaBH from "@/components/admin/PhieuGiamGiaBH.vue";
+
 import ThongKeTongHop from "@/components/admin/ThongKeTongHop.vue";
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -165,6 +169,9 @@ const router = createRouter({
       name: "suadoigiamgia",
       component: SuaDotGiamGia,
     },
+
+      
+
     {
       path: '/thong-ke',
       name: 'thongke',

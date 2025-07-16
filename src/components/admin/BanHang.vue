@@ -1,6 +1,5 @@
 <script setup>
-import { ref, watch, computed } from "vue";
-import axios from "axios";
+import { ref, watch } from "vue";
 import {
   Plus,
   UserCog,
@@ -8,18 +7,20 @@ import {
   Ban,
   TicketPercent,
   CreditCard,
-  Truck,
 } from "lucide-vue-next";
 import ThemSanPham from "./ThemSanPhamHoaDon.vue";
-import ThemKhachHangHoaDon from "./ThemKhachHangHoaDon.vue";
-import ChonDiaChiPopup from "./ChonDiaChiKhachHangHoaDon.vue"; // Import component popup chọn địa chỉ
 
+import PhieuGiamGiaBH from "./PhieuGiamGiaBH.vue";
+import axios from "axios";
 // Khởi tạo danh sách đơn hàng từ localStorage nếu có
 const orders = ref([]); // GIỮ NGUYÊN TÊN 'orders' theo yêu cầu
 
 const storedOrders = localStorage.getItem("orders");
 if (storedOrders) {
   try {
+
+    orders.value = JSON.parse(storedOrders);
+
     const parsedOrders = JSON.parse(storedOrders);
     orders.value = parsedOrders.map(order => ({
       ...order,
@@ -37,8 +38,7 @@ if (storedOrders) {
       listSanPham: order.listSanPham || [], // Giữ nguyên tên listSanPham
     }));
   } catch (e) {
-    console.error("Lỗi parse orders từ localStorage:", e);
-    orders.value = [];
+    console.error("Lỗi parse orders:", e);
   }
 }
 
@@ -46,12 +46,7 @@ if (storedOrders) {
 const activeTab = ref(null);
 const storedActiveTab = localStorage.getItem("activeTab");
 if (storedActiveTab) {
-  try {
-    activeTab.value = JSON.parse(storedActiveTab);
-  } catch (e) {
-    console.error("Lỗi parse activeTab:", e);
-    activeTab.value = null;
-  }
+  activeTab.value = JSON.parse(storedActiveTab);
 }
 
 // ID đơn tiếp theo - Giữ nguyên tên tiếng Anh
@@ -60,11 +55,25 @@ let nextOrderId =
     ? Math.max(...orders.value.map((o) => o.id)) + 1
     : 1;
 
+// Quản lý popup chọn phiếu giảm giá và ID khách hàng
+const hienThiPhieuGiamGia = ref(false);
+const khachHangId = ref(""); // Lưu ID khách hàng được nhập
+const maGiamGia = ref(""); // Lưu mã giảm giá nhập tay
+const errorMessage = ref(""); // Lưu thông báo lỗi khi validate mã
+// Tạo đơn mới
+
+
 // Tạo đơn mới - Giữ nguyên tên tiếng Anh
+
 function createNewOrder() {
   const newOrder = {
     id: nextOrderId++,
     name: `Đơn ${nextOrderId - 1}`,
+
+    listSanPham: [],
+    khachHang: null,
+    giamGia: null,
+
     listSanPham: [], // Giữ nguyên tên listSanPham
     khachHang: null, // GIỮ NGUYÊN TÊN TIẾNG VIỆT 'khachHang'
     giamGia: null, // Giữ nguyên tên giamGia
@@ -80,6 +89,7 @@ function createNewOrder() {
       diaChiChiTiet: '',
       isMacDinh: false,
     },
+
   };
   orders.value.push(newOrder);
   activeTab.value = newOrder.id;
@@ -92,6 +102,9 @@ function closeOrder(id) {
     activeTab.value = orders.value.length > 0 ? orders.value[0].id : null;
   }
 }
+
+
+// Popup chọn sản phẩm
 
 // Hàm xóa sản phẩm khỏi giỏ hàng - Giữ nguyên tên tiếng Anh
 const removeItem = (order, index) => {
@@ -106,23 +119,38 @@ const moPopupThemSanPham = () => {
   hienThiThemSanPham.value = true;
 };
 
+// Khi nhận sản phẩm đã chọn từ component ThemSanPham
 const nhanSanPhamDaChon = (danhSachSanPham) => {
   const activeOrder = orders.value.find((o) => o.id === activeTab.value);
   if (activeOrder) {
-    danhSachSanPham.forEach(newItem => {
-      const existingItem = activeOrder.listSanPham.find(
-        item => item.idSanPhamChiTiet === newItem.idSanPhamChiTiet
-      );
-      if (existingItem) {
-        existingItem.soLuong += newItem.soLuong;
-      } else {
-        activeOrder.listSanPham.push({ ...newItem });
-      }
-    });
+    activeOrder.listSanPham.push(...danhSachSanPham);
   }
-  hienThiThemSanPham.value = false;
 };
 
+// Mở popup chọn phiếu giảm giá
+const moPopupPhieuGiamGia = () => {
+  if (!khachHangId.value || isNaN(khachHangId.value) || khachHangId.value <= 0) {
+    alert("Vui lòng nhập ID khách hàng hợp lệ.");
+    return;
+  }
+  hienThiPhieuGiamGia.value = true;
+};
+
+
+// Nhận phiếu giảm giá đã chọn từ modal
+const nhanPhieuGiamGiaDaChon = (phieu) => {
+  const activeOrder = orders.value.find((o) => o.id === activeTab.value);
+  if (activeOrder) {
+    activeOrder.giamGia = phieu; // Lưu phiếu giảm giá vào đơn hàng
+
+    errorMessage.value = ""; // Xóa thông báo lỗi
+  }
+  hienThiPhieuGiamGia.value = false; // Đóng modal
+};
+// Validate mã giảm giá nhập tay
+const validateMaGiamGia = async (maGiamGia) => {
+  if (!khachHangId.value || isNaN(khachHangId.value) || khachHangId.value <= 0) {
+    errorMessage.value = "Vui lòng nhập ID khách hàng hợp lệ.";
 
 
 
@@ -187,8 +215,24 @@ const dienDiaChiMacDinh = async () => {
     };
     return;
   }
-
+  
   try {
+
+    const response = await axios.get(
+      `http://localhost:8080/ban_hang/phieuGG/validate/${maGiamGia}?khachHangId=${khachHangId.value}`
+    );
+    const activeOrder = orders.value.find((o) => o.id === activeTab.value);
+    if (activeOrder) {
+      activeOrder.giamGia = response.data; // Lưu phiếu giảm giá vào đơn hàng
+      errorMessage.value = ""; // Xóa thông báo lỗi
+    }
+  } catch (error) {
+    console.error("Error validating voucher:", error.response?.data || error.message);
+    errorMessage.value = error.response?.data?.message || "Mã giảm giá không hợp lệ hoặc không tồn tại.";
+    const activeOrder = orders.value.find((o) => o.id === activeTab.value);
+    if (activeOrder) {
+      activeOrder.giamGia = null; // Xóa phiếu giảm giá nếu không hợp lệ
+
     const response = await axios.get(`http://localhost:8080/api/dia-chi/mac-dinh/khach-hang/${khachHangCuaDonHang.id}`);
     const diaChiMacDinh = response.data; // Đây là DiaChiDTO từ BE
 
@@ -289,8 +333,16 @@ const xuLyKhachHangDuocChon = (khachHangDuocChon) => {
       dienDiaChiMacDinh();
     }
   }
-  hienThiThemKhachHangPopup.value = false;
 };
+
+// Hủy chọn phiếu giảm giá
+const huyChonPhieuGiamGia = () => {
+  const activeOrder = orders.value.find((o) => o.id === activeTab.value);
+  if (activeOrder) {
+    activeOrder.giamGia = null; // Xóa phiếu giảm giá
+
+    errorMessage.value = ""; // Xóa thông báo lỗi
+
 
 const xoaKhachHangDaChon = () => {
   const donHang = donHangDangChon.value;
@@ -318,9 +370,16 @@ const moPopupChonDiaChi = () => {
   if (!khachHangCuaDonHang || !khachHangCuaDonHang.id) {
     alert("Vui lòng chọn khách hàng trước khi chọn địa chỉ!");
     return;
+
   }
-  hienThiChonDiaChiPopup.value = true;
 };
+
+// Format tiền
+const formatCurrency = (val) => {
+  return val ? val.toLocaleString("vi-VN") + " VNĐ" : "";
+};
+
+
 
 // Hàm nhận địa chỉ đã chọn từ popup
 const xuLyDiaChiDuocChon = (diaChiDuocChon) => {
@@ -373,15 +432,20 @@ watch(
 watch(activeTab, (newVal) => { // GIỮ NGUYÊN 'activeTab'
   localStorage.setItem("activeTab", JSON.stringify(newVal));
 });
+
 </script>
 
+
+
 <template>
+  <!-- Header -->
   <div class="bg-white p-3 rounded mb-4 d-flex align-items-center justify-content-between border" style="height: 60px">
     <h5 class="fw-bold mb-0">Bán hàng tại quầy</h5>
     <button class="btn success" style="background-color: #0a2c57; color: white" @click="createNewOrder">
       <Plus class="me-1" size="16" /> Tạo đơn mới
     </button>
   </div>
+  <!-- Tabs -->
   <ul class="nav nav-tabs">
     <li class="nav-item" v-for="order in orders" :key="order.id">
       <a class="nav-link" :class="{ active: order.id === activeTab }" href="#" @click.prevent="activeTab = order.id">
@@ -391,14 +455,17 @@ watch(activeTab, (newVal) => { // GIỮ NGUYÊN 'activeTab'
     </li>
   </ul>
 
+  <!-- Nếu không có đơn hàng nào -->
   <div v-if="orders.length === 0" class="text-center mt-5">
     <img src="https://web.nvnstatic.net/tp/T0213/img/tmp/cart-empty.png?v=9" alt="No orders" width="170" />
     <p class="mt-2">Không có bất kỳ đơn hàng nào !!!</p>
   </div>
 
+  <!-- Nội dung đơn hàng đang active -->
   <div v-if="activeTab !== null" class="bg-white p-3 rounded mb-4 align-items-center border">
     <div v-for="order in orders" :key="order.id" v-show="order.id === activeTab">
       <h6>Chi tiết {{ order.name }}</h6>
+      <!-- Tại đây hiển thị danh sách sản phẩm, khách hàng,... -->
       <div class="bg-white p-3 rounded mb-4 align-items-center border">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">🛒 Giỏ hàng</h5>
@@ -411,6 +478,7 @@ watch(activeTab, (newVal) => { // GIỮ NGUYÊN 'activeTab'
             <Plus size="20" />
           </button>
         </div>
+        <!-- Hiển thị danh sách sản phẩm trong đơn dưới dạng bảng -->
         <div class="text-muted text-center bg-light rounded">
           <div class="table-responsive">
             <table class="table table-hover">
@@ -427,29 +495,12 @@ watch(activeTab, (newVal) => { // GIỮ NGUYÊN 'activeTab'
                 </tr>
               </thead>
               <tbody>
-                <tr v-if="order.listSanPham.length === 0">
-                  <td colspan="8" class="text-center">Chưa có sản phẩm nào trong giỏ hàng.</td>
-                </tr>
                 <tr v-for="(item, index) in order.listSanPham" :key="index">
                   <td>{{ index + 1 }}</td>
-                  <td><img :src="item.anhDaiDien || 'https://via.placeholder.com/50'" alt="Product Image" width="50" height="50" class="rounded">
-                  </td>
-                  <td>
-                    <strong>{{ item.tenSanPham }}</strong> <br />
-                    <small class="text-muted">Mã SP: {{ item.maSanPham }}</small>
-                  </td>
-                  <td>
-                    <small>Màu: {{ item.mauSac }}</small><br />
-                    <small>Size: {{ item.kichThuoc }}</small>
-                  </td>
-                  <td>
-                    <input type="number" v-model.number="item.soLuong" min="1" class="form-control form-control-sm" style="width: 70px;">
-                  </td>
+                  <td>{{ item.idSanPhamChiTiet }}</td>
+                  <td>{{ item.soLuong }}</td>
                   <td>{{ item.gia.toLocaleString() }}đ</td>
                   <td>{{ (item.gia * item.soLuong).toLocaleString() }}đ</td>
-                  <td>
-                    <button class="btn btn-sm btn-outline-danger" @click="removeItem(order, index)">Xóa</button>
-                  </td>
                 </tr>
               </tbody>
             </table>
@@ -458,6 +509,26 @@ watch(activeTab, (newVal) => { // GIỮ NGUYÊN 'activeTab'
         <ThemSanPham v-if="hienThiThemSanPham" :maHoaDon="activeTab" @selected="nhanSanPhamDaChon"
           @close="hienThiThemSanPham = false" />
       </div>
+      <!-- PHẦN KHÁCH HÀNG -->
+      <div class="bg-white p-3 rounded mb-4 align-items-center border">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">👤 Khách hàng</h5>
+          <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
+              width: 36px;
+              height: 36px;
+              background-color: #0a2c57;
+              color: white;
+            " title="Chọn khách hàng">
+            <UserCog size="20" />
+          </button>
+        </div>
+
+        <!-- Thông tin khách -->
+        <div class="mb-2"><strong>Tên khách hàng:</strong> Nguyễn Văn A</div>
+        <div class="mb-2"><strong>Số điện thoại:</strong> 0366166359</div>
+        <div class="mb-2">
+          <strong>Địa chỉ nhận hàng:</strong> Nguyễn Cơ Thạch, Mỹ Đình 2, Nam Từ
+          Liêm
            <!-- PHẦN KHÁCH HÀNG -->
       <div class="row gx-4">
         <div class="col-md-6">
@@ -553,54 +624,68 @@ watch(activeTab, (newVal) => { // GIỮ NGUYÊN 'activeTab'
         </div>
       </div>
 
+      <!-- PHẦN THANH TOÁN -->
       <div class="bg-white p-3 rounded mb-4 align-items-center border">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">💳 Thanh toán</h5>
         </div>
-
+        <div class="mb-3">
+          <label class="fw-bold mb-0">ID khách hàng:</label>
+          <input type="text" v-model="khachHangId" class="form-control" style="max-width: 250px"
+            placeholder="Nhập ID khách hàng..." />
+        </div>
         <div class="d-flex align-items-center gap-3 mb-3">
           <label class="fw-bold mb-0">Mã giảm giá:</label>
-          <input type="text" class="form-control" style="max-width: 250px" placeholder="Nhập mã giảm giá..." />
-
-          <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
-              width: 36px;
-              height: 36px;
-              background-color: #0a2c57;
-              color: white;
-            " title="Áp dụng mã giảm giá">
+          <input type="text" :value="order.giamGia?.maPhieuGiamGia || ''" class="form-control" style="max-width: 250px"
+            placeholder="Nhập mã giảm giá..." @input="validateMaGiamGia($event.target.value)"
+            @blur="validateMaGiamGia($event.target.value)" @keyup.enter="validateMaGiamGia($event.target.value)" />
+          <button class="btn border rounded-circle d-flex align-items-center justify-content-center"
+            style="width: 36px; height: 36px; background-color: #0a2c57; color: white" title="Áp dụng mã giảm giá"
+            @click="moPopupPhieuGiamGia">
             <Tag size="18" />
           </button>
-
-          <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
-              width: 36px;
-              height: 36px;
-              background-color: #0a2c57;
-              color: white;
-            " title="Hủy chọn">
+          <button class="btn border rounded-circle d-flex align-items-center justify-content-center"
+            style="width: 36px; height: 36px; background-color: #0a2c57; color: white" title="Hủy chọn"
+            @click="huyChonPhieuGiamGia">
             <Ban size="18" />
           </button>
         </div>
-
-        <div class="d-flex align-items-center justify-content-between border rounded p-2 mb-3"
+        <!-- Thông báo lỗi validate -->
+        <div v-if="errorMessage" class="text-danger mb-3">
+          {{ errorMessage }}
+        </div>
+        <!-- Thông tin phiếu giảm giá -->
+        <div v-if="order.giamGia" class="d-flex align-items-center justify-content-between border rounded p-2 mb-3"
           style="background-color: #f8f9fa">
           <div class="d-flex align-items-center gap-2">
             <TicketPercent size="24" class="text-success" />
             <div>
-              <div><strong>Mã phiếu HC-af374fbf</strong></div>
+              <div><strong>Mã phiếu {{ order.giamGia.maPhieuGiamGia }}</strong></div>
               <div class="text-muted small">
-                Phần trăm tối đa: <strong>5%</strong> &nbsp;|&nbsp; Giá trị tối
-                thiểu: <strong>50.000đ</strong>
+                Giá trị giảm: <strong>{{
+                  order.giamGia.phamTramGiamGia
+                    ? order.giamGia.phamTramGiamGia + "%"
+                    : formatCurrency(order.giamGia.soTienGiam)
+                }}</strong>
+                | Giá trị tối thiểu: <strong>{{ formatCurrency(order.giamGia.giamToiThieu) }}</strong>
+                | Giá trị tối đa: <strong>{{ formatCurrency(order.giamGia.giamToiDa) }}</strong>
               </div>
               <div class="text-danger small">
-                (Đang sử dụng) Phiếu công khai - Còn lại: <strong>4</strong>
+                (Đang sử dụng) Phiếu {{ order.giamGia.loaiPhieu }} - Còn lại: <strong>{{ order.giamGia.soLuong
+                  }}</strong>
               </div>
             </div>
           </div>
         </div>
+        <!-- Modal phiếu giảm giá -->
+        <PhieuGiamGiaBH v-if="hienThiPhieuGiamGia" :khachHangId="khachHangId" :selectedPhieu="order.giamGia"
+          @selected="nhanPhieuGiamGiaDaChon" @close="hienThiPhieuGiamGia = false" />
 
+        <!-- Tổng kết đơn hàng -->
         <div class="mb-2"><strong>Tiền sản phẩm:</strong> 300.000đ</div>
         <div class="mb-2"><strong>Giảm giá:</strong> 15.000đ</div>
 
+        <!-- Phương thức thanh toán -->
         <div class="d-flex align-items-center gap-3 mb-3">
           <label class="fw-bold mb-0">Phương thức thanh toán:</label>
           <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
@@ -621,6 +706,7 @@ watch(activeTab, (newVal) => { // GIỮ NGUYÊN 'activeTab'
           </strong>
         </div>
 
+        <!-- Nút hoàn tất -->
         <div class="text-end">
           <button class="btn" style="
               background-color: #0a2c57;
