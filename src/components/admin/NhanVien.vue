@@ -59,10 +59,11 @@ const visibleColumns = ref([
   'maNhanVien',
   'tenNhanVien',
   'sdt',
+  'diaChi',
+  'email',
   'trangThai',
 ]);
 const showColumnBox = ref(false);
-const expandedRow = ref(null);
 const showFilter = ref(false);
 const filterHovered = ref(false);
 
@@ -603,13 +604,13 @@ async function handleFileChange(event) {
               <th>STT</th>
               <th v-for="col in allColumns.filter(c => visibleColumns.includes(c.key))" :key="col.key">{{ col.label }}
               </th>
+              <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
             <template v-if="pagedNhanVien.length">
               <template v-for="(nhanVien, index) in pagedNhanVien" :key="nhanVien.id">
-                <tr @click="expandedRow = expandedRow === nhanVien.id ? null : nhanVien.id"
-                  :class="{ 'row-selected': expandedRow === nhanVien.id }" style="cursor: pointer;">
+                <tr>
                   <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                   <td v-for="col in allColumns.filter(c => visibleColumns.includes(c.key))" :key="col.key">
                     <template v-if="col.key === 'anh'">
@@ -634,80 +635,47 @@ async function handleFileChange(event) {
                       {{ nhanVien.tenVaiTro || '' }}
                     </template>
                     <template v-else-if="col.key === 'diaChi'">
-                      <!-- Ghép địa chỉ đúng thứ tự: Thôn/Xóm, Xã/Phường, Quận/Huyện, Tỉnh/Thành -->
                       {{ [nhanVien.thonXom, nhanVien.xaPhuong, nhanVien.quanHuyen, nhanVien.tinhThanh].filter(Boolean).join(', ') }}
                     </template>
                     <template v-else>
                       {{ nhanVien[col.key] }}
                     </template>
                   </td>
-                </tr>
-                <tr v-if="expandedRow === nhanVien.id">
-                  <td :colspan="visibleColumns.length + 2">
-                    <div class="employee-detail-expand detail-2col">
-                      <!-- Ảnh bên trái -->
-                      <div style="min-width: 140px; max-width: 180px;">
-                        <img v-if="nhanVien.anh" :src="getImageUrl(nhanVien.anh)"
-                          style="width: 100%; max-width: 160px; height: auto; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">
-                      </div>
-                      <!-- Thông tin bên phải, chia 2 cột, render từng trường -->
-                      <div class="detail-fields">
-                        <div class="detail-field"><b class="detail-label">Mã nhân viên:</b> {{ nhanVien.maNhanVien }}</div>
-                        <div class="detail-field"><b class="detail-label">Tên nhân viên:</b> {{ nhanVien.tenNhanVien }}</div>
-                        <div class="detail-field"><b class="detail-label">Số điện thoại:</b> {{ nhanVien.sdt }}</div>
-                        <div class="detail-field"><b class="detail-label">Ngày sinh:</b> {{ formatDate(nhanVien.ngaySinh) }}</div>
-                        <div class="detail-field"><b class="detail-label">Giới tính:</b> {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}</div>
-                        <div class="detail-field"><b class="detail-label">Vai trò:</b> {{ nhanVien.tenVaiTro || '' }}</div>
-                        <div class="detail-field"><b class="detail-label">Quận/Huyện:</b> {{ nhanVien.quanHuyen }}</div>
-                        <div class="detail-field"><b class="detail-label">Xã/Phường:</b> {{ nhanVien.xaPhuong }}</div>
-                        <div class="detail-field"><b class="detail-label">Thôn/Xóm:</b> {{ nhanVien.thonXom }}</div>
-                        <div class="detail-field"><b class="detail-label">Tỉnh/Thành:</b> {{ nhanVien.tinhThanh }}</div>
-                        <div class="detail-field"><b class="detail-label">Email:</b> {{ nhanVien.email }}</div>
-                        <div class="detail-field"><b class="detail-label">Ghi chú:</b> {{ nhanVien.ghiChu }}</div>
-                        <div class="detail-field"><b class="detail-label">Trạng thái:</b>
-                          <span :class="['status-badge', nhanVien.trangThai == 1 ? 'active' : 'inactive']">
-                            {{ nhanVien.trangThai == 1 ? 'Đang làm việc' : 'Đã nghỉ' }}
-                          </span>
-                        </div>
-                      </div>
-                      <!-- Nút thao tác giữ nguyên -->
-                      <div class="employee-detail-actions detail-actions-abs">
-                        <template v-if="nhanVien.trangThai == 1">
-                          <button class="action-btn edit" title="Sửa thông tin nhân viên"
-                            @click="router.push(`/nhan-vien/sua/${nhanVien.id}`)">
-                            <Edit />
-                          </button>
-                          <button class="action-btn delete" title="Ngừng làm việc" @click="openConfirmModal(nhanVien)">
-                            <Trash />
-                          </button>
-                        </template>
-                        <template v-else>
-                          <div class="info-footer-btns">
-                            <button class="icon-btn" title="Quay lại làm việc" @click="openBackToWorkModal(nhanVien)">
-                              <svg class="icon-green" width="22" height="22" fill="none" stroke="#22b34c"
-                                stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M1 4v6h6" />
-                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                              </svg>
-                            </button>
-                            <button class="icon-btn" title="Xóa nhân viên" @click="openDeleteModal(nhanVien)">
-                              <svg class="icon-red" width="22" height="22" fill="none" stroke="#e53935" stroke-width="2"
-                                viewBox="0 0 24 24">
-                                <polyline points="3 6 5 6 21 6" />
-                                <path
-                                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-                              </svg>
-                            </button>
-                          </div>
-                        </template>
-                      </div>
+                  <td>
+                    <div class="action-buttons">
+                      <template v-if="nhanVien.trangThai == 1">
+                        <button class="action-btn edit" title="Sửa thông tin nhân viên"
+                          @click="router.push(`/nhan-vien/sua/${nhanVien.id}`)">
+                          <Edit />
+                        </button>
+                        <button class="action-btn delete" title="Ngừng làm việc" @click="openConfirmModal(nhanVien)">
+                          <Trash />
+                        </button>
+                      </template>
+                      <template v-else>
+                        <button class="action-btn edit" title="Quay lại làm việc" @click="openBackToWorkModal(nhanVien)">
+                          <svg class="icon-green" width="22" height="22" fill="none" stroke="#22b34c"
+                            stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M1 4v6h6" />
+                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                          </svg>
+                        </button>
+                        <button class="action-btn delete" title="Xóa nhân viên" @click="openDeleteModal(nhanVien)">
+                          <svg class="icon-red" width="22" height="22" fill="none" stroke="#e53935" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path
+                              d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </template>
                     </div>
                   </td>
                 </tr>
               </template>
             </template>
             <tr v-else>
-              <td :colspan="visibleColumns.length + 1"
+              <td :colspan="visibleColumns.length + 2"
                 style="text-align:center; padding: 40px 0; color: #8a99a8; font-size: 18px; background: #fafbfc;">
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
                   <svg width="48" height="48" fill="none" stroke="#8a99a8" stroke-width="2" stroke-linecap="round"
