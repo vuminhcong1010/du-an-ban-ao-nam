@@ -3,6 +3,9 @@ import { ref, onMounted, defineProps, defineEmits } from "vue";
 import axios from "axios";
 import { useToast } from "vue-toastification";
 
+import Cookies from 'js-cookie'
+
+const token = Cookies.get('token')
 const props = defineProps({
   khachHangId: {
     type: Number,
@@ -21,7 +24,11 @@ const toast = useToast();
 onMounted(async () => {
   try {
     const response = await axios.get(
-      `http://localhost:8080/api/dia-chi/khach-hang/${props.khachHangId}`
+      `http://localhost:8080/api/dia-chi/khach-hang/${props.khachHangId}`, {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+}
     );
     diaChis.value = response.data;
   } catch (err) {

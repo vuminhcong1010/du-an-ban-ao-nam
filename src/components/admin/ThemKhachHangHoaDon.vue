@@ -3,7 +3,9 @@
 import { ref, onMounted, watch } from "vue";
 import axios from "axios";
 import { useToast } from "vue-toastification";
+import Cookies from 'js-cookie'
 
+const token = Cookies.get('token')
 // --- Props và Emits ---
 const emit = defineEmits(["customerSelected", "close"]);
 const props = defineProps({
@@ -70,8 +72,14 @@ const fetchKhachHangPaginated = async () => {
 
     const response = await axios.get(
       "http://localhost:8080/api/khach-hang/search-and-filter",
-      { params }
+      {
+        params: params, // hoặc chỉ cần `params` nếu đã khai báo sẵn
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
+
     khachHangs.value = response.data.content;
     totalPages.value = response.data.totalPages;
   } catch (error) {

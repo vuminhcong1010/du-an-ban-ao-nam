@@ -15,7 +15,9 @@ import KhachHang from "./KhachHang.vue";
 import GiamGia from "./GiamGia.vue";
 import ThanhToan from "./ThanhToan.vue";
 
+import Cookies from 'js-cookie'
 
+const token = Cookies.get('token')
 // Khởi tạo danh sách đơn hàng từ localStorage nếu có
 const orders = ref([]);
 
@@ -41,6 +43,10 @@ async function createNewOrder() {
   try {
     const response = await fetch("http://localhost:8080/hoa-don/tao-moi", {
       method: "POST",
+      headers: {
+    Authorization: `Bearer ${token}` 
+  }
+
     });
     const maHoaDon = await response.text();
 
@@ -88,7 +94,11 @@ async function closeOrder(id) {
   if (!confirmed) return;
 
   try {
-    await axios.delete(`http://localhost:8080/hoa-don/xoa/${order.maHoaDon}`);
+    await axios.delete(`http://localhost:8080/hoa-don/xoa/${order.maHoaDon}`, {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+});
     console.log("✅ Đã xoá hóa đơn:", order.maHoaDon);
   } catch (err) {
     console.error("❌ Lỗi xoá hóa đơn:", err);
@@ -267,14 +277,17 @@ const hoanThanhDonHang = async (order) => {
     // ✅ Gọi API cập nhật tồn kho
     await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+         Authorization: `Bearer ${token}`
+       },
       body: JSON.stringify(bodyUpdateSoLuong),
     });
 
     // ✅ Gọi API lưu chi tiết hóa đơn
     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(result),
     });
     // goi ham thanh toan don hang:
