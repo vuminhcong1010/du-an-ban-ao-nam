@@ -22,7 +22,7 @@ if (!token) {
     const payload = JSON.parse(atob(token.split('.')[1]))
     const exp = payload.exp
     const now = Math.floor(Date.now() / 1000)
-    image.value = payload.anh
+    image.value =`localhost:8080`+payload.anh
     tenNhanVien.value = payload.tenNhanVien
     if (exp <= now) {
       console.warn("⛔ Token đã hết hạn")

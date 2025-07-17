@@ -34,11 +34,11 @@ const listNhanVien = ref({
 
 const getData = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/home',{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
+    const response = await axios.get('http://localhost:8080/api/home', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
     listNhanVien.value = response.data;
     // console.log('NhanVien:', listNhanVien.value);
   } catch (error) {
@@ -129,11 +129,11 @@ function openConfirmModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.put(`http://localhost:8080/api/doiTrangThaiVe0/${nhanVien.id}`,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+        await axios.put(`http://localhost:8080/api/doiTrangThaiVe0/${nhanVien.id}`,{},{
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         await getData();
         toast.success('Cập nhật trạng thái nhân viên thành công!');
       } catch (e) {
@@ -159,11 +159,11 @@ function openDeleteModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:8080/api/delete/${nhanVien.id}`,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+        await axios.delete(`http://localhost:8080/api/delete/${nhanVien.id}`,{}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         await getData();
         toast.success('Xóa nhân viên thành công!');
       } catch (e) {
@@ -189,11 +189,11 @@ function openBackToWorkModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.put(`http://localhost:8080/api/doiTrangThaiVe1/${nhanVien.id}`,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+        await axios.put(`http://localhost:8080/api/doiTrangThaiVe1/${nhanVien.id}`,{}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         await getData();
         toast.success('Nhân viên đã quay lại làm việc!');
       } catch (e) {
@@ -209,11 +209,10 @@ const exportExcelFile = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/nhan-vien/export-excel', {
       responseType: 'blob',
-    },{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+       headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
 
     const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = window.URL.createObjectURL(blob);
@@ -308,11 +307,11 @@ const searchNhanVien = async (keyword) => {
       await getData(); // Nếu không có từ khóa thì load lại toàn bộ
       return;
     }
-    const response = await axios.get(`http://localhost:8080/api/search?keyword=${encodeURIComponent(keyword)}`,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+    const response = await axios.get(`http://localhost:8080/api/search?keyword=${encodeURIComponent(keyword)}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     listNhanVien.value = response.data;
   } catch (error) {
     console.log('Lỗi tìm kiếm:', error);
@@ -436,7 +435,11 @@ watch(filteredNhanVien, () => { currentPage.value = 1; });
 onMounted(() => {
   getData();
   fetchProvinces();
-  axios.get('http://localhost:8080/api/vai-tro/list-vai-Tro').then(res => {
+  axios.get('http://localhost:8080/vai-tro/list-vai-Tro', {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(res => {
     roles.value = res.data;
   });
   if (route.query.success === 'true') {
@@ -516,14 +519,13 @@ async function handleFileChange(event) {
       formData,
       { headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` } }
     );
-
-    toast.info('Đang gửi mail về nhân viên...', { timeout: 3000 });
-    setTimeout(async () => {
-      toast.success(response.data || 'Nhập dữ liệu thành công!');
-      await getData();
-    }, 3000);
+    toast.success(response.data || 'Nhập dữ liệu thành công!');
+    await getData();
   } catch (error) {
-    if (error.response && error.response.data) {
+    // Nếu lỗi là mảng (backend trả về danh sách lỗi từng dòng)
+    if (error.response && Array.isArray(error.response.data)) {
+      error.response.data.forEach(msg => toast.error(msg));
+    } else if (error.response && error.response.data) {
       toast.error(error.response.data);
     } else {
       toast.error('Nhập file thất bại');
@@ -531,6 +533,29 @@ async function handleFileChange(event) {
   } finally {
     isImporting.value = false;
     event.target.value = '';
+  }
+}
+
+async function handleToggleVaiTro(nhanVien) {
+  try {
+    await axios.put(`http://localhost:8080/api/doi-vai-tro/${nhanVien.id}`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    await getData();
+    const updatedNV = Array.isArray(listNhanVien.value)
+      ? listNhanVien.value.find(nv => nv.id === nhanVien.id)
+      : null;
+    // Sử dụng tenVaiTro để xác định thông báo
+    console.log('Updated NV:', updatedNV);
+    if (updatedNV && updatedNV.tenVaiTro) {
+      if (updatedNV.tenVaiTro === 'ADMIN') {
+        toast.success('Đã sửa vai trò thành quản lý');
+      } else if (updatedNV.tenVaiTro === 'STAFF') {
+        toast.success('Đã sửa vai trò thành nhân viên');
+      }
+    } 
+  } catch (error) {
+    toast.error(error.response?.data || 'Đổi vai trò thất bại!');
   }
 }
 </script>
@@ -595,7 +620,8 @@ async function handleFileChange(event) {
           <label>Vai trò</label>
           <select v-model="filterState.vaiTro" title="Lọc theo vai trò">
             <option value="">Tất cả</option>
-            <option v-for="role in roles" :key="role.id" :value="role.tenVaiTro">{{ role.tenVaiTro }}</option>
+            <option value="ADMIN">Quản lý</option>
+            <option value="STAFF">Nhân viên</option>
           </select>
         </div>
         <div class="filter-item">
@@ -658,10 +684,11 @@ async function handleFileChange(event) {
                       {{ formatDate(nhanVien[col.key]) }}
                     </template>
                     <template v-else-if="col.key === 'vaiTro'">
-                      {{ nhanVien.tenVaiTro || '' }}
+                      {{ nhanVien.tenVaiTro === 'ADMIN' ? 'Quản lý' : nhanVien.tenVaiTro === 'STAFF' ? 'Nhân viên' : '' }}
                     </template>
                     <template v-else-if="col.key === 'diaChi'">
-                      {{ [nhanVien.thonXom, nhanVien.xaPhuong, nhanVien.quanHuyen, nhanVien.tinhThanh].filter(Boolean).join(', ') }}
+                      {{ [nhanVien.thonXom, nhanVien.xaPhuong, nhanVien.quanHuyen,
+                      nhanVien.tinhThanh].filter(Boolean).join(', ') }}
                     </template>
                     <template v-else>
                       {{ nhanVien[col.key] }}
@@ -677,11 +704,19 @@ async function handleFileChange(event) {
                         <button class="action-btn delete" title="Ngừng làm việc" @click="openConfirmModal(nhanVien)">
                           <Trash />
                         </button>
+                        <!-- Nút bật/tắt vai trò -->
+                        <label class="switch" title="Đổi vai trò">
+                          <input type="checkbox"
+                            :checked="nhanVien.tenVaiTro === 'ADMIN'"
+                            @change="handleToggleVaiTro(nhanVien)" />
+                          <span class="slider"></span>
+                        </label>
                       </template>
                       <template v-else>
-                        <button class="action-btn edit" title="Quay lại làm việc" @click="openBackToWorkModal(nhanVien)">
-                          <svg class="icon-green" width="22" height="22" fill="none" stroke="#22b34c"
-                            stroke-width="2" viewBox="0 0 24 24">
+                        <button class="action-btn edit" title="Quay lại làm việc"
+                          @click="openBackToWorkModal(nhanVien)">
+                          <svg class="icon-green" width="22" height="22" fill="none" stroke="#22b34c" stroke-width="2"
+                            viewBox="0 0 24 24">
                             <path d="M1 4v6h6" />
                             <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                           </svg>
@@ -690,8 +725,7 @@ async function handleFileChange(event) {
                           <svg class="icon-red" width="22" height="22" fill="none" stroke="#e53935" stroke-width="2"
                             viewBox="0 0 24 24">
                             <polyline points="3 6 5 6 21 6" />
-                            <path
-                              d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
                           </svg>
                         </button>
                       </template>
@@ -1310,7 +1344,6 @@ async function handleFileChange(event) {
   align-items: center;
   justify-content: center;
 }
-
 .password-toggle-btn:hover {
   background: #f0f0f0;
   color: #333;
@@ -1517,5 +1550,52 @@ async function handleFileChange(event) {
   font-weight: 500;
   margin-bottom: 2px;
   color: #222;
+}
+
+/* Thêm vào <style scoped> */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  margin-left: 8px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #2196F3;
+  border-radius: 24px;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: .4s;
+}
+
+.switch input:checked+.slider {
+  background-color: #22b34c;
+}
+
+.switch input:checked+.slider:before {
+  transform: translateX(20px);
 }
 </style>

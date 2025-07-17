@@ -76,7 +76,11 @@ const fetchWards = async (districtCode) => {
 onMounted(async () => {
   await fetchProvinces();
   getAllNhanVien();
-  axios.get('http://localhost:8080/api/vai-tro/list-vai-Tro').then(res => {
+  axios.get('http://localhost:8080/vai-tro/list-vai-Tro', {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+}).then(res => {
     roles.value = res.data;
   });
 
@@ -140,58 +144,26 @@ watch(selectedDistrict, (newVal) => {
 const validateForm = () => {
   fieldErrors.value = {};
   let valid = true;
+
+  // Validate tất cả các trường bắt buộc
   if (!formData.value.tenNhanVien) {
     fieldErrors.value.tenNhanVien = 'Vui lòng nhập tên nhân viên';
     valid = false;
   }
-  // Validate email
   if (!formData.value.email) {
     fieldErrors.value.email = 'Vui lòng nhập email';
     valid = false;
-  } else {
-    // Regex kiểm tra email hợp lệ
-    const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
-    if (!emailRegex.test(formData.value.email)) {
-      fieldErrors.value.email = 'Email không hợp lệ';
-      valid = false;
-    }
   }
-  // Validate số điện thoại
   if (!formData.value.sdt) {
     fieldErrors.value.sdt = 'Vui lòng nhập số điện thoại';
     valid = false;
-  } else {
-    // Regex kiểm tra số điện thoại Việt Nam hợp lệ (10 số, bắt đầu bằng 0)
-    const phoneRegex = /^0\d{9}$/;
-    if (!phoneRegex.test(formData.value.sdt)) {
-      fieldErrors.value.sdt = 'Số điện thoại không hợp lệ';
-      valid = false;
-    }
   }
-  // BỎ validate bắt buộc cho cccd
-  if (formData.value.cccd) {
-    // Nếu nhập cccd thì kiểm tra trùng
-    const existed = allNhanVien.value.some(nv => nv.cccd === formData.value.cccd && (!route.params.id || nv.id != route.params.id));
-    if (existed) {
-      fieldErrors.value.cccd = 'CCCD đã tồn tại';
-      valid = false;
-    }
+  if (!formData.value.gioiTinh && formData.value.gioiTinh !== false) {
+    fieldErrors.value.gioiTinh = 'Vui lòng chọn giới tính';
+    valid = false;
   }
   if (!formData.value.ngaySinh) {
     fieldErrors.value.ngaySinh = 'Vui lòng chọn ngày sinh';
-    valid = false;
-  } else {
-    // Validate tuổi > 16
-    const birth = new Date(formData.value.ngaySinh);
-    const now = new Date();
-    const age = now.getFullYear() - birth.getFullYear() - (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate()) ? 1 : 0);
-    if (age < 16) {
-      fieldErrors.value.ngaySinh = 'Nhân viên phải lớn hơn 16 tuổi';
-      valid = false;
-    }
-  }
-  if (!formData.value.idVaiTro) {
-    fieldErrors.value.idVaiTro = 'Vui lòng chọn vai trò';
     valid = false;
   }
   if (!selectedProvince.value) {
@@ -206,7 +178,51 @@ const validateForm = () => {
     fieldErrors.value.xaPhuong = 'Vui lòng chọn xã/phường';
     valid = false;
   }
-  // BỎ validate bắt buộc cho thôn xóm
+
+  // Kiểm tra trùng số điện thoại
+  if (formData.value.sdt) {
+    const existedSDT = allNhanVien.value.some(nv => nv.sdt === formData.value.sdt && (!route.params.id || nv.id != route.params.id));
+    if (existedSDT) {
+      fieldErrors.value.sdt = 'Số điện thoại đã tồn tại';
+      valid = false;
+    }
+  }
+  // Kiểm tra trùng email
+  if (formData.value.email) {
+    const existedEmail = allNhanVien.value.some(nv => nv.email === formData.value.email && (!route.params.id || nv.id != route.params.id));
+    if (existedEmail) {
+      fieldErrors.value.email = 'Email đã tồn tại';
+      valid = false;
+    }
+  }
+
+  // Validate email format
+  if (formData.value.email) {
+    const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+    if (!emailRegex.test(formData.value.email)) {
+      fieldErrors.value.email = 'Email không hợp lệ';
+      valid = false;
+    }
+  }
+  // Validate số điện thoại format
+  if (formData.value.sdt) {
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(formData.value.sdt)) {
+      fieldErrors.value.sdt = 'Số điện thoại không hợp lệ';
+      valid = false;
+    }
+  }
+  // Validate tuổi > 16
+  if (formData.value.ngaySinh) {
+    const birth = new Date(formData.value.ngaySinh);
+    const now = new Date();
+    const age = now.getFullYear() - birth.getFullYear() - (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate()) ? 1 : 0);
+    if (age < 16) {
+      fieldErrors.value.ngaySinh = 'Nhân viên phải lớn hơn 16 tuổi';
+      valid = false;
+    }
+  }
+
   return valid;
 };
 
@@ -233,7 +249,6 @@ const handleSubmit = async () => {
     form.append('xaPhuong', wards.value.find(w => w.code == selectedWard.value)?.name || '');
     form.append('thonXom', formData.value.thonXom);
     form.append('ghiChu', formData.value.ghiChu);
-    form.append('idVaiTro', formData.value.idVaiTro);
     if (formData.value.anhFile) {
       form.append('anh', formData.value.anhFile);
     }
@@ -459,15 +474,6 @@ function handleQRScanned(data) {
               <div class="form-group">
                 <label>Ngày sinh</label>
                 <input type="date" v-model="formData.ngaySinh" title="Chọn ngày sinh nhân viên">
-              </div>
-
-              <div class="form-group">
-                <label>Vai trò</label>
-                <select v-model="formData.idVaiTro" title="Chọn vai trò cho nhân viên">
-                  <option value="">Chọn vai trò</option>
-                  <option v-for="role in roles" :key="role.id" :value="role.id">{{ role.tenVaiTro }}</option>
-                </select>
-                <span v-if="fieldErrors.idVaiTro" class="error-msg">{{ fieldErrors.idVaiTro }}</span>
               </div>
 
               <div class="form-group">
