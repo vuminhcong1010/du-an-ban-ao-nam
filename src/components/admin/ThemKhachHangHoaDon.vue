@@ -4,7 +4,10 @@ import axios from "axios";
 import { useToast } from "vue-toastification";
 
 // --- Props và Emits ---
-const props = defineEmits(["customerSelected", "close"]);
+const emit = defineEmits(["customerSelected", "close"]);
+const props = defineProps({
+  currentSelectedCustomer: Object,
+});
 
 // --- Biến State ---
 const khachHangs = ref([]);
@@ -108,8 +111,8 @@ const selectCustomer = (khachHang) => {
 
 const confirmAndSelectCustomer = () => {
   if (selectedCustomerInPopup.value) {
-    props("customerSelected", selectedCustomerInPopup.value);
-    props("close");
+    emit("customerSelected", selectedCustomerInPopup.value);
+    emit("close");
   } else {
     toast.warning("Vui lòng chọn một khách hàng.");
   }
@@ -117,10 +120,9 @@ const confirmAndSelectCustomer = () => {
 
 // --- Đóng popup ---
 const closePopup = () => {
-  props("close");
+  emit("close"); // ✅ Đúng, gọi sự kiện đóng popup
 };
 </script>
-
 
 <template>
   <div class="popup-overlay">
@@ -268,7 +270,6 @@ const closePopup = () => {
     </div>
   </div>
 </template>
-
 
 <style scoped>
 /* Overlay nền mờ */

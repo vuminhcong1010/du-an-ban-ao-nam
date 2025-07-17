@@ -95,7 +95,7 @@ const fetchLichSuHoaDon = async () => {
 // lich su thanh toan:
 
 const tongTienDaThanhToan = computed(() =>
-  lichSuThanhToan.value.reduce((sum, item) => sum + (item.soTien || 0), 0)
+  lichSuThanhToan.value.reduce((sum, item) => sum + (item.idHinhThucThanhToan.soTien || 0), 0)
 );
 
 const tongTienDaThanhToanFormatted = computed(() =>
@@ -108,14 +108,17 @@ const tongTienDaThanhToanFormatted = computed(() =>
 
 const showModalLichSuThanhToan = ref(false);
 const lichSuThanhToan = ref([]);
-const fetchLichSuThanhToan = async () => {
+const fetchLichSuThanhToan = async (moPopup = false) => {
   try {
     const response = await fetch(
       `http://localhost:8080/lich-su-thanh-toan/${maHoaDon}`
     );
     const json = await response.json();
     lichSuThanhToan.value = json;
-    showModalLichSuThanhToan.value = true;
+
+    if (moPopup) {
+      showModalLichSuThanhToan.value = true;
+    }
   } catch (error) {
     console.error("Lỗi khi fetch dữ liệu:", error);
   }
@@ -130,6 +133,9 @@ function moThemSanPham() {
 
 onMounted(() => {
   fetchTodos();
+ 
+  fetchLichSuThanhToan(false);
+  
   // fetchLichSuHoaDon();
 });
 

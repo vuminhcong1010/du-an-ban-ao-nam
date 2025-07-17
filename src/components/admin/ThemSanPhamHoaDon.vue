@@ -97,7 +97,7 @@ const apply = async () => {
   console.log("✅ Dữ liệu result gửi xuống:", result);
 
   const bodyUpdateSoLuong = result.map((r) => ({
-    idSanPhamChiTiet: r.idSanPhamChiTiet,
+    idSanPhamChiTiet: r.id,
     soLuongMua: r.soLuong,
   }));
 

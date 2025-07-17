@@ -7,6 +7,9 @@ import axios from "axios";
 import { defineEmits } from "vue";
 
 const emit = defineEmits(["capNhatThongTinKhachHang"]);
+const props = defineProps({
+  order: Object
+});
 
 // 0 = tại quầy, 1 = giao hàng
 const phuongThucVanChuyen = ref(0);
@@ -36,6 +39,23 @@ const chonKhachHang = (khachHang) => {
 // Bỏ chọn khách hàng
 const boChonKhachHang = () => {
   khachHangDuocChon.value = null;
+  diaChiGiaoHang.value = {
+    diaChiChiTiet: "",
+    xaPhuong: "",
+    quanHuyen: "",
+    tinhThanhPho: "",
+  };
+  tenNguoiNhan.value = "";
+  sdtNguoiNhan.value = "";
+  popupVisible.value = false;
+
+  // 🔥 Xoá luôn mã giảm giá trong order
+  if (props.order) {
+    props.order.giamGia = null;
+  }
+
+  // Gửi cập nhật để xóa luôn trong component cha
+  capNhatOrderKhachHang();
 };
 
 const tenNguoiNhan = ref("");
@@ -50,6 +70,11 @@ const diaChiGiaoHang = ref({
   quanHuyen: "",
   tinhThanhPho: "",
 }); // Địa chỉ đã chọn
+watch(diaChiGiaoHang, (val) => {
+  localStorage.setItem("diaChiGiaoHang", JSON.stringify(val));
+}, { deep: true });
+
+
 const popupVisible = ref(false); // Hiển thị popup chọn địa chỉ
 const moPopupDiaChi = () => {
   if (!khachHangDuocChon.value?.id) return;
@@ -100,6 +125,29 @@ const phuongDuocChon = ref(null);
 onMounted(async () => {
   const res = await axios.get("https://provinces.open-api.vn/api/?depth=1");
   danhSachTinh.value = res.data;
+  // Nếu đã có địa chỉ từ trước thì tự động load lại danh sách quận và phường tương ứng
+if (diaChiGiaoHang.value.tinhThanhPho) {
+  const tinh = danhSachTinh.value.find(
+    (t) => t.name === diaChiGiaoHang.value.tinhThanhPho
+  );
+  if (tinh) {
+    const resQuan = await axios.get(
+      `https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`
+    );
+    danhSachQuan.value = resQuan.data.districts;
+
+    const quan = danhSachQuan.value.find(
+      (q) => q.name === diaChiGiaoHang.value.quanHuyen
+    );
+    if (quan) {
+      const resPhuong = await axios.get(
+        `https://provinces.open-api.vn/api/d/${quan.code}?depth=2`
+      );
+      danhSachPhuong.value = resPhuong.data.wards;
+    }
+  }
+}
+
 });
 
 const layQuanTheoTinh = async () => {
@@ -134,7 +182,7 @@ const layPhuongTheoQuan = async () => {
 
 const diaChiDayDu = computed(() => {
   const dc = diaChiGiaoHang.value;
-  if (!dc.diaChiChiTiet || !dc.xaPhuong || !dc.quanHuyen || !dc.tinhThanhPho) return "";
+  if (!dc || !dc.diaChiChiTiet || !dc.xaPhuong || !dc.quanHuyen || !dc.tinhThanhPho) return "";
   return `${dc.diaChiChiTiet}, ${dc.xaPhuong}, ${dc.quanHuyen}, ${dc.tinhThanhPho}`;
 });
 
@@ -150,18 +198,58 @@ const capNhatOrderKhachHang = () => {
   });
 };
 
+const isUpdatingFromProps = ref(false);
+
 // Gọi khi chọn khách, chọn địa chỉ, hoặc thay đổi input
 watch(
-  [khachHangDuocChon,
-    diaChiGiaoHang,
-    phuongThucVanChuyen,
-    tenNguoiNhan,
-    sdtNguoiNhan],
+  [khachHangDuocChon, diaChiGiaoHang, phuongThucVanChuyen, tenNguoiNhan, sdtNguoiNhan],
   () => {
-    capNhatOrderKhachHang();
+    if (!isUpdatingFromProps.value) {
+      capNhatOrderKhachHang();
+    }
   },
   { deep: true }
 );
+
+
+watch(
+  () => props.order,
+  (newOrder) => {
+    isUpdatingFromProps.value = true; // ⛔ chặn watcher emit tạm thời
+
+    if (newOrder?.khachHang) {
+      khachHangDuocChon.value = {
+        id: newOrder.khachHang.idKhachHang,
+        tenKhachHang: newOrder.khachHang.tenKhachHang,
+        soDienThoai: newOrder.khachHang.sdt,
+        email: "",
+        gioiTinh: true,
+      };
+
+      tenNguoiNhan.value = newOrder.khachHang.tenNguoiNhan || "";
+      sdtNguoiNhan.value = newOrder.khachHang.sdt || "";
+      phuongThucVanChuyen.value = newOrder.hinhThucNhanHang ?? 0;
+
+      if (newOrder.khachHang.diaChi) {
+        const parts = newOrder.khachHang.diaChi.split(",").map((s) => s.trim());
+        diaChiGiaoHang.value = {
+          diaChiChiTiet: parts[0] || "",
+          xaPhuong: parts[1] || "",
+          quanHuyen: parts[2] || "",
+          tinhThanhPho: parts[3] || "",
+        };
+      }
+    }
+
+    // Sau khi cập nhật xong props → cho phép emit lại
+    setTimeout(() => {
+      isUpdatingFromProps.value = false;
+    }, 0);
+  },
+  { immediate: true, deep: true }
+);
+
+
 </script>
 
 <template>
@@ -186,7 +274,7 @@ watch(
           </button>
         </div>
         <!-- hiển thị thông tin khách hàng -->
-        <div v-if="khachHangDuocChon">
+        <div v-if="khachHangDuocChon && khachHangDuocChon.tenKhachHang">
           <div class="mb-2">
             <strong>Tên khách hàng:</strong>
             {{ khachHangDuocChon.tenKhachHang }}
@@ -209,7 +297,7 @@ watch(
             Bỏ chọn khách hàng
           </button>
         </div>
-        <div v-else class="text-muted">Chưa chọn khách hàng.</div>
+        <div v-else class="text-muted"> <strong>Tên khách hàng:</strong> Khách lẻ.</div>
       </div>
     </div>
 
