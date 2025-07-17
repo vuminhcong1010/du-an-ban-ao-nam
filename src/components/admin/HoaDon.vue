@@ -60,6 +60,7 @@ const listTrangThai = [
   "Đã xác nhận",
   "Đang giao hàng",
   "Giao hàng thành công",
+  "Hoàn Thành",
   "Hủy/hoàn",
 ];
 

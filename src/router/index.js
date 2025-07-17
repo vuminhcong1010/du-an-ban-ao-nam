@@ -28,7 +28,6 @@ import ThemDotGiamGia from "@/components/admin/ThemDotGiamGia.vue";
 import DotGiamGia from "@/components/admin/DotGiamGia.vue";
 import DangNhap from "@/components/admin/DangNhap.vue";
 import Cookies from "js-cookie";
-import BanHangTest from "@/components/admin/BanHangTest.vue";
 
 
 import PhieuGiamGiaBH from "@/components/admin/PhieuGiamGiaBH.vue";
@@ -49,7 +48,7 @@ const router = createRouter({
       name: "hoadonchitiet",
       path: "/ban-hang-test",
       name: "banhangtest",
-      component: BanHangTest,
+      component: BanHang,
     },
     {
       path: '/hoa-don-chi-tiet/:maHoaDon',
