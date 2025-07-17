@@ -28,6 +28,14 @@ import ThemDotGiamGia from "@/components/admin/ThemDotGiamGia.vue";
 import DotGiamGia from "@/components/admin/DotGiamGia.vue";
 import DangNhap from "@/components/admin/DangNhap.vue";
 import Cookies from "js-cookie";
+import BanHangTest from "@/components/admin/BanHangTest.vue";
+
+
+import PhieuGiamGiaBH from "@/components/admin/PhieuGiamGiaBH.vue";
+
+import ThongKeTongHop from "@/components/admin/ThongKeTongHop.vue";
+
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -39,6 +47,13 @@ const router = createRouter({
     {
       path: "/hoa-don-chi-tiet/:maHoaDon",
       name: "hoadonchitiet",
+      path: "/ban-hang-test",
+      name: "banhangtest",
+      component: BanHangTest,
+    },
+    {
+      path: '/hoa-don-chi-tiet/:maHoaDon',
+      name: 'hoadonchitiet',
       component: HoaDonChiTiet,
       props: true,
     },
@@ -178,6 +193,13 @@ const router = createRouter({
       path: "/thong-tin-ca-nhan",
       name: "ThongTinCaNhan",
       component: () => import("@/components/admin/ThongTinNhanVien.vue"),
+
+      
+
+    {
+      path: '/thong-ke',
+      name: 'thongke',
+      component: ThongKeTongHop,
     },
   ],
 });

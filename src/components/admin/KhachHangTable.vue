@@ -20,17 +20,14 @@
         <td>{{ index + 1 + page * size }}</td>
         <td>{{ kh.maKhachHang }}</td>
         <td>{{ kh.tenKhachHang }}</td>
-        <td>{{ kh.gioiTinh ? 'Nam' : 'Nữ' }}</td>
+        <td>{{ kh.gioiTinh === null ? '' : (kh.gioiTinh ? 'Nam' : 'Nữ') }}</td>
         <td>{{ kh.ngaySinh ? new Date(kh.ngaySinh).toLocaleDateString('vi-VN') : 'Chưa cập nhật' }}</td>
         <td>{{ kh.soDienThoai }}</td>
         <td>{{ kh.email || 'Chưa cập nhật' }}</td>
         <!-- <td>{{ kh.soHoaDonDaMua || 0 }}</td>
         <td>{{ kh.tongTien ? formatCurrency(kh.tongTien) : '0' }}</td> -->
         <td>
-          <span :class="{
-            'badge badge-success': kh.trangThai === 1,
-            'badge badge-danger': kh.trangThai === 0
-          }">
+          <span :class="['status-badge', kh.trangThai === 1 ? 'active' : 'inactive']">
             {{ kh.trangThai === 1 ? 'Đang hoạt động' : 'Dừng hoạt động' }}
           </span>
         </td>
@@ -240,6 +237,23 @@ export default {
   border-top: 1px solid #dee2e6;
 }
 
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background-color: #e6f4ea;
+  color: #1e7e34;
+}
+
+.status-badge.inactive {
+  background-color: #fbe9e7;
+  color: #d32f2f;
+}
 
 .table th {
   text-align: left;

@@ -35,8 +35,8 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Giá trị đơn tối thiểu <span class="text-danger">*</span></label>
-              <input v-model.number="giaTriToiThieu" type="number" class="form-control" placeholder="VD: 100000" min="0"
-                step="0.01" :class="{ 'is-invalid': errors.giaTriToiThieu }" @input="validateGiaTriToiThieu" />
+              <input v-model="giaTriToiThieuFormatted" type="text" class="form-control" placeholder="VD: 100.000"
+                :class="{ 'is-invalid': errors.giaTriToiThieu }" @input="handleGiaTriToiThieuInput" />
               <div v-if="errors.giaTriToiThieu" class="invalid-feedback">
                 {{ errors.giaTriToiThieu }}
               </div>
@@ -71,11 +71,9 @@
             <div class="mb-4">
               <label class="form-label">Giá trị giảm <span class="text-danger">*</span></label>
               <div class="input-group">
-                <input v-model.number="giaTriGiam" type="number" class="form-control"
-                  :placeholder="giaTriOption === 'phanTram' ? 'VD: 10, 20...' : 'VD: 50000, 100000...'"
-                  :min="giaTriOption === 'phanTram' ? 0 : 1000" :max="giaTriOption === 'phanTram' ? 100 : null"
-                  :step="giaTriOption === 'phanTram' ? '0.01' : '1'" :class="{ 'is-invalid': errors.giaTriGiam }"
-                  @input="validateGiaTriGiam" />
+                <input v-model="giaTriGiamFormatted" type="text" class="form-control"
+                  :placeholder="giaTriOption === 'phanTram' ? 'VD: 10, 20...' : 'VD: 50.000, 100.000...'"
+                  :class="{ 'is-invalid': errors.giaTriGiam }" @input="handleGiaTriGiamInput" />
                 <span class="input-group-text">
                   {{ giaTriOption === 'phanTram' ? '%' : 'VND' }}
                 </span>
@@ -86,9 +84,9 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Giá trị giảm tối đa <span class="text-danger">*</span></label>
-              <input v-model.number="giaTriToiDa" type="number" class="form-control" placeholder="VD: 500000" min="0"
-                step="0.01" :class="{ 'is-invalid': errors.giaTriToiDa }" :readonly="giaTriOption === 'vnd'"
-                @input="validateGiaTriToiDa" />
+              <input v-model="giaTriToiDaFormatted" type="text" class="form-control" placeholder="VD: 500.000"
+                :readonly="giaTriOption === 'vnd'" :class="{ 'is-invalid': errors.giaTriToiDa }"
+                @input="handleGiaTriToiDaInput" />
               <div v-if="errors.giaTriToiDa" class="invalid-feedback">
                 {{ errors.giaTriToiDa }}
               </div>
@@ -153,6 +151,7 @@
                     <th>Email</th>
                     <th>Số điện thoại</th>
                     <th>Giới tính</th>
+                    <th>Số lần mua</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -164,6 +163,7 @@
                     <td>{{ kh.email }}</td>
                     <td>{{ kh.soDienThoai }}</td>
                     <td>{{ kh.gioiTinh ? "Nam" : "Nữ" }}</td>
+                    <td>{{ kh.soLanMua || 0 }}</td> <!-- Hiển thị số lần mua -->
                   </tr>
                 </tbody>
               </table>
@@ -235,6 +235,9 @@ export default {
       giaTriGiam: null,
       giaTriToiThieu: null,
       giaTriToiDa: null,
+      giaTriGiamFormatted: "",
+      giaTriToiThieuFormatted: "",
+      giaTriToiDaFormatted: "",
       ngayBatDau: "",
       ngayKetThuc: "",
       soLuong: null,
@@ -256,7 +259,7 @@ export default {
   },
   computed: {
     minDateTime() {
-      const now = new Date('2025-07-01T23:57:00+07:00');
+      const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const day = String(now.getDate()).padStart(2, "0");
@@ -299,7 +302,9 @@ export default {
     giaTriOption(newVal, oldVal) {
       if (newVal !== oldVal) {
         this.giaTriGiam = null;
+        this.giaTriGiamFormatted = "";
         this.giaTriToiDa = null;
+        this.giaTriToiDaFormatted = "";
         this.validateGiaTriOption();
         this.validateGiaTriGiam();
       }
@@ -325,13 +330,17 @@ export default {
     giaTriGiam(newVal) {
       if (this.giaTriOption === "vnd") {
         this.giaTriToiDa = newVal;
+        this.giaTriToiDaFormatted = this.formatCurrency(newVal);
       }
+      this.giaTriGiamFormatted = this.giaTriOption === "vnd" ? this.formatCurrency(newVal) : newVal;
       this.validateGiaTriGiam();
     },
-    giaTriToiThieu() {
+    giaTriToiThieu(newVal) {
+      this.giaTriToiThieuFormatted = this.formatCurrency(newVal);
       this.validateGiaTriToiThieu();
     },
-    giaTriToiDa() {
+    giaTriToiDa(newVal) {
+      this.giaTriToiDaFormatted = this.formatCurrency(newVal);
       this.validateGiaTriToiDa();
     },
     ngayBatDau() {
@@ -349,6 +358,43 @@ export default {
     },
   },
   methods: {
+    formatCurrency(value) {
+      if (value === null || value === "" || isNaN(value)) return "";
+      return Number(value).toLocaleString("vi-VN", { minimumFractionDigits: 0 });
+    },
+    parseCurrency(value) {
+      if (!value) return null;
+      const cleaned = value.replace(/[^\d]/g, "");
+      return cleaned ? Number(cleaned) : null;
+    },
+    handleGiaTriGiamInput(event) {
+      const value = event.target.value;
+      if (this.giaTriOption === "phanTram") {
+        this.giaTriGiam = this.parseCurrency(value);
+        this.giaTriGiamFormatted = value;
+      } else {
+        this.giaTriGiam = this.parseCurrency(value);
+        this.giaTriGiamFormatted = this.formatCurrency(this.giaTriGiam);
+      }
+      if (this.giaTriOption === "vnd") {
+        this.giaTriToiDa = this.giaTriGiam;
+        this.giaTriToiDaFormatted = this.giaTriGiamFormatted;
+      }
+      this.validateGiaTriGiam();
+    },
+    handleGiaTriToiThieuInput(event) {
+      const value = event.target.value;
+      this.giaTriToiThieu = this.parseCurrency(value);
+      this.giaTriToiThieuFormatted = this.formatCurrency(this.giaTriToiThieu);
+      this.validateGiaTriToiThieu();
+    },
+    handleGiaTriToiDaInput(event) {
+      if (this.giaTriOption === "vnd") return;
+      const value = event.target.value;
+      this.giaTriToiDa = this.parseCurrency(value);
+      this.giaTriToiDaFormatted = this.formatCurrency(this.giaTriToiDa);
+      this.validateGiaTriToiDa();
+    },
     toggleAllCheckboxes() {
       const currentPageIds = this.paginatedKhachHang.map((kh) => kh.id);
       if (this.selectAll) {
@@ -361,21 +407,38 @@ export default {
       this.validateSelectedRows();
     },
     async getDanhSachKhachHang() {
-      try {
-        const response = await fetch("http://localhost:8080/danhSachKhachHang", {
+  try {
+    const response = await fetch("http://localhost:8080/danhSachKhachHang", {
   headers: {
     Authorization: `Bearer ${this.token}` 
   }
 });
-        if (!response.ok) throw new Error("Không thể tải danh sách khách hàng");
-        this.danhSachKhachHang = await response.json();
-        this.currentPage = 1;
-      } catch (err) {
-        console.error("Lỗi tải danh sách khách hàng:", err);
-        this.danhSachKhachHang = [];
-        this.toast.error("Không thể tải danh sách khách hàng: " + err.message);
-      }
-    },
+    if (!response.ok) throw new Error("Không thể tải danh sách khách hàng");
+    const data = await response.json();
+    this.danhSachKhachHang = data.map(kh => ({
+      id: kh.id,
+      maKhachHang: kh.maKhachHang,
+      tenTaiKhoan: kh.tenTaiKhoan,
+      matKhau: kh.matKhau,
+      tenKhachHang: kh.tenKhachHang,
+      email: kh.email,
+      gioiTinh: kh.gioiTinh,
+      soDienThoai: kh.soDienThoai,
+      ngaySinh: kh.ngaySinh,
+      ghiChu: kh.ghiChu,
+      ngayTao: kh.ngayTao,
+      hinhAnh: kh.hinhAnh,
+      trangThai: kh.trangThai,
+      soLanMua: kh.soLanMua || 0 // Thêm số lần mua
+    }));
+    this.currentPage = 1;
+  } catch (err) {
+    console.error("Lỗi:", err);
+    this.danhSachKhachHang = [];
+    this.dataFetchFailed = true;
+    this.toast.error("Không thể tải danh sách khách hàng: " + err.message);
+  }
+},
     validateMaPhieu() {
       this.errors.maPhieu = this.maPhieu && this.maPhieu.trim() === ""
         ? "Mã phiếu không được để trống nếu đã nhập!"
@@ -440,7 +503,7 @@ export default {
       if (!this.ngayBatDau) {
         this.errors.ngayBatDau = "Ngày bắt đầu là bắt buộc!";
       } else {
-        const now = new Date('2025-07-01T23:57:00+07:00');
+        const now = new Date();
         const startDate = new Date(this.ngayBatDau);
         if (startDate < now) {
           this.errors.ngayBatDau = "Ngày bắt đầu không được là ngày trong quá khứ!";
@@ -455,7 +518,7 @@ export default {
       if (!this.ngayKetThuc) {
         this.errors.ngayKetThuc = "Ngày kết thúc là bắt buộc!";
       } else {
-        const now = new Date('2025-07-01T23:57:00+07:00');
+        const now = new Date();
         const endDate = new Date(this.ngayKetThuc);
         if (endDate < now) {
           this.errors.ngayKetThuc = "Ngày kết thúc không được là ngày trong quá khứ!";
@@ -661,6 +724,7 @@ export default {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

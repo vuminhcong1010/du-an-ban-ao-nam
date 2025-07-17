@@ -45,6 +45,7 @@ const buttons = ref([
 ]);
 
 let trangThai = ref(0);
+
 const steps = [
   "Đang xử lý",
   "Đã xác nhận",

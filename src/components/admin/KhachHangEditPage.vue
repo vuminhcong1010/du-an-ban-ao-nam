@@ -235,7 +235,7 @@ const fetchCustomerDetails = async (id) => {
     form.value.tenKhachHang = customerData.tenKhachHang ?? '';
     form.value.email = customerData.email ?? '';
     form.value.soDienThoai = customerData.soDienThoai ?? '';
-    form.value.gioiTinh = customerData.gioiTinh === true; // Đảm bảo gán là boolean
+    form.value.gioiTinh = customerData.gioiTinh; // Đảm bảo gán là boolean === true hoặc false
     form.value.ngaySinh = customerData.ngaySinh?.split('T')[0] ?? '';
     form.value.trangThai = customerData.trangThai ?? 1;
     form.value.soHoaDonDaMua = customerData.soHoaDonDaMua ?? 0; // Gán số hóa đơn
@@ -353,15 +353,14 @@ const handleSubmit = async () => {
   errors.value.soDienThoai = false;
   errors.value.ngaySinh = false;
 
-
   let formIsValid = true;
 
-
+  // Kiểm tra tên khách hàng
   if (!form.value.tenKhachHang || !isFullName(form.value.tenKhachHang)) {
     formIsValid = false;
   }
 
-
+  // Kiểm tra email
   if (!form.value.email) {
     formIsValid = false;
   } else if (!validateEmail(form.value.email)) {
@@ -369,7 +368,7 @@ const handleSubmit = async () => {
     formIsValid = false;
   }
 
-
+  // Kiểm tra số điện thoại
   if (!form.value.soDienThoai) {
     formIsValid = false;
   } else if (!validatePhone(form.value.soDienThoai)) {
@@ -377,18 +376,16 @@ const handleSubmit = async () => {
     formIsValid = false;
   }
 
-
+  // Kiểm tra ngày sinh
   if (form.value.ngaySinh && !isAdult(form.value.ngaySinh)) {
     errors.value.ngaySinh = true;
     formIsValid = false;
   }
 
-
   if (!formIsValid) {
     toast.error('Cập nhật không thành công! Vui lòng kiểm tra lại thông tin.');
     return;
   }
-
 
   try {
     const customerUpdatePayload = {
@@ -396,26 +393,35 @@ const handleSubmit = async () => {
       tenKhachHang: form.value.tenKhachHang,
       email: form.value.email,
       soDienThoai: form.value.soDienThoai,
-      gioiTinh: form.value.gioiTinh, // Đảm bảo là boolean
+      gioiTinh: form.value.gioiTinh ,
       ngaySinh: form.value.ngaySinh,
       trangThai: form.value.trangThai,
-      // Không còn hinhAnhUrl trong payload gửi lên
     };
 
+    // Gửi yêu cầu PUT lên server để cập nhật thông tin khách hàng
+    const response = await axios.put(`/api/khach-hang/${form.value.id}`, customerUpdatePayload);
 
     await axios.put(`/api/khach-hang/${form.value.id}`, customerUpdatePayload,{
     headers: {
       Authorization: `Bearer ${token}`
     }
   });
+
     toast.success('Cập nhật khách hàng thành công!');
-    // router.push('/khach-hang');
-    router.go(-1);
+    router.go(-1); // Quay lại trang trước
+
   } catch (err) {
     console.error('Lỗi khi cập nhật khách hàng:', err.response?.data || err.message);
-    toast.error('Cập nhật không thành công! Đã có lỗi xảy ra từ máy chủ.');
+
+    // Kiểm tra lỗi từ backend và hiển thị thông báo cụ thể
+    if (err.response && err.response.data) {
+      toast.error(`Cập nhật không thành công! ${err.response.data}`); // Hiển thị lỗi từ backend
+    } else {
+      toast.error('Cập nhật không thành công! Đã có lỗi xảy ra từ máy chủ.');
+    }
   }
 };
+
 
 
 // SỬA ĐỔI HÀM openAddressModalForAdd TẠI ĐÂY
