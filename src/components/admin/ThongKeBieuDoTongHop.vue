@@ -2,6 +2,9 @@
 import { ref, onMounted, nextTick, watch, onUnmounted, computed } from 'vue';
 import axios from 'axios';
 import { Chart, registerables } from 'chart.js';
+import Cookies from 'js-cookie'
+
+const token = Cookies.get('token')
 Chart.register(...registerables);
 
 const chartRef = ref(null);
@@ -34,10 +37,26 @@ const fetchData = async () => {
   loading.value = true;
   error.value = '';
   try {
-    const res = await axios.get('http://localhost:8080' + selectedMoc.value.api);
-    doanhThuTheoNgay.value = res.data.doanhThuTheoNgay || {};
-    doanhThuTheoGio.value = res.data.doanhThuTheoGio || {};
-    doanhThuTheoThu.value = res.data.doanhThuTheoThu || {};
+    const res = await axios.get('http://localhost:8080' + selectedMoc.value.api, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    doanhThuTheoNgay.value = {
+      soHoaDonTheoNgay: res.data.soHoaDonTheoNgay || {},
+      tongSanPhamTheoNgay: res.data.tongSanPhamTheoNgay || res.data.sanPhamTheoNgay || {},
+      doanhThuTheoNgay: res.data.doanhThuTheoNgay || {}
+    };
+    doanhThuTheoGio.value = {
+      soHoaDonTheoGio: res.data.soHoaDonTheoGio || {},
+      tongSanPhamTheoGio: res.data.tongSanPhamTheoGio || res.data.sanPhamTheoGio || {},
+      doanhThuTheoGio: res.data.doanhThuTheoGio || {}
+    };
+    doanhThuTheoThu.value = {
+      soHoaDonTheoThu: res.data.soHoaDonTheoThu || {},
+      tongSanPhamTheoThu: res.data.tongSanPhamTheoThu || res.data.sanPhamTheoThu || {},
+      doanhThuTheoThu: res.data.doanhThuTheoThu || {}
+    };
 
     // Lấy đúng trường tổng doanh thu theo từng mốc
     if (selectedMoc.value.key === 'thang-truoc' && res.data.tongDoanhThuThangTruoc !== undefined) {
@@ -69,64 +88,140 @@ function getChartData() {
 }
 
 function getLabels() {
-  const dataObj = getChartData();
   if (activeTab.value === 'ngay') {
-    return Object.keys(dataObj).map(date => {
-      const parts = date.split('-');
-      return parts[2] || date;
-    });
+    // Lấy từ doanhThuTheoNgay.value.soHoaDonTheoNgay (hoặc tongSanPhamTheoNgay)
+    const keys = Object.keys(
+      doanhThuTheoNgay.value.soHoaDonTheoNgay ||
+      doanhThuTheoNgay.value.tongSanPhamTheoNgay ||
+      doanhThuTheoNgay.value.doanhThuTheoNgay ||
+      {}
+    );
+    return keys;
   } else if (activeTab.value === 'gio') {
-    return Object.keys(dataObj).map(h => h.padStart(2, '0') + ':00');
+    const keys = Object.keys(
+      doanhThuTheoGio.value.soHoaDonTheoGio ||
+      doanhThuTheoGio.value.tongSanPhamTheoGio ||
+      doanhThuTheoGio.value.doanhThuTheoGio ||
+      {}
+    );
+    return keys.map(h => h.padStart(2, '0') + ':00');
   } else if (activeTab.value === 'thu') {
-    // Trả về đúng key: "T2", "T3", ..., "CN"
-    return Object.keys(dataObj);
+    const keys = Object.keys(
+      doanhThuTheoThu.value.soHoaDonTheoThu ||
+      doanhThuTheoThu.value.tongSanPhamTheoThu ||
+      doanhThuTheoThu.value.doanhThuTheoThu ||
+      {}
+    );
+    return keys;
   }
-  return Object.keys(dataObj);
+  return [];
 }
 
 function renderChart() {
   if (!chartRef.value) return;
   if (chartInstance) chartInstance.destroy();
+
   const dataObj = getChartData();
   const labels = getLabels();
-  const data = Object.values(dataObj);
+  let yMax = 20000000;
+  let stepSize = 10;
+  if (chartViewMode.value === 'quantity') {
+    if (selectedMoc.value.key === 'hom-nay' || selectedMoc.value.key === 'hom-qua') {
+      yMax = 50;
+      stepSize = 10;
+    } else if (selectedMoc.value.key === '7-ngay-qua') {
+      yMax = 200;
+      stepSize = 20;
+    } else if (selectedMoc.value.key === 'thang-nay' || selectedMoc.value.key === 'thang-truoc') {
+      yMax = 500;
+      stepSize = 50;
+    }
+  } else {
+    if (selectedMoc.value.key === '7-ngay-qua') yMax = 100000000;
+    else if (selectedMoc.value.key === 'thang-nay' || selectedMoc.value.key === 'thang-truoc') yMax = 500000000;
+    // stepSize mặc định cho doanh thu (giữ nguyên)
+    stepSize = yMax / 10;
+  }
 
-  // Xác định max trục tung theo mốc thời gian
-  let yMax = 20000000; // mặc định
-  if (selectedMoc.value.key === '7-ngay-qua') {
-    yMax = 100000000; // 100 triệu
-  } else if (
-    selectedMoc.value.key === 'thang-nay' ||
-    selectedMoc.value.key === 'thang-truoc'
-  ) {
-    yMax = 500000000; // 500 triệu
+  // Nếu chọn số lượng thì hiển thị 2 cột: hóa đơn và sản phẩm
+  let datasets = [];
+  if (chartViewMode.value === 'quantity') {
+    let invoiceData = [];
+    let productData = [];
+    if (activeTab.value === 'ngay') {
+      invoiceData = Object.values(doanhThuTheoNgay.value.soHoaDonTheoNgay || {});
+      productData = Object.values(doanhThuTheoNgay.value.tongSanPhamTheoNgay || doanhThuTheoNgay.value.sanPhamTheoNgay || {});
+    } else if (activeTab.value === 'gio') {
+      invoiceData = Object.values(doanhThuTheoGio.value.soHoaDonTheoGio || {});
+      productData = Object.values(doanhThuTheoGio.value.tongSanPhamTheoGio || doanhThuTheoGio.value.sanPhamTheoGio || {});
+    } else if (activeTab.value === 'thu') {
+      invoiceData = Object.values(doanhThuTheoThu.value.soHoaDonTheoThu || {});
+      productData = Object.values(doanhThuTheoThu.value.tongSanPhamTheoThu || doanhThuTheoThu.value.sanPhamTheoThu || {});
+    }
+    if (!invoiceData.length) invoiceData = Array(labels.length).fill(0);
+    if (!productData.length) productData = Array(labels.length).fill(0);
+
+    datasets = [
+      {
+        label: 'Hóa đơn',
+        data: invoiceData,
+        backgroundColor: '#1976d2',
+        borderRadius: 8,
+        barPercentage: 0.4,
+        categoryPercentage: 0.5,
+        maxBarThickness: 40,
+      },
+      {
+        label: 'Sản phẩm',
+        data: productData,
+        backgroundColor: '#ff9800',
+        borderRadius: 8,
+        barPercentage: 0.4,
+        categoryPercentage: 0.5,
+        maxBarThickness: 40,
+      }
+    ];
+  } else {
+    // Doanh thu
+    let data = [];
+    if (activeTab.value === 'ngay') {
+      data = Object.values(doanhThuTheoNgay.value.doanhThuTheoNgay || {});
+    } else if (activeTab.value === 'gio') {
+      data = Object.values(doanhThuTheoGio.value.doanhThuTheoGio || {});
+    } else if (activeTab.value === 'thu') {
+      data = Object.values(doanhThuTheoThu.value.doanhThuTheoThu || {});
+    }
+    datasets = [
+      {
+        label: 'Doanh thu',
+        data,
+        backgroundColor: '#1976d2',
+        borderRadius: 8,
+        barPercentage: 0.4,
+        categoryPercentage: 0.5,
+        maxBarThickness: 40,
+      }
+    ];
   }
 
   chartInstance = new Chart(chartRef.value, {
     type: 'bar',
     data: {
       labels,
-      datasets: [
-        {
-          label: 'Doanh thu',
-          data,
-          backgroundColor: '#1976d2',
-          borderRadius: 8,
-          barPercentage: 0.4,
-          categoryPercentage: 0.5,
-          maxBarThickness: 40,
-        },
-      ],
+      datasets,
     },
     options: {
       responsive: true,
       plugins: {
-        legend: { display: false },
+        legend: { display: true },
         tooltip: {
-          displayColors: false,
+          displayColors: true,
           callbacks: {
             title: () => '',
-            label: ctx => ctx.parsed.y.toLocaleString('vi-VN') + ' ₫',
+            label: ctx =>
+              chartViewMode.value === 'revenue'
+                ? ctx.parsed.y.toLocaleString('vi-VN') + ' ₫'
+                : ctx.dataset.label + ': ' + ctx.parsed.y,
           },
           backgroundColor: '#1976d2',
           titleColor: '#fff',
@@ -140,8 +235,11 @@ function renderChart() {
           min: 0,
           max: yMax,
           ticks: {
-            stepSize: yMax / 10,
-            callback: v => v === 0 ? '0' : (v/1000000) + ' tr',
+            stepSize: stepSize,
+            callback: v =>
+              chartViewMode.value === 'revenue'
+                ? (v === 0 ? '0' : (v / 1000000) + ' tr')
+                : v,
             color: '#888',
             font: { size: 13 },
           },
@@ -196,7 +294,11 @@ async function fetchTopProducts() {
   topProductError.value = '';
   try {
     const api = topTimeOptions.find(opt => opt.value === selectedTopTime.value).api;
-    const res = await axios.get('http://localhost:8080' + api);
+    const res = await axios.get('http://localhost:8080' + api, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     topProducts.value = res.data;
     await nextTick(); // Đảm bảo DOM đã cập nhật
     renderTopProductChart();
@@ -298,7 +400,11 @@ async function fetchTopCustomers() {
   topCustomerError.value = '';
   try {
     const api = topCustomerTimeOptions.find(opt => opt.value === selectedTopCustomerTime.value).api;
-    const res = await axios.get('http://localhost:8080' + api);
+    const res = await axios.get('http://localhost:8080' + api, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     // API trả về { data: [...], message: ... }
     topCustomers.value = res.data.data || [];
     await nextTick();
@@ -417,6 +523,83 @@ function getTopCustomerXMax() {
   if (selectedTopCustomerTime.value === '7-ngay-qua') return 300_000_000;
   return 500_000_000;
 }
+
+// Thêm vào đây
+const chartViewMode = ref('revenue'); // 'revenue' hoặc 'quantity'
+
+// Biểu đồ trạng thái đơn hàng tháng này
+const orderStatusStats = ref(null);
+const orderStatusLoading = ref(false);
+const orderStatusError = ref('');
+const orderStatusChartRef = ref(null);
+let orderStatusChartInstance = null;
+
+const ORDER_STATUS_COLORS = [
+  '#42a5f5', // Đang xử lý
+  '#7e57c2', // Đã xác nhận
+  '#26a69a', // Đang giao hàng
+  '#66bb6a', // Giao hàng thành công
+  '#ffa726', // Hoàn thành
+  '#ef5350', // Đã hủy
+];
+const ORDER_STATUS_LABELS = [
+  'Đang xử lý',
+  'Đã xác nhận',
+  'Đang giao hàng',
+  'Giao hàng thành công',
+  'Hoàn thành',
+  'Đã hủy',
+];
+
+async function fetchOrderStatusStats() {
+  orderStatusLoading.value = true;
+  orderStatusError.value = '';
+  try {
+    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/trang-thai-trong-thang', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    orderStatusStats.value = res.data;
+    await nextTick();
+    renderOrderStatusChart();
+  } catch (e) {
+    orderStatusError.value = 'Lỗi khi lấy dữ liệu trạng thái đơn hàng';
+  } finally {
+    orderStatusLoading.value = false;
+  }
+}
+
+function renderOrderStatusChart() {
+  if (!orderStatusChartRef.value) return;
+  if (orderStatusChartInstance) orderStatusChartInstance.destroy();
+  if (!orderStatusStats.value) return;
+  const data = orderStatusStats.value.tiLePhanTram || {};
+  const values = ORDER_STATUS_LABELS.map(lab => parseFloat((data[lab] || '0').replace(',', '.')));
+  orderStatusChartInstance = new Chart(orderStatusChartRef.value, {
+    type: 'pie',
+    data: {
+      labels: ORDER_STATUS_LABELS,
+      datasets: [{
+        data: values,
+        backgroundColor: ORDER_STATUS_COLORS,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.label}: ${ctx.parsed.toFixed(2)}%`
+          }
+        }
+      }
+    }
+  });
+}
+
+onMounted(fetchOrderStatusStats);
+watch(orderStatusChartRef, (val) => { if (val) nextTick(() => renderOrderStatusChart()); });
+onUnmounted(() => { if (orderStatusChartInstance) { orderStatusChartInstance.destroy(); orderStatusChartInstance = null; } });
 </script>
 
 <template>
@@ -429,18 +612,20 @@ function getTopCustomerXMax() {
           <span class="thongke-homqua-moc">({{ selectedMoc.label }})</span>
           <span class="thongke-homqua-total">{{ tongDoanhThu.toLocaleString('vi-VN') }} ₫</span>
         </div>
+        <!-- Thêm vào template, đặt cạnh select mốc thời gian -->
         <div class="thongke-bieudo-cbo">
           <select class="select-blue" :value="selectedMoc.key" @change="onChangeMoc">
             <option v-for="moc in mocThoiGianList" :key="moc.key" :value="moc.key">{{ moc.label }}</option>
           </select>
+          <select class="select-blue" v-model="chartViewMode" style="margin-left: 12px;">
+            <option value="revenue">Theo doanh thu thuần</option>
+            <option value="quantity">Theo số lượng</option>
+          </select>
         </div>
       </div>
       <div class="thongke-homqua-tabs">
-        <span v-for="tab in tabList" :key="tab.key"
-          class="tab"
-          :class="{active: activeTab===tab.key}"
-          @click="changeTab(tab.key)"
-        >
+        <span v-for="tab in tabList" :key="tab.key" class="tab" :class="{ active: activeTab === tab.key }"
+          @click="changeTab(tab.key)">
           {{ tab.label }}
         </span>
       </div>
@@ -449,7 +634,11 @@ function getTopCustomerXMax() {
         <div v-if="loading" class="chart-overlay">Đang tải...</div>
         <div v-else-if="error" class="chart-overlay" style="color: #e53935;">{{ error }}</div>
         <div v-else-if="!hasData()" class="chart-overlay">
-          <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom: 8px;"><rect x="4" y="7" width="16" height="10" rx="2"/><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/></svg>
+          <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24"
+            style="margin-bottom: 8px;">
+            <rect x="4" y="7" width="16" height="10" rx="2" />
+            <path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
+          </svg>
           <div>Không có dữ liệu</div>
         </div>
       </div>
@@ -471,7 +660,11 @@ function getTopCustomerXMax() {
           <div v-if="topProductLoading" class="chart-overlay" style="color: #888;">Đang tải...</div>
           <div v-else-if="topProductError" class="chart-overlay" style="color: #e53935;">{{ topProductError }}</div>
           <div v-else-if="!hasTopProductData" class="chart-overlay">
-            <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom: 8px;"><rect x="4" y="7" width="16" height="10" rx="2"/><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/></svg>
+            <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24"
+              style="margin-bottom: 8px;">
+              <rect x="4" y="7" width="16" height="10" rx="2" />
+              <path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
+            </svg>
             <div>Không có dữ liệu</div>
           </div>
         </div>
@@ -488,10 +681,36 @@ function getTopCustomerXMax() {
           <div v-if="topCustomerLoading" class="chart-overlay" style="color: #888;">Đang tải...</div>
           <div v-else-if="topCustomerError" class="chart-overlay" style="color: #e53935;">{{ topCustomerError }}</div>
           <div v-else-if="!hasTopCustomerData" class="chart-overlay">
-            <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom: 8px;"><rect x="4" y="7" width="16" height="10" rx="2"/><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/></svg>
+            <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24"
+              style="margin-bottom: 8px;">
+              <rect x="4" y="7" width="16" height="10" rx="2" />
+              <path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
+            </svg>
             <div>Không có dữ liệu</div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+  <!-- Biểu đồ tròn trạng thái đơn hàng tháng này -->
+  <div class="order-status-pie-section">
+    <div class="order-status-pie-header">
+      <b>Trạng Thái Đơn Hàng Tháng Này</b>
+    </div>
+    <div class="order-status-pie-chart-wrapper">
+      <canvas ref="orderStatusChartRef" style="max-width: 420px; height: 320px;"></canvas>
+      <div v-if="orderStatusLoading" class="chart-overlay">Đang tải...</div>
+      <div v-else-if="orderStatusError" class="chart-overlay" style="color: #e53935;">{{ orderStatusError }}</div>
+      <div v-else-if="orderStatusStats && orderStatusStats.tongDonHang === 0" class="chart-overlay">
+        <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom: 8px;"><rect x="4" y="7" width="16" height="10" rx="2" /><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" /></svg>
+        <div>Không có dữ liệu</div>
+      </div>
+    </div>
+    <div class="order-status-pie-legend">
+      <div class="pie-legend-row" v-for="(label, idx) in ORDER_STATUS_LABELS" :key="label">
+        <span class="pie-legend-color" :style="{background: ORDER_STATUS_COLORS[idx]}" />
+        <span class="pie-legend-label">{{ label }}</span>
+        <span class="pie-legend-value"><b>{{ orderStatusStats?.tiLePhanTram?.[label] || '0,00' }}%</b></span>
       </div>
     </div>
   </div>
@@ -506,6 +725,7 @@ function getTopCustomerXMax() {
   margin: 24px auto 0 auto;
   max-width: 1400px;
 }
+
 .thongke-homqua-header {
   display: flex;
   align-items: center;
@@ -516,28 +736,33 @@ function getTopCustomerXMax() {
   margin-bottom: 8px;
   gap: 12px;
 }
+
 .thongke-homqua-title-group {
   display: flex;
   align-items: center;
   gap: 10px;
 }
+
 .thongke-homqua-title {
   font-size: 18px;
   font-weight: bold;
   color: #222;
 }
+
 .thongke-homqua-moc {
   font-size: 15px;
   color: #1976d2;
   font-weight: 500;
   margin-left: 4px;
 }
+
 .thongke-homqua-total {
   color: #1976d2;
   font-size: 20px;
   font-weight: bold;
   margin-left: 12px;
 }
+
 .thongke-bieudo-cbo select {
   font-size: 15px;
   padding: 4px 12px;
@@ -550,6 +775,7 @@ function getTopCustomerXMax() {
   cursor: pointer;
   margin-left: 16px;
 }
+
 .thongke-homqua-tabs {
   display: flex;
   align-items: center;
@@ -557,6 +783,7 @@ function getTopCustomerXMax() {
   margin-bottom: 8px;
   margin-top: 8px;
 }
+
 .tab {
   font-size: 14px;
   color: #444;
@@ -567,27 +794,32 @@ function getTopCustomerXMax() {
   transition: border-color 0.18s, color 0.18s, font-size 0.18s, font-weight 0.18s;
   display: inline-block;
 }
+
 .tab.active {
   border-bottom: 2.5px solid #1976d2;
   color: #222;
   font-size: 14px;
   font-weight: bold;
 }
+
 .thongke-homqua-chart-wrapper {
   width: 100%;
   min-height: 340px;
   height: 340px;
   position: relative;
 }
+
 .top-row {
   display: flex;
   gap: 24px;
   margin-top: 32px;
 }
+
 .top-col {
   flex: 1 1 0;
   min-width: 0;
 }
+
 .top-product-section {
   background: #fff;
   border-radius: 10px;
@@ -596,6 +828,7 @@ function getTopCustomerXMax() {
   min-width: 340px;
   max-width: 520px;
 }
+
 .top-customer-section {
   background: #fff;
   border-radius: 10px;
@@ -603,12 +836,14 @@ function getTopCustomerXMax() {
   padding: 18px 18px 18px 18px;
   min-width: 340px;
 }
+
 .top-product-header {
   display: flex;
   align-items: center;
   gap: 16px;
   margin-bottom: 12px;
 }
+
 .top-product-header select {
   border-radius: 6px;
   border: 1px solid #ddd;
@@ -617,24 +852,30 @@ function getTopCustomerXMax() {
   background: #f8fafd;
   outline: none;
 }
+
 .top-product-chart-wrapper {
   position: relative;
   min-height: 340px;
   height: 340px;
   width: 100%;
 }
+
 .chart-overlay {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(255,255,255,0.85);
+  background: rgba(255, 255, 255, 0.85);
   font-size: 18px;
   z-index: 2;
   pointer-events: none;
 }
+
 .select-blue {
   font-size: 15px;
   padding: 4px 12px;
@@ -647,8 +888,66 @@ function getTopCustomerXMax() {
   cursor: pointer;
   transition: border-color 0.18s, box-shadow 0.18s;
 }
+
 .select-blue:focus {
   border-color: #1565c0;
   box-shadow: 0 0 0 2px #1976d233;
+}
+
+.order-status-pie-section {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px #0001;
+  padding: 18px 18px 18px 18px;
+  margin-top: 32px;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.order-status-pie-header {
+  font-size: 17px;
+  font-weight: bold;
+  color: #222;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.order-status-pie-chart-wrapper {
+  position: relative;
+  min-height: 320px;
+  height: 320px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.order-status-pie-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 32px;
+  margin-top: 18px;
+  justify-content: center;
+}
+.pie-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 220px;
+}
+.pie-legend-label {
+  flex: 1 1 0;
+  text-align: left;
+}
+.pie-legend-value {
+  min-width: 60px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.pie-legend-color {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-right: 3px;
+  border: 1.5px solid #eee;
 }
 </style>

@@ -194,7 +194,7 @@ const router = createRouter({
       name: "ThongTinCaNhan",
       component: () => import("@/components/admin/ThongTinNhanVien.vue"),
 
-      
+    },
 
     {
       path: '/thong-ke',

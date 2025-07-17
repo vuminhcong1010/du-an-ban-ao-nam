@@ -2,6 +2,9 @@
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import ThongKeBieuDoTongHop from './ThongKeBieuDoTongHop.vue';
+import Cookies from 'js-cookie'
+
+const token = Cookies.get('token')
 
 
 // Hôm nay
@@ -22,8 +25,16 @@ const errorMonth = ref('');
 const fetchToday = async () => {
   loadingToday.value = true;
   try {
-    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/hom-nay');
-    const resCompare = await axios.get('http://localhost:8080/hoa-don/thong-ke/so-sanh-hom-qua');
+    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/hom-nay', {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+});
+    const resCompare = await axios.get('http://localhost:8080/hoa-don/thong-ke/so-sanh-hom-qua', {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+});
     today.value.doanhThu = res.data.tongTienThuDuoc ?? res.data.tongTien ?? 0;
     today.value.soHoaDon = res.data.tongSoHoaDon ?? res.data.soLuongHoaDon ?? 0;
     today.value.percent = resCompare.data.tiLeThayDoi ?? 0;
@@ -39,8 +50,16 @@ const fetchToday = async () => {
 const fetchWeek = async () => {
   loadingWeek.value = true;
   try {
-    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/tuan-nay');
-    const resCompare = await axios.get('http://localhost:8080/hoa-don/thong-ke/so-sanh-tuan-truoc');
+    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/tuan-nay', {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+});
+    const resCompare = await axios.get('http://localhost:8080/hoa-don/thong-ke/so-sanh-tuan-truoc', {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+});
     week.value.doanhThu = res.data.tongTienThuDuoc ?? res.data.tongTien ?? 0;
     week.value.soHoaDon = res.data.tongSoHoaDon ?? res.data.soLuongHoaDon ?? 0;
     week.value.percent = resCompare.data.tiLeThayDoi ?? 0;
@@ -56,8 +75,16 @@ const fetchWeek = async () => {
 const fetchMonth = async () => {
   loadingMonth.value = true;
   try {
-    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/thang-nay');
-    const resCompare = await axios.get('http://localhost:8080/hoa-don/thong-ke/so-sanh-thang-truoc');
+    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/thang-nay', {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+});
+    const resCompare = await axios.get('http://localhost:8080/hoa-don/thong-ke/so-sanh-thang-truoc', {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+});
     month.value.doanhThu = res.data.tongTienThuDuoc ?? res.data.tongTien ?? 0;
     month.value.soHoaDon = res.data.tongSoHoaDon ?? res.data.soLuongHoaDon ?? 0;
     month.value.percent = resCompare.data.tiLeThayDoi ?? 0;
@@ -84,7 +111,7 @@ onMounted(() => {
       <div class="thongke-tonghop-card">
         <div class="thongke-tonghop-card-content">
           <div class="thongke-tonghop-left">
-            <div class="thongke-tonghop-title">Doanh số hôm nay</div>
+            <div class="thongke-tonghop-title">Doanh Thu hôm nay</div>
             <div class="thongke-tonghop-value">{{ today.doanhThu.toLocaleString('vi-VN') }}</div>
             <div class="thongke-tonghop-sub">Số hóa đơn: {{ today.soHoaDon || 0 }}</div>
           </div>
@@ -105,7 +132,7 @@ onMounted(() => {
       <div class="thongke-tonghop-card">
         <div class="thongke-tonghop-card-content">
           <div class="thongke-tonghop-left">
-            <div class="thongke-tonghop-title">Doanh số tuần này</div>
+            <div class="thongke-tonghop-title">Doanh Thu tuần này</div>
             <div class="thongke-tonghop-value">{{ week.doanhThu.toLocaleString('vi-VN') }}</div>
             <div class="thongke-tonghop-sub">Số hóa đơn: {{ week.soHoaDon || 0 }}</div>
           </div>
@@ -126,7 +153,7 @@ onMounted(() => {
       <div class="thongke-tonghop-card">
         <div class="thongke-tonghop-card-content">
           <div class="thongke-tonghop-left">
-            <div class="thongke-tonghop-title">Doanh số tháng này</div>
+            <div class="thongke-tonghop-title">Doanh Thu tháng này</div>
             <div class="thongke-tonghop-value">{{ month.doanhThu.toLocaleString('vi-VN') }}</div>
             <div class="thongke-tonghop-sub">Số hóa đơn: {{ month.soHoaDon || 0 }}</div>
           </div>
