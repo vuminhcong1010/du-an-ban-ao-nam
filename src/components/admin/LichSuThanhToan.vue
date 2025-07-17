@@ -52,12 +52,12 @@ function formatDatetime(dateStr) {
               <tbody>
                 <tr v-for="(item, index) in lichSuThanhToan" :key="item.id">
                   <td>{{ index + 1 }}</td>
-                  <td>{{ item.maHinhThuc }}</td>
-                  <td>{{ formatCurrency(item.soTien) }}</td>
-                  <td>{{ formatDatetime(item.ngayTao) }}</td>
-                  <td>{{ item.phuongThucThanhToan }}</td>
-                  <td>{{ item.moTa || "—" }}</td>
-                  <td>{{ item.tenNhanVien || "—" }}</td>
+                  <td>{{ item.idHinhThucThanhToan.maHinhThuc }}</td>
+                  <td>{{ formatCurrency(item.idHinhThucThanhToan.soTien) }}</td>
+                  <td>{{ formatDatetime(item.idHinhThucThanhToan.ngayTao) }}</td>
+                  <td>{{ item.idHinhThucThanhToan.phuongThucThanhToan }}</td>
+                  <td>{{ item.idHinhThucThanhToan.moTa || "—" }}</td>
+                  <td>{{ item.idHoaDon.tenNhanVien || "—" }}</td>
                   <td>
                     {{
                       item.trangThaiThanhToan === 1
