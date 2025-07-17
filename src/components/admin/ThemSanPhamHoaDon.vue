@@ -1,7 +1,9 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
+import Cookies from 'js-cookie'
 
+const token = Cookies.get('token')
 const search = ref("");
 const selected = ref({});
 const quantities = ref({});
@@ -13,7 +15,11 @@ const totalPages = ref(0);
 const fetchSanPhamPaginated = async () => {
   try {
     const response = await fetch(
-      `http://localhost:8080/chi-tiet-san-pham/phan-trang?page=${currentPage.value}&size=${pageSize.value}`
+      `http://localhost:8080/chi-tiet-san-pham/phan-trang?page=${currentPage.value}&size=${pageSize.value}`, {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+}
     );
     const data = await response.json();
     listSanPham.value = data.content; // Spring Data trả về `content`, `totalPages`, ...
@@ -109,6 +115,7 @@ const apply = async () => {
     await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
       method: "POST",
       headers: {
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(bodyUpdateSoLuong),
@@ -122,6 +129,7 @@ const apply = async () => {
     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
       method: "POST",
       headers: {
+        Authorization: `Bearer ${token}` ,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(result),
@@ -132,6 +140,7 @@ const apply = async () => {
       await fetch("http://localhost:8080/lich-su-hoa-don/them", {
         method: "POST",
         headers: {
+          Authorization: `Bearer ${token}` ,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

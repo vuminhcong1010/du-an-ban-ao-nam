@@ -1,4 +1,5 @@
 <script setup>
+
 import { ref, onMounted, watch } from "vue";
 import axios from "axios";
 import { useToast } from "vue-toastification";
@@ -14,9 +15,11 @@ const khachHangs = ref([]);
 const selectedCustomerInPopup = ref(null);
 
 // Phân trang
+
 const currentPage = ref(0);
 const pageSize = ref(5);
 const totalPages = ref(0);
+
 
 // Tìm kiếm và lọc
 const searchQuery = ref("");
@@ -40,6 +43,7 @@ watch(
 );
 
 // --- Fetch Khách Hàng ---
+
 const fetchKhachHangPaginated = async () => {
   try {
     const params = {
@@ -77,6 +81,7 @@ const fetchKhachHangPaginated = async () => {
 };
 
 // --- Phân trang ---
+
 const nextPage = () => {
   if (currentPage.value < totalPages.value - 1) {
     currentPage.value++;
@@ -91,24 +96,29 @@ const prevPage = () => {
   }
 };
 
+
 // --- Tìm kiếm và lọc ---
+
 const handleSearchAndFilter = () => {
   currentPage.value = 0;
   fetchKhachHangPaginated();
 };
 
+
 const clearFilters = () => {
   searchQuery.value = "";
+
   filterGioiTinh.value = null;
   currentPage.value = 0;
   fetchKhachHangPaginated();
 };
 
+
 // --- Chọn khách hàng ---
+
 const selectCustomer = (khachHang) => {
   selectedCustomerInPopup.value = khachHang;
 };
-
 const confirmAndSelectCustomer = () => {
   if (selectedCustomerInPopup.value) {
     emit("customerSelected", selectedCustomerInPopup.value);
@@ -123,7 +133,6 @@ const closePopup = () => {
   emit("close"); // ✅ Đúng, gọi sự kiện đóng popup
 };
 </script>
-
 <template>
   <div class="popup-overlay">
     <div class="modal-dialog custom-modal modal-dialog-centered">
@@ -141,6 +150,7 @@ const closePopup = () => {
                   type="text"
                   class="form-control"
                   v-model="searchQuery"
+
                   @keyup.enter="handleSearchAndFilter"
                   placeholder="Tìm theo tên, mã khách hàng, SĐT, email"
                 />
@@ -172,7 +182,6 @@ const closePopup = () => {
               </div>
             </div>
           </div>
-
           <div
             class="table-responsive"
             style="max-height: 350px; overflow-y: auto"
@@ -226,6 +235,7 @@ const closePopup = () => {
                   <td>{{ kh.soDienThoai }}</td>
                   <td>{{ kh.email || "Chưa cập nhật" }}</td>
                 </tr>
+
               </tbody>
             </table>
           </div>
@@ -248,7 +258,6 @@ const closePopup = () => {
             </button>
           </div>
         </div>
-
         <div class="modal-footer d-flex justify-content-end">
           <button
             type="button"
@@ -265,6 +274,7 @@ const closePopup = () => {
           >
             Áp dụng
           </button>
+
         </div>
       </div>
     </div>
@@ -334,7 +344,6 @@ const closePopup = () => {
   font-weight: 600;
   color: #333;
 }
-
 .form-control,
 .form-select {
   padding: 0.375rem 0.75rem;
@@ -404,3 +413,4 @@ const closePopup = () => {
   color: #dc3545;
 }
 </style>
+

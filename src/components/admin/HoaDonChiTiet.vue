@@ -31,6 +31,9 @@ import {
 } from "lucide-vue-next";
 import { ref, onMounted, watch } from "vue";
 import ThemSanPhamHoaDon from "./ThemSanPhamHoaDon.vue";
+import 'vue-select/dist/vue-select.css';
+import Cookies from 'js-cookie'
+const token = Cookies.get('token')
 
 const buttons = ref([
   ["Hủy đơn hàng", "Xác nhận"],
@@ -64,7 +67,11 @@ const listHoaDonChiTiet = ref([]);
 const fetchTodos = async () => {
   try {
     const response = await fetch(
-      `http://localhost:8080/hoa-don-chi-tiet/${maHoaDon}`
+      `http://localhost:8080/hoa-don-chi-tiet/${maHoaDon}`, {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+}
     );
     const json = await response.json();
     listHoaDonChiTiet.value = json;
@@ -82,7 +89,11 @@ const lichSu = ref([]);
 const fetchLichSuHoaDon = async () => {
   try {
     const response = await fetch(
-      `http://localhost:8080/lich-su-hoa-don/${maHoaDon}`
+      `http://localhost:8080/lich-su-hoa-don/${maHoaDon}`, {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+}
     );
     const json = await response.json();
     lichSu.value = json;
@@ -111,7 +122,11 @@ const lichSuThanhToan = ref([]);
 const fetchLichSuThanhToan = async (moPopup = false) => {
   try {
     const response = await fetch(
-      `http://localhost:8080/lich-su-thanh-toan/${maHoaDon}`
+      `http://localhost:8080/lich-su-thanh-toan/${maHoaDon}`, {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+}
     );
     const json = await response.json();
     lichSuThanhToan.value = json;
@@ -171,7 +186,10 @@ const luuThongTin = async () => {
   try {
     const response = await fetch(`http://localhost:8080/hoa-don/${maHoaDon}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+       },
       body: JSON.stringify(receiverInfo.value),
     });
     console.log(maHoaDon);

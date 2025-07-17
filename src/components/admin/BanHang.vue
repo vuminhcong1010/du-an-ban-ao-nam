@@ -15,6 +15,7 @@ import KhachHang from "./KhachHang.vue";
 import GiamGia from "./GiamGia.vue";
 import ThanhToan from "./ThanhToan.vue";
 
+
 // Khởi tạo danh sách đơn hàng từ localStorage nếu có
 const orders = ref([]);
 
@@ -47,8 +48,10 @@ async function createNewOrder() {
       id: nextOrderId++,
       name: `Đơn ${nextOrderId - 1}`,
       listSanPham: [],
+
       tongTienSanPham: 0,
       phiVanChuyen: 0,
+
       maHoaDon: maHoaDon,
       khachHang: {
         idKhachHang: "",
@@ -59,9 +62,11 @@ async function createNewOrder() {
       },
       giamGia: null,
       hinhThucNhanHang: "",
+
       thanhToan: [],
       soTienGiam: 0,
       tongTien: 0,
+
     };
 
     orders.value.push(newOrder);
@@ -70,6 +75,7 @@ async function createNewOrder() {
     console.error("Lỗi tạo hóa đơn:", error);
   }
 }
+
 
 async function closeOrder(id) {
   const order = orders.value.find((o) => o.id === id);
@@ -91,6 +97,7 @@ async function closeOrder(id) {
   }
 
   // ✅ Xoá tab sau khi xoá thành công
+
   orders.value = orders.value.filter((o) => o.id !== id);
   if (activeTab.value === id) {
     activeTab.value = orders.value.length > 0 ? orders.value[0].id : null;
@@ -121,7 +128,6 @@ function capNhatThongTinKhachHang(thongTin) {
     localStorage.setItem("orders", JSON.stringify(orders.value));
   }
 }
-
 // import { toRaw } from "vue";
 // console.log(JSON.stringify(toRaw(orders.value)));
 watch(
@@ -445,6 +451,7 @@ const hoanThanhDonHang = async (order) => {
           Hoàn thành đơn hàng
         </button>
       </div>
+
     </div>
   </div>
 </template>

@@ -111,8 +111,9 @@ import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios'; // Use axios for external API calls
 import { useToast } from "vue-toastification";
+import Cookies from 'js-cookie'
 
-
+const token = Cookies.get('token')
 const router = useRouter();
 const toast = useToast();
 
@@ -294,7 +295,6 @@ const goBack = () => {
 const handleSubmit = async () => {
   showError.value = true;
 
-
   // RESET ALL ERROR FLAGS BEFORE RE-VALIDATING
   errors.value.tenKhachHang = false;
   errors.value.email = false;
@@ -305,9 +305,7 @@ const handleSubmit = async () => {
   errors.value.diaChiXa = false;
   errors.value.diaChiChiTiet = false; // Đảm bảo reset cờ lỗi này
 
-
   let formIsValid = true;
-
 
   // VALIDATION FOR PERSONAL INFO (Giữ nguyên)
   if (!form.value.tenKhachHang || !isFullName(form.value.tenKhachHang)) {
@@ -315,40 +313,30 @@ const handleSubmit = async () => {
     formIsValid = false;
   }
 
-
   if (!form.value.email || !validateEmail(form.value.email)) {
     errors.value.email = true;
     formIsValid = false;
   }
-
 
   if (!form.value.soDienThoai || !validatePhone(form.value.soDienThoai)) {
     errors.value.soDienThoai = true;
     formIsValid = false;
   }
 
-
   if (form.value.ngaySinh && !isAdult(form.value.ngaySinh)) {
     errors.value.ngaySinh = true;
     formIsValid = false;
   }
 
-
   // VALIDATION FOR ADDRESS (Đã sửa đổi)
   const hasSelectedProvince = selectedProvinceCode.value !== null;
   const hasSelectedDistrict = selectedDistrictCode.value !== null;
   const hasSelectedWard = selectedWardCode.value !== null;
-  // Kiểm tra địa chỉ chi tiết có nội dung sau khi loại bỏ khoảng trắng
   const hasDetailAddressText = form.value.diaChi.diaChiChiTiet.trim() !== '';
 
-
-  // Xác định xem người dùng có ý định nhập địa chỉ hay không
-  // Bất kỳ trường địa chỉ nào có giá trị đều có nghĩa là người dùng đang nhập địa chỉ
   const isAddressAttempted = hasSelectedProvince || hasSelectedDistrict || hasSelectedWard || hasDetailAddressText;
 
-
   if (isAddressAttempted) {
-    // Nếu có ý định nhập địa chỉ, tất cả các trường phải được điền đầy đủ
     if (!hasSelectedProvince) {
       errors.value.diaChiTinh = true;
       formIsValid = false;
@@ -361,60 +349,62 @@ const handleSubmit = async () => {
       errors.value.diaChiXa = true;
       formIsValid = false;
     }
-    // Đây là phần quan trọng: nếu địa chỉ được bắt đầu nhập, chi tiết địa chỉ không được trống
     if (!hasDetailAddressText) {
       errors.value.diaChiChiTiet = true;
       formIsValid = false;
     }
   }
 
-
   if (!formIsValid) {
     toast.error("Thêm khách hàng không thành công! Vui lòng kiểm tra lại thông tin.");
     return;
   }
-
 
   try {
     const payload = {
       tenKhachHang: form.value.tenKhachHang,
       email: form.value.email,
       soDienThoai: form.value.soDienThoai,
-      gioiTinh: form.value.gioiTinh,
+      gioiTinh: form.value.gioiTinh ,
       ngaySinh: form.value.ngaySinh,
     };
 
-
-    // Chỉ xây dựng payload địa chỉ nếu người dùng đã có ý định nhập địa chỉ
-    // VÀ tất cả các trường địa chỉ đều hợp lệ (không có lỗi)
     if (isAddressAttempted && !errors.value.diaChiTinh && !errors.value.diaChiQuan && !errors.value.diaChiXa && !errors.value.diaChiChiTiet) {
       payload.diaChi = {
-        // Gửi tên (chuỗi) của Tỉnh/Quận/Xã về backend
         tinhThanhPho: form.value.diaChi.tinhThanhPho,
         quanHuyen: form.value.diaChi.quanHuyen,
         xaPhuong: form.value.diaChi.xaPhuong,
-        diaChiChiTiet: form.value.diaChi.diaChiChiTiet.trim(), // Đảm bảo trim() trước khi gửi
-        isMacDinh: true, // Giả sử địa chỉ mới luôn là mặc định ban đầu
+        diaChiChiTiet: form.value.diaChi.diaChiChiTiet.trim(),
+        isMacDinh: true,
       };
     } else {
-      payload.diaChi = null; // Không có địa chỉ hoặc địa chỉ không hợp lệ
+      payload.diaChi = null;
     }
-
 
     console.log("Payload JSON cuối cùng gửi đi:", JSON.stringify(payload, null, 2));
 
-
-    await axios.post('/api/khach-hang', payload);
+    await axios.post('/api/khach-hang', payload,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
 
 
     toast.success("Thêm khách hàng thành công!");
-    // router.push('/khach-hang');
-    router.go(-1);
+    router.go(-1); // Quay lại trang trước
+
   } catch (err) {
     console.error('Lỗi khi thêm khách hàng:', err.response?.data || err.message);
-    toast.error("Thêm khách hàng không thành công! Đã có lỗi xảy ra từ máy chủ.");
+
+    // Kiểm tra xem có thông báo lỗi từ backend không và hiển thị thông báo lỗi chi tiết
+    if (err.response && err.response.data) {
+      toast.error(`Thêm khách hàng không thành công! ${err.response.data}`);
+    } else {
+      toast.error("Thêm khách hàng không thành công! Đã có lỗi xảy ra từ máy chủ.");
+    }
   }
 };
+
 </script>
 
 

@@ -6,7 +6,9 @@ import { useToast } from 'vue-toastification'
 import Swal from 'sweetalert2'
 import QRScanner from './QRScanner.vue'
 import axios from 'axios'
+import Cookies from 'js-cookie'
 
+const token = Cookies.get('token')
 const toggleSidebar = inject('toggleSidebar')
 const router = useRouter();
 const route = useRoute();
@@ -27,7 +29,8 @@ const formData = ref({
   thonXom: '',
   email: '',
   ghiChu: '',
-  trangThai: 1
+  trangThai: 1,
+  idVaiTro: '' // Thêm trường vai trò
 })
 
 const errorToasts = ref([]);
@@ -41,11 +44,16 @@ const selectedDistrict = ref('');
 const selectedWard = ref('');
 const showQRModal = ref(false)
 const showCCCD = ref(false)
+const roles = ref([]); // Danh sách vai trò
 
 
 const getAllNhanVien = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/home');
+    const response = await axios.get('http://localhost:8080/api/home',{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     allNhanVien.value = response.data;
   } catch (error) {
     console.error("Lỗi khi load danh sách nhân viên:", error);
@@ -68,14 +76,34 @@ const fetchWards = async (districtCode) => {
 onMounted(async () => {
   await fetchProvinces();
   getAllNhanVien();
+  axios.get('http://localhost:8080/vai-tro/list-vai-Tro', {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+}).then(res => {
+    roles.value = res.data;
+  });
 
   if (route.params.id) {
     try {
-      const res = await axios.get(`http://localhost:8080/api/${route.params.id}`);
+      const res = await axios.get(`http://localhost:8080/api/${route.params.id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
       Object.assign(formData.value, res.data);
       // Nếu có ảnh và đường dẫn không phải http, thêm host vào
       if (formData.value.anh && !formData.value.anh.startsWith('http')) {
         formData.value.anh = `http://localhost:8080${formData.value.anh}`;
+      }
+      // Gán lại idVaiTro nếu có (tương thích cả vaiTroId hoặc idVaiTro hoặc tenVaiTro)
+      if (res.data.idVaiTro) {
+        formData.value.idVaiTro = res.data.idVaiTro;
+      } else if (res.data.vaiTroId) {
+        formData.value.idVaiTro = res.data.vaiTroId;
+      } else if (res.data.tenVaiTro && roles.value.length) {
+        const found = roles.value.find(r => r.tenVaiTro === res.data.tenVaiTro);
+        if (found) formData.value.idVaiTro = found.id;
       }
       // Tìm code tỉnh (chuẩn hóa tên)
       const province = provinces.value.find(p => p.name === res.data.tinhThanh);
@@ -116,42 +144,23 @@ watch(selectedDistrict, (newVal) => {
 const validateForm = () => {
   fieldErrors.value = {};
   let valid = true;
+
+  // Validate tất cả các trường bắt buộc
   if (!formData.value.tenNhanVien) {
     fieldErrors.value.tenNhanVien = 'Vui lòng nhập tên nhân viên';
     valid = false;
   }
-  // Validate email
   if (!formData.value.email) {
     fieldErrors.value.email = 'Vui lòng nhập email';
     valid = false;
-  } else {
-    // Regex kiểm tra email hợp lệ
-    const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
-    if (!emailRegex.test(formData.value.email)) {
-      fieldErrors.value.email = 'Email không hợp lệ';
-      valid = false;
-    }
   }
-  // Validate số điện thoại
   if (!formData.value.sdt) {
     fieldErrors.value.sdt = 'Vui lòng nhập số điện thoại';
     valid = false;
-  } else {
-    // Regex kiểm tra số điện thoại Việt Nam hợp lệ (10 số, bắt đầu bằng 0)
-    const phoneRegex = /^0\d{9}$/;
-    if (!phoneRegex.test(formData.value.sdt)) {
-      fieldErrors.value.sdt = 'Số điện thoại không hợp lệ';
-      valid = false;
-    }
   }
-  // BỎ validate bắt buộc cho cccd
-  if (formData.value.cccd) {
-    // Nếu nhập cccd thì kiểm tra trùng
-    const existed = allNhanVien.value.some(nv => nv.cccd === formData.value.cccd && (!route.params.id || nv.id != route.params.id));
-    if (existed) {
-      fieldErrors.value.cccd = 'CCCD đã tồn tại';
-      valid = false;
-    }
+  if (!formData.value.gioiTinh && formData.value.gioiTinh !== false) {
+    fieldErrors.value.gioiTinh = 'Vui lòng chọn giới tính';
+    valid = false;
   }
   if (!formData.value.ngaySinh) {
     fieldErrors.value.ngaySinh = 'Vui lòng chọn ngày sinh';
@@ -169,7 +178,51 @@ const validateForm = () => {
     fieldErrors.value.xaPhuong = 'Vui lòng chọn xã/phường';
     valid = false;
   }
-  // BỎ validate bắt buộc cho thôn xóm
+
+  // Kiểm tra trùng số điện thoại
+  if (formData.value.sdt) {
+    const existedSDT = allNhanVien.value.some(nv => nv.sdt === formData.value.sdt && (!route.params.id || nv.id != route.params.id));
+    if (existedSDT) {
+      fieldErrors.value.sdt = 'Số điện thoại đã tồn tại';
+      valid = false;
+    }
+  }
+  // Kiểm tra trùng email
+  if (formData.value.email) {
+    const existedEmail = allNhanVien.value.some(nv => nv.email === formData.value.email && (!route.params.id || nv.id != route.params.id));
+    if (existedEmail) {
+      fieldErrors.value.email = 'Email đã tồn tại';
+      valid = false;
+    }
+  }
+
+  // Validate email format
+  if (formData.value.email) {
+    const emailRegex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
+    if (!emailRegex.test(formData.value.email)) {
+      fieldErrors.value.email = 'Email không hợp lệ';
+      valid = false;
+    }
+  }
+  // Validate số điện thoại format
+  if (formData.value.sdt) {
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(formData.value.sdt)) {
+      fieldErrors.value.sdt = 'Số điện thoại không hợp lệ';
+      valid = false;
+    }
+  }
+  // Validate tuổi > 16
+  if (formData.value.ngaySinh) {
+    const birth = new Date(formData.value.ngaySinh);
+    const now = new Date();
+    const age = now.getFullYear() - birth.getFullYear() - (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate()) ? 1 : 0);
+    if (age < 16) {
+      fieldErrors.value.ngaySinh = 'Nhân viên phải lớn hơn 16 tuổi';
+      valid = false;
+    }
+  }
+
   return valid;
 };
 
@@ -203,13 +256,18 @@ const handleSubmit = async () => {
     if (route.params.id) {
       await axios.put(`http://localhost:8080/api/update/${route.params.id}`, form, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+           Authorization: `Bearer ${token}`
         }
       });
       router.push({ path: '/nhan-vien', query: { updated: 'true' } });
     } else {
       toast.info('Đang gửi mail về nhân viên...', { timeout: 4000 });
-      await axios.post('http://localhost:8080/api/addNhanVien', form);
+      await axios.post('http://localhost:8080/api/addNhanVien', form,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
       // Đợi toast gửi mail xong rồi mới hiện toast thành công và chuyển trang
         router.push({ path: '/nhan-vien', query: { success: 'true' } });
     }

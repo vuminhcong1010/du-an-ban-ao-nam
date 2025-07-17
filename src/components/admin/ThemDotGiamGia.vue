@@ -5,7 +5,7 @@
                 <router-link to="/dot-giam-gia" class="text-decoration-none text-dark">
                     <i class="fa fa-arrow-left me-2"></i>Đợt Giảm Giá
                 </router-link>
-                / <span  class="text-primary">Thêm Đợt Giảm Giá</span>
+                / <span class="text-primary">Thêm Đợt Giảm Giá</span>
             </h3>
             <div class="row g-4 p-4 rounded border mt-4">
                 <!-- Left Column: Form -->
@@ -19,52 +19,32 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Tên đợt giảm giá <span
-                                class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Tên đợt giảm giá <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" v-model="form.tenDotGiamGia"
                             :class="{ 'is-invalid': errors.tenDotGiamGia }" @input="validateField('tenDotGiamGia')" />
                         <div class="invalid-feedback">{{ errors.tenDotGiamGia }}</div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Hình thức <span class="text-danger">*</span></label>
-                        <div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="hinhthuc" value="%"
-                                    v-model="form.hinhThuc" @change="validateField('hinhThuc')" />
-                                <label class="form-check-label">%</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="hinhthuc" value="VND"
-                                    v-model="form.hinhThuc" @change="validateField('hinhThuc')" />
-                                <label class="form-check-label">VND</label>
-                            </div>
-                            <div class="invalid-feedback d-block" v-if="errors.hinhThuc">{{ errors.hinhThuc }}</div>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Giá trị <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Phần trăm giảm <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="number" class="form-control" v-model.number="form.giaTri"
-                                :class="{ 'is-invalid': errors.giaTri }" @input="validateField('giaTri')" />
-                            <span class="input-group-text">{{ form.hinhThuc === '%' ? '%' : 'VND' }}</span>
+                                :class="{ 'is-invalid': errors.giaTri }" @input="validateField('giaTri')" min="0.01" max="100" />
+                            <span class="input-group-text">%</span>
                         </div>
                         <div class="invalid-feedback d-block">{{ errors.giaTri }}</div>
                     </div>
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Ngày bắt đầu <span
-                                    class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Ngày bắt đầu <span class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control" v-model="form.ngayBatDau"
                                 :class="{ 'is-invalid': errors.ngayBatDau }" :min="minDateTime"
                                 @input="validateField('ngayBatDau')" />
                             <div class="invalid-feedback">{{ errors.ngayBatDau }}</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Ngày kết thúc <span
-                                    class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Ngày kết thúc <span class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control" v-model="form.ngayKetThuc"
                                 :class="{ 'is-invalid': errors.ngayKetThuc }" :min="minDateTime"
                                 @input="validateField('ngayKetThuc')" />
@@ -72,14 +52,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-4">
-                        <button class="btn btn-primary me-2" @click="submitForm" >
-                            <i class="fa fa-plus me-1"></i>Thêm mới
-                        </button>
-                        <router-link to="/dot-giam-gia" class="btn btn-outline-secondary">
-                            <i class="fa fa-arrow-left me-1"></i>Quay lại
-                        </router-link>
-                    </div>
+                  
                 </div>
                 <div class="col-md-6">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -218,18 +191,21 @@
                                     @change="validateField('selectedVariantIds')" /></td>
                             <td>{{ (variantPage * itemsPerPage) + index + 1 }}</td>
                             <td>
-                                <div v-if="variant.images.length > 0">
+                                <div v-if="variant.images.length > 0" class="icon-container">
                                     <img :src="variant.images[0].duongDanAnh" alt="Ảnh sản phẩm"
-                                        style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
+                                        style="width: 100px; height: 100px; object-fit: cover; cursor: pointer;"
                                         @click="showImageGallery(variant.images)" />
                                     <span v-if="variant.images.length > 1" class="badge bg-secondary">+{{
                                         variant.images.length - 1 }}</span>
+                                    <div class="percentage-tag">{{ form.giaTri ? '+' + form.giaTri + '%' : '+0%' }}</div>
                                 </div>
-                                <img v-else src="https://via.placeholder.com/50" alt="Ảnh sản phẩm"
-                                    style="width: 50px; height: 50px; object-fit: cover;" />
+                                <div v-else class="icon-container">
+                                    <img src="https://via.placeholder.com/50" alt="Ảnh sản phẩm"
+                                        style="width: 50px; height: 50px; object-fit: cover;" />
+                                    <div class="percentage-tag">{{ form.giaTri ? '+' + form.giaTri + '%' : '+0%' }}</div>
+                                </div>
                             </td>
                             <td>{{ variant.maChiTietSanPham || 'N/A' }}</td>
-
                             <td>{{ variant.idSanPham?.tenSanPham || 'N/A' }}</td>
                             <td>{{ variant.idSanPham?.idChatLieu?.tenChatLieu || 'N/A' }}</td>
                             <td>{{ variant.soLuong || 0 }}</td>
@@ -260,6 +236,14 @@
                 <div class="invalid-feedback d-block" v-if="errors.selectedVariantIds">{{ errors.selectedVariantIds }}
                 </div>
             </div>
+              <div class="mt-4">
+                        <button class="btn btn-primary me-2" @click="submitForm">
+                            <i class="fa fa-plus me-1"></i>Thêm mới
+                        </button>
+                        <router-link to="/dot-giam-gia" class="btn btn-outline-secondary">
+                            <i class="fa fa-arrow-left me-1"></i>Quay lại
+                        </router-link>
+                    </div>
         </div>
     </div>
 </template>
@@ -267,10 +251,11 @@
 <script>
 import { useToast } from 'vue-toastification';
 import Swal from 'sweetalert2';
-
+import Cookies from 'js-cookie'
 export default {
     data() {
         return {
+            token: Cookies.get('token'),
             allDanhSachSP: [],
             soLuongTheoSanPham: {},
             selectedProductIds: [],
@@ -285,7 +270,6 @@ export default {
             form: {
                 maDotGiamGia: '',
                 tenDotGiamGia: '',
-                hinhThuc: '%',
                 giaTri: null,
                 ngayBatDau: '',
                 ngayKetThuc: '',
@@ -294,7 +278,6 @@ export default {
             errors: {
                 maDotGiamGia: '',
                 tenDotGiamGia: '',
-                hinhThuc: '',
                 giaTri: '',
                 ngayBatDau: '',
                 ngayKetThuc: '',
@@ -319,36 +302,21 @@ export default {
     },
     computed: {
         isFormValid() {
-            const isValid = (
+            return (
                 !this.errors.maDotGiamGia &&
                 !this.errors.tenDotGiamGia &&
-                !this.errors.hinhThuc &&
                 !this.errors.giaTri &&
                 !this.errors.ngayBatDau &&
                 !this.errors.ngayKetThuc &&
                 !this.errors.selectedVariantIds &&
                 !this.errors.sp &&
                 this.form.tenDotGiamGia &&
-                this.form.hinhThuc &&
                 this.form.giaTri > 0 &&
                 this.form.ngayBatDau &&
                 this.form.ngayKetThuc &&
                 (this.filteredVariants.length === 0 || this.selectedVariantIds.length > 0) &&
                 this.selectedProductIds.length > 0
             );
-            console.log('isFormValid:', isValid, {
-                maDotGiamGia: this.form.maDotGiamGia,
-                tenDotGiamGia: this.form.tenDotGiamGia,
-                hinhThuc: this.form.hinhThuc,
-                giaTri: this.form.giaTri,
-                ngayBatDau: this.form.ngayBatDau,
-                ngayKetThuc: this.form.ngayKetThuc,
-                selectedProductIds: this.selectedProductIds,
-                selectedVariantIds: this.selectedVariantIds,
-                filteredVariantsLength: this.filteredVariants.length,
-                errors: this.errors
-            });
-            return isValid;
         },
         paginatedProducts() {
             const start = this.productPage * this.itemsPerPage;
@@ -371,7 +339,11 @@ export default {
         async getChatLieu() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/chat-lieu');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/chat-lieu', {
+                headers: {
+                    Authorization: `Bearer ${this.token}` 
+                }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách chất liệu: ${res.statusText}`);
                 this.chatLieu = await res.json() || [];
                 if (!this.chatLieu.length) {
@@ -384,7 +356,11 @@ export default {
         async getTayAo() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/tay-ao');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/tay-ao', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách tay áo: ${res.statusText}`);
                 this.tayAo = await res.json() || [];
                 if (!this.tayAo.length) {
@@ -397,7 +373,11 @@ export default {
         async getCoAo() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/co-ao');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/co-ao', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách cổ áo: ${res.statusText}`);
                 this.coAo = await res.json() || [];
                 if (!this.coAo.length) {
@@ -410,7 +390,11 @@ export default {
         async getKichCo() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/kich-co');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/kich-co', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách kích cỡ: ${res.statusText}`);
                 this.kichCo = await res.json() || [];
                 if (!this.kichCo.length) {
@@ -423,7 +407,11 @@ export default {
         async getMau() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/mau');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/mau', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách màu: ${res.statusText}`);
                 this.mau = await res.json() || [];
                 if (!this.mau.length) {
@@ -436,14 +424,17 @@ export default {
         async getAllDanhSachSP() {
             const toast = useToast();
             try {
-                const response = await fetch('http://localhost:8080/doi-giam-gia/san-pham-giam-gia');
+                const response = await fetch('http://localhost:8080/doi-giam-gia/san-pham-giam-gia', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!response.ok) throw new Error(`Không thể lấy danh sách sản phẩm: ${response.statusText}`);
                 const json = await response.json();
                 if (json.message !== 'Success') throw new Error(json.message);
                 this.allDanhSachSP = (json.data || []).filter(sp => sp.trangThai === 1);
                 this.soLuongTheoSanPham = json.soLuong || {};
                 this.filteredProducts = [...this.allDanhSachSP];
-                console.log('Danh sách sản phẩm:', this.allDanhSachSP, 'Số lượng:', this.soLuongTheoSanPham);
             } catch (error) {
                 console.error('Lỗi khi lấy danh sách sản phẩm:', error);
                 toast.error('Lỗi tải danh sách sản phẩm: ' + error.message);
@@ -458,7 +449,11 @@ export default {
                 this.selectAllVariants = false;
                 if (this.selectedProductIds.length > 0) {
                     const promises = this.selectedProductIds.map(id =>
-                        fetch(`http://localhost:8080/doi-giam-gia/san-pham-chi-tiet/${id}`).then(res => {
+                        fetch(`http://localhost:8080/doi-giam-gia/san-pham-chi-tiet/${id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+}).then(res => {
                             if (!res.ok) throw new Error(`Không thể lấy biến thể cho sản phẩm ${id}`);
                             return res.json();
                         })
@@ -467,10 +462,13 @@ export default {
                     const variantWithImages = await Promise.all(
                         chiTietSanPhamResults.flat().map(async (variant) => {
                             try {
-                                const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`);
+                                const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                                 const images = await response.json();
-                                // Đảm bảo maChiTietSanPham tồn tại, nếu không dùng giá trị mặc định
-                                const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`; // Giá trị mặc định tạm thời
+                                const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`;
                                 return {
                                     ...variant,
                                     maChiTietSanPham,
@@ -481,7 +479,7 @@ export default {
                                 console.error(`Lỗi khi lấy ảnh cho variant ${variant.id}:`, error);
                                 return {
                                     ...variant,
-                                    maChiTietSanPham: variant.maChiTietSanPham || `SPCT-${variant.id}`, // Giá trị mặc định tạm thời
+                                    maChiTietSanPham: variant.maChiTietSanPham || `SPCT-${variant.id}`,
                                     images: [],
                                     mainImage: 'https://via.placeholder.com/50'
                                 };
@@ -492,7 +490,6 @@ export default {
                     this.filteredVariants = [...this.productVariants];
                     this.selectedVariantIds = this.productVariants.map(variant => variant.id);
                     this.selectAllVariants = this.productVariants.length > 0;
-                    console.log('Biến thể sản phẩm:', this.productVariants, 'Selected Variant IDs:', this.selectedVariantIds);
                     this.validateField('selectedVariantIds');
                 } else {
                     this.errors.selectedVariantIds = '';
@@ -537,7 +534,6 @@ export default {
         },
         showImageGallery(images) {
             const toast = useToast();
-            console.log('Hiển thị thư viện ảnh:', images);
             toast.info(`Đang hiển thị ${images.length} ảnh sản phẩm`);
         },
         selectAllProducts() {
@@ -587,17 +583,12 @@ export default {
                         this.errors.tenDotGiamGia = 'Tên không được vượt quá 255 ký tự';
                     }
                     break;
-                case 'hinhThuc':
-                    if (!this.form.hinhThuc) {
-                        this.errors.hinhThuc = 'Vui lòng chọn hình thức giảm giá';
-                    }
-                    break;
                 case 'giaTri':
                     if (this.form.giaTri === null || this.form.giaTri === undefined || this.form.giaTri === '') {
-                        this.errors.giaTri = 'Vui lòng nhập giá trị giảm giá';
+                        this.errors.giaTri = 'Vui lòng nhập phần trăm giảm giá';
                     } else if (this.form.giaTri <= 0) {
-                        this.errors.giaTri = 'Giá trị phải lớn hơn 0';
-                    } else if (this.form.hinhThuc === '%' && this.form.giaTri > 100) {
+                        this.errors.giaTri = 'Phần trăm giảm phải lớn hơn 0';
+                    } else if (this.form.giaTri > 100) {
                         this.errors.giaTri = 'Phần trăm giảm không được vượt quá 100';
                     }
                     break;
@@ -639,7 +630,6 @@ export default {
         validateForm() {
             this.validateField('maDotGiamGia');
             this.validateField('tenDotGiamGia');
-            this.validateField('hinhThuc');
             this.validateField('giaTri');
             this.validateField('ngayBatDau');
             this.validateField('ngayKetThuc');
@@ -672,8 +662,7 @@ export default {
             const dotGiamGia = {
                 maDotGiamGia: this.form.maDotGiamGia ? this.form.maDotGiamGia.trim() : null,
                 tenDotGiamGia: this.form.tenDotGiamGia.trim(),
-                phamTramGiam: this.form.hinhThuc === '%' ? this.form.giaTri : null,
-                soTienGiam: this.form.hinhThuc === 'VND' ? this.form.giaTri : null,
+                phamTramGiam: this.form.giaTri,
                 ngayBatDau: new Date(this.form.ngayBatDau).toISOString(),
                 ngayKetThuc: new Date(this.form.ngayKetThuc).toISOString(),
                 ngayTao: new Date().toISOString(),
@@ -685,7 +674,10 @@ export default {
             try {
                 const response = await fetch('http://localhost:8080/doi-giam-gia', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        Authorization: `Bearer ${this.token}`,
+                        'Content-Type': 'application/json'
+                     },
                     body: JSON.stringify(dotGiamGia)
                 });
                 const result = await response.json();
@@ -734,9 +726,6 @@ export default {
         'form.tenDotGiamGia'() {
             this.validateField('tenDotGiamGia');
         },
-        'form.hinhThuc'() {
-            this.validateField('hinhThuc');
-        },
         'form.giaTri'() {
             this.validateField('giaTri');
         },
@@ -776,5 +765,21 @@ export default {
 
 .page-link:hover {
     background-color: #e9ecef;
+}
+
+.icon-container {
+    position: relative;
+    display: inline-block;
+}
+
+.percentage-tag {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: #ff3333;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
 }
 </style>

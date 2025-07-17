@@ -24,6 +24,7 @@
         <div class="d-flex align-items-center gap-2">
           <input type="text" class="form-control" v-model="keyword" placeholder="Tìm theo mã, tên sản phẩm" />
           <button type="button" class="btn" @click="apDungBoLoc" style="background-color: #0a2c57; color: white; white-space: nowrap;">Tìm kiếm</button>
+          <button type="button" class="btn" @click="lamMoi" style="background-color: #0a2c57; color: white; white-space: nowrap;">Làm mới</button>
         </div>
       </div>
 
@@ -65,7 +66,7 @@
       </div>
 
       <!-- Hiển thị -->
-      <div class="col-md-3 ms-5">
+      <!-- <div class="col-md-3 ms-5">
         <label class="form-label fw-bold me-3">Danh sách hiển thị</label>
         <div class="d-flex align-items-center gap-3">
           <div class="form-check form-check-inline m-0">
@@ -78,7 +79,7 @@
             <label class="form-check-label" for="toanBo">Toàn bộ biến thể</label>
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
   </div>
 
@@ -87,9 +88,18 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
   <h5 class="fw-semibold m-0">Danh sách biến thể sản phẩm</h5>
   <div class="d-flex gap-2">
-    <input type="text" class="form-control" placeholder="Nhập giá" style="width: 200px;" v-model="data.gia">
-    <input type="text" class="form-control" placeholder="Nhập số lượng" style="width: 200px;" v-model="data.soLuong">
-    <button class="btn" style="background-color: #0a2c57; color: white;" type="button" @click="updateAllGia()"> Xác nhận</button>
+    <div class="form-group mb-2 me-3">
+      <lable class="form-label small fw-bold ">Số lượng:</lable>
+      <input type="text" class="form-control" placeholder="Nhập số lượng" style="width: 200px;" v-model="data.soLuong">
+    </div>
+    <div class="form-group mb-2 me-3">
+        <lable class="form-label small fw-bold ">Giá:</lable>
+        <input type="text" class="form-control" placeholder="Nhập giá" style="width: 200px;" v-model="data.gia">
+    </div>
+    
+    
+    <button class="btn mt-4" style="background-color: #0a2c57; color: white;width: 130px;
+                height: 38px;" type="button" @click="updateAllGia()" > Xác nhận</button>
   </div>
 </div>
 
@@ -105,6 +115,7 @@
             />
           </th>
           <th>STT</th>
+          <th>Mã SP</th>
           <th>Mã chi tiết sản phẩm</th>
           <th>Tên SP</th>
           <th>Màu</th>
@@ -124,6 +135,7 @@
               @change="toggleRow(ds.id)"
             />
           </td>
+          <td>{{ ds.idSanPham.maSanPham }}</td>
           <td>{{ index + 1 + (currentPage - 1) * itemsPerPage }}</td>
           <td>{{ ds.maChiTietSapPham }}</td>
           <td>{{ ds.idSanPham.tenSanPham }}</td>
@@ -132,8 +144,9 @@
           <td>{{ ds.soLuong }}</td>
           <td>{{ formatGia(ds.gia) }}</td>
           <td>
-            <span v-if="ds.trangThai === 1" class="badge rounded-pill" style="background-color: #3B82F6;">Đang bán</span>
-            <span v-else class="badge rounded-pill text-bg-warning text-white" style="background-color: #3B82F6;">Ngừng bán</span>
+            <span :class="['status-badge', ds.trangThai == 1 ? 'active' : 'inactive']">
+              {{ ds.trangThai == 1 ? 'Đang bán' : 'Ngừng bán' }}
+            </span>
           </td>
           <td>
             <i class="fa-solid fa-repeat me-3" title="thay đổi trạng thái" style="color: #CC0000; font-size: 1.3rem;" @click="remove(ds.id)"></i>
@@ -206,6 +219,9 @@ import { Eye, Trash } from 'lucide-vue-next'
 import UpdateSanPham from './UpdateSanPham.vue'
 import AddChiTietSanPham from './AddChiTietSanPham.vue'
 import QRCode from 'qrcode'
+import Cookies from 'js-cookie'
+
+const token = Cookies.get('token')
 const toast = useToast();
 
 // ============================
@@ -222,7 +238,8 @@ const res = ref([])
 const send = ref(null)
 const mau = ref([])
 const size = ref([])
-const thongTin = ref(true)
+// const thongTin = ref(false)
+const thongTin = ref(false)
 const maSP = ref()
 
 // ============================
@@ -256,19 +273,47 @@ const goToPage = (page) => {
 // ============================
 // Gọi API chính
 // ============================
+// function ham() {
+//   const url = thongTin.value
+//     ? `http://localhost:8080/san-pham/bien-the-san-pham/${idChiTietSanPham}`
+//     : "http://localhost:8080/san-pham/get-all-bien-the"
+
+//   axios.get(url)
+//     .then(response => {
+//       allData.value = response.data
+//       maSP.value = `SP${idChiTietSanPham.toString().padStart(4, '0')}` // ✅ sửa idCh thành idChiTietSanPham
+//       apDungBoLoc()
+//     })
+//     .catch(error => {
+//       console.error("Lỗi gọi API:", error)
+//     })
+// }
 function ham() {
+  const token = Cookies.get('token') // Lấy token từ cookie
+
   const url = thongTin.value
     ? `http://localhost:8080/san-pham/bien-the-san-pham/${idChiTietSanPham}`
     : "http://localhost:8080/san-pham/get-all-bien-the"
 
-  axios.get(url)
+  axios.get(url, {
+    headers: {
+      Authorization: `Bearer ${token}` // ✅ Thêm token vào header
+    }
+  })
     .then(response => {
       allData.value = response.data
-      maSP.value = `SP${idChiTietSanPham.toString().padStart(4, '0')}` // ✅ sửa idCh thành idChiTietSanPham
+      maSP.value = `SP${idChiTietSanPham.toString().padStart(4, '0')}`
+      keyword.value = maSP.value
+      console.log(allData.value);
+      
+      // keyword.value = maSP.value
       apDungBoLoc()
     })
     .catch(error => {
-      console.error("Lỗi gọi API:", error)
+      console.error("❌ Lỗi gọi API:", error)
+      if (error.response?.status === 401) {
+        console.error("🔒 Token hết hạn hoặc không có quyền truy cập")
+      }
     })
 }
 function formatGia(gia) {
@@ -282,8 +327,11 @@ function apDungBoLoc() {
   currentPage.value = 1 // Reset về trang đầu mỗi khi lọc lại
 
   res.value = allData.value.filter(sp => {
-    const matchKeyword = sp.maChiTietSapPham?.toLowerCase().includes(keyword.value.toLowerCase()) ||
-                         sp.idSanPham?.tenSanPham?.toLowerCase().includes(keyword.value.toLowerCase())
+    // const matchKeyword = sp.maChiTietSapPham?.toLowerCase().includes(keyword.value.toLowerCase()) ||
+    //                      sp.idSanPham?.tenSanPham?.toLowerCase().includes(keyword.value.toLowerCase())||
+    //                      sp.idSanPham?.maSanPham?.toLowerCase().includes(keyword.value.toLowerCase())
+    const matchKeyword = sp.idSanPham?.tenSanPham?.toLowerCase().includes(keyword.value.toLowerCase())||
+                         sp.idSanPham?.maSanPham?.toLowerCase().includes(keyword.value.toLowerCase())
 
     const matchTrangThai = selectedTrangThai.value === 'tatCa' ||
       (selectedTrangThai.value === 'dangBan' && sp.trangThai === 1) ||
@@ -301,10 +349,14 @@ function apDungBoLoc() {
 // ============================
 onMounted(async () => {
   await ham()
-  const response = await axios.get("http://localhost:8080/san-pham/add")
+  const response = await axios.get("http://localhost:8080/san-pham/add"  ,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
   mau.value = response.data.maus
   size.value = response.data.kichCos
-  selectedTrangThai.value = 'dangBan'
+  selectedTrangThai.value = 'dangBan'  
 })
 
 // ============================
@@ -343,7 +395,11 @@ function dongModal1() {
 // ============================
 function remove(id) {
   if (confirm('Bạn có chắc chắn muốn xóa?')) {
-    axios.get(`http://localhost:8080/san-pham/delete-chi-tiet-san-pham/${id}`)
+    axios.get(`http://localhost:8080/san-pham/delete-chi-tiet-san-pham/${id}`  ,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     setTimeout(() => ham(), 300)
   }
 }
@@ -377,7 +433,10 @@ async function generateAndDownloadAllQR() {
   }
 }
 
-
+function lamMoi(){
+  keyword.value = "";
+  apDungBoLoc()
+}
 
 
 // Khi bấm checkbox tổng
@@ -397,14 +456,18 @@ let data = ref({
   })
 function updateAllGia(){
   data.value.array = selectedRows.value
-  axios.post("http://localhost:8080/san-pham/update-all",data.value).then(Response =>{
+  axios.post("http://localhost:8080/san-pham/update-all",data.value  ,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
     ham()
     toast.success("Cập nhật thành công")
   }).catch(Error =>{
     toast.error("Cập nhật thất bại")
   })
 
-  
+
 }
 // Khi bấm từng checkbox riêng lẻ
 function toggleRow(id) {
@@ -424,3 +487,26 @@ function isChecked(id) {
 }
 
 </script>
+<style scoped>
+
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background-color: #e6f4ea;
+  color: #1e7e34;
+}
+
+.status-badge.inactive {
+  background-color: #fbe9e7;
+  color: #d32f2f;
+}
+
+
+</style>

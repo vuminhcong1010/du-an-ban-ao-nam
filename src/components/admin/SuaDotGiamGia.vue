@@ -2,7 +2,8 @@
     <div class="container-fluid mt-3">
         <div class="bg-white p-4 rounded shadow">
             <h3 class="fw-bold mb-4">
-                <router-link to="/dot-giam-gia" class="text-decoration-none text-dark">  <i class="fa fa-arrow-left me-2"></i>Đợt Giảm Giá</router-link> /
+                <router-link to="/dot-giam-gia" class="text-decoration-none text-dark"> <i
+                        class="fa fa-arrow-left me-2"></i>Đợt Giảm Giá</router-link> /
                 <span class="text-primary">Sửa Đợt Giảm Giá</span>
             </h3>
             <div class="row g-4">
@@ -13,54 +14,38 @@
                         <input type="text" class="form-control" v-model="dotGiamGia.maDotGiamGia" disabled />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Tên đợt giảm giá <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Tên đợt giảm giá <span
+                                class="text-danger">*</span></label>
                         <input type="text" class="form-control" v-model="dotGiamGia.tenDotGiamGia"
                             @input="validateTenDotGiamGia" />
                         <div v-if="errors.tenDotGiamGia" class="text-danger small">{{ errors.tenDotGiamGia }}</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Hình thức <span class="text-danger">*</span></label>
-                        <div class="d-flex gap-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" value="%" v-model="discountType"
-                                    @change="updateDiscountValue" id="percent" />
-                                <label class="form-check-label" for="percent">%</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" value="VND" v-model="discountType"
-                                    @change="updateDiscountValue" id="vnd" />
-                                <label class="form-check-label" for="vnd">VND</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label fw-semibold">Giá trị <span class="text-danger">*</span></label>
-                        <input type="number" class="form-control" v-model.number="discountValue"
-                            :max="discountType === '%' ? 100 : undefined" @input="validateDiscountValue" />
+                        <div class="input-group">
+                            <input type="number" class="form-control" v-model.number="discountValue"
+                                :max="discountType === '%' ? 100 : undefined" @input="validateDiscountValue" />
+                            <span class="input-group-text">%</span>
+                        </div>
                         <div v-if="errors.discountValue" class="text-danger small">{{ errors.discountValue }}</div>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Ngày bắt đầu <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Ngày bắt đầu <span
+                                    class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control" v-model="dotGiamGia.ngayBatDau"
                                 @input="validateDates" :min="minDate" />
                             <div v-if="errors.ngayBatDau" class="text-danger small">{{ errors.ngayBatDau }}</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Ngày kết thúc <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Ngày kết thúc <span
+                                    class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control" v-model="dotGiamGia.ngayKetThuc"
                                 @input="validateDates" :min="minDate" />
                             <div v-if="errors.ngayKetThuc" class="text-danger small">{{ errors.ngayKetThuc }}</div>
                         </div>
                     </div>
-                    <div class="mt-4 d-flex gap-2">
-                        <button class="btn btn-primary" @click="updateDotGiamGia">
-                            <i class="fas fa-save me-1"></i> Cập nhật
-                        </button>
-                        <router-link to="/dot-giam-gia" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-1"></i> Quay lại
-                        </router-link>
-                    </div>
+                  
                 </div>
                 <!-- Danh sách sản phẩm bên phải -->
                 <div class="col-md-6">
@@ -101,12 +86,14 @@
                     <div class="d-flex justify-content-center">
                         <button class="btn btn-outline-secondary btn-sm me-1" :disabled="productPage === 1"
                             @click="goToProductPage(productPage - 1)"><</button>
-                        <button v-for="page in totalProductPages" :key="page"
-                            class="btn btn-outline-secondary btn-sm mx-1" :class="{ 'active': page === productPage }"
-                            @click="goToProductPage(page)">{{ page }}</button>
-                        <button class="btn btn-outline-secondary btn-sm ms-1"
-                            :disabled="productPage === totalProductPages"
-                            @click="goToProductPage(productPage + 1)">></button>
+                          
+                                <button v-for="page in totalProductPages" :key="page"
+                                    class="btn btn-outline-secondary btn-sm mx-1"
+                                    :class="{ 'active': page === productPage }" @click="goToProductPage(page)">{{ page
+                                    }}</button>
+                                <button class="btn btn-outline-secondary btn-sm ms-1"
+                                    :disabled="productPage === totalProductPages"
+                                    @click="goToProductPage(productPage + 1)">></button>
                     </div>
                     <div class="invalid-feedback d-block" v-if="errors.sp">{{ errors.sp }}</div>
                 </div>
@@ -122,7 +109,8 @@
                         </div>
                         <div class="col-md-2" v-if="chatLieu.length > 0">
                             <label for="loaiChatLieu" class="form-label">Chất liệu:</label>
-                            <select id="loaiChatLieu" v-model="selectedLoai" class="form-select" @change="filterVariants">
+                            <select id="loaiChatLieu" v-model="selectedLoai" class="form-select"
+                                @change="filterVariants">
                                 <option value="">Tất cả</option>
                                 <option v-for="chat in chatLieu" :key="chat.id" :value="chat.id">
                                     {{ chat.tenChatLieu }}
@@ -140,7 +128,8 @@
                         </div>
                         <div class="col-md-2" v-if="kichCo.length > 0">
                             <label for="LoaiKichCo" class="form-label">Kích cỡ:</label>
-                            <select id="LoaiKichCo" v-model="selectedLoai2" class="form-select" @change="filterVariants">
+                            <select id="LoaiKichCo" v-model="selectedLoai2" class="form-select"
+                                @change="filterVariants">
                                 <option value="">Tất cả</option>
                                 <option v-for="k in kichCo" :key="k.id" :value="k.id">
                                     {{ k.soCo }}
@@ -192,15 +181,23 @@
                                     @change="validateSelectedVariantIds" /></td>
                             <td>{{ (variantPage - 1) * variantsPerPage + index + 1 }}</td>
                             <td>
-                                <div v-if="variant.images.length > 0">
+                                <div v-if="variant.images.length > 0" class="icon-container">
                                     <img :src="variant.images[0].duongDanAnh" alt="Ảnh sản phẩm"
-                                        style="width: 50px; height: 50px; object-fit: cover; cursor: pointer;"
+                                        style="width: 100px; height: 100px; object-fit: cover; cursor: pointer;"
                                         @click="showImageGallery(variant.images)" />
                                     <span v-if="variant.images.length > 1" class="badge bg-secondary">+{{
                                         variant.images.length - 1 }}</span>
+                                    <div class="percentage-tag" v-if="variant.discountPercentage > 0">
+                                        +{{ variant.discountPercentage }}%
+                                    </div>
                                 </div>
-                                <img v-else src="https://via.placeholder.com/50" alt="Ảnh sản phẩm"
-                                    style="width: 50px; height: 50px; object-fit: cover;" />
+                                <div v-else class="icon-container">
+                                    <img src="https://via.placeholder.com/50" alt="Ảnh sản phẩm"
+                                        style="width: 50px; height: 50px; object-fit: cover;" />
+                                    <div class="percentage-tag" v-if="variant.discountPercentage > 0">
+                                        +{{ variant.discountPercentage }}%
+                                    </div>
+                                </div>
                             </td>
                             <td>{{ variant.maChiTietSanPham || 'N/A' }}</td>
                             <td>{{ variant.idSanPham?.tenSanPham || 'N/A' }}</td>
@@ -211,22 +208,34 @@
                             <td>{{ variant.idCoAo?.tenCoAo || 'N/A' }}</td>
                             <td>{{ variant.idTayAo?.tenTayAo || 'N/A' }}</td>
                             <td>{{ variant.gia ? variant.gia.toLocaleString('vi-VN', {
-                                        style: 'currency', currency: 'VND'
-                                    }) : 'N/A' }}</td>
+                                style: 'currency', currency: 'VND'
+                            }) : 'N/A' }}</td>
                         </tr>
                     </tbody>
                 </table>
                 <div class="d-flex justify-content-center">
                     <button class="btn btn-outline-secondary btn-sm me-1" :disabled="variantPage === 1"
                         @click="goToVariantPage(variantPage - 1)"><</button>
-                    <button v-for="page in totalVariantPages" :key="page" class="btn btn-outline-secondary btn-sm mx-1"
-                        :class="{ 'active': page === variantPage }" @click="goToVariantPage(page)">{{ page }}</button>
-                    <button class="btn btn-outline-secondary btn-sm ms-1" :disabled="variantPage === totalVariantPages"
-                        @click="goToVariantPage(variantPage + 1)">></button>
+                      
+                            <button v-for="page in totalVariantPages" :key="page"
+                                class="btn btn-outline-secondary btn-sm mx-1"
+                                :class="{ 'active': page === variantPage }" @click="goToVariantPage(page)">{{ page
+                                }}</button>
+                            <button class="btn btn-outline-secondary btn-sm ms-1"
+                                :disabled="variantPage === totalVariantPages"
+                                @click="goToVariantPage(variantPage + 1)">></button>
                 </div>
                 <div class="invalid-feedback d-block" v-if="errors.selectedVariantIds">{{ errors.selectedVariantIds }}
                 </div>
             </div>
+              <div class="mt-4 d-flex gap-2">
+                        <button class="btn btn-primary" @click="updateDotGiamGia">
+                            <i class="fas fa-save me-1"></i> Cập nhật
+                        </button>
+                        <router-link to="/dot-giam-gia" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Quay lại
+                        </router-link>
+                    </div>
         </div>
     </div>
 </template>
@@ -234,10 +243,11 @@
 <script>
 import { useToast } from 'vue-toastification';
 import Swal from 'sweetalert2';
-
+import Cookies from 'js-cookie'
 export default {
     data() {
         return {
+            token: Cookies.get('token'),
             dotGiamGia: {
                 maDotGiamGia: '',
                 tenDotGiamGia: '',
@@ -317,7 +327,11 @@ export default {
         async getChatLieu() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/chat-lieu');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/chat-lieu', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách chất liệu: ${res.statusText}`);
                 const json = await res.json();
                 this.chatLieu = json || [];
@@ -331,7 +345,11 @@ export default {
         async getTayAo() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/tay-ao');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/tay-ao', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách tay áo: ${res.statusText}`);
                 const json = await res.json();
                 this.tayAo = json || [];
@@ -345,7 +363,11 @@ export default {
         async getCoAo() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/co-ao');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/co-ao', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách cổ áo: ${res.statusText}`);
                 const json = await res.json();
                 this.coAo = json || [];
@@ -359,7 +381,11 @@ export default {
         async getKichCo() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/kich-co');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/kich-co', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách kích cỡ: ${res.statusText}`);
                 const json = await res.json();
                 this.kichCo = json || [];
@@ -373,7 +399,11 @@ export default {
         async getMau() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/mau');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/mau', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách màu: ${res.statusText}`);
                 const json = await res.json();
                 this.mau = json || [];
@@ -391,7 +421,11 @@ export default {
                 if (!id) throw new Error('ID đợt giảm giá không hợp lệ');
 
                 // Fetch DotGiamGia details
-                const response = await fetch(`http://localhost:8080/doi-giam-gia/${id}`);
+                const response = await fetch(`http://localhost:8080/doi-giam-gia/${id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`Không thể lấy thông tin đợt giảm giá: ${errorText}`);
@@ -415,7 +449,11 @@ export default {
                 this.discountValue = data.phamTramGiam || data.soTienGiam || null;
 
                 // Fetch associated ChiTietDotGiamGia
-                const chiTietResponse = await fetch(`http://localhost:8080/chi-tiet-dot-giam-gia/${id}`);
+                const chiTietResponse = await fetch(`http://localhost:8080/chi-tiet-dot-giam-gia/${id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!chiTietResponse.ok) {
                     const errorText = await chiTietResponse.text();
                     throw new Error(`Không thể lấy danh sách sản phẩm chi tiết: ${errorText}`);
@@ -443,7 +481,11 @@ export default {
         async getAllDanhSachSP() {
             const toast = useToast();
             try {
-                const response = await fetch('http://localhost:8080/doi-giam-gia/san-pham-giam-gia');
+                const response = await fetch('http://localhost:8080/doi-giam-gia/san-pham-giam-gia', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!response.ok) throw new Error('Không thể lấy danh sách sản phẩm');
                 const json = await response.json();
                 this.allDanhSachSP = (json.data || []).filter(sp => sp.trangThai === 1);
@@ -463,7 +505,11 @@ export default {
                 this.variantPage = 1; // Reset variant page when fetching new variants
                 if (this.selectedProductIds.length > 0) {
                     const promises = this.selectedProductIds.map(id =>
-                        fetch(`http://localhost:8080/doi-giam-gia/san-pham-chi-tiet/${id}`).then(res => {
+                        fetch(`http://localhost:8080/doi-giam-gia/san-pham-chi-tiet/${id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+}).then(res => {
                             if (!res.ok) throw new Error(`Không thể lấy biến thể cho sản phẩm ${id}`);
                             return res.json();
                         })
@@ -473,21 +519,28 @@ export default {
                     const variantWithImages = await Promise.all(
                         chiTietSanPhamResults.flat().map(async (variant) => {
                             try {
-                                const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`);
+                                const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                                 const images = await response.json();
-                                   const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`; // Giá trị mặc định tạm thời
+                                const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`;
+                                const discountPercentage = await this.calculateDiscountPercentage(variant.id);
                                 return {
                                     ...variant,
                                     maChiTietSanPham,
                                     images: images || [],
-                                    mainImage: images.length > 0 ? images[0].duongDanAnh : 'https://via.placeholder.com/50'
+                                    mainImage: images.length > 0 ? images[0].duongDanAnh : 'https://via.placeholder.com/50',
+                                    discountPercentage: discountPercentage.toFixed(2)
                                 };
                             } catch (error) {
-                                console.error(`Lỗi khi lấy ảnh cho variant ${variant.id}:`, error);
+                                console.error(`Lỗi khi lấy ảnh hoặc tính phần trăm giảm cho variant ${variant.id}:`, error);
                                 return {
                                     ...variant,
                                     images: [],
-                                    mainImage: 'https://via.placeholder.com/50'
+                                    mainImage: 'https://via.placeholder.com/50',
+                                    discountPercentage: '0.00'
                                 };
                             }
                         })
@@ -504,6 +557,48 @@ export default {
             } catch (error) {
                 console.error('Lỗi khi lấy danh sách sản phẩm chi tiết:', error);
                 toast.error('Lỗi tải danh sách sản phẩm chi tiết: ' + error.message, { timeout: 5000 });
+            }
+        },
+        async calculateDiscountPercentage(variantId) {
+            try {
+                // Lấy tất cả đợt giảm giá hiện có
+                const response = await fetch('http://localhost:8080/doi-giam-gia');
+                if (!response.ok) throw new Error('Không thể lấy danh sách đợt giảm giá');
+                const allDiscounts = await response.json();
+
+                // Lấy chi tiết giảm giá cho variant này
+                const chiTietResponse = await fetch(`http://localhost:8080/chi-tiet-dot-giam-gia/variant/${variantId}`);
+                if (!chiTietResponse.ok) throw new Error('Không thể lấy chi tiết giảm giá');
+                const variantDiscounts = await chiTietResponse.json();
+
+                const now = new Date();
+                let totalPercentage = 0;
+                let activeCount = 0;
+
+                // Tính toán các đợt giảm giá đang áp dụng
+                variantDiscounts.forEach(item => {
+                    const discount = allDiscounts.find(d => d.id === item.idDotGiamGia?.id);
+                    if (discount) {
+                        const startDate = new Date(discount.ngayBatDau);
+                        const endDate = new Date(discount.ngayKetThuc);
+
+                        // Chỉ tính nếu trạng thái khác 0 (không bị hủy)
+                if (discount.trangThai !== 0 && startDate <= now && endDate >= now) {
+                    totalPercentage += discount.phamTramGiam;
+                    activeCount++;
+                }
+                    }
+                });
+
+                // Tính phần trăm trung bình nếu có nhiều đợt giảm giá cùng áp dụng
+                if (activeCount > 0) {
+                    return Math.round(totalPercentage / activeCount);
+                }
+
+                return 0; // Không có đợt giảm giá nào đang áp dụng
+            } catch (error) {
+                console.error('Lỗi tính phần trăm giảm giá:', error);
+                return 0;
             }
         },
         async updateDotGiamGia() {
@@ -549,7 +644,10 @@ export default {
 
                 const response = await fetch(`http://localhost:8080/doi-giam-gia/${id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                         Authorization: `Bearer ${this.token}`,
+                        'Content-Type': 'application/json'
+                     },
                     body: JSON.stringify(payload)
                 });
 
@@ -715,7 +813,22 @@ export default {
 <style>
 .Toastify__toast--error {
     white-space: pre-line;
-    /* Ensure newlines are respected */
     font-size: 14px;
+}
+
+.icon-container {
+    position: relative;
+    display: inline-block;
+}
+
+.percentage-tag {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: #ff3333;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
 }
 </style>

@@ -271,6 +271,9 @@ import { defineEmits } from 'vue'
 import vSelect from 'vue-select'
 import 'vue-select/dist/vue-select.css';
 import Swal from 'sweetalert2'
+import Cookies from 'js-cookie'
+
+const token = Cookies.get('token')
 const toast = useToast();
 const props = defineProps({
   idChiTietSanPham: {
@@ -311,16 +314,24 @@ function handleSearch(field, text) {
   console.log(`Gõ vào (${field}):`, text)
 }
 
-const call =async () => {
+const call =async () => { 
+  
   try {
-    const response = await axios.get("http://localhost:8080/san-pham/add");
+    const response = await axios.get("http://localhost:8080/san-pham/add",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     chatLieu.value = response.data.chatLieus
     kieuAo.value = response.data.kieuAos
     mau.value = response.data.maus
     tayAo.value = response.data.tayAos
     coAo.value = response.data.coAos
-    size.value = response.data.kichCos   
+    size.value = response.data.kichCos
+   
+       
   } catch (err) {
+    
     console.error("Lỗi khi gọi API:", err);
   }
 }
@@ -339,7 +350,11 @@ const themTayAo = (tenTayAo) => {
   }
 
   let data = { tenTayAo };
-  axios.post("http://localhost:8080/tay-ao/add", data)
+  axios.post("http://localhost:8080/tay-ao/add", data,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     .then(() => {
       toast.success("✅ Thêm tay áo thành công");
       call();
@@ -365,7 +380,11 @@ const themKieuAo = (tenKieuAo) => {
   }
 
   let data = { tenKieuAo };
-  axios.post("http://localhost:8080/kieu-ao/add", data)
+  axios.post("http://localhost:8080/kieu-ao/add", data,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     .then(() => {
       toast.success("✅ Thêm kiểu áo thành công");
       call();
@@ -391,7 +410,11 @@ const themMau = (ten) => {
   }
 
   let data = { ten };
-  axios.post("http://localhost:8080/mau/add", data)
+  axios.post("http://localhost:8080/mau/add", data,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     .then(() => {
       toast.success("✅ Thêm màu thành công");
       call();
@@ -417,7 +440,11 @@ const themKichCo = (tenSize) => {
   }
 
   let data = { soCo: tenSize };
-  axios.post("http://localhost:8080/kich-co/add", data)
+  axios.post("http://localhost:8080/kich-co/add", data,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     .then(() => {
       toast.success("✅ Thêm kích cỡ thành công");
       call();
@@ -442,7 +469,11 @@ const themCoAo = (tenCoAo) => {
   }
 
   let data = { tenCoAo };
-  axios.post("http://localhost:8080/co-ao/add", data)
+  axios.post("http://localhost:8080/co-ao/add", data,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     .then(() => {
       toast.success("✅ Thêm cổ áo thành công");
       call();
@@ -527,8 +558,14 @@ function submitAndClose() {
 // Fetch dữ liệu khi idChiTietSanPham thay đổi
 watch(() => props.idChiTietSanPham, async (newVal) => {
   if (!newVal) return
+  console.log(token);
+  
   try {
-    const response = await axios.get(`http://localhost:8080/san-pham/find-by-id/${newVal}`)
+    const response = await axios.get(`http://localhost:8080/san-pham/find-by-id/${newVal}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     const data = response.data
     
     // Gán dropdown
@@ -546,9 +583,7 @@ watch(() => props.idChiTietSanPham, async (newVal) => {
     req.value.idKieuAo.id = data.wrapper.kieuAos[0].id
     req.value.idSize.id = data.wrapper.kichCos[0].id
     req.value.idCoAo.id = data.wrapper.coAos[0].id
-    // req.value.idDanhMuc.id = data.wrapper.danhMucs[0].id
-    // req.value.idChatLieu.id = data.wrapper.chatLieus[0].id
-    
+
     
     // Ảnh cũ
     existingImageUrl.value = ''
@@ -559,7 +594,13 @@ watch(() => props.idChiTietSanPham, async (newVal) => {
     console.error("❌ Lỗi khi fetch dữ liệu sản phẩm:", err)
   }
 })
-
+function clearForm(){
+  req.value.gia = null
+  req.value.soLuong = null
+  req.value.trongLuong = null
+  req.value.moTa = null
+  
+}
 // Xử lý chọn file
 function handleFileChange(event) {
   const file = event.target.files[0]
@@ -628,10 +669,15 @@ async function uploadAllImages() {
   console.log('Request body:', req.value)
   // Gửi request
   try {
-     await axios.post("http://localhost:8080/san-pham/chi-tiet-san-pham/add", req.value)
+     await axios.post("http://localhost:8080/san-pham/chi-tiet-san-pham/add", req.value,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
      setTimeout(() => {
   }, 1000);
     toast.success("Cập nhật thành công");
+    clearForm()
     submitAndClose()
   } catch (err) {
     toast.error("Cập nhật thất bại");

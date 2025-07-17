@@ -6,7 +6,9 @@ import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification';
 import Swal from 'sweetalert2';
+import Cookies from 'js-cookie'
 
+const token = Cookies.get('token')
 const toggleSidebar = inject('toggleSidebar')
 
 const isExporting = ref(false);
@@ -32,14 +34,17 @@ const listNhanVien = ref({
 
 const getData = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/home')
+    const response = await axios.get('http://localhost:8080/api/home', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
     listNhanVien.value = response.data;
     // console.log('NhanVien:', listNhanVien.value);
   } catch (error) {
     console.log(error);
   }
 }
-
 
 const allColumns = [
   { key: 'anh', label: 'Ảnh' },
@@ -49,10 +54,8 @@ const allColumns = [
   { key: 'ngaySinh', label: 'Ngày sinh' },
   { key: 'sdt', label: 'Số điện thoại' },
   { key: 'gioiTinh', label: 'Giới tính' },
-  { key: 'tinhThanh', label: 'Tỉnh/Thành' },
-  { key: 'quanHuyen', label: 'Quận/Huyện' },
-  { key: 'xaPhuong', label: 'Xã/Phường' },
-  { key: 'thonXom', label: 'Thôn/Xóm' },
+  { key: 'vaiTro', label: 'Vai trò' },
+  { key: 'diaChi', label: 'Địa chỉ' }, // Thêm dòng này
   { key: 'email', label: 'Email' },
   { key: 'ghiChu', label: 'Ghi chú' },
   { key: 'trangThai', label: 'Trạng thái' },
@@ -62,17 +65,18 @@ const visibleColumns = ref([
   'maNhanVien',
   'tenNhanVien',
   'sdt',
+  'diaChi',
+  'email',
   'trangThai',
 ]);
 const showColumnBox = ref(false);
-const expandedRow = ref(null);
 const showFilter = ref(false);
 const filterHovered = ref(false);
 
 // Filter states
 const filterState = ref({
   trangThai: '1',
-  namSinh: '', // năm sinh
+  vaiTro: '', // vai trò
   tinhThanh: '', // tỉnh thành
   search: ''
 });
@@ -101,6 +105,7 @@ const selectedProvince = ref(null);
 const selectedDistrict = ref(null);
 const selectedWard = ref(null);
 const fileInput = ref(null);
+const roles = ref([]); // Danh sách vai trò
 
 function getImageUrl(path) {
   if (!path) return '';
@@ -124,7 +129,11 @@ function openConfirmModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.put(`http://localhost:8080/api/doiTrangThaiVe0/${nhanVien.id}`);
+        await axios.put(`http://localhost:8080/api/doiTrangThaiVe0/${nhanVien.id}`,{},{
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         await getData();
         toast.success('Cập nhật trạng thái nhân viên thành công!');
       } catch (e) {
@@ -150,7 +159,11 @@ function openDeleteModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:8080/api/delete/${nhanVien.id}`);
+        await axios.delete(`http://localhost:8080/api/delete/${nhanVien.id}`,{}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         await getData();
         toast.success('Xóa nhân viên thành công!');
       } catch (e) {
@@ -176,7 +189,11 @@ function openBackToWorkModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.put(`http://localhost:8080/api/doiTrangThaiVe1/${nhanVien.id}`);
+        await axios.put(`http://localhost:8080/api/doiTrangThaiVe1/${nhanVien.id}`,{}, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         await getData();
         toast.success('Nhân viên đã quay lại làm việc!');
       } catch (e) {
@@ -192,6 +209,9 @@ const exportExcelFile = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/nhan-vien/export-excel', {
       responseType: 'blob',
+       headers: {
+        Authorization: `Bearer ${token}`
+      }
     });
 
     const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -244,13 +264,9 @@ const filteredNhanVien = computed(() => {
     nv => String(nv.trangThai) === String(filterState.value.trangThai)
   );
 
-  // Lọc theo năm sinh
-  if (filterState.value.namSinh) {
-    result = result.filter(nv => {
-      if (!nv.ngaySinh) return false;
-      const year = new Date(nv.ngaySinh).getFullYear();
-      return String(year) === String(filterState.value.namSinh);
-    });
+  // Lọc theo tên vai trò
+  if (filterState.value.vaiTro) {
+    result = result.filter(nv => nv.tenVaiTro === filterState.value.vaiTro);
   }
 
   // Lọc theo tỉnh thành
@@ -291,7 +307,11 @@ const searchNhanVien = async (keyword) => {
       await getData(); // Nếu không có từ khóa thì load lại toàn bộ
       return;
     }
-    const response = await axios.get(`http://localhost:8080/api/search?keyword=${encodeURIComponent(keyword)}`);
+    const response = await axios.get(`http://localhost:8080/api/search?keyword=${encodeURIComponent(keyword)}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     listNhanVien.value = response.data;
   } catch (error) {
     console.log('Lỗi tìm kiếm:', error);
@@ -414,7 +434,14 @@ watch(filteredNhanVien, () => { currentPage.value = 1; });
 
 onMounted(() => {
   getData();
-  fetchProvinces(); // Thêm dòng này để lấy danh sách tỉnh thành cho filter
+  fetchProvinces();
+  axios.get('http://localhost:8080/vai-tro/list-vai-Tro', {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(res => {
+    roles.value = res.data;
+  });
   if (route.query.success === 'true') {
     toast.success('Thêm mới nhân viên thành công');
     window.history.replaceState({}, document.title, route.path);
@@ -490,16 +517,15 @@ async function handleFileChange(event) {
     const response = await axios.post(
       'http://localhost:8080/api/nhan-vien/import-excel',
       formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
+      { headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` } }
     );
-
-    toast.info('Đang gửi mail về nhân viên...', { timeout: 3000 });
-    setTimeout(async () => {
-      toast.success(response.data || 'Nhập dữ liệu thành công!');
-      await getData();
-    }, 3000);
+    toast.success(response.data || 'Nhập dữ liệu thành công!');
+    await getData();
   } catch (error) {
-    if (error.response && error.response.data) {
+    // Nếu lỗi là mảng (backend trả về danh sách lỗi từng dòng)
+    if (error.response && Array.isArray(error.response.data)) {
+      error.response.data.forEach(msg => toast.error(msg));
+    } else if (error.response && error.response.data) {
       toast.error(error.response.data);
     } else {
       toast.error('Nhập file thất bại');
@@ -507,6 +533,29 @@ async function handleFileChange(event) {
   } finally {
     isImporting.value = false;
     event.target.value = '';
+  }
+}
+
+async function handleToggleVaiTro(nhanVien) {
+  try {
+    await axios.put(`http://localhost:8080/api/doi-vai-tro/${nhanVien.id}`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    await getData();
+    const updatedNV = Array.isArray(listNhanVien.value)
+      ? listNhanVien.value.find(nv => nv.id === nhanVien.id)
+      : null;
+    // Sử dụng tenVaiTro để xác định thông báo
+    console.log('Updated NV:', updatedNV);
+    if (updatedNV && updatedNV.tenVaiTro) {
+      if (updatedNV.tenVaiTro === 'ADMIN') {
+        toast.success('Đã sửa vai trò thành quản lý');
+      } else if (updatedNV.tenVaiTro === 'STAFF') {
+        toast.success('Đã sửa vai trò thành nhân viên');
+      }
+    } 
+  } catch (error) {
+    toast.error(error.response?.data || 'Đổi vai trò thất bại!');
   }
 }
 </script>
@@ -568,9 +617,12 @@ async function handleFileChange(event) {
           </div>
         </div>
         <div class="filter-item">
-          <label>Năm sinh</label>
-          <input type="number" v-model="filterState.namSinh" min="1900" max="2100" placeholder="VD: 1999"
-            title="Lọc theo năm sinh nhân viên">
+          <label>Vai trò</label>
+          <select v-model="filterState.vaiTro" title="Lọc theo vai trò">
+            <option value="">Tất cả</option>
+            <option value="ADMIN">Quản lý</option>
+            <option value="STAFF">Nhân viên</option>
+          </select>
         </div>
         <div class="filter-item">
           <label>Tỉnh/Thành</label>
@@ -604,13 +656,13 @@ async function handleFileChange(event) {
               <th>STT</th>
               <th v-for="col in allColumns.filter(c => visibleColumns.includes(c.key))" :key="col.key">{{ col.label }}
               </th>
+              <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
             <template v-if="pagedNhanVien.length">
               <template v-for="(nhanVien, index) in pagedNhanVien" :key="nhanVien.id">
-                <tr @click="expandedRow = expandedRow === nhanVien.id ? null : nhanVien.id"
-                  :class="{ 'row-selected': expandedRow === nhanVien.id }" style="cursor: pointer;">
+                <tr>
                   <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
                   <td v-for="col in allColumns.filter(c => visibleColumns.includes(c.key))" :key="col.key">
                     <template v-if="col.key === 'anh'">
@@ -631,90 +683,59 @@ async function handleFileChange(event) {
                     <template v-else-if="col.key === 'ngaySinh'">
                       {{ formatDate(nhanVien[col.key]) }}
                     </template>
+                    <template v-else-if="col.key === 'vaiTro'">
+                      {{ nhanVien.tenVaiTro === 'ADMIN' ? 'Quản lý' : nhanVien.tenVaiTro === 'STAFF' ? 'Nhân viên' : '' }}
+                    </template>
+                    <template v-else-if="col.key === 'diaChi'">
+                      {{ [nhanVien.thonXom, nhanVien.xaPhuong, nhanVien.quanHuyen,
+                      nhanVien.tinhThanh].filter(Boolean).join(', ') }}
+                    </template>
                     <template v-else>
                       {{ nhanVien[col.key] }}
                     </template>
                   </td>
-                </tr>
-                <tr v-if="expandedRow === nhanVien.id">
-                  <td :colspan="visibleColumns.length + 2">
-                    <div class="employee-detail-expand detail-2col">
-                      <!-- Ảnh bên trái -->
-                      <div style="min-width: 140px; max-width: 180px;">
-                        <img v-if="nhanVien.anh" :src="getImageUrl(nhanVien.anh)"
-                          style="width: 100%; max-width: 160px; height: auto; object-fit: cover; border-radius: 8px; border: 1px solid #eee;">
-                      </div>
-                      <!-- Thông tin bên phải, chia 2 cột -->
-                      <div class="detail-fields">
-                        <div v-for="(col, i) in allColumns.filter(c => c.key !== 'anh')" :key="col.key"
-                          class="detail-field">
-                          <template v-if="col.key === 'cccd'">
-                            <div class="password-flex-row">
-                              <b class="detail-label" style="margin-right: 6px;">{{ col.label }}:</b>
-                              <span class="password-value">{{ showPassword[nhanVien.id] ? nhanVien.cccd :
-                                maskPassword(nhanVien.cccd) }}</span>
-                              <button @click.stop="togglePasswordVisibility(nhanVien.id)" class="password-toggle-btn"
-                                :title="showPassword[nhanVien.id] ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'">
-                                <Eye v-if="!showPassword[nhanVien.id]" size="16" />
-                                <EyeOff v-else size="16" />
-                              </button>
-                            </div>
-                          </template>
-                          <template v-else-if="col.key === 'gioiTinh'">
-                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien.gioiTinh ? 'Nam' : 'Nữ' }}
-                          </template>
-                          <template v-else-if="col.key === 'trangThai'">
-                            <b class="detail-label">{{ col.label }}:</b>
-                            <span :class="['status-badge', nhanVien.trangThai == 1 ? 'active' : 'inactive']">
-                              {{ nhanVien.trangThai == 1 ? 'Đang làm việc' : 'Đã nghỉ' }}
-                            </span>
-                          </template>
-                          <template v-else-if="col.key === 'ngaySinh'">
-                            <b class="detail-label">{{ col.label }}:</b> {{ formatDate(nhanVien[col.key]) }}
-                          </template>
-                          <template v-else>
-                            <b class="detail-label">{{ col.label }}:</b> {{ nhanVien[col.key] }}
-                          </template>
-                        </div>
-                      </div>
-                      <!-- Nút thao tác -->
-                      <div class="employee-detail-actions detail-actions-abs">
-                        <template v-if="nhanVien.trangThai == 1">
-                          <button class="action-btn edit" title="Sửa thông tin nhân viên"
-                            @click="router.push(`/nhan-vien/sua/${nhanVien.id}`)">
-                            <Edit />
-                          </button>
-                          <button class="action-btn delete" title="Ngừng làm việc" @click="openConfirmModal(nhanVien)">
-                            <Trash />
-                          </button>
-                        </template>
-                        <template v-else>
-                          <div class="info-footer-btns">
-                            <button class="icon-btn" title="Quay lại làm việc" @click="openBackToWorkModal(nhanVien)">
-                              <svg class="icon-green" width="22" height="22" fill="none" stroke="#22b34c"
-                                stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M1 4v6h6" />
-                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                              </svg>
-                            </button>
-                            <button class="icon-btn" title="Xóa nhân viên" @click="openDeleteModal(nhanVien)">
-                              <svg class="icon-red" width="22" height="22" fill="none" stroke="#e53935" stroke-width="2"
-                                viewBox="0 0 24 24">
-                                <polyline points="3 6 5 6 21 6" />
-                                <path
-                                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-                              </svg>
-                            </button>
-                          </div>
-                        </template>
-                      </div>
+                  <td>
+                    <div class="action-buttons">
+                      <template v-if="nhanVien.trangThai == 1">
+                        <button class="action-btn edit" title="Sửa thông tin nhân viên"
+                          @click="router.push(`/nhan-vien/sua/${nhanVien.id}`)">
+                          <Edit />
+                        </button>
+                        <button class="action-btn delete" title="Ngừng làm việc" @click="openConfirmModal(nhanVien)">
+                          <Trash />
+                        </button>
+                        <!-- Nút bật/tắt vai trò -->
+                        <label class="switch" title="Đổi vai trò">
+                          <input type="checkbox"
+                            :checked="nhanVien.tenVaiTro === 'ADMIN'"
+                            @change="handleToggleVaiTro(nhanVien)" />
+                          <span class="slider"></span>
+                        </label>
+                      </template>
+                      <template v-else>
+                        <button class="action-btn edit" title="Quay lại làm việc"
+                          @click="openBackToWorkModal(nhanVien)">
+                          <svg class="icon-green" width="22" height="22" fill="none" stroke="#22b34c" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <path d="M1 4v6h6" />
+                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                          </svg>
+                        </button>
+                        <button class="action-btn delete" title="Xóa nhân viên" @click="openDeleteModal(nhanVien)">
+                          <svg class="icon-red" width="22" height="22" fill="none" stroke="#e53935" stroke-width="2"
+                            viewBox="0 0 24 24">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </template>
                     </div>
                   </td>
                 </tr>
               </template>
             </template>
             <tr v-else>
-              <td :colspan="visibleColumns.length + 1"
+              <td :colspan="visibleColumns.length + 2"
                 style="text-align:center; padding: 40px 0; color: #8a99a8; font-size: 18px; background: #fafbfc;">
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
                   <svg width="48" height="48" fill="none" stroke="#8a99a8" stroke-width="2" stroke-linecap="round"
@@ -1064,7 +1085,6 @@ async function handleFileChange(event) {
   cursor: pointer;
   transition: box-shadow 0.18s, border 0.18s;
   outline: none;
-  padding: 0;
 }
 
 .filter-arrow-btn:hover {
@@ -1324,7 +1344,6 @@ async function handleFileChange(event) {
   align-items: center;
   justify-content: center;
 }
-
 .password-toggle-btn:hover {
   background: #f0f0f0;
   color: #333;
@@ -1531,5 +1550,52 @@ async function handleFileChange(event) {
   font-weight: 500;
   margin-bottom: 2px;
   color: #222;
+}
+
+/* Thêm vào <style scoped> */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  margin-left: 8px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #2196F3;
+  border-radius: 24px;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  border-radius: 50%;
+  transition: .4s;
+}
+
+.switch input:checked+.slider {
+  background-color: #22b34c;
+}
+
+.switch input:checked+.slider:before {
+  transform: translateX(20px);
 }
 </style>

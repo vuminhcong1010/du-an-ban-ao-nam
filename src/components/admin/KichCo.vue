@@ -4,6 +4,9 @@ import axios from 'axios';
 import { Eye,Plus,Trash,Delete, Edit } from 'lucide-vue-next';
 let page = ref();
 const res = ref();
+import Cookies from 'js-cookie'
+
+const token = Cookies.get('token')
 let save = (id) =>{
   req.value.id = id
 }
@@ -19,7 +22,11 @@ let details = ref({
 });
 onMounted(async () => {
   try {
-    const response = await axios.get("http://localhost:8080/kich-co");
+    const response = await axios.get("http://localhost:8080/kich-co",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     res.value = response.data.data;
     page.value = Math.ceil(response.data.size/5)
   } catch (err) {
@@ -27,7 +34,11 @@ onMounted(async () => {
   }
 });
 const add = () =>{
-    axios.post("http://localhost:8080/kich-co/add",req.value).then(Response =>{
+    axios.post("http://localhost:8080/kich-co/add",req.value,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
       res.value = Response.data.data
       page.value = Math.ceil(Response.data.size/5)
       reset()
@@ -38,7 +49,11 @@ const add = () =>{
 
 const update = () =>{
     console.log(req.value)
-    axios.post("http://localhost:8080/kich-co/update",req.value).then(Response =>{
+    axios.post("http://localhost:8080/kich-co/update",req.value,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
       res.value = Response.data.data
       page.value = Math.ceil(Response.data.size/5)
       reset()
@@ -48,7 +63,11 @@ const update = () =>{
 }
 
 const remove = (id) =>{
-    axios.get(`http://localhost:8080/kich-co/delete/${id}`).then(Response =>{
+    axios.get(`http://localhost:8080/kich-co/delete/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
       res.value = Response.data.data
       page.value = Math.ceil(Response.data.size/5)
     }).catch (err =>{
@@ -56,7 +75,11 @@ const remove = (id) =>{
     })    
 }
 const detail = (id) =>{   
-    axios.get(`http://localhost:8080/kich-co/detail/${id}`).then(Response =>{
+    axios.get(`http://localhost:8080/kich-co/detail/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
       details.value = Response.data
     }).catch (err =>{
        console.log(err);
@@ -64,7 +87,11 @@ const detail = (id) =>{
 }
 const paging = (id) =>{
     console.log(id);
-    axios.get(`http://localhost:8080/kich-co/${id}`).then(Response =>{
+    axios.get(`http://localhost:8080/kich-co/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
     res.value = Response.data.data
     page.value = Math.ceil(Response.data.size/5);
     })

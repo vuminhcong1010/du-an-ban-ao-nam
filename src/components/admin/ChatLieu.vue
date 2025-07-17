@@ -6,8 +6,9 @@ import { Eye,Plus,Trash,Delete, Edit } from 'lucide-vue-next';
 
 import vSelect from 'vue-select'
 import 'vue-select/dist/vue-select.css';
+import Cookies from 'js-cookie'
 
-
+const token = Cookies.get('token')
 const res = ref();
 let page = ref();
 let save = (id) =>{
@@ -24,7 +25,11 @@ let details = ref({
 });
 onMounted(async () => {
   try {
-    const response = await axios.get("http://localhost:8080/chat-lieu");
+    const response = await axios.get("http://localhost:8080/chat-lieu",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     res.value = response.data.data;
     page.value = Math.ceil(response.data.size/5)
     
@@ -33,7 +38,11 @@ onMounted(async () => {
   }
 });
 const add = () =>{
-    axios.post("http://localhost:8080/chat-lieu/add",req.value).then(Response =>{
+    axios.post("http://localhost:8080/chat-lieu/add",req.value,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
       res.value = Response.data.data
       page.value = Math.ceil(Response.data.size/5)
       reset()
@@ -44,7 +53,11 @@ const add = () =>{
 
 const update = () =>{
     console.log(req.value)
-    axios.post("http://localhost:8080/chat-lieu/update",req.value).then(Response =>{
+    axios.post("http://localhost:8080/chat-lieu/update",req.value,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
       res.value = Response.data.data
       page.value = Math.ceil(Response.data.size / 5);
       reset()
@@ -54,7 +67,11 @@ const update = () =>{
 }
 
 const remove = (id) =>{
-    axios.get(`http://localhost:8080/chat-lieu/delete/${id}`).then(Response =>{
+    axios.get(`http://localhost:8080/chat-lieu/delete/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
       res.value = Response.data.data; // đây là object chứa { data, size }
       page.value = Math.ceil(Response.data.size / 5);
     }).catch (err =>{
@@ -62,14 +79,22 @@ const remove = (id) =>{
     })    
 }
 const detail = (id) =>{
-    axios.get(`http://localhost:8080/chat-lieu/detail/${id}`).then(Response =>{
+    axios.get(`http://localhost:8080/chat-lieu/detail/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
       details.value = Response.data
     }).catch (err =>{
        console.log(err);
     })    
 }
 const paging = (id) =>{
-    axios.get(`http://localhost:8080/chat-lieu/${id}`).then(Response =>{
+    axios.get(`http://localhost:8080/chat-lieu/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
     res.value = Response.data.data;
     })
     
