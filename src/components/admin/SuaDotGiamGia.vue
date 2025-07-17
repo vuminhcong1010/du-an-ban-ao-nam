@@ -243,10 +243,11 @@
 <script>
 import { useToast } from 'vue-toastification';
 import Swal from 'sweetalert2';
-
+import Cookies from 'js-cookie'
 export default {
     data() {
         return {
+            token: Cookies.get('token'),
             dotGiamGia: {
                 maDotGiamGia: '',
                 tenDotGiamGia: '',
@@ -326,7 +327,11 @@ export default {
         async getChatLieu() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/chat-lieu');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/chat-lieu', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách chất liệu: ${res.statusText}`);
                 const json = await res.json();
                 this.chatLieu = json || [];
@@ -340,7 +345,11 @@ export default {
         async getTayAo() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/tay-ao');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/tay-ao', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách tay áo: ${res.statusText}`);
                 const json = await res.json();
                 this.tayAo = json || [];
@@ -354,7 +363,11 @@ export default {
         async getCoAo() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/co-ao');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/co-ao', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách cổ áo: ${res.statusText}`);
                 const json = await res.json();
                 this.coAo = json || [];
@@ -368,7 +381,11 @@ export default {
         async getKichCo() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/kich-co');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/kich-co', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách kích cỡ: ${res.statusText}`);
                 const json = await res.json();
                 this.kichCo = json || [];
@@ -382,7 +399,11 @@ export default {
         async getMau() {
             const toast = useToast();
             try {
-                const res = await fetch('http://localhost:8080/doi-giam-gia/mau');
+                const res = await fetch('http://localhost:8080/doi-giam-gia/mau', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!res.ok) throw new Error(`Không thể lấy danh sách màu: ${res.statusText}`);
                 const json = await res.json();
                 this.mau = json || [];
@@ -400,7 +421,11 @@ export default {
                 if (!id) throw new Error('ID đợt giảm giá không hợp lệ');
 
                 // Fetch DotGiamGia details
-                const response = await fetch(`http://localhost:8080/doi-giam-gia/${id}`);
+                const response = await fetch(`http://localhost:8080/doi-giam-gia/${id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`Không thể lấy thông tin đợt giảm giá: ${errorText}`);
@@ -424,7 +449,11 @@ export default {
                 this.discountValue = data.phamTramGiam || data.soTienGiam || null;
 
                 // Fetch associated ChiTietDotGiamGia
-                const chiTietResponse = await fetch(`http://localhost:8080/chi-tiet-dot-giam-gia/${id}`);
+                const chiTietResponse = await fetch(`http://localhost:8080/chi-tiet-dot-giam-gia/${id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!chiTietResponse.ok) {
                     const errorText = await chiTietResponse.text();
                     throw new Error(`Không thể lấy danh sách sản phẩm chi tiết: ${errorText}`);
@@ -452,7 +481,11 @@ export default {
         async getAllDanhSachSP() {
             const toast = useToast();
             try {
-                const response = await fetch('http://localhost:8080/doi-giam-gia/san-pham-giam-gia');
+                const response = await fetch('http://localhost:8080/doi-giam-gia/san-pham-giam-gia', {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                 if (!response.ok) throw new Error('Không thể lấy danh sách sản phẩm');
                 const json = await response.json();
                 this.allDanhSachSP = (json.data || []).filter(sp => sp.trangThai === 1);
@@ -472,7 +505,11 @@ export default {
                 this.variantPage = 1; // Reset variant page when fetching new variants
                 if (this.selectedProductIds.length > 0) {
                     const promises = this.selectedProductIds.map(id =>
-                        fetch(`http://localhost:8080/doi-giam-gia/san-pham-chi-tiet/${id}`).then(res => {
+                        fetch(`http://localhost:8080/doi-giam-gia/san-pham-chi-tiet/${id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+}).then(res => {
                             if (!res.ok) throw new Error(`Không thể lấy biến thể cho sản phẩm ${id}`);
                             return res.json();
                         })
@@ -482,7 +519,11 @@ export default {
                     const variantWithImages = await Promise.all(
                         chiTietSanPhamResults.flat().map(async (variant) => {
                             try {
-                                const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`);
+                                const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`, {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
                                 const images = await response.json();
                                 const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`;
                                 const discountPercentage = await this.calculateDiscountPercentage(variant.id);
@@ -603,7 +644,10 @@ export default {
 
                 const response = await fetch(`http://localhost:8080/doi-giam-gia/${id}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                         Authorization: `Bearer ${this.token}`,
+                        'Content-Type': 'application/json'
+                     },
                     body: JSON.stringify(payload)
                 });
 

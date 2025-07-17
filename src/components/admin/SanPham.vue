@@ -63,15 +63,17 @@
 
     <!-- Danh sách sản phẩm -->
     <div class="bg-white p-3 rounded border mb-4">
+      <h5 class="fw-semibold m-0 mb-3">Danh sách sản phẩm</h5>
       <table class="table table-hover text-center align-middle">
         <thead class="table-light">
           <tr>
             <th>STT</th>
             <th>Mã SP</th>
             <th>Tên SP</th>
-            <th>Số lượng</th>
+            <!-- <th>Số lượng</th> -->
             <th>Chất liệu</th>
             <th>Danh mục</th>
+            <th>Số lượng</th>
             <th>Trạng thái</th>
             <th>Hành động</th>
           </tr>
@@ -81,13 +83,14 @@
             <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
             <td>{{ sp.maSanPham }}</td>
             <td>{{ sp.tenSanPham }}</td>
-            <td>{{ sp.soLuong }}</td>
+            <!-- <td>{{ sp.soLuong }}</td> -->
             <td>{{ sp.idChatLieu?.tenChatLieu }}</td>
             <td>
               <span v-for="dm in sp.dsDanhMuc" :key="dm.id" class="badge bg-secondary me-1">
                 {{ dm.tenDanhMuc }}
               </span>
             </td>
+            <td>{{ sp.soLuong }}</td>
             <td>
               <span :class="['status-badge', sp.trangThai === 1 ? 'active' : 'inactive']">
                 {{ sp.trangThai === 1 ? 'Đang bán' : 'Ngừng bán' }}
@@ -123,8 +126,11 @@
 import { ref, computed, onMounted } from "vue"
 import axios from "axios"
 import { Eye, Trash } from "lucide-vue-next"
+import Cookies from 'js-cookie'
+import { useToast } from "vue-toastification";
 
-// State
+const toast = useToast();
+const token = Cookies.get('token')
 const allSP = ref([])
 const danhMuc = ref([])
 const danhSachChatLieu = ref([])
@@ -190,7 +196,11 @@ const chuyenTrangSo = (soTrang) => {
 
 // Xoá sản phẩm
 const remove = async (id) => {
-  await axios.get(`http://localhost:8080/san-pham/delete/${id}`)
+  await axios.get(`http://localhost:8080/san-pham/delete/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
   await fetchData()
 }
 
@@ -201,9 +211,21 @@ const chuyenTrang = (id) => {
 const fetchData = async () => {
   try {
     const [spRes, dctRes, dmRes] = await Promise.all([
-      axios.get("http://localhost:8080/san-pham/get-all"),
-      axios.get("http://localhost:8080/test"),
-      axios.get("http://localhost:8080/test1")
+      axios.get("http://localhost:8080/san-pham/get-all",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }),
+      axios.get("http://localhost:8080/test",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }),
+      axios.get("http://localhost:8080/test1",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     ])
 
     const allSanPhams = spRes.data.data

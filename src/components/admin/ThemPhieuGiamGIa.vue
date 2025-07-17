@@ -208,6 +208,7 @@
 <script>
 import { useToast } from "vue-toastification";
 import Swal from "sweetalert2";
+import Cookies from 'js-cookie'
 
 export default {
   name: "ThemPhieuGiamGia",
@@ -217,6 +218,7 @@ export default {
   },
   data() {
     return {
+      token: Cookies.get('token'),
       submitted: false,
       giaTriOption: "phanTram",
       loaiPhieu: "Công khai",
@@ -406,7 +408,11 @@ export default {
     },
     async getDanhSachKhachHang() {
   try {
-    const response = await fetch("http://localhost:8080/danhSachKhachHang");
+    const response = await fetch("http://localhost:8080/danhSachKhachHang", {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
     if (!response.ok) throw new Error("Không thể tải danh sách khách hàng");
     const data = await response.json();
     this.danhSachKhachHang = data.map(kh => ({
@@ -615,7 +621,10 @@ export default {
       try {
         const response = await fetch("http://localhost:8080/phieuGiamGia", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            Authorization: `Bearer ${this.token}`,
+            "Content-Type": "application/json"
+           },
           body: JSON.stringify(phieu),
         });
         if (response.ok) {

@@ -227,9 +227,11 @@
         </div>
       </div>
       <div class="bg-white p-3 rounded shadow mb-4" v-if="show">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3 ">
           <h5 class="fw-semibold mb-0">Biến thể sản phẩm</h5>
           <div class="d-flex" style="gap: 0.5rem; margin-right: 1rem">
+            <div class="form-group mb-2 me-3">
+          <lable class="form-label small fw-bold">Giá:</lable>
             <input
               type="text"
               class="form-control form-control-sm"
@@ -239,22 +241,27 @@
               placeholder="Áp dụng cho tất cả giá"
               style="width: 160px"
             />
+          </div>
+
+          <div class="form-group mb-2 me-3">
+            <lable class="form-label small fw-bold ">Số lượng:</lable>
             <input
               type="text"
               class="form-control form-control-sm"
               v-model="allSoLuong"
               @input="apDungSoLuongChoTatCa"
               placeholder="Áp dụng cho tất cả số lượng"
-              style="width: 180px"
+              style="width: 160px"
             />
+          </div>
             <button
               type="button"
-              class="btn d-flex justify-content-center align-items-center"
+              class="btn d-flex justify-content-center align-items-center mt-4"
               style="
                 background-color: #0a2c57;
                 color: white;
                 width: 130px;
-                height: 40px;
+                height: 30px;
               "
               @click="toggleAll"
             >
@@ -305,10 +312,10 @@
                   }}
                 </td>
 
-                <td class="text-center align-middle">
+                <td class="text-center align-middle ">
                   <input
                   type="text"
-                  class="form-control form-control-sm"
+                  class="form-control form-control-sm mt-3"
                   v-model="giaFormatted[item.index]"
                   :class="{ 'is-invalid': errors[item.index]?.gia }"
                   @focus="onFocusGia(item.index)"
@@ -328,7 +335,7 @@
                 <td class="text-center align-middle">
                   <input
                     type="number"
-                    class="form-control form-control-sm"
+                    class="form-control form-control-sm mt-3"
                     v-model="req.chiTietSanPhamDto[item.index].soLuong"
                     :class="{'is-invalid': errors[item.index]?.soLuong}"
                   />
@@ -566,6 +573,11 @@ import {Plus} from "lucide-vue-next";
 import {useToast} from "vue-toastification";
 import {useRouter} from "vue-router";
 import Swal from 'sweetalert2'
+import Cookies from 'js-cookie'
+
+
+let isLoading = ref(false); // Vue 3: setup script
+const token = Cookies.get('token')
 const router = useRouter();
 const toast = useToast();
 
@@ -828,12 +840,16 @@ const themTayAo = async (tenTayAo) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/tay-ao/add", {tenTayAo});
+    await axios.post("http://localhost:8080/tay-ao/add", {tenTayAo},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm tay áo thành công");
   } catch (err) {
     toast.error("❌ Thêm tay áo thất bại");
-    console.error(err);
+    console.error(token);
   }
 };
 
@@ -853,7 +869,11 @@ const themKieuAo = async (tenKieuAo) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/kieu-ao/add", {tenKieuAo});
+    await axios.post("http://localhost:8080/kieu-ao/add", {tenKieuAo},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm kiểu áo thành công");
   } catch (err) {
@@ -861,6 +881,11 @@ const themKieuAo = async (tenKieuAo) => {
     console.error(err);
   }
 };
+const mauSacCoSan = [
+  'Đỏ', 'Xanh Dương', 'Xanh Lá', 'Vàng', 'Trắng', 'Đen',
+  'Hồng', 'Tím', 'Cam', 'Nâu', 'Xám', 'Bạc',
+  'Xanh Ngọc', 'Xanh Navy', 'Vàng Chanh', 'Xanh Mint', 'Be', 'Rượu Vang'
+];
 
 const themMau = async (ten) => {
   if (!ten || !ten.trim()) {
@@ -875,9 +900,17 @@ const themMau = async (ten) => {
     toast.error("⚠️ Màu đã tồn tại");
     return;
   }
+  if (!mauSacCoSan.some(mau => mau.toLowerCase() === ten.toLowerCase())) {
+    toast.error("Màu sắc không hợp lệ");
+    return;
+  }
 
   try {
-    await axios.post("http://localhost:8080/mau/add", {ten});
+    await axios.post("http://localhost:8080/mau/add", {ten},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm màu thành công");
   } catch (err) {
@@ -885,8 +918,9 @@ const themMau = async (ten) => {
     console.error(err);
   }
 };
-
+const kichCoCoSan = ['S', 'M', 'L', 'XL', 'XXL','XXXL']; // Thêm các kích cỡ hợp lệ tại đây
 const themKichCo = async (soCo) => {
+  
   if (!soCo || !soCo.trim()) {
     toast.error("⚠️ Kích cỡ không được để trống");
     return;
@@ -899,9 +933,16 @@ const themKichCo = async (soCo) => {
     toast.error("⚠️ Kích cỡ đã tồn tại");
     return;
   }
-
+  if (!kichCoCoSan.includes(soCo)) {
+    toast.error("Kích cỡ không hợp lệ"); // hoặc hiển thị thông báo bằng toast
+    return;
+  }
   try {
-    await axios.post("http://localhost:8080/kich-co/add", {soCo});
+    await axios.post("http://localhost:8080/kich-co/add", {soCo},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm kích cỡ thành công");
   } catch (err) {
@@ -925,7 +966,11 @@ const themCoAo = async (tenCoAo) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/co-ao/add", {tenCoAo});
+    await axios.post("http://localhost:8080/co-ao/add", {tenCoAo},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm cổ áo thành công");
   } catch (err) {
@@ -950,7 +995,11 @@ const themDanhMuc = async (tenDanhMuc) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/danh-muc/add", {tenDanhMuc});
+    await axios.post("http://localhost:8080/danh-muc/add", {tenDanhMuc},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm danh mục thành công");
   } catch (err) {
@@ -975,7 +1024,11 @@ const themChatLieu = async (tenChatLieu) => {
   }
 
   try {
-    await axios.post("http://localhost:8080/chat-lieu/add", {tenChatLieu});
+    await axios.post("http://localhost:8080/chat-lieu/add", {tenChatLieu},{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     await call();
     toast.success("✅ Thêm chất liệu thành công");
   } catch (err) {
@@ -1015,7 +1068,11 @@ const themSP = async () => {
     await axios.post(
       "http://localhost:8080/san-pham/them-nhanh-san-pham",
       reqSanPham.value
-    );
+    ,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
 
     // Reset form
     reqSanPham.value = {
@@ -1035,7 +1092,11 @@ const themSP = async () => {
 // Fetch initial data
 const call = async () => {
   try {
-    const response = await axios.get("http://localhost:8080/san-pham/add");
+    const response = await axios.get("http://localhost:8080/san-pham/add",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     chatLieu.value = response.data.chatLieus || [];
     kieuAo.value = response.data.kieuAos || [];
     mau.value = response.data.maus || [];
@@ -1055,6 +1116,8 @@ const call = async () => {
       reqSanPham.value.idChatLieu.id = chatLieu.value[0].id;
   } catch (err) {
     console.error(err);
+    console.log(token);
+    
   }
 };
 
@@ -1079,7 +1142,11 @@ watchEffect(() => {
   if (show.value) {
     let id = req.value.idSanPham.id;
     axios
-      .get(`http://localhost:8080/san-pham/chi-tiet-san-pham/${id}`)
+      .get(`http://localhost:8080/san-pham/chi-tiet-san-pham/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
       .then((response) => {
         req.value.tenSanPham = response.data;
         tenSP.value = response.data;
@@ -1096,13 +1163,25 @@ const files = ref([]);
 const cloudName = "drwg13d1l";
 const uploadPreset = "hungdzvcl";
 
+// const handleFilesChange = (event, rowIndex) => {
+//   const selectedFiles = Array.from(event.target.files).map((file) => {
+//     file.preview = URL.createObjectURL(file);
+//     return file;
+//   });
+//   if (!files.value[rowIndex]) files.value[rowIndex] = [];
+//   files.value[rowIndex] = [...files.value[rowIndex], ...selectedFiles];
+//   event.target.value = null;
+// };
 const handleFilesChange = (event, rowIndex) => {
-  const selectedFiles = Array.from(event.target.files).map((file) => {
-    file.preview = URL.createObjectURL(file);
-    return file;
-  });
-  if (!files.value[rowIndex]) files.value[rowIndex] = [];
-  files.value[rowIndex] = [...files.value[rowIndex], ...selectedFiles];
+  const selectedFile = event.target.files[0];
+  if (!selectedFile) return;
+
+  selectedFile.preview = URL.createObjectURL(selectedFile);
+
+  // Gán trực tiếp 1 ảnh duy nhất cho rowIndex
+  files.value[rowIndex] = [selectedFile];
+
+  // Reset input để chọn lại được cùng 1 ảnh nếu cần
   event.target.value = null;
 };
 
@@ -1170,6 +1249,16 @@ const uploadAllImages = async () => {
         }
       }
     }
+  // Hiện loading
+  isLoading.value = true;
+  Swal.fire({
+    title: 'Đang thêm sản phẩm ...',
+    html: 'Vui lòng đợi trong giây lát',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
 
     // Duyệt qua từng nhóm màu (mauId là key trong files)
     for (const mauId in files.value) {
@@ -1213,7 +1302,8 @@ const uploadAllImages = async () => {
       currentFiles.forEach((file) => revokePreview(file));
       files.value[mauId] = [];
     }
-
+      isLoading.value = false;
+    Swal.close();
     try {
       const payload = {
         ...req.value,
@@ -1224,7 +1314,11 @@ const uploadAllImages = async () => {
         })),
       };
 
-      await axios.post("http://localhost:8080/san-pham/add", payload);
+      await axios.post("http://localhost:8080/san-pham/add", payload,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
 
       toast.success("Thêm thành công");
       router.push("/san-pham");

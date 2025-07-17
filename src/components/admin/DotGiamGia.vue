@@ -130,14 +130,19 @@
 import { FilterIcon, Edit } from "lucide-vue-next";
 import { useToast } from 'vue-toastification';
 import Swal from 'sweetalert2';
+import Cookies from 'js-cookie'
+
 
 export default {
     components: {
         FilterIcon,
         Edit
     },
+    
+
     data() {
         return {
+            token: Cookies.get('token'),
             allDoiGiamGia: [],
             filteredDoiGiamGia: [],
             searchQuery: '',
@@ -163,7 +168,11 @@ export default {
         async getAllDotGiamGia() {
             const toast = useToast();
             try {
-                const response = await fetch("http://localhost:8080/doi-giam-gia");
+                const response = await fetch("http://localhost:8080/doi-giam-gia",{
+                    headers: {
+                    Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 const json = await response.json();
                 this.allDoiGiamGia = json.map(dot => ({
@@ -215,7 +224,10 @@ export default {
     try {
         const response = await fetch(`http://localhost:8080/doi-giam-gia/toggle/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                 Authorization: `Bearer ${this.token}`,
+                'Content-Type': 'application/json'
+             },
             body: JSON.stringify({ active: isActive })
         });
         const result = await response.json();

@@ -147,8 +147,9 @@ import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import AddressModal from '../../components/admin/AddressModal.vue';
 import axios from 'axios';
+import Cookies from 'js-cookie'
 
-
+const token = Cookies.get('token')
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
@@ -222,7 +223,11 @@ onMounted(async () => {
 // --- Data Fetching Methods ---
 const fetchCustomerDetails = async (id) => {
   try {
-    const response = await axios.get(`/api/khach-hang/${id}`);
+    const response = await axios.get(`/api/khach-hang/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     const customerData = response.data;
 
 
@@ -246,7 +251,11 @@ const fetchCustomerDetails = async (id) => {
 const fetchAddresses = async () => {
   if (form.value.id) {
     try {
-      const response = await axios.get(`/api/khach-hang/${form.value.id}/dia-chi`);
+      const response = await axios.get(`/api/khach-hang/${form.value.id}/dia-chi`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
       const apiAddresses = response.data || [];
       console.log('API Response (Addresses):', apiAddresses);
 
@@ -392,6 +401,12 @@ const handleSubmit = async () => {
     // Gửi yêu cầu PUT lên server để cập nhật thông tin khách hàng
     const response = await axios.put(`/api/khach-hang/${form.value.id}`, customerUpdatePayload);
 
+    await axios.put(`/api/khach-hang/${form.value.id}`, customerUpdatePayload,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
     toast.success('Cập nhật khách hàng thành công!');
     router.go(-1); // Quay lại trang trước
 
@@ -486,7 +501,11 @@ const deleteAddress = async (addressId, isMacDinh) => {
   // Xử lý kết quả từ SweetAlert2
   if (result.isConfirmed) {
     try {
-      await axios.delete(`/api/dia-chi/${addressId}`);
+      await axios.delete(`/api/dia-chi/${addressId}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
       toast.success('Xóa địa chỉ thành công!');
       fetchAddresses(); // Tải lại danh sách địa chỉ sau khi xóa
     } catch (error) {
@@ -502,7 +521,11 @@ const deleteAddress = async (addressId, isMacDinh) => {
 
 const setDefaultAddress = async (selectedAddress) => {
   try {
-    await axios.put(`/api/dia-chi/${selectedAddress.id}/set-default/${form.value.id}`); // Sử dụng apiClient
+    await axios.put(`/api/dia-chi/${selectedAddress.id}/set-default/${form.value.id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }); // Sử dụng apiClient
     toast.success('Địa chỉ mặc định đã được cập nhật thành công.');
     fetchAddresses();
   } catch (error) {

@@ -2,6 +2,9 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { Eye,Plus,Trash,Delete, Edit } from 'lucide-vue-next';
+import Cookies from 'js-cookie'
+
+const token = Cookies.get('token')
 let page = ref();
 const res = ref();
 let save = (id) =>{
@@ -19,7 +22,11 @@ let details = ref({
 });
 onMounted(async () => {
   try {
-    const response = await axios.get("http://localhost:8080/mau");
+    const response = await axios.get("http://localhost:8080/mau",{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     res.value = response.data.data;
     page.value = Math.ceil(response.data.size/5)
   } catch (err) {
@@ -27,7 +34,11 @@ onMounted(async () => {
   }
 });
 const add = () =>{
-    axios.post("http://localhost:8080/mau/add",req.value).then(Response =>{
+    axios.post("http://localhost:8080/mau/add",req.value,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
       res.value = Response.data.data
       page.value = Math.ceil(Response.data.size/5)
       reset()
@@ -38,7 +49,11 @@ const add = () =>{
 
 const update = () =>{
     console.log(req.value)
-    axios.post("http://localhost:8080/mau/update",req.value).then(Response =>{
+    axios.post("http://localhost:8080/mau/update",req.value,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
      res.value = Response.data.data
       page.value = Math.ceil(Response.data.size/5)
       reset()
@@ -48,7 +63,11 @@ const update = () =>{
 }
 
 const remove = (id) =>{
-    axios.get(`http://localhost:8080/mau/delete/${id}`).then(Response =>{
+    axios.get(`http://localhost:8080/mau/delete/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
      res.value = Response.data.data
       page.value = Math.ceil(Response.data.size/5)
     }).catch (err =>{
@@ -57,14 +76,22 @@ const remove = (id) =>{
 }
 const detail = (id) =>{
     
-    axios.get(`http://localhost:8080/mau/detail/${id}`).then(Response =>{
+    axios.get(`http://localhost:8080/mau/detail/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
       details.value = Response.data
     }).catch (err =>{
        console.log(err);
     })    
 }
 const paging = (id) =>{
-    axios.get(`http://localhost:8080/mau/${id}`).then(Response =>{
+    axios.get(`http://localhost:8080/mau/${id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(Response =>{
     res.value = Response.data.data
     page.value = Math.ceil(Response.data.size/5);
 

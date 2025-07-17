@@ -153,7 +153,7 @@ import { FilterIcon, Edit } from "lucide-vue-next";
 import { useToast } from "vue-toastification";
 import * as bootstrap from "bootstrap";
 import Swal from "sweetalert2";
-
+import Cookies from 'js-cookie'
 export default {
   name: "PhieuGiamGia",
   components: {
@@ -166,6 +166,7 @@ export default {
   },
   data() {
     return {
+      token: Cookies.get('token'),
       phieuGiamGias: [],
       allPhieuGiamGias: [],
       currentPage: 1,
@@ -239,7 +240,11 @@ export default {
   methods: {
     async getPhieuGiamGias() {
       try {
-        const response = await fetch("http://localhost:8080/phieuGiamGias");
+        const response = await fetch("http://localhost:8080/phieuGiamGias", {
+  headers: {
+    Authorization: `Bearer ${this.token}` 
+  }
+});
         if (!response.ok) {
           throw new Error("Không thể tải danh sách phiếu giảm giá");
         }
@@ -371,6 +376,7 @@ export default {
         const response = await fetch(`http://localhost:8080/phieuGiamGias/${phieu.id}/status`, {
           method: "PATCH",
           headers: {
+            Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ trangThai: newStatus }),

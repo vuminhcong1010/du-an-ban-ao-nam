@@ -6,7 +6,9 @@ import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification';
 import Swal from 'sweetalert2';
+import Cookies from 'js-cookie'
 
+const token = Cookies.get('token')
 const toggleSidebar = inject('toggleSidebar')
 
 const isExporting = ref(false);
@@ -32,7 +34,11 @@ const listNhanVien = ref({
 
 const getData = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/home')
+    const response = await axios.get('http://localhost:8080/api/home',{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
     listNhanVien.value = response.data;
     // console.log('NhanVien:', listNhanVien.value);
   } catch (error) {
@@ -123,7 +129,11 @@ function openConfirmModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.put(`http://localhost:8080/api/doiTrangThaiVe0/${nhanVien.id}`);
+        await axios.put(`http://localhost:8080/api/doiTrangThaiVe0/${nhanVien.id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
         await getData();
         toast.success('Cập nhật trạng thái nhân viên thành công!');
       } catch (e) {
@@ -149,7 +159,11 @@ function openDeleteModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:8080/api/delete/${nhanVien.id}`);
+        await axios.delete(`http://localhost:8080/api/delete/${nhanVien.id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
         await getData();
         toast.success('Xóa nhân viên thành công!');
       } catch (e) {
@@ -175,7 +189,11 @@ function openBackToWorkModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.put(`http://localhost:8080/api/doiTrangThaiVe1/${nhanVien.id}`);
+        await axios.put(`http://localhost:8080/api/doiTrangThaiVe1/${nhanVien.id}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
         await getData();
         toast.success('Nhân viên đã quay lại làm việc!');
       } catch (e) {
@@ -191,7 +209,11 @@ const exportExcelFile = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/nhan-vien/export-excel', {
       responseType: 'blob',
-    });
+    },{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
 
     const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = window.URL.createObjectURL(blob);
@@ -286,7 +308,11 @@ const searchNhanVien = async (keyword) => {
       await getData(); // Nếu không có từ khóa thì load lại toàn bộ
       return;
     }
-    const response = await axios.get(`http://localhost:8080/api/search?keyword=${encodeURIComponent(keyword)}`);
+    const response = await axios.get(`http://localhost:8080/api/search?keyword=${encodeURIComponent(keyword)}`,{
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
     listNhanVien.value = response.data;
   } catch (error) {
     console.log('Lỗi tìm kiếm:', error);
@@ -488,7 +514,7 @@ async function handleFileChange(event) {
     const response = await axios.post(
       'http://localhost:8080/api/nhan-vien/import-excel',
       formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
+      { headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` } }
     );
 
     toast.info('Đang gửi mail về nhân viên...', { timeout: 3000 });

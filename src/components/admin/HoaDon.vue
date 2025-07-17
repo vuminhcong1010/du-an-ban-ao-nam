@@ -4,8 +4,10 @@
 import { Eye, FilterIcon, Upload, Plus } from "lucide-vue-next";
 import { onMounted, ref, computed, watch } from "vue";
 import { useToast } from "vue-toastification";
+import 'vue-select/dist/vue-select.css';
+import Cookies from 'js-cookie'
 
-
+const token = Cookies.get('token')
 const toast = useToast();
 const deliveryMethod = ref("");
 const orderCreationMethod = ref("");
@@ -32,8 +34,11 @@ const fetchTodos = async () => {
     endDate.value = todayStr;
 
     const response = await fetch(
-      `http://localhost:8080/hoa-don/phan-trang?page=${currentPage.value}&size=${pageSize}`
-    );
+      `http://localhost:8080/hoa-don/phan-trang?page=${currentPage.value}&size=${pageSize}`, {
+  headers: {
+    Authorization: `Bearer ${token}` 
+  }
+});
     const json = await response.json();
     todos.value = json.content;
     totalPages.value = json.totalPages;
