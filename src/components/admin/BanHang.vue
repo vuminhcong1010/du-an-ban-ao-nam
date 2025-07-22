@@ -61,7 +61,7 @@ async function createNewOrder() {
       maHoaDon: maHoaDon,
       khachHang: {
         idKhachHang: "",
-        tenKhachHang: "",
+        tenKhachHang: "Khách lẻ",
         tenNguoiNhan: "",
         diaChi: "",
         sdt: "",
@@ -426,7 +426,7 @@ const hoanThanhDonHang = async (order) => {
         </button>
         <ThanhToan
           v-if="showThanhToan"
-          :tongTien="561001"
+          :tongTien="order.tongTien || 0"
           @close="showThanhToan = false"
           @xac-nhan="handleXacNhan"
         />
