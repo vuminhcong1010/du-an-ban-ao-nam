@@ -288,10 +288,11 @@ watch(
               <strong>Giới tính:</strong>
               {{ khachHangDuocChon.gioiTinh ? "Nam" : "Nữ" }}
             </div>
-          </template>
-          <button class="btn btn-sm btn-outline-danger mt-2" @click="boChonKhachHang">
+               <button class="btn btn-sm btn-outline-danger mt-2" @click="boChonKhachHang">
             Bỏ chọn khách hàng
           </button>
+          </template>
+       
         </div>
         <div v-else class="text-muted"> <strong>Tên khách hàng:</strong> Khách lẻ.</div>
       </div>

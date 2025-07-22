@@ -20,11 +20,36 @@ const moPopupPhieuGiamGia = () => {
   hienThiPhieuGiamGia.value = true;
 };
 
-const nhanPhieuGiamGiaDaChon = (phieu) => {
-  props.order.giamGia = phieu;
-  capNhatTienGiamVaTongTien();
-  errorMessage.value = "";
-  hienThiPhieuGiamGia.value = false;
+const nhanPhieuGiamGiaDaChon = async (phieu) => {
+  try {
+    // Assign the selected voucher to the order
+    props.order.giamGia = { ...phieu }; // Create a copy to avoid mutating the original
+    errorMessage.value = "";
+
+    // Call API to decrease voucher quantity
+    if (phieu && phieu.id) {
+      await axios.put(`http://localhost:8080/ban_hang/phieuGG/decrease/${phieu.id}`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      // Update the quantity in the frontend
+      props.order.giamGia.soLuong -= 1;
+      console.log(`Decreased voucher quantity for ID: ${phieu.id}, new quantity: ${props.order.giamGia.soLuong}`);
+    }
+
+    // Update discount and total
+    capNhatTienGiamVaTongTien();
+    hienThiPhieuGiamGia.value = false;
+
+    // Save updated orders to localStorage
+    localStorage.setItem("orders", JSON.stringify(props.orders));
+  } catch (error) {
+    console.error("Error decreasing voucher quantity:", error.response?.data || error.message);
+    errorMessage.value = "Không thể áp dụng phiếu giảm giá.";
+    props.order.giamGia = null;
+    capNhatTienGiamVaTongTien();
+  }
 };
 
 const validateMaGiamGia = async (maGiamGia) => {
@@ -57,10 +82,29 @@ const validateMaGiamGia = async (maGiamGia) => {
   }
 };
 
-const huyChonPhieuGiamGia = () => {
-  props.order.giamGia = null;
-  errorMessage.value = "";
-  capNhatTienGiamVaTongTien();
+const huyChonPhieuGiamGia = async () => {
+  try {
+    // Restore voucher quantity if one was previously selected
+    if (props.order.giamGia && props.order.giamGia.id) {
+      await axios.put(`http://localhost:8080/ban_hang/phieuGG/increase/${props.order.giamGia.id}`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(`Restored voucher quantity for ID: ${props.order.giamGia.id}`);
+    }
+
+    // Clear the selected voucher
+    props.order.giamGia = null;
+    errorMessage.value = "";
+    capNhatTienGiamVaTongTien();
+
+    // Save updated orders to localStorage
+    localStorage.setItem("orders", JSON.stringify(props.orders));
+  } catch (error) {
+    console.error("Error restoring voucher quantity:", error.response?.data || error.message);
+    errorMessage.value = "Không thể hủy phiếu giảm giá.";
+  }
 };
 
 const formatCurrency = (val) => {
