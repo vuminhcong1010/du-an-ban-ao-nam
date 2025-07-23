@@ -536,7 +536,32 @@ async function handleFileChange(event) {
   }
 }
 
-async function handleToggleVaiTro(nhanVien) {
+// Sửa hàm handleToggleVaiTro để xác nhận trước khi đổi vai trò
+async function handleToggleVaiTro(nhanVien, event) {
+  // Xác định vai trò hiện tại
+  const isAdmin = nhanVien.tenVaiTro === 'ADMIN';
+  const confirmText = isAdmin
+    ? 'Bạn có chắc chắn muốn chuyển Quản Lý này thành NHÂN VIÊN (không còn là quản lý)?'
+    : 'Bạn có chắc chắn muốn chuyển Nhân Viên này thành QUẢN LÝ (ADMIN)?';
+  const confirmTitle = isAdmin ? 'Xác nhận chuyển thành nhân viên' : 'Xác nhận chuyển thành quản lý';
+  const result = await Swal.fire({
+    icon: 'question',
+    title: confirmTitle,
+    text: confirmText,
+    showCancelButton: true,
+    confirmButtonText: 'Đồng ý',
+    cancelButtonText: 'Bỏ qua',
+    reverseButtons: true,
+    customClass: {
+      confirmButton: 'swal2-confirm btn-save',
+      cancelButton: 'swal2-cancel btn-cancel'
+    }
+  });
+  if (!result.isConfirmed) {
+    // Nếu không xác nhận, ngăn chuyển đổi trạng thái của switch
+    if (event) event.target.checked = isAdmin; // đảo lại trạng thái
+    return;
+  }
   try {
     await axios.put(`http://localhost:8080/api/doi-vai-tro/${nhanVien.id}`, {}, {
       headers: { Authorization: `Bearer ${token}` }
@@ -545,15 +570,13 @@ async function handleToggleVaiTro(nhanVien) {
     const updatedNV = Array.isArray(listNhanVien.value)
       ? listNhanVien.value.find(nv => nv.id === nhanVien.id)
       : null;
-    // Sử dụng tenVaiTro để xác định thông báo
-    console.log('Updated NV:', updatedNV);
     if (updatedNV && updatedNV.tenVaiTro) {
       if (updatedNV.tenVaiTro === 'ADMIN') {
         toast.success('Đã sửa vai trò thành quản lý');
       } else if (updatedNV.tenVaiTro === 'STAFF') {
         toast.success('Đã sửa vai trò thành nhân viên');
       }
-    } 
+    }
   } catch (error) {
     toast.error(error.response?.data || 'Đổi vai trò thất bại!');
   }
@@ -708,7 +731,7 @@ async function handleToggleVaiTro(nhanVien) {
                         <label class="switch" title="Đổi vai trò">
                           <input type="checkbox"
                             :checked="nhanVien.tenVaiTro === 'ADMIN'"
-                            @change="handleToggleVaiTro(nhanVien)" />
+                            @change="event => handleToggleVaiTro(nhanVien, event)" />
                           <span class="slider"></span>
                         </label>
                       </template>
