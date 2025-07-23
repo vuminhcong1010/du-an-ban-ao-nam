@@ -6,11 +6,10 @@ import vSelect from 'vue3-select'
 import 'vue3-select/dist/vue3-select.css'
 
 // Toggle Sidebar
-const showSidebar = ref(true)
-function toggleSidebar() {
-  showSidebar.value = !showSidebar.value
+const isSidebarCollapsed = ref(false)
+function toggleSidebarCollapse() {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
 }
-provide('toggleSidebar', toggleSidebar)
 
 // v-select
 const selected = ref(null)
@@ -22,7 +21,7 @@ const options = ref(['Đỏ', 'Xanh', 'Vàng'])
   <div class="d-flex flex-column vh-100">
     <Topbar />
     <div class="d-flex flex-grow-1">
-      <Sidebar v-if="showSidebar" />
+      <Sidebar :collapsed="isSidebarCollapsed" :onToggleCollapse="toggleSidebarCollapse" />
       <main class="flex-grow-1 bg-light p-4">
         <!-- Select Box -->
       
