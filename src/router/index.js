@@ -33,6 +33,7 @@ import Cookies from "js-cookie";
 import PhieuGiamGiaBH from "@/components/admin/PhieuGiamGiaBH.vue";
 
 import ThongKeTongHop from "@/components/admin/ThongKeTongHop.vue";
+import ThongKeBaoCao from "@/components/admin/ThongKeBaoCao.vue";
 
 
 const router = createRouter({
@@ -199,6 +200,12 @@ const router = createRouter({
       path: '/thong-ke',
       name: 'thongke',
       component: ThongKeTongHop,
+    },
+      
+    {
+      path: '/thong-ke/bao-cao',
+      name: 'thongke/bao-cao',
+      component: ThongKeBaoCao,
     },
   ],
 });
