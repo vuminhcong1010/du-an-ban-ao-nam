@@ -79,7 +79,7 @@ const handleSubmit = () => {
 
 function removeToken(){
   Cookies.remove('token')
-  window.location.href = "/login"
+  window.location.href = "/dang-nhap"
   trangThai.value = false
 }
 </script>
