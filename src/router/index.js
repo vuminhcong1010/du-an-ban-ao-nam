@@ -30,10 +30,12 @@ import DangNhap from "@/components/admin/DangNhap.vue";
 import Cookies from "js-cookie";
 import BanHangTest from "@/components/admin/BanHangTest.vue";
 
-
+import Chat from "@/components/admin/Chat.vue";
 import PhieuGiamGiaBH from "@/components/admin/PhieuGiamGiaBH.vue";
 
 import ThongKeTongHop from "@/components/admin/ThongKeTongHop.vue";
+import TrangChu from "@/components/admin/TrangChu.vue";
+import DangNhapCustomer from "@/components/admin/DangNhapCustomer.vue";
 
 
 const router = createRouter({
@@ -52,8 +54,8 @@ const router = createRouter({
       component: BanHangTest,
     },
     {
-      path: '/hoa-don-chi-tiet/:maHoaDon',
-      name: 'hoadonchitiet',
+      path: "/hoa-don-chi-tiet/:maHoaDon",
+      name: "hoadonchitiet",
       component: HoaDonChiTiet,
       props: true,
     },
@@ -193,13 +195,27 @@ const router = createRouter({
       path: "/thong-tin-ca-nhan",
       name: "ThongTinCaNhan",
       component: () => import("@/components/admin/ThongTinNhanVien.vue"),
-
     },
 
     {
-      path: '/thong-ke',
-      name: 'thongke',
+      path: "/thong-ke",
+      name: "thongke",
       component: ThongKeTongHop,
+    },
+    {
+      path: "/chat",
+      name: "chat",
+      component: Chat,
+    },
+    {
+      path: "/",
+      name: "trang-chu",
+      component: TrangChu,
+    },
+    {
+      path: "/dang-nhap-khach-hang",
+      name: "dang-nhap-khach-hang",
+      component: DangNhapCustomer,
     },
   ],
 });
@@ -210,13 +226,13 @@ router.beforeEach((to, from, next) => {
   const token = Cookies.get("token");
 
   // ✅ 1. Chưa có token => chỉ cho phép vào /dang-nhap và /quen-mat-khau
-  if (!token && !["/dang-nhap", "/quen-mat-khau"].includes(to.path)) {
+  if (!token && !["/dang-nhap", "/quen-mat-khau","/","/dang-nhap-khach-hang"].includes(to.path)) {
     return next("/dang-nhap");
   }
 
   // ✅ 2. Đã có token nhưng vào lại /dang-nhap => đá về /
   if (token && to.path === "/dang-nhap") {
-    return next("/");
+    return next("/san-pham");
   }
 
   // ✅ 3. Nếu có token, giải mã và kiểm tra vai trò
@@ -227,7 +243,7 @@ router.beforeEach((to, from, next) => {
 
       // Nếu là STAFF mà truy cập /nhan-vien => chặn
       if (vaiTro === "STAFF" && to.path.startsWith("/nhan-vien")) {
-        return next("/");
+        return next("/san-pham");
       }
     } catch (err) {
       Cookies.remove("token");
