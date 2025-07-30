@@ -85,7 +85,7 @@ const dangNhap = async () => {
       Cookies.set("thongTinKhachHang", JSON.stringify(response.data.data), { expires: 0.3 });
       const thongTin = JSON.parse(Cookies.get("thongTinKhachHang"));
       console.log(thongTin);
-      window.location.href = "/"
+      window.location.href = "/coolmen"
     }
   } catch (err) {
     usernameError.value = 'Lỗi kết nối đến máy chủ!'
