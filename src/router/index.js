@@ -307,7 +307,7 @@ router.beforeEach((to, from, next) => {
   // ✅ 1. Chưa có token => chỉ cho phép vào /dang-nhap và /quen-mat-khau
   if (
     !token &&
-    !["/dang-nhap", "/quen-mat-khau", "/dang-nhap-khach-hang"].includes(
+    !["/dang-nhap", "/quen-mat-khau", "/dang-nhap-khach-hang","/coolmen"].includes(
       to.path
     )
   ) {

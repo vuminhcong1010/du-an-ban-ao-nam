@@ -43,13 +43,14 @@ const handleRoomSelected = (roomId) => {
 
 
 <template>
+<div id="app-wrapper">
+    <router-view></router-view>
+  </div>
   <div class="d-flex flex-column vh-100">
     <Topbar v-if="showTopbar"/>
     <div class="d-flex flex-grow-1">
       
-  <div id="app-wrapper">
-    <router-view></router-view>
-  </div>
+ 
         <!-- Nút mở/đóng chat -->
         <div class="chat-toggle" @click="toggleChat">
           <div class="chat-icon">💬</div>
