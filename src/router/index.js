@@ -34,6 +34,10 @@ import PhieuGiamGia from "@/components/admin/PhieuGiamGia.vue";
 import ThemPhieuGiamGia from "@/components/admin/ThemPhieuGiamGIa.vue";
 import SuaPhieuGiamGia from "@/components/admin/SuaPhieuGiamGia.vue";
 import DotGiamGia from "@/components/admin/DotGiamGia.vue";
+import DangNhap from "@/components/admin/DangNhap.vue";
+import Cookies from "js-cookie";
+import BanHangTest from "@/components/admin/BanHangTest.vue";
+import Chat from "@/components/admin/Chat.vue";
 import ThemDotGiamGia from "@/components/admin/ThemDotGiamGia.vue";
 import SuaDotGiamGia from "@/components/admin/SuaDotGiamGia.vue";
 import PhieuGiamGiaBH from "@/components/admin/PhieuGiamGiaBH.vue";
@@ -41,6 +45,9 @@ import HoaDon from "../components/admin/HoaDon.vue";
 import HoaDonChiTiet from "@/components/admin/HoaDonChiTiet.vue";
 import BanHang from "@/components/admin/BanHang.vue";
 import ThongKeTongHop from "@/components/admin/ThongKeTongHop.vue";
+import TrangChu from "@/components/admin/TrangChu.vue";
+import DangNhapCustomer from "@/components/admin/DangNhapCustomer.vue";
+
 import ThongKeBaoCao from "@/components/admin/ThongKeBaoCao.vue";
 import Test1 from "@/components/admin/Test1.vue";
 
@@ -49,6 +56,113 @@ const router = createRouter({
   routes: [
     // --- CLIENT ROUTES ---
     {
+      path: "/hoa-don",
+      name: "hoadon",
+      component: HoaDon,
+    },
+    {
+      path: "/hoa-don-chi-tiet/:maHoaDon",
+      name: "hoadonchitiet",
+      path: "/ban-hang-test",
+      name: "banhangtest",
+      component: BanHangTest,
+    },
+    {
+      path: "/hoa-don-chi-tiet/:maHoaDon",
+      name: "hoadonchitiet",
+      component: HoaDonChiTiet,
+      props: true,
+    },
+    {
+      path: "/ban-hang",
+      name: "banhang",
+      component: BanHang,
+    },
+    {
+      path: "/san-pham/chat-lieu",
+      name: "chat-lieu",
+      component: ChatLieu,
+    },
+    {
+      path: "/san-pham/tay-ao",
+      name: "tay-ao",
+      component: TayAo,
+    },
+    {
+      path: "/san-pham/co-ao",
+      name: "co-ao",
+      component: CoAo,
+    },
+    {
+      path: "/san-pham/mau",
+      name: "mau",
+      component: Mau,
+    },
+    {
+      path: "/san-pham/kich-co",
+      name: "kich-co",
+      component: KichCo,
+    },
+    {
+      path: "/san-pham/kieu-ao",
+      name: "kieu-ao",
+      component: KieuAo,
+    },
+    {
+      path: "/san-pham",
+      name: "san-pham",
+      component: SanPham,
+    },
+    {
+      path: "/san-pham/add",
+      name: "them-san-pham",
+      component: ThemSP,
+    },
+    {
+      path: "/san-pham/chi-tiet-san-pham/:id1",
+      name: "chi-tiet-san-pham",
+      component: ChiTietSanPham,
+    },
+    {
+      path: "/san-pham/danh-muc",
+      name: "danh-muc",
+      component: DanhMuc,
+    },
+    {
+      path: "/test",
+      name: "test",
+      component: Test1,
+    },
+    {
+      path: "/khach-hang",
+      name: "khachhang",
+      component: QuanLyKhachHang,
+    },
+    {
+      path: "/khach-hang/add",
+      name: "AddKhachHang",
+      component: KhachHangAddPage,
+    },
+    {
+      path: "/khach-hang/edit/:id", // Đường dẫn với tham số ID để sửa
+      name: "EditKhachHang",
+      component: KhachHangEditPage,
+      props: true, // Quan trọng: Truyền params làm props cho component
+    },
+    {
+      path: "/nhan-vien",
+      name: "nhanvien",
+      component: NhanVien,
+    },
+    {
+      path: "/nhan-vien/them",
+      name: "themnhanvien",
+      component: ThemNhanVien,
+    },
+    {
+      path: "/nhan-vien/sua/:id",
+      name: "SuaNhanVien",
+      component: () => import("@/components/admin/ThemNhanVien.vue"),
       path: "/coolmen", // Đường dẫn gốc cho client
       component: ClientLayout, // Sẽ render ClientLayout và RouterView bên trong nó
       children: [
@@ -72,6 +186,10 @@ const router = createRouter({
       name: "ForgotPassword",
       component: QuenMatKhau,
     },
+    {
+      path: "/thong-tin-ca-nhan",
+      name: "ThongTinCaNhan",
+      component: () => import("@/components/admin/ThongTinNhanVien.vue"),
 
     // --- ADMIN LAYOUT ROUTES ---
     // Mọi route con sẽ được hiển thị bên trong AdminLayout
@@ -278,12 +396,30 @@ const router = createRouter({
 
     // --- Catch-all route (404 Not Found) ---
     {
+      path: "/thong-ke",
+      name: "thongke",
+      component: ThongKeTongHop,
       path: "/:pathMatch(.*)*",
       name: "NotFound",
       component: {
         template:
           "<div><h1>404 Not Found</h1><p>The page you are looking for does not exist.</p></div>",
       },
+    },
+    {
+      path: "/chat",
+      name: "chat",
+      component: Chat,
+    },
+    {
+      path: "/",
+      name: "trang-chu",
+      component: TrangChu,
+    },
+    {
+      path: "/dang-nhap-khach-hang",
+      name: "dang-nhap-khach-hang",
+      component: DangNhapCustomer,
     },
   ],
 });
@@ -292,6 +428,14 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = Cookies.get("token");
 
+  // ✅ 1. Chưa có token => chỉ cho phép vào /dang-nhap và /quen-mat-khau
+  if (!token && !["/dang-nhap", "/quen-mat-khau","/","/dang-nhap-khach-hang"].includes(to.path)) {
+    return next("/dang-nhap");
+  }
+
+  // ✅ 2. Đã có token nhưng vào lại /dang-nhap => đá về /
+  if (token && to.path === "/dang-nhap") {
+    return next("/san-pham");
   if (to.meta.requiresAuth && !token) {
     return next("/dang-nhap");
   }
@@ -310,7 +454,7 @@ router.beforeEach((to, from, next) => {
       }
 
       if (vaiTro === "STAFF" && to.path.startsWith("/nhan-vien")) {
-        return next("/");
+        return next("/san-pham");
       }
     } catch (err) {
       console.error("Error decoding token:", err);
