@@ -195,6 +195,14 @@ const validateForm = () => {
       valid = false;
     }
   }
+  // Kiểm tra trùng tên nhân viên
+  if (formData.value.tenNhanVien) {
+    const existedName = allNhanVien.value.some(nv => nv.tenNhanVien.trim().toLowerCase() === formData.value.tenNhanVien.trim().toLowerCase() && (!route.params.id || nv.id != route.params.id));
+    if (existedName) {
+      fieldErrors.value.tenNhanVien = 'Tên nhân viên đã tồn tại';
+      valid = false;
+    }
+  }
 
   // Validate email format
   if (formData.value.email) {

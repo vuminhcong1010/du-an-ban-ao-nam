@@ -1,22 +1,26 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, computed, nextTick } from 'vue';
 import axios from 'axios';
 import Cookies from 'js-cookie'
 import Datepicker from '@vuepic/vue-datepicker'
 import '@vuepic/vue-datepicker/dist/main.css'
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { useToast } from 'vue-toastification';
+import Swal from 'sweetalert2';
 
 
 const token = Cookies.get('token')
 
 const selectedReport = ref('cuoi-ngay')
-const selectedDate = ref('2025-07-23')
+const selectedDate = ref(new Date().toISOString().slice(0, 10)) // yyyy-mm-dd
 const baoCaoData = ref([])
 const ngayLap = ref('')
 const hienChiTiet = ref(false)
 const chonThoiGian = ref("mac-dinh")
 
 // Chọn ngày mặc định (1 ngày)
-const ngayMacDinh = ref()
+const ngayMacDinh = ref(new Date())
 
 // Giờ bắt đầu và kết thúc
 const gioBatDau = ref("")
@@ -33,34 +37,123 @@ function selectReport(type) {
     baoCaoData.value = []
   }
 }
+const nhanVienDuocChon = ref("")
+const danhSachNhanVien = ref([])
 
-const nhanVienDuocChon = ref([])
-const danhSachNhanVien = ref([
-  { id: 1, ten: "Lê Thị Bảo Trân" },
-  { id: 2, ten: "Nguyễn Văn A" },
-  // ...
-])
+const phuongThucThanhToan = ref("") // chỉ chọn 1 phương thức
+const danhSachPhuongThuc = ref([]) // lấy từ API
 
-const nguoiTaoDuocChon = ref([])
-const danhSachNguoiTao = ref([
-  { id: 1, ten: "tuyen" },
-  { id: 2, ten: "Nguyễn Thị Thái Hòa" },
-  // ...
-])
+// Hàm ánh xạ mã sang tên tiếng Việt cho phương thức thanh toán
+const getTenPhuongThuc = (ma) => {
+  if (!ma) return '';
+  switch (ma) {
+    case 'tien_mat':
+      return 'Tiền mặt';
+    case 'chuyen_khoan':
+      return 'Chuyển khoản';
+    case 'the_tin_dung':
+      return 'Thẻ tín dụng';
+    // Thêm các trường hợp khác nếu có
+    default:
+      return ma;
+  }
+};
 
-const phuongThucThanhToan = ref("")
-const danhSachPhuongThuc = ref(["Tiền mặt", "Chuyển khoản", "Momo", "VNPay"])
+async function fetchPhuongThucThanhToan() {
+  try {
+    const res = await axios.get('http://localhost:8080/hoa-don/api/HinhThuThanhToan', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    // Map lại dữ liệu để lấy tên tiếng Việt, bỏ các bản ghi null
+    danhSachPhuongThuc.value = Array.isArray(res.data)
+      ? res.data
+          .filter(pt => pt.phuongThucThanhToan) // Bỏ các bản ghi null
+          .map(pt => ({
+            id: pt.id,
+            ma: pt.phuongThucThanhToan,
+            ten: getTenPhuongThuc(pt.phuongThucThanhToan)
+          }))
+      : [];
+  } catch (err) {
+    console.error('Lỗi tải phương thức thanh toán:', err)
+  }
+}
 async function fetchBaoCaoCuoiNgay() {
   try {
+    let params = { date: selectedDate.value }
+    if (chonThoiGian.value === 'mac-dinh' && gioBatDau.value && gioKetThuc.value) {
+      params.startTime = gioBatDau.value
+      params.endTime = gioKetThuc.value
+    }
+    if (nhanVienDuocChon.value) {
+      // Tìm id theo tên
+      const nv = danhSachNhanVien.value.find(nv => nv.ten === nhanVienDuocChon.value)
+      if (nv) params.idNhanVien = nv.id
+    }
+    if (phuongThucThanhToan.value) {
+      params.idPhuongThucThanhToan = phuongThucThanhToan.value
+    }
     const res = await axios.get('http://localhost:8080/hoa-don/bao-cao/cuoi-ngay', {
-      params: { date: selectedDate.value },
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      params,
+      headers: { Authorization: `Bearer ${token}` }
     })
     baoCaoData.value = res.data
+    await nextTick() // Đảm bảo computed được cập nhật
   } catch (err) {
     console.error('Lỗi tải báo cáo cuối ngày:', err)
+    baoCaoData.value = [] // Reset về mảng rỗng nếu có lỗi
+    await nextTick()
+  }
+}
+
+// Theo dõi thay đổi ngày hoặc giờ để tự động gọi API
+watch([ngayMacDinh, gioBatDau, gioKetThuc, chonThoiGian, ngayKhoang], ([ngay, start, end, mode, khoang]) => {
+  if (selectedReport.value !== 'cuoi-ngay') return
+  if (mode === 'mac-dinh') {
+    selectedDate.value = ngay instanceof Date ? ngay.toISOString().slice(0, 10) : ngay
+    fetchBaoCaoCuoiNgay()
+  } else if (mode === 'tuy-chinh' && Array.isArray(khoang) && khoang[0] && khoang[1]) {
+    fetchBaoCaoKhoangNgay(khoang[0], khoang[1])
+  }
+}, { immediate: true })
+
+// Sắp xếp theo ngày tạo mới nhất lên đầu (bỏ dòng tổng cuối)
+function sortByNgayTaoDesc(data) {
+  if (!Array.isArray(data) || data.length === 0) return data;
+  const chiTiet = data.slice(0, -1);
+  const tong = data.at(-1);
+  chiTiet.sort((a, b) => {
+    if (a.ngayTao && b.ngayTao) {
+      return new Date(b.ngayTao) - new Date(a.ngayTao);
+    }
+    return 0;
+  });
+  return [...chiTiet, tong];
+}
+
+async function fetchBaoCaoKhoangNgay(start, end) {
+  try {
+    // start, end là Date object
+    const startDate = start instanceof Date ? start.toISOString().slice(0, 10) : start
+    const endDate = end instanceof Date ? end.toISOString().slice(0, 10) : end
+    let params = { startDate, endDate }
+    if (nhanVienDuocChon.value) {
+      const nv = danhSachNhanVien.value.find(nv => nv.ten === nhanVienDuocChon.value)
+      if (nv) params.idNhanVien = nv.id
+    }
+    if (phuongThucThanhToan.value) {
+      params.idPhuongThucThanhToan = phuongThucThanhToan.value
+    }
+    const res = await axios.get('http://localhost:8080/hoa-don/bao-cao/khoang-ngay', {
+      params,
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    baoCaoData.value = sortByNgayTaoDesc(res.data)
+    await nextTick() // Đảm bảo computed được cập nhật
+  } catch (err) {
+    console.error('Lỗi tải báo cáo theo khoảng ngày:', err)
+    baoCaoData.value = [] // Reset về mảng rỗng nếu có lỗi
+    await nextTick()
   }
 }
 
@@ -73,11 +166,111 @@ function formatCurrency(value) {
   })
 }
 
+const toast = useToast();
+const showExporting = ref(false);
+const showExportSuccess = ref(false);
+
+async function exportToPDF() {
+  showExporting.value = true;
+  showExportSuccess.value = false;
+  // Chọn vùng cần xuất PDF (báo cáo)
+  const reportEl = document.querySelector('.bao-cao-wrapper');
+  if (!reportEl) {
+    showExporting.value = false;
+    toast.error('Không tìm thấy nội dung báo cáo để xuất PDF!');
+    return;
+  }
+  try {
+    const canvas = await html2canvas(reportEl, { scale: 2 });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    // Tính toán kích thước ảnh phù hợp
+    const imgWidth = pageWidth - 40;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+    pdf.addImage(imgData, 'PNG', 20, 20, imgWidth, imgHeight);
+    // Hiện hộp thoại lưu file
+    pdf.save('bao-cao-ban-hang.pdf');
+    showExportSuccess.value = true;
+    toast.success('Xuất file PDF thành công!');
+  } catch (e) {
+    toast.error('Có lỗi khi xuất PDF: ' + e.message);
+  } finally {
+    showExporting.value = false;
+  }
+}
+function formatDate(date) {
+  const d = new Date(date)
+  const pad = (n) => (n < 10 ? '0' + n : n)
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+}
+
+async function confirmExportPDF() {
+  const result = await Swal.fire({
+    icon: 'warning',
+    title: 'Xác nhận xuất PDF?',
+    text: 'Bạn có chắc chắn muốn xuất báo cáo ra file PDF không?',
+    showCancelButton: true,
+    confirmButtonText: 'Có, xuất ngay!',
+    cancelButtonText: 'Hủy bỏ',
+    reverseButtons: true,
+    customClass: {
+      confirmButton: 'swal2-confirm btn-save',
+      cancelButton: 'swal2-cancel btn-cancel'
+    }
+  });
+  if (result.isConfirmed) {
+    await exportToPDF();
+  }
+}
+
 onMounted(() => {
   const now = new Date()
   const pad = (n) => (n < 10 ? '0' + n : n)
   ngayLap.value = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`
+  // Gọi báo cáo ngay khi vào view
+  fetchBaoCaoCuoiNgay()
+  fetchNhanVienList()
+  fetchPhuongThucThanhToan();
 })
+
+async function fetchNhanVienList() {
+  try {
+    const res = await axios.get('http://localhost:8080/hoa-don/api/NhanVien', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    // Map dữ liệu trả về thành { id, ten }
+    const mapped = Array.isArray(res.data) ? res.data.map(nv => ({ id: nv.id, ten: nv.tenNhanVien })) : []
+    danhSachNhanVien.value = mapped
+  } catch (err) {
+    console.error('Lỗi tải danh sách nhân viên:', err)
+  }
+}
+
+// Thêm biến computed cho ngày bán/ngày thanh toán
+const ngayBanHienThi = computed(() => {
+  if (chonThoiGian.value === 'tuy-chinh' && Array.isArray(ngayKhoang.value) && ngayKhoang.value[0] && ngayKhoang.value[1]) {
+    return `Từ ngày ${formatDate(ngayKhoang.value[0])} đến ngày ${formatDate(ngayKhoang.value[1])}`;
+  } else if (chonThoiGian.value === 'mac-dinh' && ngayMacDinh.value) {
+    return formatDate(ngayMacDinh.value);
+  } else {
+    return '';
+  }
+});
+
+watch([nhanVienDuocChon, phuongThucThanhToan], () => {
+  if (selectedReport.value !== 'cuoi-ngay') return;
+  if (chonThoiGian.value === 'mac-dinh') {
+    fetchBaoCaoCuoiNgay();
+  } else if (chonThoiGian.value === 'tuy-chinh' && Array.isArray(ngayKhoang.value) && ngayKhoang.value[0] && ngayKhoang.value[1]) {
+    fetchBaoCaoKhoangNgay(ngayKhoang.value[0], ngayKhoang.value[1]);
+  }
+});
+
+const hasChiTiet = computed(() => baoCaoData.value.some(item => item.maHoaDon));
 </script>
 
 <template>
@@ -102,57 +295,51 @@ onMounted(() => {
         <div class="thoi-gian-filter">
           <label>Thời gian <span class="dot-xanh">●</span></label>
 
-          <!-- Ngày mặc định -->
-          <div class="time-option">
-            <input type="radio" id="mac-dinh" value="mac-dinh" v-model="chonThoiGian" />
-            <Datepicker v-model="ngayMacDinh" :enable-time-picker="false" :format="'dd/MM/yyyy'" placeholder="Chọn ngày"
-              style="margin-left: 10px; width: 150px;" />
-          </div>
+          <div class="thoi-gian-noi-dung">
+            <div class="chon-ngay">
+              <div class="time-option">
+                <input type="radio" id="mac-dinh" value="mac-dinh" v-model="chonThoiGian" />
+                <Datepicker v-model="ngayMacDinh" :enable-time-picker="false" :format="'dd/MM/yyyy'"
+                  placeholder="Chọn ngày" class="bo-loc-input" />
+              </div>
 
-          <!-- Tùy chỉnh (khoảng ngày) -->
-          <div class="time-option" style="margin-top: 10px;">
-            <input type="radio" id="tuy-chinh" value="tuy-chinh" v-model="chonThoiGian" />
-            <Datepicker v-model="ngayKhoang" :range="true" :enable-time-picker="false" :format="'dd/MM/yyyy'"
-              placeholder="Chọn khoảng ngày" style="margin-left: 10px; width: 220px;" />
-          </div>
+              <div class="time-option" style="margin-top: 6px;">
+                <input type="radio" id="tuy-chinh" value="tuy-chinh" v-model="chonThoiGian" />
+                <Datepicker v-model="ngayKhoang" :range="true" :enable-time-picker="false" :format="'dd/MM/yyyy'"
+                  placeholder="Chọn khoảng ngày" class="bo-loc-input" />
+              </div>
+            </div>
 
-          <!-- Input giờ luôn hiển thị cho cả 2 -->
-          <div class="time-range" style="margin-left: 30px; margin-top: 5px;">
-            <input type="time" v-model="gioBatDau" placeholder="" />
-            <input type="time" v-model="gioKetThuc" placeholder="" />
+            <div class="time-range" v-if="chonThoiGian === 'mac-dinh'">
+              <input type="time" v-model="gioBatDau" class="bo-loc-input" />
+              <input type="time" v-model="gioKetThuc" class="bo-loc-input" />
+            </div>
           </div>
         </div>
 
         <!-- Nhân viên -->
-        <label>Nhân Viên  <span class="dot-xanh">●</span></label>
-        <select v-model="nhanVienDuocChon">
-          <option value="">Chọn nhân viên</option>
-          <option v-for="nv in danhSachNhanVien" :key="nv.id" :value="nv.ten">
-            {{ nv.ten }}
-          </option>
-        </select>
-
-        <!-- Người tạo -->
-        <label>Người tạo  <span class="dot-xanh">●</span></label>
-        <select v-model="nguoiTaoDuocChon">
-          <option value="">Chọn người tạo</option>
-          <option v-for="nt in danhSachNguoiTao" :key="nt.id" :value="nt.ten">
-            {{ nt.ten }}
-          </option>
-        </select>
-
-
+        <div class="bo-loc-item">
+          <label>Nhân Viên <span class="dot-xanh">●</span></label>
+          <select v-model="nhanVienDuocChon" class="bo-loc-input">
+            <option value="">Chọn nhân viên</option>
+            <option v-for="nv in danhSachNhanVien" :key="nv.id" :value="nv.ten">
+              {{ nv.ten }}
+            </option>
+          </select>
+        </div>
         <!-- Phương thức thanh toán -->
         <div class="bo-loc-item">
-          <label>Phương thức thanh toán</label>
-          <select v-model="phuongThucThanhToan">
+          <label>Phương thức thanh toán<span class="dot-xanh">●</span></label>
+          <select v-model="phuongThucThanhToan" class="bo-loc-input">
             <option value="">Chọn phương thức thanh toán</option>
-            <option v-for="pt in danhSachPhuongThuc" :key="pt" :value="pt">
-              {{ pt }}
+            <option v-for="pt in danhSachPhuongThuc" :key="pt.id" :value="pt.id">
+              {{ pt.ten }}
             </option>
           </select>
         </div>
       </div>
+      <!-- Nút xuất PDF -->
+      <button class="export-pdf-btn" @click="confirmExportPDF">Xuất PDF</button>
     </div>
     <!-- BÁO CÁO CUỐI NGÀY -->
     <div class="bao-cao-wrapper" v-if="selectedReport === 'cuoi-ngay'">
@@ -161,8 +348,9 @@ onMounted(() => {
       </div>
       <div class="report-header">
         <h2>Báo cáo cuối ngày về bán hàng</h2>
-        <p><strong>Ngày bán:</strong> {{ selectedDate }}</p>
-        <p><strong>Ngày thanh toán:</strong> {{ selectedDate }}</p>
+        <p><strong>Ngày bán:</strong> {{ ngayBanHienThi }}</p>
+        <p><strong>Ngày thanh toán:</strong> {{ ngayBanHienThi }}</p>
+        <p v-if="nhanVienDuocChon"><strong>Nhân viên:</strong> {{ nhanVienDuocChon }}</p>
       </div>
 
       <table class="report-table">
@@ -172,52 +360,54 @@ onMounted(() => {
             <th>Thời gian</th>
             <th>SL</th>
             <th>Doanh thu</th>
+            <th>Phí vận chuyển</th>
+            <th>Thực Thu</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody v-if="hasChiTiet">
           <tr class="row-tong" @click="hienChiTiet = !hienChiTiet" style="cursor: pointer;"
             v-if="baoCaoData.length > 1">
             <td><strong>Hóa đơn: {{ baoCaoData.length - 1 }}</strong></td>
             <td>-</td>
             <td><strong>{{ baoCaoData.at(-1)?.tongSoLuong ?? 0 }}</strong></td>
             <td><strong>{{ formatCurrency(baoCaoData.at(-1)?.tongDoanhThu) }}</strong></td>
+            <td><strong>{{ formatCurrency(baoCaoData.at(-1)?.tongPhiVanChuyen) }}</strong></td>
+            <td>
+              <strong>
+                {{
+                  formatCurrency(
+                    (baoCaoData.at(-1)?.tongDoanhThu || 0) -
+                    (baoCaoData.at(-1)?.tongPhiVanChuyen || 0)
+                  )
+                }}
+              </strong>
+            </td>
           </tr>
 
-          <!-- DÒNG CHI TIẾT - chỉ hiện nếu hienChiTiet = true -->
+          <!-- Chi tiết -->
           <tr v-for="(item, index) in baoCaoData.slice(0, -1)" :key="index" v-show="hienChiTiet">
             <td>{{ item.maHoaDon }}</td>
-            <td>{{ item.thoiGian }}</td>
+            <td>{{ item.ngayTao ? item.ngayTao : item.thoiGian }}</td>
             <td>{{ item.soLuong }}</td>
             <td>{{ formatCurrency(item.doanhThu) }}</td>
+            <td>{{ formatCurrency(item.phiVanChuyen) }}</td>
+            <td>{{ formatCurrency((item.doanhThu || 0) - (item.phiVanChuyen || 0)) }}</td>
+          </tr>
+        </tbody>
+        <tbody v-else>
+          <tr>
+            <td colspan="6" style="background: #f7f3e3; color: #3a2d0c; text-align: center; font-style: italic; font-size: 20px; padding: 32px;">
+              Báo cáo không có dữ liệu
+            </td>
           </tr>
         </tbody>
       </table>
+
     </div>
   </div>
 </template>
 
 <style>
-.time-option input[type="radio"] {
-  accent-color: #007aff;
-  /* Bo tròn xanh khi chọn */
-}
-
-.time-option input[type="radio"]:checked+label+.dp__main {
-  border: 1.5px solid #007aff !important;
-  border-radius: 6px;
-}
-
-.time-option input[type="radio"]:checked+.dp__main {
-  border: 1.5px solid #007aff !important;
-  border-radius: 6px;
-}
-
-.dp__main:focus-within {
-  border-color: #007aff !important;
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
-  border-radius: 6px;
-}
-
 .thoi-gian-filter {
   display: flex;
   flex-direction: column;
@@ -246,9 +436,12 @@ onMounted(() => {
 }
 
 .thoi-gian-filter input[type="time"] {
+  width: 110px !important;
+  min-width: 110px;
+  max-width: 110px;
+  height: 38px;
   padding: 6px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  font-size: 14px;
 }
 
 .dot-xanh {
@@ -321,6 +514,7 @@ onMounted(() => {
   margin: 20px 0;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
   font-family: 'Segoe UI', sans-serif;
+  position: relative; /* Thêm để đặt nút xuất PDF */
 }
 
 .bo-loc-header {
@@ -340,15 +534,19 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 24px;
-  align-items: flex-end;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
-.bo-loc-item {
+.bo-loc-item, .thoi-gian-filter {
+  flex: 1 1 0;
+  min-width: 220px;
+  max-width: 320px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 200px;
-  flex: 1;
+  height: 100%;
+  justify-content: stretch;
 }
 
 .bo-loc-item label {
@@ -358,31 +556,6 @@ onMounted(() => {
   margin-bottom: 4px;
 }
 
-.bo-loc-item select,
-input[type="time"],
-.dp__main {
-  padding: 8px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background-color: #fff;
-  font-size: 14px;
-  transition: border-color 0.2s;
-}
-
-.bo-loc-item select:focus,
-input[type="time"]:focus,
-.dp__main:focus-within {
-  border-color: #007aff;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
-}
-
-.time-option {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 5px;
-}
 
 .time-range {
   display: flex;
@@ -390,17 +563,16 @@ input[type="time"]:focus,
   margin-top: 10px;
 }
 
-.thoi-gian-filter {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 280px;
-  flex: 1.2;
-}
-
-.thoi-gian-filter label {
-  font-weight: 600;
-  margin-bottom: 6px;
+/* Chiều rộng cho tất cả bộ lọc */
+.bo-loc-input,
+.bo-loc-item select,
+.dp__main {
+  width: 200px !important;
+  min-width: 200px;
+  max-width: 200px;
+  height: 38px;
+  padding: 6px 10px;
+  font-size: 14px;
 }
 
 .dot-xanh {
@@ -427,5 +599,60 @@ input[type="time"]:focus,
 
 .submenu-horizontal button:hover {
   color: #0056b3;
+}
+
+.bo-loc-input,
+.bo-loc-item select,
+input[type="time"],
+.dp__main {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  font-size: 16px;
+  box-sizing: border-box;
+  padding: 6px 10px;
+}
+
+/* Nút xuất PDF */
+.export-pdf-btn {
+  position: absolute;
+  right: 30px;
+  bottom: 20px;
+  background: #007aff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  z-index: 10;
+  transition: background 0.2s;
+}
+.export-pdf-btn:hover {
+  background: #0056b3;
+}
+
+/* Toast thông báo xuất file */
+.export-toast {
+  position: fixed;
+  right: 40px;
+  bottom: 40px;
+  background: #fff;
+  color: #333;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  padding: 18px 32px;
+  font-size: 18px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.export-toast.exporting {
+  border-left: 6px solid #007aff;
+}
+.export-toast.success {
+  border-left: 6px solid #28a745;
 }
 </style>
