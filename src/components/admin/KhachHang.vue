@@ -112,6 +112,8 @@ const chonDiaChi = async (dc) => {
 
   // Đóng popup sau khi chọn xong
   popupVisible.value = false;
+  // ✅ THÊM DÒNG NÀY để đảm bảo cập nhật địa chỉ sang order
+  // capNhatOrderKhachHang();
 };
 
 const danhSachTinh = ref([]);
@@ -202,7 +204,7 @@ const isUpdatingFromProps = ref(false);
 
 // Gọi khi chọn khách, chọn địa chỉ, hoặc thay đổi input
 watch(
-  [khachHangDuocChon, diaChiGiaoHang, phuongThucVanChuyen, tenNguoiNhan, sdtNguoiNhan],
+  [khachHangDuocChon, diaChiGiaoHang, tenNguoiNhan, sdtNguoiNhan, phuongThucVanChuyen],
   () => {
     if (!isUpdatingFromProps.value) {
       capNhatOrderKhachHang();
@@ -249,7 +251,18 @@ watch(
   { immediate: true, deep: true }
 );
 
-
+// theo dõi địa chỉ:
+watch([
+  () => diaChiGiaoHang.value.diaChiChiTiet,
+  () => diaChiGiaoHang.value.xaPhuong,
+  () => diaChiGiaoHang.value.quanHuyen,
+  () => diaChiGiaoHang.value.tinhThanhPho,
+], () => {
+  if (!isUpdatingFromProps.value) {
+    // diaChiDayDu();
+    capNhatOrderKhachHang();
+  }
+});
 </script>
 
 <template>

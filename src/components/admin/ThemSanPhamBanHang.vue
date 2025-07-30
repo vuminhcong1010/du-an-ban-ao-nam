@@ -65,10 +65,10 @@ const toggleSelection = (item) => {
   );
   if (index === -1) {
     selectedItems.value.push(item);
-    quantities.value[item.maChiTietSapPham] = 1;
+    // quantities.value[item.maChiTietSapPham] = 1;
   } else {
     selectedItems.value.splice(index, 1);
-    delete quantities.value[item.maChiTietSapPham];
+    // delete quantities.value[item.maChiTietSapPham];
   }
 };
 
@@ -79,8 +79,13 @@ const apply = () => {
       ...item,
       idSanPhamChiTiet: item.maChiTietSapPham,
       soLuong: 1, // gán mặc định là 1
+      soLuongTruocDo: 1,
+      giaGoc: item.gia,
+      kho: item.soLuong,
       thanhTien: item.gia,
       idHoaDon: maHoaDon,
+      baoGiaThayDoi: false,
+      giaMoi:"",
     };
   });
 

@@ -22,7 +22,8 @@ if (!token) {
     const payload = JSON.parse(atob(token.split('.')[1]))
     const exp = payload.exp
     const now = Math.floor(Date.now() / 1000)
-    image.value =`localhost:8080`+payload.anh
+    // image.value =`localhost:8080`+payload.anh
+    image.value =`http://localhost:8080`+payload.anh
     tenNhanVien.value = payload.tenNhanVien
     if (exp <= now) {
       console.warn("⛔ Token đã hết hạn")
@@ -113,7 +114,7 @@ function removeToken(){
   <!-- Menu xổ xuống -->
   <ul class="dropdown-menu">
     <li><a class="dropdown-item fw-medium" href="/thong-tin-ca-nhan"><i class="fa-regular fa-user me-2"></i>Thông tin cá nhân</a></li>
-    <li><a class="dropdown-item fw-medium" data-bs-toggle="modal" data-bs-target="#exampleModal"><Lock class="mb-1 me-1" style="width: 19px; height: 19px;margin-left: -3px;" /> Đổi mật khẩu</a></li>
+    <li><a class="dropdown-item fw-medium" data-bs-toggle="modal" data-bs-target="#doiMatKhau"><Lock class="mb-1 me-1" style="width: 19px; height: 19px;margin-left: -3px;" /> Đổi mật khẩu</a></li>
     <li><div class="dropdown-item fw-medium" @click="removeToken()"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i>Logout</div></li>
   </ul>
 </div>
@@ -122,11 +123,11 @@ function removeToken(){
   
 
 <!-- Modal -->
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="doiMatKhau" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Đổi mật khẩu</h1>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
