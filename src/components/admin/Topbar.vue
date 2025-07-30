@@ -28,7 +28,6 @@ if (!token) {
     const now = Math.floor(Date.now() / 1000)
     image.value =`http://localhost:8080`+payload.anh
     console.log('image.value', payload.anh);
-    
     tenNhanVien.value = payload.tenNhanVien
     if (exp <= now) {
       console.warn("⛔ Token đã hết hạn")
@@ -85,7 +84,7 @@ const handleSubmit = () => {
 function removeToken(){
   axios.post("http://localhost:8080/log-out",req)
   Cookies.remove('token')
-  window.location.href = "/login"
+  window.location.href = "/dang-nhap"
   trangThai.value = false
 
 }

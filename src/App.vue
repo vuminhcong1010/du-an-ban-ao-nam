@@ -1,3 +1,4 @@
+
 <script setup>
 import { ref, provide, watch } from 'vue';
 import { useRoute } from 'vue-router';
@@ -69,6 +70,7 @@ const routesWithComponents = [
   '/thong-ke',
   '/thong-tin-ca-nhan'
 ];
+
 
 // Theo dõi sự thay đổi của route
 watch(

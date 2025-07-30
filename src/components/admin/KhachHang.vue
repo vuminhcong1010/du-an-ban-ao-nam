@@ -112,6 +112,8 @@ const chonDiaChi = async (dc) => {
 
   // Đóng popup sau khi chọn xong
   popupVisible.value = false;
+  // ✅ THÊM DÒNG NÀY để đảm bảo cập nhật địa chỉ sang order
+  // capNhatOrderKhachHang();
 };
 
 const danhSachTinh = ref([]);
@@ -126,27 +128,27 @@ onMounted(async () => {
   const res = await axios.get("https://provinces.open-api.vn/api/?depth=1");
   danhSachTinh.value = res.data;
   // Nếu đã có địa chỉ từ trước thì tự động load lại danh sách quận và phường tương ứng
-if (diaChiGiaoHang.value.tinhThanhPho) {
-  const tinh = danhSachTinh.value.find(
-    (t) => t.name === diaChiGiaoHang.value.tinhThanhPho
-  );
-  if (tinh) {
-    const resQuan = await axios.get(
-      `https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`
+  if (diaChiGiaoHang.value.tinhThanhPho) {
+    const tinh = danhSachTinh.value.find(
+      (t) => t.name === diaChiGiaoHang.value.tinhThanhPho
     );
-    danhSachQuan.value = resQuan.data.districts;
-
-    const quan = danhSachQuan.value.find(
-      (q) => q.name === diaChiGiaoHang.value.quanHuyen
-    );
-    if (quan) {
-      const resPhuong = await axios.get(
-        `https://provinces.open-api.vn/api/d/${quan.code}?depth=2`
+    if (tinh) {
+      const resQuan = await axios.get(
+        `https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`
       );
-      danhSachPhuong.value = resPhuong.data.wards;
+      danhSachQuan.value = resQuan.data.districts;
+
+      const quan = danhSachQuan.value.find(
+        (q) => q.name === diaChiGiaoHang.value.quanHuyen
+      );
+      if (quan) {
+        const resPhuong = await axios.get(
+          `https://provinces.open-api.vn/api/d/${quan.code}?depth=2`
+        );
+        danhSachPhuong.value = resPhuong.data.wards;
+      }
     }
   }
-}
 
 });
 
@@ -190,7 +192,7 @@ const diaChiDayDu = computed(() => {
 const capNhatOrderKhachHang = () => {
   emit("capNhatThongTinKhachHang", {
     idKhachHang: khachHangDuocChon.value?.id || null,
-    tenKhachHang: khachHangDuocChon.value?.tenKhachHang || "",
+    tenKhachHang: khachHangDuocChon.value?.tenKhachHang || "Khách lẻ",
     tenNguoiNhan: tenNguoiNhan.value,
     sdt: sdtNguoiNhan.value,
     diaChi: diaChiDayDu.value,
@@ -202,7 +204,7 @@ const isUpdatingFromProps = ref(false);
 
 // Gọi khi chọn khách, chọn địa chỉ, hoặc thay đổi input
 watch(
-  [khachHangDuocChon, diaChiGiaoHang, phuongThucVanChuyen, tenNguoiNhan, sdtNguoiNhan],
+  [khachHangDuocChon, diaChiGiaoHang, tenNguoiNhan, sdtNguoiNhan, phuongThucVanChuyen],
   () => {
     if (!isUpdatingFromProps.value) {
       capNhatOrderKhachHang();
@@ -249,7 +251,18 @@ watch(
   { immediate: true, deep: true }
 );
 
-
+// theo dõi địa chỉ:
+watch([
+  () => diaChiGiaoHang.value.diaChiChiTiet,
+  () => diaChiGiaoHang.value.xaPhuong,
+  () => diaChiGiaoHang.value.quanHuyen,
+  () => diaChiGiaoHang.value.tinhThanhPho,
+], () => {
+  if (!isUpdatingFromProps.value) {
+    // diaChiDayDu();
+    capNhatOrderKhachHang();
+  }
+});
 </script>
 
 <template>
@@ -259,17 +272,12 @@ watch(
       <div class="bg-white p-3 rounded mb-4 align-items-center border">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">👤 Khách hàng</h5>
-          <button
-            class="btn border rounded-circle d-flex align-items-center justify-content-center"
-            style="
+          <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
               width: 36px;
               height: 36px;
               background-color: #0a2c57;
               color: white;
-            "
-            title="Chọn khách hàng"
-            @click="moPopupChonKhach"
-          >
+            " title="Chọn khách hàng" @click="moPopupChonKhach">
             <UserCog size="20" />
           </button>
         </div>
@@ -279,23 +287,24 @@ watch(
             <strong>Tên khách hàng:</strong>
             {{ khachHangDuocChon.tenKhachHang }}
           </div>
-          <div class="mb-2">
-            <strong>Số điện thoại:</strong> {{ khachHangDuocChon.soDienThoai }}
-          </div>
-          <div class="mb-2">
-            <strong>Email:</strong>
-            {{ khachHangDuocChon.email || "Chưa cập nhật" }}
-          </div>
-          <div class="mb-2">
-            <strong>Giới tính:</strong>
-            {{ khachHangDuocChon.gioiTinh ? "Nam" : "Nữ" }}
-          </div>
-          <button
-            class="btn btn-sm btn-outline-danger mt-2"
-            @click="boChonKhachHang"
-          >
+          <!-- Chỉ hiển thị các thông tin khác nếu KHÔNG phải khách lẻ -->
+          <template v-if="khachHangDuocChon.id">
+            <div class="mb-2">
+              <strong>Số điện thoại:</strong> {{ khachHangDuocChon.soDienThoai }}
+            </div>
+            <div class="mb-2">
+              <strong>Email:</strong>
+              {{ khachHangDuocChon.email || "Chưa cập nhật" }}
+            </div>
+            <div class="mb-2">
+              <strong>Giới tính:</strong>
+              {{ khachHangDuocChon.gioiTinh ? "Nam" : "Nữ" }}
+            </div>
+               <button class="btn btn-sm btn-outline-danger mt-2" @click="boChonKhachHang">
             Bỏ chọn khách hàng
           </button>
+          </template>
+       
         </div>
         <div v-else class="text-muted"> <strong>Tên khách hàng:</strong> Khách lẻ.</div>
       </div>
@@ -312,28 +321,14 @@ watch(
           <label class="form-label">Phương thức vận chuyển:</label>
           <div>
             <div class="form-check form-check-inline">
-              <input
-                class="form-check-input"
-                type="radio"
-                id="shippingDirect"
-                :value="0"
-                v-model="phuongThucVanChuyen"
-              />
-              <label class="form-check-label" for="shippingDirect"
-                >Tại quầy</label
-              >
+              <input class="form-check-input" type="radio" id="shippingDirect" :value="0"
+                v-model="phuongThucVanChuyen" />
+              <label class="form-check-label" for="shippingDirect">Tại quầy</label>
             </div>
             <div class="form-check form-check-inline">
-              <input
-                class="form-check-input"
-                type="radio"
-                id="shippingDelivery"
-                :value="1"
-                v-model="phuongThucVanChuyen"
-              />
-              <label class="form-check-label" for="shippingDelivery"
-                >Giao hàng</label
-              >
+              <input class="form-check-input" type="radio" id="shippingDelivery" :value="1"
+                v-model="phuongThucVanChuyen" />
+              <label class="form-check-label" for="shippingDelivery">Giao hàng</label>
             </div>
           </div>
         </div>
@@ -343,30 +338,16 @@ watch(
           <div class="row mb-3">
             <!-- Tên người nhận -->
             <div class="col-md-6">
-              <label for="tenNguoiNhan" class="form-label"
-                >Tên người nhận:</label
-              >
-              <input
-                type="text"
-                id="tenNguoiNhan"
-                class="form-control"
-                placeholder="Nhập tên người nhận"
-                v-model="tenNguoiNhan"
-              />
+              <label for="tenNguoiNhan" class="form-label">Tên người nhận:</label>
+              <input type="text" id="tenNguoiNhan" class="form-control" placeholder="Nhập tên người nhận"
+                v-model="tenNguoiNhan" />
             </div>
 
             <!-- Số điện thoại người nhận -->
             <div class="col-md-6">
-              <label for="soDienThoaiNguoiNhan" class="form-label"
-                >Số điện thoại người nhận:</label
-              >
-              <input
-                type="text"
-                id="soDienThoaiNguoiNhan"
-                class="form-control"
-                placeholder="Nhập số điện thoại người nhận"
-                v-model="sdtNguoiNhan"
-              />
+              <label for="soDienThoaiNguoiNhan" class="form-label">Số điện thoại người nhận:</label>
+              <input type="text" id="soDienThoaiNguoiNhan" class="form-control"
+                placeholder="Nhập số điện thoại người nhận" v-model="sdtNguoiNhan" />
             </div>
           </div>
 
@@ -376,17 +357,12 @@ watch(
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="mb-0">Địa chỉ giao hàng:</h5>
 
-              <button
-                class="btn border rounded-circle d-flex align-items-center justify-content-center"
-                style="
+              <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
                   width: 36px;
                   height: 36px;
                   background-color: #0a2c57;
                   color: white;
-                "
-                title="Chọn địa chỉ"
-                @click="moPopupDiaChi"
-              >
+                " title="Chọn địa chỉ" @click="moPopupDiaChi">
                 <UserCog size="20" />
               </button>
             </div>
@@ -396,17 +372,9 @@ watch(
               <!-- Tỉnh/Thành phố -->
               <div class="col-md-6">
                 <label>Tỉnh/Thành phố</label>
-                <select
-                  class="form-select bg-white"
-                  v-model="diaChiGiaoHang.tinhThanhPho"
-                  @change="layQuanTheoTinh"
-                >
+                <select class="form-select bg-white" v-model="diaChiGiaoHang.tinhThanhPho" @change="layQuanTheoTinh">
                   <option disabled value="">-- Chọn Tỉnh --</option>
-                  <option
-                    v-for="tinh in danhSachTinh"
-                    :key="tinh.code"
-                    :value="tinh.name"
-                  >
+                  <option v-for="tinh in danhSachTinh" :key="tinh.code" :value="tinh.name">
                     {{ tinh.name }}
                   </option>
                 </select>
@@ -415,18 +383,10 @@ watch(
               <!-- Quận/Huyện -->
               <div class="col-md-6">
                 <label>Quận/Huyện</label>
-                <select
-                  class="form-select bg-white"
-                  v-model="diaChiGiaoHang.quanHuyen"
-                  @change="layPhuongTheoQuan"
-                  :disabled="!diaChiGiaoHang.tinhThanhPho"
-                >
+                <select class="form-select bg-white" v-model="diaChiGiaoHang.quanHuyen" @change="layPhuongTheoQuan"
+                  :disabled="!diaChiGiaoHang.tinhThanhPho">
                   <option disabled value="">-- Chọn Quận --</option>
-                  <option
-                    v-for="quan in danhSachQuan"
-                    :key="quan.code"
-                    :value="quan.name"
-                  >
+                  <option v-for="quan in danhSachQuan" :key="quan.code" :value="quan.name">
                     {{ quan.name }}
                   </option>
                 </select>
@@ -435,17 +395,10 @@ watch(
               <!-- Phường/Xã -->
               <div class="col-md-6">
                 <label>Phường/Xã</label>
-                <select
-                  class="form-select bg-white"
-                  v-model="diaChiGiaoHang.xaPhuong"
-                  :disabled="!diaChiGiaoHang.quanHuyen"
-                >
+                <select class="form-select bg-white" v-model="diaChiGiaoHang.xaPhuong"
+                  :disabled="!diaChiGiaoHang.quanHuyen">
                   <option disabled value="">-- Chọn Phường --</option>
-                  <option
-                    v-for="phuong in danhSachPhuong"
-                    :key="phuong.code"
-                    :value="phuong.name"
-                  >
+                  <option v-for="phuong in danhSachPhuong" :key="phuong.code" :value="phuong.name">
                     {{ phuong.name }}
                   </option>
                 </select>
@@ -454,11 +407,8 @@ watch(
               <!-- Số nhà/Đường -->
               <div class="col-md-6">
                 <label>Địa chỉ chi tiết</label>
-                <input
-                  class="form-control bg-white"
-                  v-model="diaChiGiaoHang.diaChiChiTiet"
-                  placeholder="VD: 444 Đội Cấn"
-                />
+                <input class="form-control bg-white" v-model="diaChiGiaoHang.diaChiChiTiet"
+                  placeholder="VD: 444 Đội Cấn" />
               </div>
             </div>
           </div>
@@ -482,17 +432,9 @@ watch(
       </div>
     </div>
 
-    <PopupChonKhachHang
-      v-if="hienThiPopupChonKhach"
-      :currentSelectedCustomer="khachHangDuocChon"
-      @customerSelected="chonKhachHang"
-      @close="hienThiPopupChonKhach = false"
-    />
-    <ChonDiaChiKhachHang
-      v-if="popupVisible"
-      :khachHangId="khachHangDuocChon.id"
-      @diaChiSelected="chonDiaChi"
-      @close="dongPopupDiaChi"
-    />
+    <PopupChonKhachHang v-if="hienThiPopupChonKhach" :currentSelectedCustomer="khachHangDuocChon"
+      @customerSelected="chonKhachHang" @close="hienThiPopupChonKhach = false" />
+    <ChonDiaChiKhachHang v-if="popupVisible" :khachHangId="khachHangDuocChon.id" @diaChiSelected="chonDiaChi"
+      @close="dongPopupDiaChi" />
   </div>
 </template>
