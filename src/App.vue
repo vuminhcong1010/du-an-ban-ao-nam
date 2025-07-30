@@ -38,58 +38,7 @@ const handleRoomSelected = (roomId) => {
   console.log('Phòng đã chọn:', roomId);
 };
 
-// Lấy thông tin route hiện tại
-const route = useRoute();
 
-// Danh sách các route hiển thị Sidebar và Topbar
-const routesWithComponents = [
-  '/hoa-don',
-  '/ban-hang',
-  '/san-pham',
-  '/san-pham/add',
-  '/san-pham/chi-tiet-san-pham/:id1',
-  '/san-pham/danh-muc',
-  '/san-pham/chat-lieu',
-  '/san-pham/tay-ao',
-  '/san-pham/co-ao',
-  '/san-pham/mau',
-  '/san-pham/kich-co',
-  '/san-pham/kieu-ao',
-  '/khach-hang',
-  '/khach-hang/add',
-  '/khach-hang/edit/:id',
-  '/nhan-vien',
-  '/nhan-vien/them',
-  '/nhan-vien/sua/:id',
-  '/phieu-giam-gia',
-  '/phieu-giam-gia/them',
-  '/phieu-giam-gia/sua/:id',
-  '/dot-giam-gia',
-  '/dot-giam-gia/them',
-  '/dot-giam-gia/sua/:id',
-  '/thong-ke',
-  '/thong-tin-ca-nhan'
-];
-
-
-// Theo dõi sự thay đổi của route
-watch(
-  () => route.path,
-  (newPath) => {
-    // Kiểm tra nếu route khớp với mẫu có tham số
-    const isRouteMatch = routesWithComponents.some((route) => {
-      if (route.includes(':')) {
-        // Tạo regex cho route có tham số (ví dụ: /khach-hang/edit/:id -> /khach-hang/edit/.*)
-        const regex = new RegExp(`^${route.replace(/:[^/]+/, '[^/]+')}$`);
-        return regex.test(newPath);
-      }
-      return route === newPath;
-    });
-    showSidebar.value = isRouteMatch;
-    showTopbar.value = isRouteMatch;
-  },
-  { immediate: true } // Chạy ngay khi component được mount
-);
 </script>
 
 
@@ -97,11 +46,10 @@ watch(
   <div class="d-flex flex-column vh-100">
     <Topbar v-if="showTopbar"/>
     <div class="d-flex flex-grow-1">
-      <Sidebar v-if="showSidebar" />
-      <main class="flex-grow-1 bg-light p-4 position-relative">
-        <!-- Router View -->
-        <RouterView />
-
+      
+  <div id="app-wrapper">
+    <router-view></router-view>
+  </div>
         <!-- Nút mở/đóng chat -->
         <div class="chat-toggle" @click="toggleChat">
           <div class="chat-icon">💬</div>
@@ -116,20 +64,32 @@ watch(
             <Chat @room-selected="handleRoomSelected" @close="handleChatClose" />
           </div>
         </div>
-      </main>
+      
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Đặt các style CSS toàn cục cho body, html, #app */
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  height: 100%;
+}
+#app-wrapper { /* Đổi id để tránh xung đột với #app trong index.html */
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #2c3e50;
+  height: 100%;
+}
 /* Bố cục chính */
 .d-flex {
   display: flex;
 }
 
-.vh-100 {
-  height: 100vh;
-}
+
 
 .bg-light {
   background-color: #f8f9fa;
