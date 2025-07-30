@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, onMounted } from "vue";
 import axios from "axios";
 import {
   Plus,
@@ -15,9 +15,26 @@ import KhachHang from "./KhachHang.vue";
 import GiamGia from "./GiamGia.vue";
 import ThanhToan from "./ThanhToan.vue";
 
-import Cookies from 'js-cookie'
+import Cookies from "js-cookie";
 
-const token = Cookies.get('token')
+import { useToast } from "vue-toastification";
+const toast = useToast();
+
+const token = Cookies.get("token");
+// Tách phần payload (phần giữa)
+const payloadBase64 = token.split('.')[1];
+
+// Giải mã từ Base64 sang JSON
+const payloadJson = atob(payloadBase64);
+
+// Chuyển chuỗi JSON thành object
+const payload = JSON.parse(payloadJson);
+
+// Truy cập idNv
+const idNv = payload.idNv;
+
+console.log("idNv:", idNv);
+
 // Khởi tạo danh sách đơn hàng từ localStorage nếu có
 const orders = ref([]);
 
@@ -44,8 +61,12 @@ async function createNewOrder() {
     const response = await fetch("http://localhost:8080/hoa-don/tao-moi", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        idNhanVien: idNv,
+      }),
 
     });
     const maHoaDon = await response.text();
@@ -57,7 +78,7 @@ async function createNewOrder() {
 
       tongTienSanPham: 0,
       phiVanChuyen: 0,
-
+      
       maHoaDon: maHoaDon,
       khachHang: {
         idKhachHang: "",
@@ -67,12 +88,14 @@ async function createNewOrder() {
         sdt: "",
       },
       giamGia: null,
-      hinhThucNhanHang: "",
+      hinhThucNhanHang: "0",
 
       thanhToan: [],
       soTienGiam: 0,
       tongTien: 0,
-
+      startTime: Date.now(), // ⏱ Thời gian tạo đơn
+      warningShown: false,
+      thoiGianConLai: 300,
     };
 
     orders.value.push(newOrder);
@@ -82,7 +105,56 @@ async function createNewOrder() {
   }
 }
 
+// xóa hóa đơn nếu ko hoàn thành trong 5p
 
+function showToast(message) {
+  alert(message); // hoặc dùng thư viện toast như vue-toastification nếu có
+}
+
+setInterval(() => {
+  const now = Date.now();
+  orders.value.forEach((order) => {
+    if (!order.startTime) return;
+
+    const elapsed = Math.floor((now - order.startTime) / 1000);
+    const remaining = 300 - elapsed;
+
+    // ⏱ Cập nhật đếm ngược cho hiển thị
+    // order.thoiGianConLai = Math.max(0, remaining);
+
+    // ⚠️ Hiển thị cảnh báo khi còn 1 phút
+    if (remaining <= 60 && remaining > 0 && !order.warningShown) {
+      toast.error(
+        `⚠️ Đơn hàng [${order.id}] sẽ bị xoá sau ${remaining} giâ y nếu không hoàn tất.`
+      );
+      order.warningShown = true;
+    }
+
+    // ❌ Hết hạn đơn hàng sau 2 phút
+    if (remaining <= 0) {
+      console.log(`🗑 Đơn hàng [${order.id}] đã hết hạn, đang xoá...`);
+      closeOrderTuDong(order.id);
+    }
+  });
+}, 1000);
+
+const remainingTime = (order) => {
+  if (!order.startTime) return 120;
+  const elapsed = Math.floor((Date.now() - order.startTime) / 1000);
+  return Math.max(0, 120 - elapsed);
+};
+
+const formatTime = (seconds) => {
+  const m = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const s = (seconds % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+};
+
+//------------------------------------
+
+// đóng đơn hàng:
 async function closeOrder(id) {
   const order = orders.value.find((o) => o.id === id);
   if (!order) return;
@@ -107,23 +179,45 @@ async function closeOrder(id) {
     // Xóa hóa đơn
     await axios.delete(`http://localhost:8080/hoa-don/xoa/${order.maHoaDon}`, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
-    // Xóa khỏi danh sách hiển thị
-    orders.value = orders.value.filter((o) => o.id !== id);
-    if (activeTab.value === id) {
-      activeTab.value = orders.value.length > 0 ? orders.value[0].id : null;
-    }
-    
     console.log("✅ Đã xoá hóa đơn:", order.maHoaDon);
+    localStorage.removeItem(`order_${id}`);
   } catch (err) {
     console.error("❌ Lỗi xoá hóa đơn:", err);
     alert("Xóa hóa đơn thất bại! Vui lòng thử lại.");
   }
+  // ✅ Xoá khỏi localStorage
 }
 
+// đóng đơn hàng tự động:
+async function closeOrderTuDong(id) {
+  const order = orders.value.find((o) => o.id === id);
+  if (!order) return;
+
+  try {
+    await axios.delete(`http://localhost:8080/hoa-don/xoa/${order.maHoaDon}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    console.log("✅ Đã xoá hóa đơn:", order.maHoaDon);
+  } catch (err) {
+    console.error("❌ Lỗi xoá hóa đơn:", err);
+    return;
+  }
+
+  // ✅ Xoá khỏi danh sách orders và activeTab
+  orders.value = orders.value.filter((o) => o.id !== id);
+  if (activeTab.value === id) {
+    activeTab.value = orders.value.length > 0 ? orders.value[0].id : null;
+  }
+
+  // ✅ Xoá khỏi localStorage
+  localStorage.removeItem(`order_${id}`);
+}
 
 // thanh toan:
 const showThanhToan = ref(false);
@@ -148,8 +242,7 @@ function capNhatThongTinKhachHang(thongTin) {
     localStorage.setItem("orders", JSON.stringify(orders.value));
   }
 }
-// import { toRaw } from "vue";
-// console.log(JSON.stringify(toRaw(orders.value)));
+
 watch(
   orders,
   (newVal) => {
@@ -216,6 +309,40 @@ watch(
   },
   { deep: true }
 );
+
+// tính phí vận chuyển: 
+watch(
+  () => orders.value.find(o => o.id === activeTab.value),
+  (currentOrder) => {
+    // Nếu không có đơn hàng nào đang active, hoặc đơn hàng không có, thì không làm gì
+    if (!currentOrder) return;
+    
+    // Xóa bộ đếm debounce cũ để bắt đầu một yêu cầu mới
+    // clearTimeout(shippingFeeDebounceTimer);
+
+    // Nếu hình thức là "Tại quầy", reset phí ship về 0 và dừng lại
+    if (currentOrder.hinhThucNhanHang !== '1') {
+      currentOrder.phiVanChuyen = 0;
+      return;
+    }
+
+    // Nếu là "Giao hàng" nhưng chưa có địa chỉ, cũng reset phí ship và dừng
+    if (!currentOrder.khachHang.diaChi) {
+      currentOrder.phiVanChuyen = 0;
+      return;
+    }
+
+    // Sử dụng debounce để chờ 1 giây sau khi người dùng ngừng nhập địa chỉ
+    // hoặc thay đổi sản phẩm rồi mới gọi API. Tránh gọi liên tục.
+    shippingFeeDebounceTimer = setTimeout(() => {
+      console.log("Địa chỉ hoặc sản phẩm đã thay đổi, bắt đầu tính lại phí ship...");
+      calculateAndUpdateShippingFee(currentOrder);
+    }, 1000); // Chờ 1 giây
+  },
+  { deep: true } // deep: true để theo dõi cả các thay đổi sâu bên trong object (địa chỉ, sản phẩm)
+);
+
+
 // ham thanh toan:
 const thanhToanDonHang = async (order) => {
   const danhSachThanhToan = [];
@@ -289,7 +416,7 @@ const hoanThanhDonHang = async (order) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(bodyUpdateSoLuong),
     });
@@ -297,7 +424,10 @@ const hoanThanhDonHang = async (order) => {
     // ✅ Gọi API lưu chi tiết hóa đơn
     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify(result),
     });
     // goi ham thanh toan don hang:
@@ -347,6 +477,200 @@ const hoanThanhDonHang = async (order) => {
   }
 };
 
+function xoaToanBoLocal() {
+  const confirmed = window.confirm(
+    "Bạn có chắc chắn muốn xóa tất cả đơn hàng?"
+  );
+  if (!confirmed) return;
+
+  localStorage.removeItem("orders");
+  localStorage.removeItem("activeTab");
+
+  orders.value = [];
+  activeTab.value = null;
+}
+
+
+
+// tính phí giao hàng: 
+
+const tokenGHN = "8e2a56e5-6a41-11f0-8120-026f4833faa3";
+
+// Hàm chuẩn hóa tiếng Việt
+function normalizeVN(str) {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+// Hàm lấy district_id và ward_code từ địa chỉ
+
+// =================== HÀM MỚI ĐỂ "DỌN DẸP" ĐỊA CHỈ ===================
+/**
+ * Loại bỏ các tiền tố như "Tỉnh", "Thành phố", "Quận", "Phường"... khỏi chuỗi.
+ * @param {string} str - Chuỗi địa chỉ cần làm sạch.
+ * @returns {string} - Chuỗi đã được làm sạch.
+ */
+function cleanAddressPart(str) {
+  if (!str) return "";
+  let cleanedStr = normalizeVN(str); // Chuẩn hóa (vd: "Thành Phố" -> "thanh pho")
+  const prefixes = ['thanh pho', 'tinh', 'quan', 'huyen', 'phuong', 'xa', 'thi tran'];
+  
+  for (const prefix of prefixes) {
+    if (cleanedStr.startsWith(prefix + ' ')) {
+      cleanedStr = cleanedStr.substring(prefix.length + 1);
+    }
+  }
+  return cleanedStr.trim();
+}
+
+
+// =================== HÀM getDistrictAndWard ĐÃ ĐƯỢC NÂNG CẤP ===================
+async function getDistrictAndWard(address) {
+  console.log(`Bắt đầu phân tích địa chỉ: "${address}"`);
+  const addressParts = address.split(",").map(part => part.trim());
+
+  if (addressParts.length < 4) {
+    console.error("Lỗi phân tích địa chỉ: Chuỗi địa chỉ không đủ 4 phần (Đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành).");
+    return null;
+  }
+
+  const [street, wardName, districtName, provinceName] = addressParts;
+  
+  // Dọn dẹp trước các phần của địa chỉ người dùng nhập vào
+  const cleanInputProvince = cleanAddressPart(provinceName);
+  const cleanInputDistrict = cleanAddressPart(districtName);
+  const cleanInputWard = cleanAddressPart(wardName);
+
+  try {
+    // 1. Tìm Tỉnh/Thành phố
+    const provincesRes = await fetch("https://online-gateway.ghn.vn/shiip/public-api/master-data/province", {
+      headers: { Token: tokenGHN },
+    });
+    const provinces = (await provincesRes.json()).data;
+    const province = provinces.find(p => 
+      cleanAddressPart(p.ProvinceName) === cleanInputProvince
+    );
+    if (!province) {
+      console.error("Không tìm thấy Tỉnh/Thành phố:", provinceName);
+      return null;
+    }
+    console.log("Tìm thấy Province:", province);
+
+    // 2. Tìm Quận/Huyện
+    const districtsRes = await fetch("https://online-gateway.ghn.vn/shiip/public-api/master-data/district", {
+      method: "POST",
+      headers: { Token: tokenGHN, "Content-Type": "application/json" },
+      body: JSON.stringify({ province_id: province.ProvinceID })
+    });
+    const districts = (await districtsRes.json()).data;
+    const district = districts.find(d => 
+      cleanAddressPart(d.DistrictName) === cleanInputDistrict
+    );
+    if (!district) {
+      console.error("Không tìm thấy Quận/Huyện:", districtName, "trong tỉnh", provinceName);
+      return null;
+    }
+    console.log("Tìm thấy District:", district);
+
+    // 3. Tìm Phường/Xã
+    const wardsRes = await fetch(`https://online-gateway.ghn.vn/shiip/public-api/master-data/ward?district_id=${district.DistrictID}`, {
+      headers: { Token: tokenGHN },
+    });
+    const wards = (await wardsRes.json()).data;
+    const ward = wards.find(w => 
+      cleanAddressPart(w.WardName) === cleanInputWard
+    );
+    if (!ward) {
+      console.error("Không tìm thấy Phường/Xã:", wardName, "trong quận", districtName);
+      return null;
+    }
+    console.log("Tìm thấy Ward:", ward);
+
+    return {
+      district_id: district.DistrictID,
+      ward_code: ward.WardCode,
+    };
+  } catch (err) {
+    console.error("Lỗi nghiêm trọng khi gọi API GHN:", err.message);
+    return null;
+  }
+}
+
+// Hàm tính phí vận chuyển
+
+const myShopInfo = {
+  district_id: 1442, // Mã của Quận Cầu Giấy, Hà Nội
+  shop_id: "5913364"   // ShopId của bạn
+};
+
+async function tinhPhiVanChuyen({ fromDistrictId, toDistrictId, toWardCode, weight, insuranceValue }) {
+  try {
+    const response = await fetch("https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Token: tokenGHN,
+        ShopId: myShopInfo.shop_id, // ShopId vẫn có thể lấy từ cấu hình chung
+      },
+      body: JSON.stringify({
+        // SỬA Ở ĐÂY: Dùng tham số được truyền vào
+        from_district_id: fromDistrictId, 
+        service_type_id: 2,
+        to_district_id: toDistrictId,
+        to_ward_code: toWardCode,
+        weight,
+        insurance_value: insuranceValue,
+      }),
+    });
+
+    const result = await response.json();
+    if (result.code !== 200) throw new Error(result.message);
+    return result.data.total;
+  } catch (err) {
+    console.error("Lỗi tính phí vận chuyển:", err.message);
+    return null;
+  }
+}
+
+// Sửa lại hàm này để truyền đúng tham số
+async function calculateAndUpdateShippingFee(order) {
+  if (!order.khachHang.diaChi || order.listSanPham.length === 0) {
+    order.phiVanChuyen = 0;
+    return;
+  }
+  try {
+    console.log("Đang tính phí vận chuyển cho đơn hàng...");
+    const locationData = await getDistrictAndWard(order.khachHang.diaChi);
+    if (locationData) {
+      const totalWeight = order.listSanPham.reduce((acc, item) => acc + (item.khoiLuong || 400), 0);
+      const insuranceValue = order.tongTienSanPham;
+
+      const shippingFee = await tinhPhiVanChuyen({
+        // SỬA Ở ĐÂY: Truyền mã quận của cửa hàng vào
+        fromDistrictId: myShopInfo.district_id, 
+        toDistrictId: locationData.district_id,
+        toWardCode: locationData.ward_code,
+        weight: totalWeight,
+        insuranceValue: insuranceValue,
+      });
+
+      if (shippingFee !== null) {
+        order.phiVanChuyen = shippingFee;
+        console.log(`Phí vận chuyển đơn hàng được cập nhật: ${shippingFee.toLocaleString()}đ`);
+      } else {
+        order.phiVanChuyen = 0;
+      }
+    } else {
+      order.phiVanChuyen = 0;
+    }
+  } catch (error) {
+    console.error("Lỗi trong quá trình tính phí vận chuyển:", error);
+    order.phiVanChuyen = 0;
+    // toast.error("Đã xảy ra lỗi khi tính phí vận chuyển.");
+  }
+}
+
+
+
 </script>
 
 <template>
@@ -355,13 +679,22 @@ const hoanThanhDonHang = async (order) => {
     <button class="btn success" style="background-color: #0a2c57; color: white" @click="createNewOrder">
       <Plus class="me-1" size="16" /> Tạo đơn mới
     </button>
+    <button class="btn btn-danger" @click="xoaToanBoLocal" v-if="false">
+      <Trash class="me-1" size="16" /> Xóa tất cả đơn hàng
+    </button>
   </div>
 
   <ul class="nav nav-tabs">
     <li class="nav-item" v-for="order in orders" :key="order.id">
       <a class="nav-link" :class="{ active: order.id === activeTab }" href="#" @click.prevent="activeTab = order.id">
         {{ order.maHoaDon }}
-     <span class="ms-1 text-danger" @click.stop.prevent="closeOrder(order.id)">×</span>
+        <!-- 🔽 Nếu có sản phẩm thì hiển thị số lượng -->
+        <span v-if="order.listSanPham.length > 0" class="badge bg-danger ms-1">
+          {{ order.listSanPham.length }}
+        </span>
+        <span class="ms-1 text-danger" @click.stop="closeOrder(order.id)"
+          >×</span
+        >
       </a>
     </li>
   </ul>
@@ -374,6 +707,7 @@ const hoanThanhDonHang = async (order) => {
   <div v-if="activeTab !== null" class="bg-white p-3 rounded mb-4 align-items-center border">
     <div v-for="order in orders" :key="order.id" v-show="order.id === activeTab">
       <h6>Chi tiết hóa đơn {{ order.maHoaDon }}</h6>
+      
 
       <!-- Giỏ hàng -->
       <GioHang :order="order" :activeTab="activeTab" :orders="orders" />
@@ -410,8 +744,12 @@ const hoanThanhDonHang = async (order) => {
           " title="Chuyển khoản" @click="showThanhToan = true">
           <CreditCard size="18" />
         </button>
-        <ThanhToan v-if="showThanhToan" :tongTien="order.tongTien || 0" @close="showThanhToan = false"
-          @xac-nhan="handleXacNhan" />
+        <ThanhToan
+          v-if="showThanhToan"
+          :tongTien="order.tongTien"
+          @close="showThanhToan = false"
+          @xac-nhan="handleXacNhan"
+        />
         <span>{{
           Array.isArray(order.thanhToan)
             ? order.thanhToan.map((pt) => pt.tenPhuongThuc).join(" + ")
@@ -443,7 +781,6 @@ const hoanThanhDonHang = async (order) => {
           Hoàn thành đơn hàng
         </button>
       </div>
-
     </div>
   </div>
 </template>
