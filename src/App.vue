@@ -5,8 +5,7 @@
 </template>
 
 <script setup>
-// Không cần import Sidebar hay Topbar ở đây nữa
-// Các script khác liên quan đến ứng dụng tổng thể (ví dụ: Toast, Bootstrap) có thể giữ lại nếu bạn muốn chúng có sẵn ở mọi nơi
+
 </script>
 
 <style>
