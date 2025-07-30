@@ -14,23 +14,7 @@ const toggleSidebar = inject('toggleSidebar')
 const isExporting = ref(false);
 const isImporting = ref(false);
 
-const listNhanVien = ref({
-  id: "",
-  maNhanVien: "",
-  tenNhanVien: "",
-  anh: "",
-  cccd: "",
-  ngaySinh: "",
-  sdt: "",
-  gioiTinh: true,
-  tinhThanh: "",
-  quanHuyen: "",
-  xaPhuong: "",
-  thonXom: "",
-  email: "",
-  ghiChu: "",
-  trangThai: 1
-});
+const listNhanVien = ref([]); 
 
 const getData = async () => {
   try {
@@ -39,7 +23,7 @@ const getData = async () => {
         Authorization: `Bearer ${token}`
       }
     })
-    listNhanVien.value = response.data;
+   listNhanVien.value = Array.isArray(response.data) ? response.data : [];
     // console.log('NhanVien:', listNhanVien.value);
   } catch (error) {
     console.log(error);
@@ -129,7 +113,7 @@ function openConfirmModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.put(`http://localhost:8080/api/doiTrangThaiVe0/${nhanVien.id}`,{},{
+        await axios.put(`http://localhost:8080/api/doiTrangThaiVe0/${nhanVien.id}`, {}, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -159,7 +143,7 @@ function openDeleteModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:8080/api/delete/${nhanVien.id}`,{}, {
+        await axios.delete(`http://localhost:8080/api/delete/${nhanVien.id}`,{
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -189,7 +173,7 @@ function openBackToWorkModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.put(`http://localhost:8080/api/doiTrangThaiVe1/${nhanVien.id}`,{}, {
+        await axios.put(`http://localhost:8080/api/doiTrangThaiVe1/${nhanVien.id}`, {}, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -209,7 +193,7 @@ const exportExcelFile = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/nhan-vien/export-excel', {
       responseType: 'blob',
-       headers: {
+      headers: {
         Authorization: `Bearer ${token}`
       }
     });
@@ -260,9 +244,14 @@ const confirmExportExcel = async () => {
 
 const filteredNhanVien = computed(() => {
   if (!Array.isArray(listNhanVien.value)) return [];
-  let result = listNhanVien.value.filter(
-    nv => String(nv.trangThai) === String(filterState.value.trangThai)
-  );
+  let result = listNhanVien.value;
+
+  // Nếu có từ khóa tìm kiếm, KHÔNG lọc trạng thái nữa (vì API đã trả về đúng rồi)
+  if (!filterState.value.search) {
+    result = result.filter(
+      nv => String(nv.trangThai) === String(filterState.value.trangThai)
+    );
+  }
 
   // Lọc theo tên vai trò
   if (filterState.value.vaiTro) {
@@ -274,26 +263,28 @@ const filteredNhanVien = computed(() => {
     result = result.filter(nv => nv.tinhThanh === filterState.value.tinhThanh);
   }
 
-  // Tìm kiếm: nếu nhập số 4 chữ số thì tìm theo năm sinh, còn lại tìm theo tên hoặc mã
-  if (filterState.value.search) {
+  // Nếu có từ khóa tìm kiếm, không cần filter FE nữa (API đã trả về đúng)
+  if (!filterState.value.search) {
+    // FE filter theo tên/mã nếu không dùng API search
     const keyword = filterState.value.search.trim().toLowerCase();
-    if (/^\d{4}$/.test(keyword)) {
-      result = result.filter(nv => {
-        if (!nv.ngaySinh) return false;
-        const year = new Date(nv.ngaySinh).getFullYear();
-        return String(year) === keyword;
-      });
-    } else {
-      result = result.filter(nv =>
-        nv.maNhanVien?.toLowerCase().includes(keyword) ||
-        nv.tenNhanVien?.toLowerCase().includes(keyword)
-      );
+    if (keyword) {
+      if (/^\d{4}$/.test(keyword)) {
+        result = result.filter(nv => {
+          if (!nv.ngaySinh) return false;
+          const year = new Date(nv.ngaySinh).getFullYear();
+          return String(year) === keyword;
+        });
+      } else {
+        result = result.filter(nv =>
+          nv.maNhanVien?.toLowerCase().includes(keyword) ||
+          nv.tenNhanVien?.toLowerCase().includes(keyword)
+        );
+      }
     }
   }
 
-  // Sắp xếp theo mã nhân viên giảm dần (NV011 > NV009 > NV007 ...)
+  // Sắp xếp theo mã nhân viên giảm dần
   result.sort((a, b) => {
-    // Lấy số phía sau mã nhân viên
     const getNumber = (ma) => parseInt(ma?.replace(/\D/g, '') || '0', 10);
     return getNumber(b.maNhanVien) - getNumber(a.maNhanVien);
   });
@@ -307,14 +298,20 @@ const searchNhanVien = async (keyword) => {
       await getData(); // Nếu không có từ khóa thì load lại toàn bộ
       return;
     }
-    const response = await axios.get(`http://localhost:8080/api/search?keyword=${encodeURIComponent(keyword)}`, {
+    const response = await axios.get(`http://localhost:8080/api/elastichNhanVien?keyword=${encodeURIComponent(keyword)}`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
-    listNhanVien.value = response.data;
+        const filtered = (Array.isArray(response.data) ? response.data : []).filter(
+      nv => String(nv.trangThai) === String(filterState.value.trangThai)
+    );
+    listNhanVien.value = Array.isArray(response.data) ? response.data : [];
+    // console.log("Dữ liệu từ BE:", response.data);
+    // console.log("Gán vào listNhanVien:", listNhanVien.value);
   } catch (error) {
     console.log('Lỗi tìm kiếm:', error);
+    listNhanVien.value = [];
   }
 };
 
@@ -536,7 +533,32 @@ async function handleFileChange(event) {
   }
 }
 
-async function handleToggleVaiTro(nhanVien) {
+// Sửa hàm handleToggleVaiTro để xác nhận trước khi đổi vai trò
+async function handleToggleVaiTro(nhanVien, event) {
+  // Xác định vai trò hiện tại
+  const isAdmin = nhanVien.tenVaiTro === 'ADMIN';
+  const confirmText = isAdmin
+    ? 'Bạn có chắc chắn muốn chuyển Quản Lý này thành NHÂN VIÊN (không còn là quản lý)?'
+    : 'Bạn có chắc chắn muốn chuyển Nhân Viên này thành QUẢN LÝ (ADMIN)?';
+  const confirmTitle = isAdmin ? 'Xác nhận chuyển thành nhân viên' : 'Xác nhận chuyển thành quản lý';
+  const result = await Swal.fire({
+    icon: 'question',
+    title: confirmTitle,
+    text: confirmText,
+    showCancelButton: true,
+    confirmButtonText: 'Đồng ý',
+    cancelButtonText: 'Bỏ qua',
+    reverseButtons: true,
+    customClass: {
+      confirmButton: 'swal2-confirm btn-save',
+      cancelButton: 'swal2-cancel btn-cancel'
+    }
+  });
+  if (!result.isConfirmed) {
+    // Nếu không xác nhận, ngăn chuyển đổi trạng thái của switch
+    if (event) event.target.checked = isAdmin; // đảo lại trạng thái
+    return;
+  }
   try {
     await axios.put(`http://localhost:8080/api/doi-vai-tro/${nhanVien.id}`, {}, {
       headers: { Authorization: `Bearer ${token}` }
@@ -545,15 +567,13 @@ async function handleToggleVaiTro(nhanVien) {
     const updatedNV = Array.isArray(listNhanVien.value)
       ? listNhanVien.value.find(nv => nv.id === nhanVien.id)
       : null;
-    // Sử dụng tenVaiTro để xác định thông báo
-    console.log('Updated NV:', updatedNV);
     if (updatedNV && updatedNV.tenVaiTro) {
       if (updatedNV.tenVaiTro === 'ADMIN') {
         toast.success('Đã sửa vai trò thành quản lý');
       } else if (updatedNV.tenVaiTro === 'STAFF') {
         toast.success('Đã sửa vai trò thành nhân viên');
       }
-    } 
+    }
   } catch (error) {
     toast.error(error.response?.data || 'Đổi vai trò thất bại!');
   }
@@ -599,8 +619,8 @@ async function handleToggleVaiTro(nhanVien) {
           <label>Tìm kiếm</label>
           <div class="filter-search-wrapper">
             <img :src="search" alt="search" class="filter-search-icon" />
-            <input class="filter-search" type="text" placeholder="Tìm theo mã, tên nhân viên hoặc năm sinh"
-              v-model="filterState.search" title="Tìm kiếm theo mã, tên nhân viên hoặc năm sinh" />
+            <input class="filter-search" type="text" placeholder="Tìm theo mã, tên nhân viên"
+              v-model="filterState.search" title="Tìm kiếm theo mã, tên nhân viên" />
           </div>
         </div>
         <div class="filter-item">
@@ -684,7 +704,8 @@ async function handleToggleVaiTro(nhanVien) {
                       {{ formatDate(nhanVien[col.key]) }}
                     </template>
                     <template v-else-if="col.key === 'vaiTro'">
-                      {{ nhanVien.tenVaiTro === 'ADMIN' ? 'Quản lý' : nhanVien.tenVaiTro === 'STAFF' ? 'Nhân viên' : '' }}
+                      {{ nhanVien.tenVaiTro === 'ADMIN' ? 'Quản lý' : nhanVien.tenVaiTro === 'STAFF' ? 'Nhân viên' : ''
+                      }}
                     </template>
                     <template v-else-if="col.key === 'diaChi'">
                       {{ [nhanVien.thonXom, nhanVien.xaPhuong, nhanVien.quanHuyen,
@@ -706,9 +727,8 @@ async function handleToggleVaiTro(nhanVien) {
                         </button>
                         <!-- Nút bật/tắt vai trò -->
                         <label class="switch" title="Đổi vai trò">
-                          <input type="checkbox"
-                            :checked="nhanVien.tenVaiTro === 'ADMIN'"
-                            @change="handleToggleVaiTro(nhanVien)" />
+                          <input type="checkbox" :checked="nhanVien.tenVaiTro === 'ADMIN'"
+                            @change="event => handleToggleVaiTro(nhanVien, event)" />
                           <span class="slider"></span>
                         </label>
                       </template>
@@ -890,6 +910,8 @@ async function handleToggleVaiTro(nhanVien) {
 
 .table-container {
   overflow-x: auto;
+   min-height: 300px;  
+  max-height: 440px;
 }
 
 .employee-table {
@@ -1344,6 +1366,7 @@ async function handleToggleVaiTro(nhanVien) {
   align-items: center;
   justify-content: center;
 }
+
 .password-toggle-btn:hover {
   background: #f0f0f0;
   color: #333;

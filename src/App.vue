@@ -1,35 +1,27 @@
-<script setup>
-import { ref, provide } from 'vue'
-import Sidebar from './components/admin/Sidebar.vue'
-import Topbar from './components/admin/Topbar.vue'
-import vSelect from 'vue3-select'
-import 'vue3-select/dist/vue3-select.css'
-
-// Toggle Sidebar
-const showSidebar = ref(true)
-function toggleSidebar() {
-  showSidebar.value = !showSidebar.value
-}
-provide('toggleSidebar', toggleSidebar)
-
-// v-select
-const selected = ref(null)
-const options = ref(['Đỏ', 'Xanh', 'Vàng'])
-
-</script>
-
 <template>
-  <div class="d-flex flex-column vh-100">
-    <Topbar />
-    <div class="d-flex flex-grow-1">
-      <Sidebar v-if="showSidebar" />
-      <main class="flex-grow-1 bg-light p-4">
-        <!-- Select Box -->
-      
-
-        <!-- Router View -->
-        <RouterView />
-      </main>
-    </div>
+  <div id="app-wrapper">
+    <router-view></router-view>
   </div>
 </template>
+
+<script setup>
+// Không cần import Sidebar hay Topbar ở đây nữa
+// Các script khác liên quan đến ứng dụng tổng thể (ví dụ: Toast, Bootstrap) có thể giữ lại nếu bạn muốn chúng có sẵn ở mọi nơi
+</script>
+
+<style>
+/* Đặt các style CSS toàn cục cho body, html, #app */
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  height: 100%;
+}
+#app-wrapper { /* Đổi id để tránh xung đột với #app trong index.html */
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #2c3e50;
+  height: 100%;
+}
+</style>

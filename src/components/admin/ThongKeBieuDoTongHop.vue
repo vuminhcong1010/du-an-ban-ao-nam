@@ -270,6 +270,43 @@ function onChangeMoc(e) {
   }
 }
 
+const startDate = ref('');
+const endDate = ref('');
+
+async function fetchByDateRange() {
+  if (!startDate.value || !endDate.value) return;
+  loading.value = true;
+  error.value = '';
+  try {
+    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/khoang-ngay', {
+      params: { start: startDate.value, end: endDate.value },
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    doanhThuTheoNgay.value = {
+      soHoaDonTheoNgay: res.data.soHoaDonTheoNgay || {},
+      tongSanPhamTheoNgay: res.data.tongSanPhamTheoNgay || res.data.sanPhamTheoNgay || {},
+      doanhThuTheoNgay: res.data.doanhThuTheoNgay || {}
+    };
+    doanhThuTheoGio.value = {
+      soHoaDonTheoGio: res.data.soHoaDonTheoGio || {},
+      tongSanPhamTheoGio: res.data.tongSanPhamTheoGio || res.data.sanPhamTheoGio || {},
+      doanhThuTheoGio: res.data.doanhThuTheoGio || {}
+    };
+    doanhThuTheoThu.value = {
+      soHoaDonTheoThu: res.data.soHoaDonTheoThu || {},
+      tongSanPhamTheoThu: res.data.tongSanPhamTheoThu || res.data.sanPhamTheoThu || {},
+      doanhThuTheoThu: res.data.doanhThuTheoThu || {}
+    };
+    tongDoanhThu.value = res.data.tongDoanhThu || 0;
+    await nextTick();
+    renderChart();
+  } catch (e) {
+    error.value = 'Lỗi khi lấy dữ liệu thống kê theo khoảng ngày';
+  } finally {
+    loading.value = false;
+  }
+}
+
 const topTimeOptions = [
   { label: 'Hôm nay', value: 'hom-nay', api: '/hoa-don/thong-ke/top-ban-chay/hom-nay' },
   { label: 'Hôm qua', value: 'hom-qua', api: '/hoa-don/thong-ke/top-ban-chay/hom-qua' },
@@ -600,6 +637,57 @@ function renderOrderStatusChart() {
 onMounted(fetchOrderStatusStats);
 watch(orderStatusChartRef, (val) => { if (val) nextTick(() => renderOrderStatusChart()); });
 onUnmounted(() => { if (orderStatusChartInstance) { orderStatusChartInstance.destroy(); orderStatusChartInstance = null; } });
+
+// Thêm phần chọn khoảng ngày
+const showDateRange = ref(false);
+const customStartDate = ref('');
+const customEndDate = ref('');
+
+function confirmDateRange() {
+  if (customStartDate.value && customEndDate.value) {
+    startDate.value = customStartDate.value;
+    endDate.value = customEndDate.value;
+    fetchByDateRange();
+    showDateRange.value = false;
+  }
+}
+
+// Thống kê tăng trưởng
+const growth = ref({
+  doanhThuNgay: 0,
+  tangTruongDoanhThuNgay: 0,
+  doanhThuThang: 0,
+  tangTruongDoanhThuThang: 0,
+  doanhThuNam: 0,
+  tangTruongDoanhThuNam: 0,
+  soSanPhamThang: 0,
+  tangTruongSanPhamThang: 0,
+  soHoaDonNgay: 0,
+  tangTruongHoaDonNgay: 0,
+  soHoaDonThang: 0,
+  tangTruongHoaDonThang: 0,
+});
+const loadingGrowth = ref(true);
+const errorGrowth = ref('');
+
+async function fetchGrowth() {
+  loadingGrowth.value = true;
+  errorGrowth.value = '';
+  try {
+    const res = await axios.get('http://localhost:8080/hoa-don/thong-ke/tong-hop', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    growth.value = res.data;
+  } catch (e) {
+    errorGrowth.value = 'Lỗi khi lấy dữ liệu tăng trưởng';
+  } finally {
+    loadingGrowth.value = false;
+  }
+}
+
+onMounted(() => {
+  fetchGrowth();
+});
 </script>
 
 <template>
@@ -612,8 +700,9 @@ onUnmounted(() => { if (orderStatusChartInstance) { orderStatusChartInstance.des
           <span class="thongke-homqua-moc">({{ selectedMoc.label }})</span>
           <span class="thongke-homqua-total">{{ tongDoanhThu.toLocaleString('vi-VN') }} ₫</span>
         </div>
-        <!-- Thêm vào template, đặt cạnh select mốc thời gian -->
-        <div class="thongke-bieudo-cbo">
+        <!-- Thêm input chọn ngày và nút Xem -->
+        <div class="thongke-bieudo-cbo d-flex align-items-center" style="gap: 8px;">
+        <button class="btn btn-outline-primary" style="font-size: 15px; padding: 4px 16px;" @click="showDateRange = true">Tùy chỉnh</button>
           <select class="select-blue" :value="selectedMoc.key" @change="onChangeMoc">
             <option v-for="moc in mocThoiGianList" :key="moc.key" :value="moc.key">{{ moc.label }}</option>
           </select>
@@ -691,9 +780,10 @@ onUnmounted(() => { if (orderStatusChartInstance) { orderStatusChartInstance.des
         </div>
       </div>
     </div>
-  </div>
-  <!-- Biểu đồ tròn trạng thái đơn hàng tháng này -->
-  <div class="order-status-pie-section">
+
+    <!-- Thêm phía trên các card tổng hợp -->
+    <div class="growth-row">
+  <div class="order-status-pie-section growth-col">
     <div class="order-status-pie-header">
       <b>Trạng Thái Đơn Hàng Tháng Này</b>
     </div>
@@ -711,6 +801,89 @@ onUnmounted(() => { if (orderStatusChartInstance) { orderStatusChartInstance.des
         <span class="pie-legend-color" :style="{background: ORDER_STATUS_COLORS[idx]}" />
         <span class="pie-legend-label">{{ label }}</span>
         <span class="pie-legend-value"><b>{{ orderStatusStats?.tiLePhanTram?.[label] || '0,00' }}%</b></span>
+      </div>
+    </div>
+  </div>
+  <div class="growth-box growth-col">
+    <div class="growth-title">
+      <b>Tốc Độ Tăng Trưởng Cửa Hàng</b>
+      <span v-if="loadingGrowth" style="font-size:13px;color:#888;margin-left:8px;">Đang tải...</span>
+      <span v-if="errorGrowth" style="font-size:13px;color:#e53935;margin-left:8px;">{{ errorGrowth }}</span>
+    </div>
+    <div class="growth-list">
+      <div class="growth-item">
+        <span class="growth-icon"><i class="fa fa-calendar"></i></span>
+        <span class="growth-label">Doanh thu ngày</span>
+        <span class="growth-value">{{ growth.doanhThuNgay.toLocaleString('vi-VN') }} VND</span>
+        <span class="growth-percent" :class="growth.tangTruongDoanhThuNgay < 0 ? 'down' : 'up'">
+          <i :class="growth.tangTruongDoanhThuNgay < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+          {{ growth.tangTruongDoanhThuNgay }} %
+        </span>
+      </div>
+      <div class="growth-item">
+        <span class="growth-icon"><i class="fa fa-calendar"></i></span>
+        <span class="growth-label">Doanh thu tháng</span>
+        <span class="growth-value">{{ growth.doanhThuThang.toLocaleString('vi-VN') }} VND</span>
+        <span class="growth-percent" :class="growth.tangTruongDoanhThuThang < 0 ? 'down' : 'up'">
+          <i :class="growth.tangTruongDoanhThuThang < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+          {{ growth.tangTruongDoanhThuThang }} %
+        </span>
+      </div>
+      <div class="growth-item">
+        <span class="growth-icon"><i class="fa fa-calendar"></i></span>
+        <span class="growth-label">Doanh thu năm</span>
+        <span class="growth-value">{{ growth.doanhThuNam.toLocaleString('vi-VN') }} VND</span>
+        <span class="growth-percent" :class="growth.tangTruongDoanhThuNam < 0 ? 'down' : 'up'">
+          <i :class="growth.tangTruongDoanhThuNam < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+          {{ growth.tangTruongDoanhThuNam }} %
+        </span>
+      </div>
+      <div class="growth-item">
+        <span class="growth-icon"><i class="fa fa-cube"></i></span>
+        <span class="growth-label">Sản phẩm tháng</span>
+        <span class="growth-value">{{ growth.soSanPhamThang }} Sản phẩm</span>
+        <span class="growth-percent" :class="growth.tangTruongSanPhamThang < 0 ? 'down' : 'up'">
+          <i :class="growth.tangTruongSanPhamThang < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+          {{ growth.tangTruongSanPhamThang }} %
+        </span>
+      </div>
+      <div class="growth-item">
+        <span class="growth-icon"><i class="fa fa-calendar"></i></span>
+        <span class="growth-label">Hóa đơn ngày</span>
+        <span class="growth-value">{{ growth.soHoaDonNgay }} Hóa đơn</span>
+        <span class="growth-percent" :class="growth.tangTruongHoaDonNgay < 0 ? 'down' : 'up'">
+          <i :class="growth.tangTruongHoaDonNgay < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+          {{ growth.tangTruongHoaDonNgay }} %
+        </span>
+      </div>
+      <div class="growth-item">
+        <span class="growth-icon"><i class="fa fa-calendar"></i></span>
+        <span class="growth-label">Hóa đơn tháng</span>
+        <span class="growth-value">{{ growth.soHoaDonThang }} Hóa đơn</span>
+        <span class="growth-percent" :class="growth.tangTruongHoaDonThang < 0 ? 'down' : 'up'">
+          <i :class="growth.tangTruongHoaDonThang < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+          {{ growth.tangTruongHoaDonThang }} %
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+
+  <!-- Phần chọn khoảng ngày -->
+  <div v-if="showDateRange" class="date-range-popup">
+    <div class="date-range-content">
+      <div style="margin-bottom: 10px;">
+        <label>Bắt đầu:</label>
+        <input type="date" v-model="customStartDate" class="form-control" style="width: 160px;" />
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label>Kết thúc:</label>
+        <input type="date" v-model="customEndDate" class="form-control" style="width: 160px;" />
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-primary" @click="confirmDateRange">Xác nhận</button>
+        <button class="btn btn-secondary" @click="showDateRange = false">Hủy</button>
       </div>
     </div>
   </div>
@@ -882,43 +1055,6 @@ onUnmounted(() => { if (orderStatusChartInstance) { orderStatusChartInstance.des
   border-radius: 6px;
   border: 1.5px solid #1976d2;
   color: #1976d2;
-  font-weight: bold;
-  outline: none;
-  background: #f8fbff;
-  cursor: pointer;
-  transition: border-color 0.18s, box-shadow 0.18s;
-}
-
-.select-blue:focus {
-  border-color: #1565c0;
-  box-shadow: 0 0 0 2px #1976d233;
-}
-
-.order-status-pie-section {
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px #0001;
-  padding: 18px 18px 18px 18px;
-  margin-top: 32px;
-  max-width: 520px;
-  margin-left: auto;
-  margin-right: auto;
-}
-.order-status-pie-header {
-  font-size: 17px;
-  font-weight: bold;
-  color: #222;
-  margin-bottom: 10px;
-  text-align: center;
-}
-.order-status-pie-chart-wrapper {
-  position: relative;
-  min-height: 320px;
-  height: 320px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 .order-status-pie-legend {
   display: grid;
@@ -949,5 +1085,168 @@ onUnmounted(() => { if (orderStatusChartInstance) { orderStatusChartInstance.des
   display: inline-block;
   margin-right: 3px;
   border: 1.5px solid #eee;
+}
+
+/* Thêm style cho phần chọn khoảng ngày */
+.date-range-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.date-range-content {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.date-range-content label {
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.date-range-content input[type="date"] {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+  margin-bottom: 16px;
+  font-size: 15px;
+}
+
+.date-range-content .btn {
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-size: 15px;
+  min-width: 100px;
+}
+
+
+.growth-row {
+  display: flex;
+  gap: 24px;
+  margin-top: 32px;
+  margin-bottom: 32px;
+  align-items: stretch;
+}
+.growth-col {
+  flex: 1 1 0;
+  min-width: 340px;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+}
+.order-status-pie-section {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px #0001;
+  padding: 18px 18px 18px 18px;
+  min-width: 340px;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+}
+.growth-box {
+    background: #fff;
+  border-radius: 16px;
+  padding: 18px 18px 10px 18px;
+  box-shadow: 0 2px 8px #0001;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  width: 100%;        
+  max-width: 800px;   
+  min-width: 0;        
+  flex: 1 1 0; 
+  
+}
+.growth-title {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 12px;
+  color: #111;
+}
+
+.growth-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.growth-item {
+  background: #111;
+  color: #fff;
+  border-radius: 18px;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 18px;
+  box-shadow: 0 2px 8px #0002;
+}
+
+.growth-icon {
+  font-size: 26px;
+  margin-right: 8px;
+  color: #fff;
+  width: 38px;
+  display: flex;
+  justify-content: center;
+}
+
+.growth-label {
+  font-weight: 600;
+  min-width: 160px;
+}
+
+.growth-value {
+  font-weight: bold;
+  min-width: 140px;
+}
+
+.growth-percent {
+  margin-left: auto;
+  font-weight: bold;
+  font-size: 18px;
+  color: #22b34c;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.growth-percent.down {
+  color: #e53935;
+}
+.growth-percent i {
+  font-size: 18px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 24px;
+  margin: 32px 0;
+}
+.dashboard-cell {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
 }
 </style>

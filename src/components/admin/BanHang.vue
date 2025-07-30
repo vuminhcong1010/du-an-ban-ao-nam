@@ -67,6 +67,7 @@ async function createNewOrder() {
       body: JSON.stringify({
         idNhanVien: idNv,
       }),
+
     });
     const maHoaDon = await response.text();
 
@@ -81,7 +82,7 @@ async function createNewOrder() {
       maHoaDon: maHoaDon,
       khachHang: {
         idKhachHang: "",
-        tenKhachHang: "",
+        tenKhachHang: "Khách lẻ",
         tenNguoiNhan: "",
         diaChi: "",
         sdt: "",
@@ -158,31 +159,35 @@ async function closeOrder(id) {
   const order = orders.value.find((o) => o.id === id);
   if (!order) return;
 
-  // ✅ Xác nhận từ người dùng
+  // Xác nhận từ người dùng
   const confirmed = window.confirm(
     `Bạn có chắc chắn muốn xoá hóa đơn [${order.maHoaDon}] không?`
   );
   if (!confirmed) return;
 
   try {
+    // Hoàn lại số lượng phiếu giảm giá trước nếu có
+    if (order.giamGia && order.giamGia.id) {
+      await axios.put(`http://localhost:8080/ban_hang/phieuGG/increase/${order.giamGia.id}`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(`Hoàn lại số lượng phiếu giảm giá ID: ${order.giamGia.id}`);
+    }
+
+    // Xóa hóa đơn
     await axios.delete(`http://localhost:8080/hoa-don/xoa/${order.maHoaDon}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
+
     console.log("✅ Đã xoá hóa đơn:", order.maHoaDon);
     localStorage.removeItem(`order_${id}`);
   } catch (err) {
     console.error("❌ Lỗi xoá hóa đơn:", err);
-    alert("Xóa hóa đơn thất bại!");
-    return;
-  }
-
-  // ✅ Xoá tab sau khi xoá thành công
-
-  orders.value = orders.value.filter((o) => o.id !== id);
-  if (activeTab.value === id) {
-    activeTab.value = orders.value.length > 0 ? orders.value[0].id : null;
+    alert("Xóa hóa đơn thất bại! Vui lòng thử lại.");
   }
   // ✅ Xoá khỏi localStorage
 }
@@ -449,6 +454,15 @@ const hoanThanhDonHang = async (order) => {
     };
 
     await axios.post("http://localhost:8080/ban_hang/hoan-thanh", payload);
+    // ✅ Giảm số lượng phiếu giảm giá nếu có
+    if (order.giamGia && order.giamGia.id) {
+      await axios.put(`http://localhost:8080/ban_hang/phieuGG/decrease/${order.giamGia.id}`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(`Giảm số lượng phiếu giảm giá ID: ${order.giamGia.id}`);
+    }
 
     alert("✅ Đơn hàng đã hoàn tất thành công!");
 
@@ -660,16 +674,9 @@ async function calculateAndUpdateShippingFee(order) {
 </script>
 
 <template>
-  <div
-    class="bg-white p-3 rounded mb-4 d-flex align-items-center justify-content-between border"
-    style="height: 60px"
-  >
+  <div class="bg-white p-3 rounded mb-4 d-flex align-items-center justify-content-between border" style="height: 60px">
     <h5 class="fw-bold mb-0">Bán hàng tại quầy</h5>
-    <button
-      class="btn success"
-      style="background-color: #0a2c57; color: white"
-      @click="createNewOrder"
-    >
+    <button class="btn success" style="background-color: #0a2c57; color: white" @click="createNewOrder">
       <Plus class="me-1" size="16" /> Tạo đơn mới
     </button>
     <button class="btn btn-danger" @click="xoaToanBoLocal" v-if="false">
@@ -679,12 +686,7 @@ async function calculateAndUpdateShippingFee(order) {
 
   <ul class="nav nav-tabs">
     <li class="nav-item" v-for="order in orders" :key="order.id">
-      <a
-        class="nav-link"
-        :class="{ active: order.id === activeTab }"
-        href="#"
-        @click.prevent="activeTab = order.id"
-      >
+      <a class="nav-link" :class="{ active: order.id === activeTab }" href="#" @click.prevent="activeTab = order.id">
         {{ order.maHoaDon }}
         <!-- 🔽 Nếu có sản phẩm thì hiển thị số lượng -->
         <span v-if="order.listSanPham.length > 0" class="badge bg-danger ms-1">
@@ -698,23 +700,12 @@ async function calculateAndUpdateShippingFee(order) {
   </ul>
 
   <div v-if="orders.length === 0" class="text-center mt-5">
-    <img
-      src="https://web.nvnstatic.net/tp/T0213/img/tmp/cart-empty.png?v=9"
-      alt="No orders"
-      width="170"
-    />
+    <img src="https://web.nvnstatic.net/tp/T0213/img/tmp/cart-empty.png?v=9" alt="No orders" width="170" />
     <p class="mt-2">Không có bất kỳ đơn hàng nào !!!</p>
   </div>
 
-  <div
-    v-if="activeTab !== null"
-    class="bg-white p-3 rounded mb-4 align-items-center border"
-  >
-    <div
-      v-for="order in orders"
-      :key="order.id"
-      v-show="order.id === activeTab"
-    >
+  <div v-if="activeTab !== null" class="bg-white p-3 rounded mb-4 align-items-center border">
+    <div v-for="order in orders" :key="order.id" v-show="order.id === activeTab">
       <h6>Chi tiết hóa đơn {{ order.maHoaDon }}</h6>
       
 
@@ -722,10 +713,7 @@ async function calculateAndUpdateShippingFee(order) {
       <GioHang :order="order" :activeTab="activeTab" :orders="orders" />
 
       <!-- Khách hàng -->
-      <KhachHang
-        :order="order"
-        @capNhatThongTinKhachHang="capNhatThongTinKhachHang"
-      />
+      <KhachHang :order="order" @capNhatThongTinKhachHang="capNhatThongTinKhachHang" />
 
       <!-- Phiếu giảm giá -->
       <GiamGia :order="order" :activeTab="activeTab" :orders="orders" />
@@ -748,17 +736,12 @@ async function calculateAndUpdateShippingFee(order) {
       <!-- Phương thức thanh toán -->
       <div class="d-flex align-items-center gap-3 mb-3">
         <label class="fw-bold mb-0">Phương thức thanh toán:</label>
-        <button
-          class="btn border rounded-circle d-flex align-items-center justify-content-center"
-          style="
+        <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
             width: 36px;
             height: 36px;
             background-color: #0a2c57;
             color: white;
-          "
-          title="Chuyển khoản"
-          @click="showThanhToan = true"
-        >
+          " title="Chuyển khoản" @click="showThanhToan = true">
           <CreditCard size="18" />
         </button>
         <ThanhToan
@@ -771,10 +754,10 @@ async function calculateAndUpdateShippingFee(order) {
           Array.isArray(order.thanhToan)
             ? order.thanhToan.map((pt) => pt.tenPhuongThuc).join(" + ")
             : order.thanhToan?.hinhThuc === "tien_mat"
-            ? "Tiền mặt"
-            : order.thanhToan?.hinhThuc === "chuyen_khoan"
-            ? "Chuyển khoản"
-            : "Thanh toán + Chuyển khoản"
+              ? "Tiền mặt"
+              : order.thanhToan?.hinhThuc === "chuyen_khoan"
+                ? "Chuyển khoản"
+                : "Thanh toán + Chuyển khoản"
         }}</span>
       </div>
 
@@ -789,16 +772,12 @@ async function calculateAndUpdateShippingFee(order) {
 
       <!-- Nút hoàn tất -->
       <div class="text-end">
-        <button
-          class="btn"
-          style="
+        <button class="btn" style="
             background-color: #0a2c57;
             color: white;
             min-width: 200px;
             font-weight: bold;
-          "
-          @click="hoanThanhDonHang(order)"
-        >
+          " @click="hoanThanhDonHang(order)">
           Hoàn thành đơn hàng
         </button>
       </div>
