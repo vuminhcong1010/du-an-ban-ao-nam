@@ -66,17 +66,17 @@ const router = createRouter({
           component: DangNhapCustomer,
         },
         {
-          path: "/client-san-pham",
+          path: "client-san-pham",
           name: "client-san-pham",
           component: ClientSanPham,
         },
         {
-          path: "/client-san-pham-detail/:id",
+          path: "client-san-pham-detail/:id",
           name: "client-san-pham-detail",
           component: ClientSanPhamDetail,
         },
         {
-          path: "/client-oder/:hoaDonId",
+          path: "client-oder/:hoaDonId",
           name: "client-Oder",
           component: Oder,
           props: (route) => ({ hoaDonId: Number(route.params.hoaDonId) }), // ép về Number
@@ -329,7 +329,8 @@ router.beforeEach((to, from, next) => {
       "/quen-mat-khau",
       "/dang-nhap-khach-hang",
       "/coolmen",
-    ].includes(to.path)
+    ].includes(to.path) &&
+    !to.path.startsWith("/coolmen")
   ) {
     return next("/dang-nhap");
   }

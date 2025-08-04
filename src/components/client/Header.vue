@@ -11,7 +11,7 @@
       <nav class="main-navigation">
         <ul>
           <li><a href="#">Trang chủ</a></li>
-          <li><a href="/client-san-pham">Sản phẩm</a></li>
+          <li><a href="/coolmen/client-san-pham">Sản phẩm</a></li>
           <li><a href="#">Danh mục</a></li>
           <li><a href="#">Giảm giá</a></li>
           <li><a href="#">Liên hệ</a></li>
