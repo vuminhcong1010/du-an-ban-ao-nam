@@ -64,7 +64,7 @@ const dangNhap = async () => {
   passwordError.value = ''
 
   try {
-    const response = await axios.post("http://localhost:8080/login", login.value, {withCredentials: true})
+    const response = await axios.post("http://localhost:8080/login-customer", login.value, {withCredentials: true})
 
     if (response.data.data === false) {
       // Phân tích lỗi nếu backend trả về thông báo
@@ -82,8 +82,10 @@ const dangNhap = async () => {
       }
 
     } else {
-      Cookies.set("token", response.data.data, { expires: 0.3 }) // 0.3 ~ 7.2 giờ
-      window.location.href = "/san-pham"
+      Cookies.set("thongTinKhachHang", JSON.stringify(response.data.data), { expires: 0.3 });
+      const thongTin = JSON.parse(Cookies.get("thongTinKhachHang"));
+      console.log(thongTin);
+      window.location.href = "/coolmen"
     }
   } catch (err) {
     usernameError.value = 'Lỗi kết nối đến máy chủ!'

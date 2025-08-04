@@ -15,6 +15,10 @@ let trangThai = ref(true)
 let tenNhanVien = ref()
 let image = ref()
 
+let req = {
+  token: token
+}
+
 if (!token) {
   trangThai.value = false
 } else {
@@ -22,7 +26,8 @@ if (!token) {
     const payload = JSON.parse(atob(token.split('.')[1]))
     const exp = payload.exp
     const now = Math.floor(Date.now() / 1000)
-    image.value =`localhost:8080`+payload.anh
+    image.value =`http://localhost:8080`+payload.anh
+    console.log('image.value', payload.anh);
     tenNhanVien.value = payload.tenNhanVien
     if (exp <= now) {
       console.warn("⛔ Token đã hết hạn")
@@ -77,9 +82,11 @@ const handleSubmit = () => {
 };
 
 function removeToken(){
+  axios.post("http://localhost:8080/log-out",req)
   Cookies.remove('token')
-  window.location.href = "/login"
+  window.location.href = "/dang-nhap"
   trangThai.value = false
+
 }
 </script>
 
@@ -113,7 +120,7 @@ function removeToken(){
   <!-- Menu xổ xuống -->
   <ul class="dropdown-menu">
     <li><a class="dropdown-item fw-medium" href="/thong-tin-ca-nhan"><i class="fa-regular fa-user me-2"></i>Thông tin cá nhân</a></li>
-    <li><a class="dropdown-item fw-medium" data-bs-toggle="modal" data-bs-target="#exampleModal"><Lock class="mb-1 me-1" style="width: 19px; height: 19px;margin-left: -3px;" /> Đổi mật khẩu</a></li>
+    <li><a class="dropdown-item fw-medium" data-bs-toggle="modal" data-bs-target="#doimatkhau"><Lock class="mb-1 me-1" style="width: 19px; height: 19px;margin-left: -3px;" /> Đổi mật khẩu</a></li>
     <li><div class="dropdown-item fw-medium" @click="removeToken()"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i>Logout</div></li>
   </ul>
 </div>
@@ -122,11 +129,12 @@ function removeToken(){
   
 
 <!-- Modal -->
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="doimatkhau" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
-        <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+        <!-- <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1> -->
+         <h1 class="modal-title fs-5" id="exampleModalLabel">Đổi mật khẩu</h1>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">

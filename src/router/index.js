@@ -1,23 +1,7 @@
-// src/router/index.js
-
-import { createRouter, createWebHistory } from "vue-router";
-import Cookies from "js-cookie";
-
-// --- CLIENT COMPONENTS ---
-import ClientLayout from "@/views/client/ClientLayout.vue";
-import HomePage from "@/components/client/HomePage.vue";
-
-// --- ADMIN COMPONENTS ---
-// Import AdminLayout mới
-import AdminLayout from "@/views/admin/AdminLayout.vue"; // Đảm bảo đường dẫn này đúng
-
-// Các import component admin khác của bạn (giữ nguyên)
-import DangNhap from "@/components/admin/DangNhap.vue";
-import QuenMatKhau from "@/components/admin/QuenMatKhau.vue";
-import ThongTinNhanVien from "@/components/admin/ThongTinNhanVien.vue";
 import QuanLyKhachHang from "../views/CustomerManagement.vue";
 import KhachHangAddPage from "@/components/admin/KhachHangAddPage.vue";
 import KhachHangEditPage from "@/components/admin/KhachHangEditPage.vue";
+import { createRouter, createWebHistory } from "vue-router";
 import NhanVien from "@/components/admin/NhanVien.vue";
 import ThemNhanVien from "@/components/admin/ThemNhanVien.vue";
 import ChatLieu from "@/components/admin/ChatLieu.vue";
@@ -27,23 +11,43 @@ import Mau from "@/components/admin/Mau.vue";
 import KichCo from "@/components/admin/KichCo.vue";
 import KieuAo from "@/components/admin/KieuAo.vue";
 import SanPham from "@/components/admin/SanPham.vue";
-import ThemSP from "@/components/admin/ThemSP.vue";
+import ThemSanPham from "@/components/admin/ThemSanPham.vue";
 import ChiTietSanPham from "@/components/admin/ChiTietSanPham.vue";
 import DanhMuc from "@/components/admin/DanhMuc.vue";
 import PhieuGiamGia from "@/components/admin/PhieuGiamGia.vue";
 import ThemPhieuGiamGia from "@/components/admin/ThemPhieuGiamGIa.vue";
 import SuaPhieuGiamGia from "@/components/admin/SuaPhieuGiamGia.vue";
-import DotGiamGia from "@/components/admin/DotGiamGia.vue";
-import ThemDotGiamGia from "@/components/admin/ThemDotGiamGia.vue";
-import SuaDotGiamGia from "@/components/admin/SuaDotGiamGia.vue";
-import PhieuGiamGiaBH from "@/components/admin/PhieuGiamGiaBH.vue";
 import HoaDon from "../components/admin/HoaDon.vue";
 import HoaDonChiTiet from "@/components/admin/HoaDonChiTiet.vue";
 import BanHang from "@/components/admin/BanHang.vue";
+import ThemSP from "@/components/admin/ThemSP.vue";
+import SuaDotGiamGia from "@/components/admin/SuaDotGiamGia.vue";
+import ThemDotGiamGia from "@/components/admin/ThemDotGiamGia.vue";
+import DotGiamGia from "@/components/admin/DotGiamGia.vue";
+import DangNhap from "@/components/admin/DangNhap.vue";
+import Cookies from "js-cookie";
+// --- CLIENT COMPONENTS ---
+import ClientLayout from "@/views/client/ClientLayout.vue";
+import HomePage from "@/components/client/HomePage.vue";
+
+// --- ADMIN COMPONENTS ---
+// Import AdminLayout mới
+import AdminLayout from "@/views/admin/AdminLayout.vue"; // Đảm bảo đường dẫn này đúng
+
+import Chat from "@/components/admin/Chat.vue";
+import PhieuGiamGiaBH from "@/components/admin/PhieuGiamGiaBH.vue";
+
 import ThongKeTongHop from "@/components/admin/ThongKeTongHop.vue";
+
+import DangNhapCustomer from "@/components/admin/DangNhapCustomer.vue";
+import ThongTinNhanVien from "@/components/admin/ThongTinNhanVien.vue";
+import ClientSanPham from "@/components/client/ProductPage.vue";
+import Oder from "@/components/client/Order.vue";
+import ClientSanPhamDetail from "@/components/client/ProductDetail.vue";
 import ThongKeBaoCao from "@/components/admin/ThongKeBaoCao.vue";
 import Test1 from "@/components/admin/Test1.vue";
 import CategoriesPage from "@/components/client/CategoriesPage.vue";
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -62,7 +66,28 @@ const router = createRouter({
         path: 'categories', // Đường dẫn cho trang danh mục sản phẩm
         name: 'Categories',
         component: CategoriesPage
-      },
+        },
+        {
+          path: "/dang-nhap-khach-hang",
+          name: "dang-nhap-khach-hang",
+          component: DangNhapCustomer,
+        },
+        {
+          path: "client-san-pham",
+          name: "client-san-pham",
+          component: ClientSanPham,
+        },
+        {
+          path: "/client-san-pham-detail/:id",
+          name: "client-san-pham-detail",
+          component: ClientSanPhamDetail,
+        },
+        {
+          path: "/client-oder/:hoaDonId",
+          name: "client-Oder",
+          component: Oder,
+          props: (route) => ({ hoaDonId: Number(route.params.hoaDonId) }), // ép về Number
+        },
         // Thêm các route client khác ở đây
       ],
     },
@@ -76,7 +101,7 @@ const router = createRouter({
     {
       path: "/quen-mat-khau",
       name: "ForgotPassword",
-      component: QuenMatKhau,
+      component: () => import("@/components/admin/QuenMatKhau.vue"),
     },
 
     // --- ADMIN LAYOUT ROUTES ---
@@ -279,6 +304,11 @@ const router = createRouter({
           component: PhieuGiamGiaBH,
           meta: { requiresAuth: true },
         },
+        {
+          path: "/chat",
+          name: "chat",
+          component: Chat,
+        },
       ],
     },
 
@@ -293,33 +323,40 @@ const router = createRouter({
     },
   ],
 });
+// ✅ Navigation Guard sử dụng cookie
 
-// Navigation Guard (giữ nguyên)
 router.beforeEach((to, from, next) => {
   const token = Cookies.get("token");
 
-  if (to.meta.requiresAuth && !token) {
+  // ✅ 1. Chưa có token => chỉ cho phép vào /dang-nhap và /quen-mat-khau
+  if (
+    !token &&
+    ![
+      "/dang-nhap",
+      "/quen-mat-khau",
+      "/dang-nhap-khach-hang",
+      "/coolmen",
+    ].includes(to.path)
+  ) {
     return next("/dang-nhap");
   }
 
-  if (token && (to.path === "/dang-nhap" || to.path === "/quen-mat-khau")) {
-    return next("/");
+  // ✅ 2. Đã có token nhưng vào lại /dang-nhap => đá về /
+  if (token && to.path === "/dang-nhap") {
+    return next("/san-pham");
   }
 
+  // ✅ 3. Nếu có token, giải mã và kiểm tra vai trò
   if (token) {
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
       const vaiTro = payload.scope || payload.vaiTro || "";
 
-      if (to.meta.requiresRole && to.meta.requiresRole !== vaiTro) {
-        return next("/");
-      }
-
+      // Nếu là STAFF mà truy cập /nhan-vien => chặn
       if (vaiTro === "STAFF" && to.path.startsWith("/nhan-vien")) {
-        return next("/");
+        return next("/san-pham");
       }
     } catch (err) {
-      console.error("Error decoding token:", err);
       Cookies.remove("token");
       return next("/dang-nhap");
     }

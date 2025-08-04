@@ -29,3 +29,10 @@ provide('toggleSidebarCollapse', toggleSidebarCollapse)
   </div>
 </template>
 
+
+<style>
+/* Đặt CSS không scoped cho các quy tắc toàn cục hoặc cấu trúc layout */
+/* Cần đảm bảo các style này được áp dụng trong Topbar.vue hoặc global CSS */
+
+</style>
+

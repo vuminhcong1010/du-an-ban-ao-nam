@@ -89,11 +89,11 @@
   <h5 class="fw-semibold m-0">Danh sách biến thể sản phẩm</h5>
   <div class="d-flex gap-2">
     <div class="form-group mb-2 me-3">
-      <lable class="form-label small fw-bold ">Số lượng:</lable>
+      <label class="form-label small fw-bold ">Số lượng:</label>
       <input type="text" class="form-control" placeholder="Nhập số lượng" style="width: 200px;" v-model="data.soLuong">
     </div>
     <div class="form-group mb-2 me-3">
-        <lable class="form-label small fw-bold ">Giá:</lable>
+        <label class="form-label small fw-bold ">Giá:</label>
         <input type="text" class="form-control" placeholder="Nhập giá" style="width: 200px;" v-model="data.gia">
     </div>
     

@@ -825,9 +825,6 @@ async function handleToggleVaiTro(nhanVien, event) {
 
 <style scoped>
 .nhanvien-page-wrapper {
-  max-width: 1200px;
-  margin-left: 0;
-  margin-right: auto;
   width: 100%;
 }
 
