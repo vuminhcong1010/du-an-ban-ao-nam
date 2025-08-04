@@ -516,7 +516,7 @@ function handleQRScanned(data) {
 
               <div class="form-group">
                 <label>Ghi chú</label>
-                <textarea v-model="formData.ghiChu" title="Nhập ghi chú cho nhân viên"></textarea>
+                <textarea v-model="formData.ghiChu" title="Nhập ghi chú cho nhân viên" rows="3" style="min-height: 80px;"></textarea>
               </div>
             </div>
           </div>
@@ -547,6 +547,8 @@ function handleQRScanned(data) {
 <style scoped>
 .add-employee-container {
   padding: 20px;
+  position: relative;
+  z-index: 1;
 }
 
 .header-box {
@@ -600,11 +602,15 @@ function handleQRScanned(data) {
   border-radius: 12px;
   box-shadow: 0 5px 10px #d1cac0;
   padding: 24px;
+  position: relative;
+  z-index: 2;
 }
 
 .employee-form {
   max-width: 1200px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .form-flex {
@@ -675,6 +681,8 @@ function handleQRScanned(data) {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .form-group label {
@@ -684,7 +692,8 @@ function handleQRScanned(data) {
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
   padding: 8px 12px;
   border: none;
   border-bottom: 2px solid #222;
@@ -695,10 +704,12 @@ function handleQRScanned(data) {
   font-size: 14px;
   transition: all 0.18s;
   width: 100%;
+  resize: vertical;
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
   border-bottom: 2px solid #111;
   outline: none;
 }
@@ -707,6 +718,8 @@ function handleQRScanned(data) {
   margin-top: 32px;
   display: flex;
   justify-content: flex-end;
+  position: relative;
+  z-index: 10;
 }
 
 .submit-btn {
@@ -718,6 +731,8 @@ function handleQRScanned(data) {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.18s;
+  position: relative;
+  z-index: 10;
 }
 
 .submit-btn:hover {
@@ -725,20 +740,24 @@ function handleQRScanned(data) {
   box-shadow: 0 2px 8px #339cf133;
 }
 
-*:focus {
+/* Chỉ áp dụng cho các element cụ thể, không áp dụng cho tất cả */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
   outline: none !important;
   box-shadow: none !important;
 }
 
 .toast-stack {
-  position: absolute;
+  position: fixed;
   right: 32px;
   top: 70px;
-  z-index: 9999;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   gap: 12px;
   align-items: flex-end;
+  pointer-events: none;
 }
 
 .toast-error {
@@ -847,6 +866,7 @@ input:read-only {
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  pointer-events: auto;
 }
 
 .modal-add-role {
