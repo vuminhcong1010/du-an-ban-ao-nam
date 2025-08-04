@@ -43,6 +43,7 @@ import BanHang from "@/components/admin/BanHang.vue";
 import ThongKeTongHop from "@/components/admin/ThongKeTongHop.vue";
 import ThongKeBaoCao from "@/components/admin/ThongKeBaoCao.vue";
 import Test1 from "@/components/admin/Test1.vue";
+import CategoriesPage from "@/components/client/CategoriesPage.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -57,6 +58,11 @@ const router = createRouter({
           name: "home",
           component: HomePage,
         },
+         {
+        path: 'categories', // Đường dẫn cho trang danh mục sản phẩm
+        name: 'Categories',
+        component: CategoriesPage
+      },
         // Thêm các route client khác ở đây
       ],
     },

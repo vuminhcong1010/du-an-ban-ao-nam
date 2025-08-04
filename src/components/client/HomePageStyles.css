@@ -1,0 +1,350 @@
+/* --- Hero Section --- */
+.hero-section {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f7f7f7; /* Màu nền nhẹ cho phần hero */
+  padding: 60px 0; /* Khoảng đệm trên dưới */
+  min-height: 450px; /* Chiều cao tối thiểu */
+  overflow: hidden; /* Đảm bảo ảnh nền không tràn ra */
+}
+
+.hero-content {
+  flex: 1;
+  max-width: 500px;
+  z-index: 1; /* Đảm bảo nội dung nằm trên ảnh nền */
+  text-align: left;
+}
+
+.hero-content h1 {
+  font-size: 3.5em;
+  color: #333;
+  margin-bottom: 10px;
+  font-weight: 800;
+}
+
+.hero-content h2 {
+  font-size: 2.5em;
+  color: #555;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.hero-content p {
+  font-size: 1.1em;
+  color: #777;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.shop-now-btn {
+  background-color: #007bff;
+  color: white;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.shop-now-btn:hover {
+  background-color: #0056b3;
+}
+
+.hero-image {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 55%; /* Chiếm 55% chiều rộng bên phải */
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: hidden;
+}
+
+.hero-image img {
+  height: 100%;
+  width: auto;
+  object-fit: cover;
+  object-position: right center; /* Căn ảnh sang phải */
+}
+
+/* --- Brand Logos Section --- */
+.brand-logos {
+  padding: 40px 0;
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+.logos-grid {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap; /* Cho phép xuống dòng trên màn hình nhỏ */
+  gap: 30px; /* Khoảng cách giữa các logo */
+}
+
+.logos-grid img {
+  max-height: 40px;
+  filter: grayscale(100%); /* Làm xám logo */
+  opacity: 0.6;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.logos-grid img:hover {
+  filter: grayscale(0%);
+  opacity: 1;
+}
+
+/* --- Categories Section --- */
+.categories-section {
+  padding: 60px 0;
+  background-color: #f7f7f7;
+}
+
+.section-title {
+  text-align: center;
+  font-size: 2.2em;
+  color: #333;
+  margin-bottom: 40px;
+  font-weight: bold;
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+  justify-content: center;
+}
+
+.category-card {
+  background-color: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.category-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.category-image {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  display: block;
+}
+
+.category-name {
+  font-size: 1.4em;
+  color: #333;
+  margin: 15px 0 20px;
+  font-weight: 600;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 1200px) {
+  .hero-content {
+    max-width: 450px;
+  }
+}
+
+@media (max-width: 992px) {
+  .hero-section {
+    flex-direction: column; /* Sắp xếp lại theo cột */
+    padding: 40px 0;
+    min-height: auto;
+  }
+  .hero-content {
+    max-width: 90%;
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .hero-image {
+    position: relative;
+    width: 100%;
+    height: 300px; /* Chiều cao cố định cho ảnh trên mobile */
+    justify-content: center;
+  }
+  .hero-image img {
+    width: 100%;
+    height: 100%;
+    object-position: center;
+  }
+
+  .section-title {
+    font-size: 2em;
+  }
+  .categories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-content h1 {
+    font-size: 2.8em;
+  }
+  .hero-content h2 {
+    font-size: 2em;
+  }
+  .hero-content p {
+    font-size: 1em;
+  }
+  .shop-now-btn {
+    padding: 12px 25px;
+    font-size: 1em;
+  }
+
+  .section-title {
+    font-size: 1.8em;
+    margin-bottom: 30px;
+  }
+  .categories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+  }
+  .category-image {
+    height: 200px;
+  }
+  .category-name {
+    font-size: 1.2em;
+    margin: 10px 0 15px;
+  }
+  .logos-grid {
+    gap: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-content h1 {
+    font-size: 2.2em;
+  }
+  .hero-content h2 {
+    font-size: 1.6em;
+  }
+  .hero-image {
+    height: 250px;
+  }
+
+  .section-title {
+    font-size: 1.5em;
+    margin-bottom: 25px;
+  }
+  .categories-grid {
+    grid-template-columns: 1fr; /* Một cột duy nhất trên màn hình nhỏ hơn */
+    gap: 15px;
+  }
+  .category-image {
+    height: 180px;
+  }
+}
+
+.categories-section {
+  padding: 40px 0; /* Thêm padding trên và dưới để tạo khoảng cách */
+}
+
+.categories-section .container {
+    /* Đảm bảo container này có padding hai bên để nội dung không bị dính vào mép */
+    max-width: 1200px; /* Hoặc giá trị phù hợp với thiết kế của bạn */
+    margin: 0 auto;
+    padding: 0 20px; /* Đảm bảo có padding ngang */
+    box-sizing: border-box;
+}
+
+.section-header {
+  display: flex; /* Biến header của section thành flex container */
+  justify-content: space-between; /* Đẩy "Shop by Category" sang trái và "View All" sang phải */
+  align-items: center; /* Căn giữa theo chiều dọc */
+  margin-bottom: 30px; /* Khoảng cách giữa header và lưới danh mục */
+}
+
+.section-title {
+  font-size: 32px; /* Kích thước chữ lớn hơn cho tiêu đề */
+  font-weight: bold;
+  color: #333;
+  margin: 0; /* Loại bỏ margin mặc định của h2 */
+}
+
+.view-all-link {
+  text-decoration: none;
+  color: #007bff; /* Màu xanh cho link */
+  font-weight: 600;
+  font-size: 18px; /* Kích thước chữ cho link */
+  transition: color 0.3s ease;
+}
+
+.view-all-link:hover {
+  color: #0056b3;
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Điều chỉnh minmax cho kích thước thẻ */
+  gap: 25px; /* Khoảng cách giữa các thẻ danh mục */
+}
+
+.category-card {
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  text-align: center;
+  padding-bottom: 15px;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.category-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+}
+
+.category-image {
+  width: 100%;
+  height: 180px; /* Chiều cao cố định cho ảnh */
+  object-fit: cover; /* Đảm bảo ảnh được cover đầy đủ */
+  border-radius: 10px 10px 0 0;
+}
+
+.category-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-top: 15px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .section-title {
+    font-size: 24px;
+  }
+  .view-all-link {
+    font-size: 16px;
+  }
+  .categories-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+  }
+  .category-image {
+    height: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-title {
+    font-size: 20px;
+  }
+  .view-all-link {
+    font-size: 14px;
+  }
+  .categories-grid {
+    grid-template-columns: 1fr 1fr; /* 2 cột trên màn hình nhỏ */
+  }
+}

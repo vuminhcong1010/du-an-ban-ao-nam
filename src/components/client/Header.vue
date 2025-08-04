@@ -11,7 +11,7 @@
         <ul>
           <li><a href="#">Trang chủ</a></li>
           <li><a href="#">Sản phẩm</a></li>
-          <li><a href="#">Danh mục</a></li>
+          <li><a href="/coolmen/categories">Danh mục</a></li>
           <li><a href="#">Giảm giá</a></li>
           <li><a href="#">Liên hệ</a></li>
         </ul>
@@ -62,16 +62,17 @@ export default {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 0 20px;
+  /* max-width: 1400px; */ /* Tăng max-width để mở rộng nội dung ra hơn */
+  /* Hoặc bỏ hẳn max-width nếu bạn muốn nó luôn full width */
+  margin: 0 auto;
+  /* Giảm padding để logo và icons gần mép hơn */
+  padding: 0 10px; /* Giảm padding ngang từ 20px xuống 10px */
   box-sizing: border-box;
 }
 
 /* 1. Đẩy icon và chữ logo sát gần bên trái hơn */
 .logo {
-  /* margin-right: auto; để logo đẩy các phần tử khác ra xa nhất có thể bên phải */
-  /* Hoặc sử dụng flex-grow để nó không co lại */
-  flex-shrink: 0; /* Đảm bảo logo không bị co lại khi không gian hẹp */
-  /* padding-left: 0; */ /* Đảm bảo không có padding thừa từ style khác */
+  flex-shrink: 0;
 }
 
 .logo a {
@@ -87,8 +88,16 @@ export default {
   width: 48px;
   height: 48px;
   vertical-align: middle;
-  margin-right: 8px; /* Khoảng cách giữa icon và chữ "CoolMen" */
+  margin-right: 8px;
   object-fit: contain;
+}
+
+/* 2. Đảm bảo navigation ở giữa và cách xa cả hai bên */
+.main-navigation {
+  flex-grow: 1; /* Cho phép navigation chiếm không gian trống còn lại */
+  display: flex; /* Biến nó thành flex container */
+  justify-content: center; /* Căn giữa các mục menu của nó trong không gian nó chiếm */
+  align-items: center;
 }
 
 .main-navigation ul {
@@ -99,7 +108,8 @@ export default {
 }
 
 .main-navigation li {
-  margin-left: 25px;
+  margin-left: 30px; /* Tăng khoảng cách giữa các mục menu một chút */
+  /* Bạn có thể điều chỉnh giá trị này */
 }
 
 .main-navigation a {
@@ -113,19 +123,17 @@ export default {
   color: #007bff;
 }
 
+/* Nhóm bên phải: Search + Icons */
 .header-actions {
   display: flex;
   align-items: center;
-  /* Sử dụng gap để tạo khoảng cách giữa các phần tử bên trong */
   gap: 15px; /* Khoảng cách giữa search-box, user-icon, cart-icon */
-  /* Đảm bảo header-actions không bị co lại */
   flex-shrink: 0;
 }
 
 .search-box {
   display: flex;
-  /* CHỈNH SỬA: Đảm bảo search-box có thể mở rộng */
-  flex-grow: 1; /* Cho phép search-box mở rộng nếu có không gian */
+  flex-grow: 1;
 }
 
 .search-box input {
@@ -134,11 +142,10 @@ export default {
   border-radius: 5px 0 0 5px;
   outline: none;
   font-size: 15px;
-  /* CHỈNH SỬA TẠI ĐÂY: Kéo dài thanh search */
-  width: 300px; /* Tăng chiều rộng cố định */
-  min-width: 150px; /* Đảm bảo nó không quá nhỏ */
-  max-width: 100%; /* Đảm bảo nó không vượt quá kích thước cha */
-  flex-grow: 1; /* Cho phép nó mở rộng nếu cần thiết */
+  width: 350px; /* Vẫn giữ chiều rộng cố định cho ô tìm kiếm */
+  min-width: 150px;
+  max-width: 100%;
+  flex-grow: 1;
 }
 
 .search-box button {
@@ -160,11 +167,6 @@ export default {
   background-color: #0056b3;
 }
 
-/* Loại bỏ margin-left trên user-icon và cart-icon để gap của header-actions hoạt động */
-.user-icon, .cart-icon {
-  /* margin-left đã bị loại bỏ */
-}
-
 .user-icon a, .cart-icon a {
   color: #555;
   font-size: 22px;
@@ -177,7 +179,7 @@ export default {
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .container {
     flex-wrap: wrap;
     justify-content: center;
@@ -189,13 +191,19 @@ export default {
       width: 100%;
       text-align: center;
       margin-bottom: 10px;
+      justify-content: center;
+  }
+
+  .main-navigation {
+      flex-grow: 0;
+      width: 100%;
+      justify-content: center;
+      margin-top: 15px;
   }
 
   .main-navigation ul {
     flex-wrap: wrap;
     justify-content: center;
-    width: 100%;
-    margin-top: 15px;
   }
 
   .main-navigation li {
