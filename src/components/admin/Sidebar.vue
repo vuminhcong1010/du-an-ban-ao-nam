@@ -26,34 +26,37 @@ const menuItems = computed(() => {
     { to: '/', label: 'Trang Chủ', icon: Home },
     { to: '/ban-hang', label: 'Bán Hàng', icon: DollarSign },
     { to: '/hoa-don', label: 'Hóa Đơn', icon: FileText },
-    {
-      to: '/san-pham',
-      label: 'Sản Phẩm',
-      icon: Package,
-      children: [
-        { to: '/san-pham/co-ao', label: 'Cổ áo' },
-        { to: '/san-pham/tay-ao', label: 'Tay áo' },
-        { to: '/san-pham/kieu-ao', label: 'Kiểu áo' },
-        { to: '/san-pham/kich-co', label: 'Kích cỡ' },
-        { to: '/san-pham/danh-muc', label: 'Danh mục' },
-        { to: '/san-pham/mau', label: 'Màu' },
-        { to: '/san-pham/chat-lieu', label: 'Chất Liệu' }
-      ]
-    },
-    { to: '/phieu-giam-gia', label: 'Phiếu Giảm Giá', icon: Ticket },
-    { to: '/dot-giam-gia', label: 'Đợt Giảm Giá', icon: Percent },
-    // 👇 Tạm thời không thêm "Nhân Viên" nếu vai trò là STAFF
+    // 👇 Ẩn Sản Phẩm nếu vai trò là STAFF
     ...(vaiTro.value !== 'STAFF'
-      ? [
-        {
-          to: '/nhan-vien',
-          label: 'Nhân Viên',
-          icon: UserCog
-        }
-      ]
+      ? [{
+          to: '/san-pham',
+          label: 'Sản Phẩm',
+          icon: Package,
+          children: [
+            { to: '/san-pham/co-ao', label: 'Cổ áo' },
+            { to: '/san-pham/tay-ao', label: 'Tay áo' },
+            { to: '/san-pham/kieu-ao', label: 'Kiểu áo' },
+            { to: '/san-pham/kich-co', label: 'Kích cỡ' },
+            { to: '/san-pham/danh-muc', label: 'Danh mục' },
+            { to: '/san-pham/mau', label: 'Màu' },
+            { to: '/san-pham/chat-lieu', label: 'Chất Liệu' }
+          ]
+        }]
+      : []),
+      ...(vaiTro.value !== 'STAFF'
+      ? [{ to: '/phieu-giam-gia', label: 'Phiếu Giảm Giá', icon: Ticket }]
+      : []),
+    // 👇 Ẩn Đợt Giảm Giá nếu vai trò là STAFF
+    ...(vaiTro.value !== 'STAFF'
+      ? [{ to: '/dot-giam-gia', label: 'Đợt Giảm Giá', icon: Percent }]
+      : []),
+    // 👇 Ẩn Nhân viên nếu vai trò là STAFF
+    ...(vaiTro.value !== 'STAFF'
+      ? [{ to: '/nhan-vien', label: 'Nhân Viên', icon: UserCog }]
       : []),
     { to: '/khach-hang', label: 'Khách Hàng', icon: User },
     {
+      
       to: '/thong-ke',
       label: 'Thống Kê',
       icon: BarChart,
