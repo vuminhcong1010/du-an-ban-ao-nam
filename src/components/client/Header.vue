@@ -7,25 +7,37 @@
           CoolMen
         </a>
       </div>
+
       <nav class="main-navigation">
         <ul>
           <li><a href="#">Trang chủ</a></li>
-          <li><a href="#">Sản phẩm</a></li>
+          <li><a href="/client-san-pham">Sản phẩm</a></li>
           <li><a href="#">Danh mục</a></li>
           <li><a href="#">Giảm giá</a></li>
           <li><a href="#">Liên hệ</a></li>
         </ul>
       </nav>
+
       <div class="header-actions">
+        <!-- Tìm kiếm -->
         <div class="search-box">
           <input type="text" placeholder="Tìm kiếm sản phẩm..." v-model="searchQuery">
           <button @click="performSearch"><i class="fas fa-search"></i></button>
         </div>
+
+        <!-- User -->
         <div class="user-icon">
           <a href="#"><i class="fas fa-user"></i></a>
         </div>
-        <div class="cart-icon">
+
+        <!-- Giỏ hàng -->
+        <div class="cart-icon" @click="toggleGioHang">
           <a href="#"><i class="fas fa-shopping-cart"></i></a>
+          <span v-if="soLuongGio > 0" class="badge">{{ soLuongGio }}</span>
+
+          <CartDetail v-if="hienChiTiet" :danhSachGio="danhSachGio" @close="hienChiTiet = false"
+            @removeItem="xoaSanPham" @update:danhSachGio="capNhatGioHangLocal" @capNhatGio="capNhatGioHang" />
+
         </div>
       </div>
     </div>
@@ -33,28 +45,143 @@
 </template>
 
 <script>
+import axios from 'axios'
+import Cookies from 'js-cookie'
+import CartDetail from './CartDetail.vue'  // sửa đường dẫn nếu cần
+
 export default {
   name: 'AppHeader',
+  components: { CartDetail },
   data() {
     return {
-      searchQuery: ''
-    };
+      searchQuery: '',
+      soLuongGio: 0,
+      hienChiTiet: false,
+      danhSachGio: []
+    }
+  },
+  mounted() {
+    this.capNhatGioHang();
+    window.addEventListener("cap-nhat-gio", () => {
+      this.capNhatGioHang();
+    });
+  }
+  ,
+  unmounted() {
+    window.removeEventListener("cap-nhat-gio", this.capNhatGioHang)
   },
   methods: {
     performSearch() {
       console.log('Đang tìm kiếm:', this.searchQuery);
+    },
+    async capNhatGioHang() {
+      try {
+        const token = Cookies.get('token');
+        const res = await axios.get('http://localhost:8080/hoa-don/clientLoadSanPham', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true
+        });
+
+        const data = Array.isArray(res.data) ? res.data : [];
+
+        data.forEach(sp => {
+          if (!sp.tongTien || sp.tongTien === 0) {
+            sp.tongTien = sp.soLuong * sp.gia;
+          }
+          if (!sp.anhSanPham) {
+            sp.anhSanPham = '/placeholder.png';
+          }
+        });
+
+        this.danhSachGio = data;
+        this.soLuongGio = data.reduce((tong, sp) => tong + sp.soLuong, 0);
+      } catch (error) {
+        this.danhSachGio = [];
+        this.soLuongGio = 0;
+        console.error('Lỗi khi lấy giỏ hàng:', error);
+      }
+    },
+    toggleGioHang() {
+      this.hienChiTiet = !this.hienChiTiet;
+    },
+    capNhatGioHangLocal(newDanhSach) {
+      this.danhSachGio = newDanhSach;
+      this.soLuongGio = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0);
+      sessionStorage.removeItem("gioHang");  // nếu có
+      localStorage.removeItem("gioHang");    // nếu có
+    },
+    xoaSanPham(idSanPhamChiTiet) {
+      this.danhSachGio = this.danhSachGio.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet);
+      this.soLuongGio = this.danhSachGio.reduce((tong, sp) => tong + sp.soLuong, 0);
     }
+
+
   }
-};
+
+
+}
+
 </script>
 
 <style scoped>
+.badge {
+  background: purple;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 50%;
+  position: absolute;
+  top: -5px;
+  right: -10px;
+}
+
+.cart-dropdown {
+  position: absolute;
+  right: 0;
+  top: 35px;
+  background-color: white;
+  border: 1px solid #ccc;
+  width: 250px;
+  padding: 10px;
+  z-index: 999;
+}
+
+.cart-icon {
+  position: relative;
+  /* Bố cục gốc để badge định vị */
+  display: inline-block;
+}
+
+.cart-icon .badge {
+  position: absolute;
+  top: -8px;
+  /* Dịch lên trên icon */
+  right: -8px;
+  /* Dịch sang phải icon */
+  background-color: purple;
+  /* Màu badge */
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  line-height: 1;
+}
+
 /* CSS cho Header (Chỉ ảnh hưởng đến component này nhờ 'scoped') */
 .main-header {
   background-color: #f8f8f8;
   padding: 20px 0;
   border-bottom: 1px solid #eee;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  width: 100%;
 }
 
 .container {
@@ -70,8 +197,10 @@ export default {
 .logo {
   /* margin-right: auto; để logo đẩy các phần tử khác ra xa nhất có thể bên phải */
   /* Hoặc sử dụng flex-grow để nó không co lại */
-  flex-shrink: 0; /* Đảm bảo logo không bị co lại khi không gian hẹp */
-  /* padding-left: 0; */ /* Đảm bảo không có padding thừa từ style khác */
+  flex-shrink: 0;
+  /* Đảm bảo logo không bị co lại khi không gian hẹp */
+  /* padding-left: 0; */
+  /* Đảm bảo không có padding thừa từ style khác */
 }
 
 .logo a {
@@ -87,7 +216,8 @@ export default {
   width: 48px;
   height: 48px;
   vertical-align: middle;
-  margin-right: 8px; /* Khoảng cách giữa icon và chữ "CoolMen" */
+  margin-right: 8px;
+  /* Khoảng cách giữa icon và chữ "CoolMen" */
   object-fit: contain;
 }
 
@@ -117,7 +247,8 @@ export default {
   display: flex;
   align-items: center;
   /* Sử dụng gap để tạo khoảng cách giữa các phần tử bên trong */
-  gap: 15px; /* Khoảng cách giữa search-box, user-icon, cart-icon */
+  gap: 15px;
+  /* Khoảng cách giữa search-box, user-icon, cart-icon */
   /* Đảm bảo header-actions không bị co lại */
   flex-shrink: 0;
 }
@@ -125,7 +256,8 @@ export default {
 .search-box {
   display: flex;
   /* CHỈNH SỬA: Đảm bảo search-box có thể mở rộng */
-  flex-grow: 1; /* Cho phép search-box mở rộng nếu có không gian */
+  flex-grow: 1;
+  /* Cho phép search-box mở rộng nếu có không gian */
 }
 
 .search-box input {
@@ -135,10 +267,14 @@ export default {
   outline: none;
   font-size: 15px;
   /* CHỈNH SỬA TẠI ĐÂY: Kéo dài thanh search */
-  width: 300px; /* Tăng chiều rộng cố định */
-  min-width: 150px; /* Đảm bảo nó không quá nhỏ */
-  max-width: 100%; /* Đảm bảo nó không vượt quá kích thước cha */
-  flex-grow: 1; /* Cho phép nó mở rộng nếu cần thiết */
+  width: 300px;
+  /* Tăng chiều rộng cố định */
+  min-width: 150px;
+  /* Đảm bảo nó không quá nhỏ */
+  max-width: 100%;
+  /* Đảm bảo nó không vượt quá kích thước cha */
+  flex-grow: 1;
+  /* Cho phép nó mở rộng nếu cần thiết */
 }
 
 .search-box button {
@@ -161,18 +297,21 @@ export default {
 }
 
 /* Loại bỏ margin-left trên user-icon và cart-icon để gap của header-actions hoạt động */
-.user-icon, .cart-icon {
+.user-icon,
+.cart-icon {
   /* margin-left đã bị loại bỏ */
 }
 
-.user-icon a, .cart-icon a {
+.user-icon a,
+.cart-icon a {
   color: #555;
   font-size: 22px;
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
-.user-icon a:hover, .cart-icon a:hover {
+.user-icon a:hover,
+.cart-icon a:hover {
   color: #007bff;
 }
 
@@ -186,9 +325,9 @@ export default {
   }
 
   .logo {
-      width: 100%;
-      text-align: center;
-      margin-bottom: 10px;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 10px;
   }
 
   .main-navigation ul {
@@ -209,8 +348,8 @@ export default {
   }
 
   .search-box {
-      flex-grow: 1;
-      max-width: 300px;
+    flex-grow: 1;
+    max-width: 300px;
   }
 
   .search-box input {

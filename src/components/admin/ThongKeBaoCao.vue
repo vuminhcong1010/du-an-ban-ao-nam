@@ -41,57 +41,29 @@ const nhanVienDuocChon = ref("")
 const danhSachNhanVien = ref([])
 
 const phuongThucThanhToan = ref("") // chỉ chọn 1 phương thức
-const danhSachPhuongThuc = ref([]) // lấy từ API
-
-// Hàm ánh xạ mã sang tên tiếng Việt cho phương thức thanh toán
-const getTenPhuongThuc = (ma) => {
-  if (!ma) return '';
-  switch (ma) {
-    case 'tien_mat':
-      return 'Tiền mặt';
-    case 'chuyen_khoan':
-      return 'Chuyển khoản';
-    case 'the_tin_dung':
-      return 'Thẻ tín dụng';
-    // Thêm các trường hợp khác nếu có
-    default:
-      return ma;
-  }
-};
-
-async function fetchPhuongThucThanhToan() {
-  try {
-    const res = await axios.get('http://localhost:8080/hoa-don/api/HinhThuThanhToan', {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    // Map lại dữ liệu để lấy tên tiếng Việt, bỏ các bản ghi null
-    danhSachPhuongThuc.value = Array.isArray(res.data)
-      ? res.data
-          .filter(pt => pt.phuongThucThanhToan) // Bỏ các bản ghi null
-          .map(pt => ({
-            id: pt.id,
-            ma: pt.phuongThucThanhToan,
-            ten: getTenPhuongThuc(pt.phuongThucThanhToan)
-          }))
-      : [];
-  } catch (err) {
-    console.error('Lỗi tải phương thức thanh toán:', err)
-  }
-}
+const danhSachPhuongThuc = ref([
+  { id: 'tien_mat', ten: 'Tiền mặt' },
+  { id: 'chuyen_khoan', ten: 'Chuyển khoản' },
+  { id: 'ca_hai', ten: 'Cả 2' }
+])
 async function fetchBaoCaoCuoiNgay() {
   try {
     let params = { date: selectedDate.value }
     if (chonThoiGian.value === 'mac-dinh' && gioBatDau.value && gioKetThuc.value) {
-      params.startTime = gioBatDau.value
-      params.endTime = gioKetThuc.value
+
+      params.startTime = convertTo24Hour(gioBatDau.value)
+      params.endTime = convertTo24Hour(gioKetThuc.value)
+      console.log('gioBatDau.value:', gioBatDau.value);
+      console.log('gioKetThuc.value:', gioKetThuc.value);
     }
+
     if (nhanVienDuocChon.value) {
       // Tìm id theo tên
       const nv = danhSachNhanVien.value.find(nv => nv.ten === nhanVienDuocChon.value)
       if (nv) params.idNhanVien = nv.id
     }
     if (phuongThucThanhToan.value) {
-      params.idPhuongThucThanhToan = phuongThucThanhToan.value
+      params.tenPhuongThucThanhToan = phuongThucThanhToan.value
     }
     const res = await axios.get('http://localhost:8080/hoa-don/bao-cao/cuoi-ngay', {
       params,
@@ -104,6 +76,27 @@ async function fetchBaoCaoCuoiNgay() {
     baoCaoData.value = [] // Reset về mảng rỗng nếu có lỗi
     await nextTick()
   }
+}
+
+function convertTo24Hour(time12h) {
+  const parts = time12h.trim().split(' ');
+  const time = parts[0];
+  const modifier = parts[1]; // có thể undefined
+
+  let [hours, minutes] = time.split(':');
+  hours = parseInt(hours, 10);
+
+  if (modifier) {
+    if (modifier.toUpperCase() === 'PM' && hours !== 12) {
+      hours += 12;
+    }
+
+    if (modifier.toUpperCase() === 'AM' && hours === 12) {
+      hours = 0;
+    }
+  }
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes}`;
 }
 
 // Theo dõi thay đổi ngày hoặc giờ để tự động gọi API
@@ -142,7 +135,7 @@ async function fetchBaoCaoKhoangNgay(start, end) {
       if (nv) params.idNhanVien = nv.id
     }
     if (phuongThucThanhToan.value) {
-      params.idPhuongThucThanhToan = phuongThucThanhToan.value
+      params.tenPhuongThucThanhToan = phuongThucThanhToan.value
     }
     const res = await axios.get('http://localhost:8080/hoa-don/bao-cao/khoang-ngay', {
       params,
@@ -232,7 +225,6 @@ onMounted(() => {
   // Gọi báo cáo ngay khi vào view
   fetchBaoCaoCuoiNgay()
   fetchNhanVienList()
-  fetchPhuongThucThanhToan();
 })
 
 async function fetchNhanVienList() {
@@ -396,7 +388,8 @@ const hasChiTiet = computed(() => baoCaoData.value.some(item => item.maHoaDon));
         </tbody>
         <tbody v-else>
           <tr>
-            <td colspan="6" style="background: #f7f3e3; color: #3a2d0c; text-align: center; font-style: italic; font-size: 20px; padding: 32px;">
+            <td colspan="6"
+              style="background: #f7f3e3; color: #3a2d0c; text-align: center; font-style: italic; font-size: 20px; padding: 32px;">
               Báo cáo không có dữ liệu
             </td>
           </tr>
@@ -514,7 +507,8 @@ const hasChiTiet = computed(() => baoCaoData.value.some(item => item.maHoaDon));
   margin: 20px 0;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
   font-family: 'Segoe UI', sans-serif;
-  position: relative; /* Thêm để đặt nút xuất PDF */
+  position: relative;
+  /* Thêm để đặt nút xuất PDF */
 }
 
 .bo-loc-header {
@@ -538,7 +532,8 @@ const hasChiTiet = computed(() => baoCaoData.value.some(item => item.maHoaDon));
   justify-content: flex-start;
 }
 
-.bo-loc-item, .thoi-gian-filter {
+.bo-loc-item,
+.thoi-gian-filter {
   flex: 1 1 0;
   min-width: 220px;
   max-width: 320px;
@@ -625,10 +620,11 @@ input[type="time"],
   padding: 10px 24px;
   font-size: 16px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   z-index: 10;
   transition: background 0.2s;
 }
+
 .export-pdf-btn:hover {
   background: #0056b3;
 }
@@ -641,7 +637,7 @@ input[type="time"],
   background: #fff;
   color: #333;
   border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
   padding: 18px 32px;
   font-size: 18px;
   z-index: 9999;
@@ -649,9 +645,11 @@ input[type="time"],
   align-items: center;
   gap: 10px;
 }
+
 .export-toast.exporting {
   border-left: 6px solid #007aff;
 }
+
 .export-toast.success {
   border-left: 6px solid #28a745;
 }
