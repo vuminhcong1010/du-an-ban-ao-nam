@@ -101,12 +101,9 @@ function removeToken(){
       
     </div>
     <div class="d-flex align-items-center gap-3">
-      <i class="bi bi-envelope-fill fs-5"> <Mail></Mail> </i>
-      <i class="bi bi-bell fs-5"> <Bell></Bell> </i>
-      <!-- <i class="bi bi-person-circle fs-4"> <User></User> </i>
-      <div class="fw-medium">Admin CoolMen</div> -->
+      <i> <Mail></Mail> </i>
+      <i> <Bell></Bell> </i>
       <div class="dropdown">
-  <!-- Kích hoạt dropdown -->
   <div
     class="d-flex align-items-center dropdown-toggle"
     role="button"
