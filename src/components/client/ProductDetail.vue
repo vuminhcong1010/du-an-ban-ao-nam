@@ -125,11 +125,9 @@
 import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 
 const route = useRoute();
 const router = useRouter();
-const token = Cookies.get('token');
 
 const product = ref(null);
 const loading = ref(true);
@@ -158,13 +156,9 @@ const themVaoGioHang = async () => {
 
     try {
         const res = await axios.post(
-            'http://localhost:8080/hoa-don/clientThemSanPham',
+            'http://localhost:8080/client/ThemSanPham',
             payload,
             {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
                 withCredentials: true
             }
         );
@@ -211,13 +205,7 @@ const fetchProductDetail = async (productId) => {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/api/client/san-pham/chi-tiet/${productId}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-        });
+        const response = await fetch(`http://localhost:8080/client/san-pham-chi-tiet/${productId}`);
         console.log("Fetching product with ID:", productId);
         if (!response.ok) {
             if (response.status === 404) {
