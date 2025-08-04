@@ -37,11 +37,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      // '/client': { // <-- Đường dẫn mà frontend gọi
-      //   target: 'http://localhost:8080', // <-- Địa chỉ của backend Spring Boot API
-      //   changeOrigin: true, // Quan trọng để xử lý CORS
-      //   // rewrite: (path) => path.replace(/^\/danh-muc-hien-thi/, '/danh-muc-hien-thi'), // Có thể không cần dòng này nếu path trùng khớp
-      // },
+      '/client': { // <-- Đường dẫn mà frontend gọi
+        target: 'http://localhost:8080', // <-- Địa chỉ của backend Spring Boot API
+        changeOrigin: true, // Quan trọng để xử lý CORS
+        // rewrite: (path) => path.replace(/^\/danh-muc-hien-thi/, '/danh-muc-hien-thi'), // Có thể không cần dòng này nếu path trùng khớp
+      },
       '/danh-muc-hien-thi': { // <-- Đường dẫn mà frontend gọi
         target: 'http://localhost:8080', // <-- Địa chỉ của backend Spring Boot API
         changeOrigin: true, // Quan trọng để xử lý CORS

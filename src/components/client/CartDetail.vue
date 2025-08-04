@@ -103,7 +103,7 @@ export default {
         },
         async thanhToan() {
             try {
-                const res = await axios.post("http://localhost:8080/client/TaoHoaDonChiTiet", null, {        
+                const res = await axios.post("http://localhost:8080/client/clientTaoHoaDonChiTiet", null, {        
                     withCredentials: true
                 });
 

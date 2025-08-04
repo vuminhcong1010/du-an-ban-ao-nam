@@ -477,6 +477,7 @@ function mapColorToCssClass(apiColor) {
         case 'cam': return 'orange';
         case 'vàng': return 'yellow';
         case 'trắng': return 'white';
+        case 'be': return 'beige';
         default: return lowerCaseColor;
     }
 }

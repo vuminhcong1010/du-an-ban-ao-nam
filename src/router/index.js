@@ -78,12 +78,12 @@ const router = createRouter({
           component: ClientSanPham,
         },
         {
-          path: "/client-san-pham-detail/:id",
+          path: "client-san-pham-detail/:id",
           name: "client-san-pham-detail",
           component: ClientSanPhamDetail,
         },
         {
-          path: "/client-oder/:hoaDonId",
+          path: "client-oder/:hoaDonId",
           name: "client-Oder",
           component: Oder,
           props: (route) => ({ hoaDonId: Number(route.params.hoaDonId) }), // ép về Number
