@@ -46,7 +46,6 @@
 
 <script>
 import axios from 'axios'
-import Cookies from 'js-cookie'
 import CartDetail from './CartDetail.vue'  // sửa đường dẫn nếu cần
 
 export default {
@@ -76,12 +75,7 @@ export default {
     },
     async capNhatGioHang() {
       try {
-        const token = Cookies.get('token');
-        const res = await axios.get('http://localhost:8080/hoa-don/clientLoadSanPham', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
+        const res = await axios.get('http://localhost:8080/client/LoadSanPham', {
           withCredentials: true
         });
 
@@ -117,11 +111,7 @@ export default {
       this.danhSachGio = this.danhSachGio.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet);
       this.soLuongGio = this.danhSachGio.reduce((tong, sp) => tong + sp.soLuong, 0);
     }
-
-
   }
-
-
 }
 
 </script>

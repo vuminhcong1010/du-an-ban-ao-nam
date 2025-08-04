@@ -164,12 +164,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import { useRoute, useRouter } from 'vue-router'; 
 
 const router = useRouter();  
 const route = useRoute();
-const token = Cookies.get('token');
 const order = ref([]);
 
 const phiVanChuyen = ref(0);
@@ -209,8 +207,7 @@ function groupProducts(products) {
 // Load dữ liệu từ API
 async function fetchOrder() {
     try {
-        const res = await axios.get(`http://localhost:8080/hoa-don/laySanPhamTheoHoaDon/${route.params.hoaDonId}`, {
-            headers: { Authorization: `Bearer ${token}` },
+        const res = await axios.get(`http://localhost:8080/client/laySanPhamTheoHoaDon/${route.params.hoaDonId}`, {
             withCredentials: true
         });
 
@@ -244,8 +241,7 @@ async function thanhToan() {
     };
 
     try {
-        await axios.put(`http://localhost:8080/hoa-don/capNhatHoaDon/${route.params.hoaDonId}`, data, {
-            headers: { Authorization: `Bearer ${token}` },
+        await axios.put(`http://localhost:8080/client/capNhatHoaDon/${route.params.hoaDonId}`, data, {
             withCredentials: true
         });
 

@@ -336,7 +336,8 @@ router.beforeEach((to, from, next) => {
       "/quen-mat-khau",
       "/dang-nhap-khach-hang",
       "/coolmen",
-    ].includes(to.path)
+    ].includes(to.path) &&
+    !to.path.startsWith("/coolmen")
   ) {
     return next("/dang-nhap");
   }
@@ -353,8 +354,13 @@ router.beforeEach((to, from, next) => {
       const vaiTro = payload.scope || payload.vaiTro || "";
 
       // Nếu là STAFF mà truy cập /nhan-vien => chặn
-      if (vaiTro === "STAFF" && to.path.startsWith("/nhan-vien")) {
-        return next("/san-pham");
+      if (
+        (vaiTro === "STAFF" && to.path.startsWith("/nhan-vien")) ||
+        to.path.startsWith("/san-pham") ||
+        to.path.startsWith("/dot-giam-gia") ||
+        to.path.startsWith("/phieu-giam-gia")
+      ) {
+        return next("/");
       }
     } catch (err) {
       Cookies.remove("token");

@@ -65,11 +65,8 @@
     </div>
 </template>
 
-<script>import axios from 'axios';
-import Cookies from 'js-cookie';
-
-const token = Cookies.get('token');
-
+<script>
+import axios from 'axios';
 
 export default {
     props: {
@@ -89,10 +86,7 @@ export default {
     methods: {
         async xoaToanBoGioHang() {
             try {
-                await axios.delete("http://localhost:8080/hoa-don/clientXoaSanPham", {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    },
+                await axios.delete("http://localhost:8080/client/XoaSanPham", {
                     withCredentials: true
                 });
 
@@ -109,8 +103,7 @@ export default {
         },
         async thanhToan() {
             try {
-                const res = await axios.post("http://localhost:8080/hoa-don/clientTaoHoaDonChiTiet", null, {
-                    headers: { Authorization: `Bearer ${token}` },
+                const res = await axios.post("http://localhost:8080/client/TaoHoaDonChiTiet", null, {        
                     withCredentials: true
                 });
 

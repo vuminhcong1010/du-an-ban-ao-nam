@@ -225,12 +225,10 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import Cookies from 'js-cookie'
 import '@vueform/slider/themes/default.css'
 import Slider from '@vueform/slider'
 import { useRouter } from 'vue-router'
 
-const token = Cookies.get('token')
 const router = useRouter() 
 const allProducts = ref([]);
 const loading = ref(true);
@@ -486,14 +484,7 @@ function mapColorToCssClass(apiColor) {
 const fetchProducts = async () => {
     loading.value = true;
     try {
-        const response = await fetch('http://localhost:8080/api/client/san-pham/danh-sach', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-
-        });
+        const response = await fetch('http://localhost:8080/client/danh-sach');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
