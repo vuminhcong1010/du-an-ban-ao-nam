@@ -104,8 +104,8 @@ export default {
     capNhatGioHangLocal(newDanhSach) {
       this.danhSachGio = newDanhSach;
       this.soLuongGio = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0);
-      sessionStorage.removeItem("gioHang");  // nếu có
-      localStorage.removeItem("gioHang");    // nếu có
+      sessionStorage.removeItem("gioHang");  
+      localStorage.removeItem("gioHang");  
     },
     xoaSanPham(idSanPhamChiTiet) {
       this.danhSachGio = this.danhSachGio.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet);

@@ -1,115 +1,84 @@
 <template>
     <div class="order-container container my-5">
         <div class="row">
-            <!-- Thông tin thanh toán -->
             <div class="col-md-7">
                 <h4>Thông tin liên lạc</h4>
                 <form @submit.prevent="thanhToan" novalidate>
                     <div class="mb-3">
                         <label for="email" class="form-label">E-MAIL</label>
                         <input type="email" id="email" class="form-control" v-model="form.email" required
-                            placeholder="john@example.com" />
+                            placeholder="coolmen@gmail.com" />
                     </div>
 
                     <h4 class="mt-4">Chi tiết thanh toán</h4>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="firstName" class="form-label">TÊN</label>
+                        <div class="col-md-12 mb-3">
+                            <label for="firstName" class="form-label">Họ và TÊN</label>
                             <input type="text" id="firstName" class="form-control" v-model="form.firstName" required
                                 placeholder="John" />
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="lastName" class="form-label">HỌ</label>
-                            <input type="text" id="lastName" class="form-control" v-model="form.lastName" required
-                                placeholder="Doe" />
-                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="address1" class="form-label">ĐỊA CHỈ 1</label>
-                        <input type="text" id="address1" class="form-control" v-model="form.address1" required
-                            placeholder="Đường O'Connell 47" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="address2" class="form-label">ĐỊA CHỈ 2 (TÙY CHỌN)</label>
-                        <input type="text" id="address2" class="form-control" v-model="form.address2"
-                            placeholder="Căn hộ, studio hoặc tầng" />
+                        <label for="thonXom" class="form-label">THÔN XÓM</label>
+                        <input type="text" id="thonXom" class="form-control" v-model="form.thonXom"
+                            placeholder="Tổ dân phố 1" />
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="city" class="form-label">THÀNH PHỐ</label>
-                            <input type="text" id="city" class="form-control" v-model="form.city" required
-                                placeholder="New York" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="state" class="form-label">TIỂU BANG (TÙY CHỌN)</label>
-                            <input type="text" id="state" class="form-control" v-model="form.state"
-                                placeholder="Kilkenny" />
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="country" class="form-label">QUỐC GIA</label>
-                            <select id="country" class="form-select" v-model="form.country" required>
-                                <option value="" disabled>Chọn quốc gia</option>
-                                <option>Cộng hòa Ireland</option>
-                                <option>Việt Nam</option>
-                                <option>Hoa Kỳ</option>
-                                <option>...</option>
+                        <div class="col-md-12 mb-3">
+                            <label for="province" class="form-label">TỈNH/THÀNH PHỐ</label>
+                            <select id="province" class="form-select" v-model="selectedProvince" required>
+                                <option value="" disabled>Chọn tỉnh/thành phố</option>
+                                <option v-for="p in provinces" :key="p.code" :value="p.code">
+                                    {{ p.name }}
+                                </option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="zip" class="form-label">MÃ BƯU CHÍNH / ZIP</label>
-                            <input type="text" id="zip" class="form-control" v-model="form.zip" required
-                                placeholder="10001" />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="district" class="form-label">QUẬN/HUYỆN</label>
+                            <select id="district" class="form-select" v-model="selectedDistrict" required
+                                :disabled="!selectedProvince">
+                                <option value="" disabled>Chọn quận/huyện</option>
+                                <option v-for="d in districts" :key="d.code" :value="d.code">
+                                    {{ d.name }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="ward" class="form-label">XÃ/PHƯỜNG</label>
+                            <select id="ward" class="form-select" v-model="selectedWard" required
+                                :disabled="!selectedDistrict">
+                                <option value="" disabled>Chọn xã/phường</option>
+                                <option v-for="w in wards" :key="w.code" :value="w.code">
+                                    {{ w.name }}
+                                </option>
+                            </select>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="phone" class="form-label">ĐIỆN THOẠI (TÙY CHỌN)</label>
-                        <input type="tel" id="phone" class="form-control" v-model="form.phone"
-                            placeholder="+1 234 567 8901" />
+                        <label for="phone" class="form-label">ĐIỆN THOẠI</label>
+                        <input type="tel" id="phone" class="form-control" v-model="form.phone" required
+                            placeholder="+84 123 456 789" />
                     </div>
                 </form>
-                <!-- Chọn phương thức vận chuyển -->
-                <h5 class="mt-4">Chọn phương thức vận chuyển</h5>
-                <div class="radio-card-group mb-3">
-                    <label class="radio-card" :class="{ selected: form.shipping === '0' }">
-                        <input type="radio" value="0" v-model="form.shipping" /> Miễn phí vận chuyển<br />
-                        <small>0,00 đồng</small>
-                    </label>
-
-                    <label class="radio-card" :class="{ selected: form.shipping === '10' }">
-                        <input type="radio" value="10" v-model="form.shipping" /> Vận chuyển tiêu chuẩn<br />
-                        <small>10.000 đồng</small>
-                    </label>
-
-                    <label class="radio-card" :class="{ selected: form.shipping === '25' }">
-                        <input type="radio" value="25" v-model="form.shipping" /> Vận chuyển nhanh<br />
-                        <small>25.000 đồng</small>
-                    </label>
-                </div>
-
-                <!-- Tùy chọn thanh toán -->
                 <h5 class="mt-4">Tùy chọn thanh toán</h5>
                 <div class="radio-card-group mb-3">
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'card' }">
                         <input type="radio" value="card" v-model="form.paymentMethod" /> 💳 Thẻ tín dụng / ghi nợ
                     </label>
-
-                    <label class="radio-card" :class="{ selected: form.paymentMethod === 'paypal' }">
-                        <input type="radio" value="paypal" v-model="form.paymentMethod" /> 🅿️ PayPal
-                    </label>
-
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'cod' }">
                         <input type="radio" value="cod" v-model="form.paymentMethod" /> 💵 COD
                     </label>
                 </div>
 
-                <!-- Ghi chú đơn hàng -->
                 <div class="mb-3">
                     <label for="orderNote" class="form-label">Ghi chú đơn hàng (Tùy chọn)</label>
                     <textarea id="orderNote" rows="3" v-model="form.orderNote"
@@ -119,7 +88,6 @@
 
             </div>
 
-            <!-- Tóm tắt đơn hàng -->
             <div class="col-md-5">
                 <div class="card p-4 sticky-summary">
                     <h5 class="mb-3">Tóm tắt đơn hàng</h5>
@@ -132,19 +100,16 @@
                                 formatCurrency(item.thanhTien) }}</small>
                         </div>
                     </div>
-
-                    <div class="input-group mb-3">
-                        <input type="text" class="form-control" placeholder="Mã giảm giá" v-model="maGiamGia" />
-                        <button class="btn btn-dark" @click="apDungGiamGia">Áp dụng</button>
+                    <div class="d-flex mb-3">
+                        <input type="text" class="form-control" placeholder="Mã giảm giá" v-model="maGiamGia"
+                            style="flex: 10; margin-right: 8px;" />
+                        <button class="btn btn-dark" @click="apDungGiamGia" style="flex: 3;">Áp dụng</button>
                     </div>
 
+
                     <div class="d-flex justify-content-between">
-                        <span>Tổng phụ</span>
+                        <span>Tổng Tiền</span>
                         <span>{{ formatCurrency(tongTienSanPham) }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Vận chuyển</span>
-                        <span>{{ formatCurrency(phiVanChuyen) }}</span>
                     </div>
                     <hr />
                     <div class="d-flex justify-content-between fw-bold fs-5">
@@ -162,40 +127,93 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import axios from 'axios';
-import { useRoute, useRouter } from 'vue-router'; 
+import { useRoute, useRouter } from 'vue-router';
 
-const router = useRouter();  
+const router = useRouter();
 const route = useRoute();
 const order = ref([]);
 
 const phiVanChuyen = ref(0);
 const maGiamGia = ref('');
 
+const provinces = ref([]);
+const districts = ref([]);
+const wards = ref([]);
+const selectedProvince = ref('');
+const selectedDistrict = ref('');
+const selectedWard = ref('');
+
 const form = ref({
     email: '',
     firstName: '',
-    lastName: '',
-    address1: '',
-    address2: '',
-    city: '',
-    state: '',
-    country: '',
-    zip: '',
+    thonXom: '', // Changed from 'address'
     phone: '',
-    shipping: '0',
     paymentMethod: 'card',
     orderNote: ''
 });
+
+// Fetching address data from API
+const fetchProvinces = async () => {
+    try {
+        const res = await axios.get('http://provinces.open-api.vn/api/p/');
+        provinces.value = res.data;
+    } catch (error) {
+        console.error("Error fetching provinces:", error);
+    }
+};
+
+const fetchDistricts = async (provinceCode) => {
+    try {
+        const res = await axios.get(`http://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
+        districts.value = res.data.districts;
+    } catch (error) {
+        console.error("Error fetching districts:", error);
+    }
+};
+
+const fetchWards = async (districtCode) => {
+    try {
+        const res = await axios.get(`http://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
+        wards.value = res.data.wards;
+    } catch (error) {
+        console.error("Error fetching wards:", error);
+    }
+};
+
+watch(selectedProvince, (newVal) => {
+    if (newVal) {
+        fetchDistricts(newVal);
+        selectedDistrict.value = '';
+        wards.value = [];
+        selectedWard.value = '';
+    } else {
+        districts.value = [];
+        wards.value = [];
+        selectedDistrict.value = '';
+        selectedWard.value = '';
+    }
+});
+
+watch(selectedDistrict, (newVal) => {
+    if (newVal) {
+        fetchWards(newVal);
+        selectedWard.value = '';
+    } else {
+        wards.value = [];
+        selectedWard.value = '';
+    }
+});
+
 function groupProducts(products) {
     const grouped = {};
 
     products.forEach((item) => {
-        const id = item.idSanPham; // hoặc item.id nếu API trả về tên khác
+        const id = item.idSanPham;
 
         if (!grouped[id]) {
-            grouped[id] = { ...item }; // clone object
+            grouped[id] = { ...item };
         } else {
             grouped[id].soLuong += item.soLuong;
             grouped[id].thanhTien += item.thanhTien;
@@ -225,19 +243,29 @@ const tongTienSanPham = computed(() =>
     order.value.reduce((sum, item) => sum + item.thanhTien, 0)
 );
 
-const tongCong = computed(() => tongTienSanPham.value + phiVanChuyen.value);
-
+const tongCong = computed(() => tongTienSanPham.value); // Ensure shipping is a number
 
 async function thanhToan() {
-    const diaChiGop = form.value.address1 + (form.value.address2 ? ', ' + form.value.address2 : '');
+    const provinceName = provinces.value.find(p => p.code == selectedProvince.value)?.name || '';
+    const districtName = districts.value.find(d => d.code == selectedDistrict.value)?.name || '';
+    const wardName = wards.value.find(w => w.code == selectedWard.value)?.name || '';
+
+
+    let fullAddress = [];
+    if (form.value.thonXom) fullAddress.push(form.value.thonXom);
+    if (wardName) fullAddress.push(wardName);
+    if (districtName) fullAddress.push(districtName);
+    if (provinceName) fullAddress.push(provinceName);
+
+    const combinedAddress = fullAddress.join(', ');
 
     const data = {
         tongTienSanPham: tongTienSanPham.value,
         phiVanChuyen: Number(form.value.shipping),
-        hoTen: form.value.firstName + ' ' + form.value.lastName,
-        diaChi: diaChiGop,
+        hoTen: form.value.firstName,
+        diaChi: combinedAddress,
         ghiChu: form.value.orderNote,
-          sdt: form.value.phone  
+        sdt: form.value.phone
     };
 
     try {
@@ -246,8 +274,7 @@ async function thanhToan() {
         });
 
         alert("Thanh toán thành công!");
-        // Có thể redirect hoặc xoá session/localStorage nếu cần
-         router.push({ name: "client-san-pham" });  // chuyển hướng về trang client-san-pham
+        router.push({ name: "client-san-pham" });
     } catch (e) {
         console.error("Lỗi thanh toán:", e);
         alert("Thanh toán thất bại");
@@ -255,6 +282,7 @@ async function thanhToan() {
 }
 
 onMounted(() => {
+    fetchProvinces(); // Fetch provinces on component mount
     fetchOrder();
 });
 </script>

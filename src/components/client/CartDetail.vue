@@ -1,8 +1,8 @@
 <template>
     <div class="cart-overlay" @click.self="$emit('close')">
-        <div class="cart-panel">
+        <div class="cart-panel" @click.stop>
             <div class="cart-header">
-                <button class="close-btn" @click="$emit('close')">×</button>
+                <button class="close-btn" @click.stop="$emit('close')">×</button>
                 <h3>Giỏ hàng ({{ tongSoLuong }})</h3>
                 <button class="trash-btn" @click="xoaToanBoGioHang()">
                     🗑️
@@ -35,6 +35,19 @@
                                     <span class="new-price">{{ sp.gia.toLocaleString() }} đ</span>
                                 </template>
                             </p>
+                            <!-- Hiển thị Màu sắc -->
+                            <p v-if="sp.mauSacList && sp.mauSacList.length">
+                                <span v-for="mau in sp.mauSacList" :key="mau" class="color-circle"
+                                    :style="{ backgroundColor: mapColorToCssClass(mau) }" :title="mau"></span>
+                            </p>
+
+
+
+                            <!-- Hiển thị Kích cỡ -->
+                            <p v-if="sp.kichCoList && sp.kichCoList.length">
+                                <span v-for="size in sp.kichCoList" :key="size" class="badge size-badge">{{ size
+                                }}</span>
+                            </p>
 
                             <!-- Tổng tiền của món này -->
                             <p class="item-total">Tổng: {{ (sp.gia * sp.soLuong).toLocaleString() }} đ</p>
@@ -50,13 +63,13 @@
                     </div>
 
                     <!-- Nút xóa sản phẩm -->
-                    <button class="remove-btn" @click="$emit('removeItem', sp.idSanPhamChiTiet)">🗑️</button>
+                    <button class="remove-btn" @click="xoaSanPhamVaTraTonKho(sp.idSanPhamChiTiet)">🗑️</button>
                 </div>
             </div>
 
             <!-- Thanh toán cố định dưới cùng -->
             <div class="cart-footer">
-                <button class="checkout-btn" @click="thanhToan">
+                <button class="checkout-btn" @click.self="thanhToan, $emit('close')">
                     Thanh toán <span class="total-price">{{ tongTien.toLocaleString() }} đ</span>
                 </button>
             </div>
@@ -84,14 +97,53 @@ export default {
         }
     },
     methods: {
+        async traVeTonKho(sp) {
+            try {
+                const res = await axios.get("http://localhost:8080/client/san-pham/chi-tiet-id", {
+                    params: {
+                        idSanPham: sp.idSanPham,
+                        mauSac: sp.mauSacList?.[0],
+                        kichCo: sp.kichCoList?.[0]
+                    }
+                });
+                const idChiTiet = res.data;
+
+                if (!idChiTiet) {
+                    console.warn("Không tìm thấy idChiTietSanPham để trả lại tồn kho");
+                    return;
+                }
+
+                await axios.post("http://localhost:8080/client/cap-nhat-so-luong", {
+                    idChiTietSanPham: idChiTiet,
+                    soLuong: -sp.soLuong  // dùng số âm để cộng ngược trở lại
+                });
+            } catch (err) {
+                console.error("Lỗi khi trả lại tồn kho:", err);
+            }
+        },
+
+        async xoaSanPhamVaTraTonKho(idSanPhamChiTiet) {
+            const sp = this.danhSachGio.find(item => item.idSanPhamChiTiet === idSanPhamChiTiet);
+            if (sp) {
+                await this.traVeTonKho(sp);
+            }
+
+            this.$emit('removeItem', idSanPhamChiTiet);
+            window.dispatchEvent(new Event("cap-nhat-gio"));
+        },
+
         async xoaToanBoGioHang() {
             try {
-                await axios.delete("http://localhost:8080/hoa-don/clientXoaSanPham", {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    },
+                // Gọi API trả lại tồn kho từng sản phẩm
+                for (const sp of this.danhSachGio) {
+                    await this.traVeTonKho(sp);
+                }
+
+                // Xóa giỏ hàng sau khi đã hoàn tất cộng lại số lượng tồn kho
+                await axios.delete("http://localhost:8080/client/XoaGioHang", {
                     withCredentials: true
                 });
+
 
                 window.dispatchEvent(new Event('cap-nhat-gio'));
 
@@ -106,18 +158,93 @@ export default {
         },
         async thanhToan() {
             try {
-                const res = await axios.post("http://localhost:8080/client/clientTaoHoaDonChiTiet", null, {        
+                const res = await axios.post("http://localhost:8080/client/clientTaoHoaDonChiTiet", null, {
                     withCredentials: true
                 });
 
                 const hoaDonId = res.data.hoaDonId;
 
-                this.$emit('clearCart');  
+                this.$emit('clearCart');
                 this.$router.push({ name: 'client-Oder', params: { hoaDonId } });
                 console.log("Thanh toán thành công, chuyển đến trang đơn hàng:", hoaDonId);
             } catch (err) {
                 console.error(err);
                 alert("Thanh toán thất bại.");
+            }
+        },
+        mapColorToCssClass(apiColor) {
+            if (!apiColor) return '#CCCCCC';
+            const key = apiColor.trim().toLowerCase();
+            return this.colorMap[key] || '#CCCCCC';
+        },
+        isLightColor(colorName) {
+            const hex = this.mapColorToCssClass(colorName);
+            if (!hex || hex === '#CCCCCC') return false;
+
+            const c = hex.substring(1);
+            const rgb = parseInt(c, 16);
+            const r = (rgb >> 16) & 0xff;
+            const g = (rgb >> 8) & 0xff;
+            const b = (rgb >> 0) & 0xff;
+
+            const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+            return yiq > 160;
+        }
+    },
+    data() {
+        return {
+            colorMap: {
+                'đỏ': '#FF0000',
+                'đỏ đậm': '#8B0000',
+                'đỏ tươi': '#FF2400',
+                'đỏ cam': '#FF4500',
+                'hồng': '#FFC0CB',
+                'hồng đậm': '#FF69B4',
+                'hồng phấn': '#FFB6C1',
+                'tím': '#800080',
+                'tím nhạt': '#DA70D6',
+                'tím huế': '#9932CC',
+                'xanh': '#0000FF',
+                'xanh dương': '#0000CD',
+                'xanh da trời': '#87CEEB',
+                'xanh navy': '#000080',
+                'xanh lá': '#008000',
+                'xanh lá nhạt': '#00FF7F',
+                'xanh rêu': '#556B2F',
+                'xanh ngọc': '#20B2AA',
+                'xanh lục bảo': '#50C878',
+                'xanh pastel': '#77DD77',
+                'vàng': '#FFFF00',
+                'vàng nghệ': '#FFD700',
+                'vàng nhạt': '#FFFACD',
+                'cam': '#FFA500',
+                'cam đất': '#E9967A',
+                'nâu': '#8B4513',
+                'nâu nhạt': '#A0522D',
+                'nâu đất': '#7B3F00',
+                'đen': '#000000',
+                'xám': '#808080',
+                'xám nhạt': '#D3D3D3',
+                'trắng': '#FFFFFF',
+                'be': '#F5F5DC',
+                'kem': '#FAF0E6',
+                'bạc': '#C0C0C0',
+                'vàng đồng': '#B8860B',
+                'xanh mint': '#98FF98',
+                'xanh lam': '#1E90FF',
+                'xanh teal': '#008080',
+                'hồng đất': '#C48189',
+                'hồng đào': '#FFDAB9',
+                'đỏ rượu': '#800000',
+                'đỏ đô': '#8B0000',
+                'tím than': '#4B0082',
+                'tím oải hương': '#E6E6FA',
+                'xanh coban': '#0047AB',
+                'xanh ngọc bích': '#00CED1',
+                'nâu socola': '#381819',
+                'cam san hô': '#FF7F50',
+                'xanh olive': '#808000',
+                'vàng chanh': '#FFF44F'
             }
         }
     }
@@ -152,12 +279,54 @@ export default {
     flex-direction: column;
 }
 
+.color-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    margin-right: 6px;
+    user-select: none;
+    cursor: default;
+    font-size: 14px;
+    min-width: 50px;
+    text-align: center;
+}
+
+.color-circle {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 6px;
+    border: 1px solid #ccc;
+    vertical-align: middle;
+}
+
 .cart-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 1.2rem;
     margin-bottom: 10px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 2px 6px;
+    margin-right: 4px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: white;
+}
+
+.color-badge {
+    background-color: #007bff;
+    /* màu xanh dương */
+}
+
+.size-badge {
+    background-color: #6c757d;
+    /* màu xám */
 }
 
 /* nút đóng tròn */

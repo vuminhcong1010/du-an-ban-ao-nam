@@ -23,12 +23,21 @@
 
         <div v-else-if="product" class="row product-detail-content">
             <div class="col-md-6 position-relative">
-                <img :src="product.image || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png'"
-                    class="img-fluid product-detail-image" :alt="product.name" />
-                <span v-if="product.discount && product.discount > 0"
-                    class="discount-badge-detail position-absolute top-0  end-0 bg-danger text-white px-2 py-1 m-3 rounded">
-                    -{{ product.discount }}%
-                </span>
+                <div v-if="product.images.length > 0">
+                    <img :src="selectedImage" class="img-fluid product-detail-image mb-3" />
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <img v-for="(img, index) in product.images.slice(0, 4)" :key="index" :src="img"
+                                class="img-thumbnail" :class="{ 'border border-primary': img === selectedImage }"
+                                @click="selectedImage = img"
+                                style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" />
+                        </div>
+
+                        <span v-if="product.discount && product.discount > 0"
+                            class="discount-badge-detail position-absolute top-0  end-0 bg-danger text-white px-2 py-1 m-3 rounded">
+                            -{{ product.discount }}%
+                        </span>
+                </div>
             </div>
 
             <div class="col-md-6 product-info-section">
@@ -49,8 +58,9 @@
                     </span>
 
                     <span class="ms-2 product-quantity-display">
-                        Còn lại: {{ displayQuantityLeft }} sản phẩm
+                        Còn lại: {{ remainingQuantity > 0 ? remainingQuantity : 0 }} sản phẩm
                     </span>
+
 
                 </div>
 
@@ -67,33 +77,32 @@
                 <p class="product-short-description mb-4">
                     {{ product.description }}
                 </p>
-
-                <div v-if="product.colors && product.colors.length > 0" class="mb-3">
-                    <h6 class="mb-2">Màu sắc:</h6>
-                    <div class="d-flex flex-wrap gap-2">
-                        <div v-for="color in product.colors" :key="color"
-                            :class="['color-box-detail', mapColorToCssClass(color)]" :title="color">
-                        </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <h6 class="mb-2">Màu Sắc:</h6>
+                    <div v-for="color in product.colors" :key="color" class="color-box-detail position-relative"
+                        :style="{ backgroundColor: mapColorToCssClass(color), cursor: 'pointer' }" :title="color"
+                        @click="toggleColor(color)">
+                        <span v-if="selectedColors.includes(color)"
+                            class="position-absolute top-50 start-50 translate-middle text-white fw-bold">
+                            ✓
+                        </span>
                     </div>
                 </div>
-
                 <div v-if="product.sizes && product.sizes.length > 0" class="mb-4">
                     <h6 class="mb-2">Kích cỡ:</h6>
                     <div class="d-flex flex-wrap gap-2">
-                        <span v-for="size in product.sizes" :key="size" class="badge bg-secondary size-badge">
+                        <span v-for="size in product.sizes" :key="size" class="badge size-badge"
+                            :class="{ 'bg-primary text-white': selectedSizes.includes(size), 'bg-secondary': !selectedSizes.includes(size) }"
+                            style="cursor: pointer;" @click="toggleSize(size)">
                             {{ size }}
                         </span>
                     </div>
                 </div>
+
                 <div class="d-flex align-items-center mb-4 add-to-cart-section">
                     <div class="input-group quantity-input-group me-3">
-                        <button class="btn btn-outline-secondary" type="button" @click="decreaseQuantity">-</button>
                         <input type="number" class="form-control text-center quantity-input" v-model.number="quantity"
                             min="1" />
-                        <button class="btn btn-outline-secondary" type="button" @click="increaseQuantity">+</button>
-                    </div>
-                    <div v-if="showQuantityWarning" class="text-danger small mt-1">
-                        Bạn đã vượt quá số lượng tồn kho. Đã đặt về tối đa có thể.
                     </div>
                     <button class="btn btn-dark add-to-cart-btn" :disabled="product.quantity === 0 || quantity === 0"
                         @click="themVaoGioHang">
@@ -122,9 +131,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch ,onUnmounted} from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
+import { useToast } from 'vue-toastification'
+const toast = useToast();
 
 const route = useRoute();
 const router = useRouter();
@@ -133,63 +144,183 @@ const product = ref(null);
 const loading = ref(true);
 const error = ref(null);
 const quantity = ref(1);
-const displayQuantityLeft = ref(0);
-const showQuantityWarning = ref(false);
+const selectedImage = ref('');
+const selectedColors = ref([]);
+const selectedSizes = ref([]);
+const remainingQuantity = ref(0);
+let slideshowInterval = null;
 
+function startSlideshow() {
+    if (!product.value || product.value.images.length === 0) return;
+
+    let index = 0;
+
+    slideshowInterval = setInterval(() => {
+        index = (index + 1) % product.value.images.length;
+        selectedImage.value = product.value.images[index];
+    }, 1500);
+}
+
+
+onUnmounted(() => {
+    if (slideshowInterval) clearInterval(slideshowInterval);
+});
+
+function toggleColor(color) {
+    if (selectedColors.value.includes(color)) {
+        selectedColors.value = [];
+    } else {
+        selectedColors.value = [color];
+    }
+}
+
+function toggleSize(size) {
+    if (selectedSizes.value.includes(size)) {
+        selectedSizes.value = [];
+    } else {
+        selectedSizes.value = [size];
+    }
+}
+
+
+const colorMap = {
+    'đỏ': '#FF0000',
+    'đỏ đậm': '#8B0000',
+    'đỏ tươi': '#FF2400',
+    'đỏ cam': '#FF4500',
+    'hồng': '#FFC0CB',
+    'hồng đậm': '#FF69B4',
+    'hồng phấn': '#FFB6C1',
+    'tím': '#800080',
+    'tím nhạt': '#DA70D6',
+    'tím huế': '#9932CC',
+    'xanh': '#0000FF',
+    'xanh dương': '#0000CD',
+    'xanh da trời': '#87CEEB',
+    'xanh navy': '#000080',
+    'xanh lá': '#008000',
+    'xanh lá nhạt': '#00FF7F',
+    'xanh rêu': '#556B2F',
+    'xanh ngọc': '#20B2AA',
+    'xanh lục bảo': '#50C878',
+    'xanh pastel': '#77DD77',
+    'vàng': '#FFFF00',
+    'vàng nghệ': '#FFD700',
+    'vàng nhạt': '#FFFACD',
+    'cam': '#FFA500',
+    'cam đất': '#E9967A',
+    'nâu': '#8B4513',
+    'nâu nhạt': '#A0522D',
+    'nâu đất': '#7B3F00',
+    'đen': '#000000',
+    'xám': '#808080',
+    'xám nhạt': '#D3D3D3',
+    'trắng': '#FFFFFF',
+    'be': '#F5F5DC',
+    'kem': '#FAF0E6',
+    'bạc': '#C0C0C0',
+    'vàng đồng': '#B8860B',
+    'xanh mint': '#98FF98',
+    'xanh lam': '#1E90FF',
+    'xanh teal': '#008080',
+    'hồng đất': '#C48189',
+    'hồng đào': '#FFDAB9',
+    'đỏ rượu': '#800000',
+    'đỏ đô': '#8B0000',
+    'tím than': '#4B0082',
+    'tím oải hương': '#E6E6FA',
+    'xanh coban': '#0047AB',
+    'xanh ngọc bích': '#00CED1',
+    'nâu socola': '#381819',
+    'cam san hô': '#FF7F50',
+    'xanh olive': '#808000',
+    'vàng chanh': '#FFF44F'
+};
 const themVaoGioHang = async () => {
     if (!product.value) return;
 
-    const tongTien = product.value.price * quantity.value;
-
-    const payload = {
-        idSanPhamChiTiet: product.value.id,
-        soLuong: quantity.value,
-        gia: product.value.price,
-        tongTien: tongTien,
-        tenSanPham: product.value.name,
-        anhSanPham: product.value.image,
-        phanTramGiamGia: product.value.discount || 0
-
-    };
-    console.log("Giá gửi đi:", product.value.price);
-    console.log("📦 Product:", product.value);
-
-    try {
-        const res = await axios.post(
-            'http://localhost:8080/client/ThemSanPham',
-            payload,
-            {
-                withCredentials: true
-            }
-        );
-
-        console.log('✅ Đã thêm vào giỏ hàng:', res.data);
-        window.dispatchEvent(new Event("cap-nhat-gio"));
-    } catch (err) {
-        console.error('❌ Lỗi khi thêm vào giỏ hàng:', err);
-        alert('Không thể thêm sản phẩm vào giỏ hàng.');
-    }
-};
-
-watch(quantity, (newQty) => {
-    if (!product.value) return;
-
-    showQuantityWarning.value = false; // Mặc định tắt
-
-    if (!Number.isInteger(newQty) || newQty <= 0) {
-        quantity.value = 1;
-        displayQuantityLeft.value = product.value.quantity - 1;
+    if (selectedColors.value.length === 0) {
+        alert('Vui lòng chọn ít nhất một màu sắc.');
         return;
     }
 
-    if (newQty > product.value.quantity) {
-        quantity.value = product.value.quantity;
-        displayQuantityLeft.value = 0;
-        showQuantityWarning.value = true; // ⚠️ Bật cảnh báo
-    } else {
-        displayQuantityLeft.value = product.value.quantity - newQty;
+    if (selectedSizes.value.length === 0) {
+        alert('Vui lòng chọn ít nhất một kích cỡ.');
+        return;
     }
-});
+
+    if (quantity.value > product.value.quantity) {
+        alert('Số lượng vượt quá tồn kho!');
+        return;
+    }
+
+    const selectedColor = selectedColors.value[0];
+    const selectedSize = selectedSizes.value[0];
+
+    try {
+        // 🔍 B1: Gọi API để lấy idChiTietSanPham
+        const resId = await axios.get("http://localhost:8080/client/san-pham/chi-tiet-id", {
+            params: {
+                idSanPham: product.value.id,
+                mauSac: selectedColor,
+                kichCo: selectedSize
+            }
+        });
+
+        const idChiTietSanPham = resId.data;
+
+        if (!idChiTietSanPham) {
+            alert("Không tìm thấy phiên bản sản phẩm phù hợp.");
+            return;
+        }
+
+        // 🛒 B2: Gửi dữ liệu thêm vào giỏ hàng
+        const payload = {
+            idSanPham: product.value.id,
+            idChiTietSanPham,
+            soLuong: quantity.value,
+            gia: product.value.price,
+            tongTien: product.value.price * quantity.value,
+            tenSanPham: product.value.name,
+            anhSanPham: product.value.images?.[0] || '',
+            phanTramGiamGia: product.value.discount || 0,
+            mauSacList: [selectedColor],
+            kichCoList: [selectedSize],
+        };
+
+        const addToCartRes = await axios.post("http://localhost:8080/client/ThemSanPham", payload, {
+            withCredentials: true
+        });
+
+        toast.success("🎉 Thêm sản phẩm vào giỏ hàng thành công!", {
+            timeout: 3000,
+            position: "top-right"
+        });
+
+        // 🛠️ B3: Gọi API cập nhật số lượng tồn kho
+        await axios.post("http://localhost:8080/client/cap-nhat-so-luong", {
+            idChiTietSanPham,
+            soLuong: quantity.value
+        });
+
+        // 🎯 B4: Cập nhật UI
+        product.value.quantity -= quantity.value;
+        if (product.value.quantity < 0) product.value.quantity = 0;
+        remainingQuantity.value = product.value.quantity;
+        quantity.value = product.value.quantity > 0 ? 1 : 0;
+
+        // Gửi sự kiện cập nhật giỏ hàng
+        window.dispatchEvent(new Event("cap-nhat-gio"));
+
+    } catch (err) {
+        console.error("❌ Lỗi khi xử lý giỏ hàng:", err);
+        toast.error("❌ Thêm sản phẩm thất bại. Vui lòng thử lại sau!", {
+            timeout: 4000,
+            position: "top-right"
+        });
+
+    }
+};
 
 
 const fetchProductDetail = async (productId) => {
@@ -205,43 +336,44 @@ const fetchProductDetail = async (productId) => {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/client/san-pham-chi-tiet/${productId}`);
-        console.log("Fetching product with ID:", productId);
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error("Sản phẩm không tìm thấy.");
-            }
-            throw new Error(`Lỗi HTTP! status: ${response.status}`);
-        }
+        // Lấy sản phẩm gốc theo ID
+        const res = await fetch(`http://localhost:8080/client/san-pham/${productId}`);
+        if (!res.ok) throw new Error("Sản phẩm không tìm thấy.");
+        console.log("id san pha ", productId)
+        const singleProduct = await res.json();
 
-        const data = await response.json();
-        if (data) {
-            product.value = {
-                id: data.idSanPham,
-                name: data.tenSanPham,
-                image: data.anhSanPham,
-                price: data.giaSauKhiGiam,
-                originalPrice: data.giaTruocKhiGiam,
-                discount: data.phamTramGiam,
-                rating: data.diemDanhGia,
-                reviews: data.soLuongDanhGia,
-                category: data.tenDanhMuc,
-                // Giả định API trả về mảng màu và kích cỡ
-                sizes: Array.isArray(data.kichCo) ? data.kichCo : (data.kichCo ? [data.kichCo] : []),
-                colors: Array.isArray(data.mauSac) ? data.mauSac : (data.mauSac ? [data.mauSac] : []),
-                createdAt: data.ngayTaoChiTietSanPham,
-                quantity: data.soLuong, // Lượng tồn kho
-                maSanPham: data.maSanPham, // Thêm mã sản phẩm
+        // Gộp dữ liệu
+        const kichCoSet = new Set();
+        const mauSacSet = new Set();
+        let tongSoLuong = 0;
+        const allVariants = singleProduct.listChiTietSanPham || [];
+        allVariants.forEach(item => {
+            if (item.kichCo) kichCoSet.add(item.kichCo.trim());
+            if (item.mauSac) mauSacSet.add(item.mauSac.trim());
+        });
+        selectedImage.value = singleProduct.listAnhSanPham?.[0] || '';
+        product.value = {
+            id: singleProduct.idSanPham,
+            name: singleProduct.tenSanPham,
+            images: singleProduct.listAnhSanPham || [],
+            price: singleProduct.giaSauKhiGiam,
+            originalPrice: singleProduct.giaTruocKhiGiam,
+            discount: singleProduct.phamTramGiam,
+            rating: singleProduct.diemDanhGia,
+            reviews: singleProduct.soLuongDanhGia,
+            category: singleProduct.tenDanhMuc,
+            colors: singleProduct.listMauSac || [],
+            sizes: singleProduct.listKichCo || [],
+            createdAt: singleProduct.ngayTaoChiTietSanPham,
+            quantity: singleProduct.soLuong,
+            maSanPham: singleProduct.maSanPham,
+            description: (singleProduct.listMoTa || []).join(' '),
 
-                description: data.moTa || "Cư dân Pellerntesque morbi tristique senectus et netus et malesuada nỗ tiếng ac turpis egestas. Vestibulum tortor quam, feugiat vita, ultricies eget, tempor sit amet, ame. Donec eu libero sit amet quam egestas semper. Aenean ultricies mị vitae est.Maris placerat eleifend leo."
-            };
-            displayQuantityLeft.value = product.value.quantity - quantity.value;
-            if (product.value.quantity === 0) {
-                quantity.value = 0;
-            }
-        } else {
-            error.value = "Không có dữ liệu sản phẩm.";
-        }
+        };
+        remainingQuantity.value = singleProduct.soLuong > 0 ? singleProduct.soLuong - 1 : 0;
+        selectedImage.value = singleProduct.listAnhSanPham?.[0] || '';
+        startSlideshow()
+
     } catch (e) {
         console.error("Lỗi khi fetch chi tiết sản phẩm:", e);
         error.value = `Không thể tải chi tiết sản phẩm: ${e.message}`;
@@ -250,57 +382,44 @@ const fetchProductDetail = async (productId) => {
     }
 };
 
+
 onMounted(() => {
     fetchProductDetail(route.params.id);
 });
+
 
 watch(() => route.params.id, (newId) => {
     fetchProductDetail(newId);
 });
 
-function increaseQuantity() {
-    if (product.value && quantity.value < product.value.quantity) {
-        quantity.value++;
+watch(quantity, (newQuantity) => {
+    if (product.value) {
+        const goc = product.value.quantity;
+        remainingQuantity.value = goc - newQuantity;
     }
-}
+});
 
-function decreaseQuantity() {
-    // Không cho phép số lượng nhỏ hơn 1, trừ khi sản phẩm hết hàng thì có thể là 0
-    if (quantity.value > 1) {
-        quantity.value--;
-    } else if (quantity.value === 1 && product.value.quantity === 0) {
-        quantity.value = 0; // Nếu hết hàng và đang ở 1, cho phép về 0
-    } else if (quantity.value === 1) {
-        quantity.value = 1; // Giữ ở 1 nếu đang ở 1 và còn hàng
+watch(quantity, (val) => {
+    if (val > product.value.quantity) {
+        quantity.value = product.value.quantity;
+        alert("Không thể mua quá số lượng tồn kho!");
     }
-}
+});
+
 
 
 function formatCurrency(value) {
     if (typeof value !== 'number') return '0 VND';
-    // Format thành tiền Việt Nam Đồng
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-    // Nếu muốn hiển thị EUR như hình ảnh, bạn cần chuyển đổi giá trị và format như sau:
-    // const eurValue = value / 27000; // Ví dụ: 1 EUR = 27000 VND
-    // return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(eurValue);
+
 }
 
 function mapColorToCssClass(apiColor) {
-    if (!apiColor) return '';
-    const lowerCaseColor = apiColor.toLowerCase();
-    switch (lowerCaseColor) {
-        case 'đỏ': return 'red';
-        case 'xanh': return 'blue';
-        case 'xanh lá': return 'green';
-        case 'đen': return 'black';
-        case 'xám': return 'gray';
-        case 'cam': return 'orange';
-        case 'vàng': return 'yellow';
-        case 'trắng': return 'white';
-        // Thêm các màu khác nếu cần
-        default: return lowerCaseColor;
-    }
+    if (!apiColor) return '#CCCCCC';
+    const key = apiColor.trim().toLowerCase();
+    return colorMap[key] || '#CCCCCC';
 }
+
 
 function goBack() {
     router.back();
@@ -554,41 +673,6 @@ function goBack() {
     color: #333;
     border: 1px solid #ddd;
 }
-
-/* Thêm các định nghĩa màu */
-.color-box-detail.red {
-    background-color: #dc3545;
-}
-
-.color-box-detail.blue {
-    background-color: #007bff;
-}
-
-.color-box-detail.green {
-    background-color: #28a745;
-}
-
-.color-box-detail.black {
-    background-color: #000;
-}
-
-.color-box-detail.gray {
-    background-color: #6c757d;
-}
-
-.color-box-detail.orange {
-    background-color: #fd7e14;
-}
-
-.color-box-detail.yellow {
-    background-color: #ffc107;
-}
-
-.color-box-detail.white {
-    background-color: #fff;
-    border: 1px solid #ccc;
-}
-
 
 /* Media queries để đảm bảo responsive trên các màn hình nhỏ hơn */
 @media (max-width: 991.98px) {

@@ -32,7 +32,7 @@
                         <div class="filter-header" @click="toggleSection('category')">
                             <h5>Thể loại</h5>
                             <span class="filter-count" v-if="categoryCounts.total > 0">({{ categoryCounts.total
-                            }})</span>
+                                }})</span>
                             <i :class="expandedSections.category ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
                         </div>
                         <div v-show="expandedSections.category" class="filter-content">
@@ -42,7 +42,7 @@
                                 <label class="form-check-label" :for="cat">
                                     {{ cat }}
                                     <span class="filter-item-count" v-if="categoryCounts[cat]">({{ categoryCounts[cat]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -74,9 +74,9 @@
                         </div>
                         <div v-show="expandedSections.color" class="filter-content">
                             <div class="color-options mb-3">
-                                <div v-for="color in uniqueColors" :key="color"
-                                    :class="['color-box', mapColorToCssClass(color), selectedColors.includes(color) ? 'selected' : '']"
-                                    @click="toggleColor(color)">
+                                <div v-for="color in uniqueColors" :key="color" class="color-box"
+                                    :style="{ backgroundColor: mapColorToCssClass(color) }"
+                                    :class="{ selected: selectedColors.includes(color) }" @click="toggleColor(color)">
                                     <span v-if="selectedColors.includes(color)" class="checkmark">✓</span>
                                 </div>
                             </div>
@@ -86,7 +86,7 @@
                                 <label class="form-check-label" :for="color + '-checkbox'" @click="toggleColor(color)">
                                     {{ color }}
                                     <span class="filter-item-count" v-if="colorCounts[color]">({{ colorCounts[color]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -120,7 +120,7 @@
                                 <label class="form-check-label" :for="`rating-${star}`">
                                     <span class="stars">{{ '★'.repeat(star) }}</span> & hướng lên
                                     <span class="filter-item-count" v-if="ratingCounts[star]">({{ ratingCounts[star]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -168,7 +168,7 @@
 
                     <div class="product-grid">
                         <div class="product-card" v-for="product in paginatedProducts" :key="product.id">
-                              <div class="card h-100 position-relative" @click="goToProductDetail(product.id)">
+                            <div class="card h-100 position-relative" @click="goToProductDetail(product.id)">
                                 <img :src="product.image || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png'"
                                     class="card-img-top" :alt="product.name" />
                                 <div v-if="product.discount && product.discount > 0" class="discount-badge">
@@ -224,12 +224,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted} from 'vue'
 import '@vueform/slider/themes/default.css'
 import Slider from '@vueform/slider'
 import { useRouter } from 'vue-router'
 
-const router = useRouter() 
+const router = useRouter()
 const allProducts = ref([]);
 const loading = ref(true);
 
@@ -247,6 +247,7 @@ const selectedRating = ref(0)
 const currentPage = ref(1)
 const itemsPerPage = 24
 
+
 const expandedSections = ref({
     price: true,
     category: false,
@@ -255,7 +256,59 @@ const expandedSections = ref({
     discount: false,
     rating: false
 })
-
+const colorMap = {
+    'đỏ': '#FF0000',
+    'đỏ đậm': '#8B0000',
+    'đỏ tươi': '#FF2400',
+    'đỏ cam': '#FF4500',
+    'hồng': '#FFC0CB',
+    'hồng đậm': '#FF69B4',
+    'hồng phấn': '#FFB6C1',
+    'tím': '#800080',
+    'tím nhạt': '#DA70D6',
+    'tím huế': '#9932CC',
+    'xanh': '#0000FF',
+    'xanh dương': '#0000CD',
+    'xanh da trời': '#87CEEB',
+    'xanh navy': '#000080',
+    'xanh lá': '#008000',
+    'xanh lá nhạt': '#00FF7F',
+    'xanh rêu': '#556B2F',
+    'xanh ngọc': '#20B2AA',
+    'xanh lục bảo': '#50C878',
+    'xanh pastel': '#77DD77',
+    'vàng': '#FFFF00',
+    'vàng nghệ': '#FFD700',
+    'vàng nhạt': '#FFFACD',
+    'cam': '#FFA500',
+    'cam đất': '#E9967A',
+    'nâu': '#8B4513',
+    'nâu nhạt': '#A0522D',
+    'nâu đất': '#7B3F00',
+    'đen': '#000000',
+    'xám': '#808080',
+    'xám nhạt': '#D3D3D3',
+    'trắng': '#FFFFFF',
+    'be': '#F5F5DC',
+    'kem': '#FAF0E6',
+    'bạc': '#C0C0C0',
+    'vàng đồng': '#B8860B',
+    'xanh mint': '#98FF98',
+    'xanh lam': '#1E90FF',
+    'xanh teal': '#008080',
+    'hồng đất': '#C48189',
+    'hồng đào': '#FFDAB9',
+    'đỏ rượu': '#800000',
+    'đỏ đô': '#8B0000',
+    'tím than': '#4B0082',
+    'tím oải hương': '#E6E6FA',
+    'xanh coban': '#0047AB',
+    'xanh ngọc bích': '#00CED1',
+    'nâu socola': '#381819',
+    'cam san hô': '#FF7F50',
+    'xanh olive': '#808000',
+    'vàng chanh': '#FFF44F'
+};
 // === Computed properties for dynamic filters and counts ===
 
 // Compute counts for categories
@@ -273,7 +326,7 @@ const categoryCounts = computed(() => {
 });
 function goToProductDetail(productId) {
     router.push({ name: 'client-san-pham-detail', params: { id: productId } })
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 // Unique categories (already exists, but ensures it's based on loaded products)
 const uniqueCategories = computed(() => {
@@ -301,15 +354,14 @@ const sizeCounts = computed(() => {
     return counts;
 });
 
-// Unique sizes (already exists, but ensures it's based on loaded products)
 const uniqueSizes = computed(() => {
-    // Filter out 'total' key and ensure it's sorted alphabetically
+
     return Object.keys(sizeCounts.value)
         .filter(key => key !== 'total')
         .sort((a, b) => a.localeCompare(b));
 });
 
-// Compute counts for colors
+
 const colorCounts = computed(() => {
     const counts = {};
     let total = 0;
@@ -436,9 +488,9 @@ const sortedProducts = computed(() => {
             break;
         case 'latest':
             sorted.sort((a, b) => {
-                const dateA = new Date(a.createdAt || 0);
-                const dateB = new Date(b.createdAt || 0);
-                return (dateB - dateA) * dir;
+                const dateA = new Date(a.createdAt).getTime();
+                const dateB = new Date(b.createdAt).getTime();
+                return (dateA - dateB) * dir;
             });
             break;
     }
@@ -466,20 +518,11 @@ function formatCurrency(value) {
 }
 
 function mapColorToCssClass(apiColor) {
-    if (!apiColor) return '';
-    const lowerCaseColor = apiColor.toLowerCase();
-    switch (lowerCaseColor) {
-        case 'đỏ': return 'red';
-        case 'xanh': return 'blue';
-        case 'xanh lá': return 'green';
-        case 'đen': return 'black';
-        case 'xám': return 'gray';
-        case 'cam': return 'orange';
-        case 'vàng': return 'yellow';
-        case 'trắng': return 'white';
-        default: return lowerCaseColor;
-    }
+    if (!apiColor) return '#CCCCCC';
+    const key = apiColor.trim().toLowerCase();
+    return colorMap[key] || '#CCCCCC';
 }
+
 
 const fetchProducts = async () => {
     loading.value = true;
@@ -552,7 +595,9 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     currentPage.value = 1;
     window.scrollTo({ top: 0, behavior: 'smooth' })
 }, { deep: true })
+
 </script>
+
 
 <style scoped>
 @import 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css';
@@ -573,10 +618,7 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
 
 /* Filter Sidebar */
 .filter-sidebar {
-    background: #fff;
-    border-radius: 8px;
     padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Filter Section */
@@ -733,7 +775,6 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     width: 100%;
     background-color: #f3f4f6;
     color: #374151;
-    border: 1px solid #d1d5db;
     padding: 10px 15px;
     border-radius: 6px;
     margin-top: 20px;
@@ -747,111 +788,96 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
 }
 
 /* Product Header */
-.product-header {
-    background: #fff;
-    border-radius: 8px;
-    padding: 15px 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-}
 
 .product-header .form-select {
     border-radius: 6px;
     font-size: 15px;
 }
 
-/* Product Grid */
+/* Product Grid giống ảnh 2 */
 .product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
+    gap: 30px;
 }
 
+/* Card sản phẩm */
 .product-card .card {
-    border: none;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: none !important;
+    border-radius: 0;
+    box-shadow: none;
+    transition: all 0.2s ease-in-out;
+    text-align: center;
+    background: #fff;
 }
 
-.product-card .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-}
 
+
+/* Ảnh sản phẩm */
 .product-card .card-img-top {
-    height: 200px;
+    width: 100%;
+    height: 300px;
     object-fit: cover;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
 }
 
-.product-card .discount-badge {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background-color: #dc3545;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.85em;
-    font-weight: bold;
-    z-index: 10;
-}
-
-.product-card .card-body {
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
+/* Tên sản phẩm */
 .product-card .card-title {
-    font-size: 1.1em;
-    font-weight: 600;
-    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: normal;
     color: #333;
-    white-space: nowrap;
+    margin: 10px 0;
+    white-space: normal;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.product-card .rating-section {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.product-card .rating-section .star {
-    color: #ffc107;
-    margin-right: 2px;
-}
-
-.product-card .rating-section small {
-    font-size: 0.85em;
-    color: #6c757d;
-    margin-left: 5px;
-    /* Space between stars and count */
-}
-
+/* Giá sản phẩm */
 .product-card .price-section {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
+    display: block;
+    margin-top: 5px;
+}
+
+.product-card .current-price {
+    font-size: 16px;
+    font-weight: bold;
+    color: #000;
 }
 
 .product-card .original-price {
     text-decoration: line-through;
-    color: #6c757d;
-    font-size: 0.9em;
+    color: #888;
+    font-size: 14px;
+    margin-left: 5px;
 }
 
-.product-card .current-price {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #007bff;
+/* Rating */
+.product-card .rating-section {
+    margin: 5px 0;
+    font-size: 12px;
+    color: #999;
 }
+
+/* Discount badge */
+.product-card .discount-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #dc3545;
+    color: #fff;
+    padding: 3px 6px;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .product-card .card-img-top {
+        height: 200px;
+        padding: 10px;
+    }
+}
+
 
 /* No Products Found */
 .no-products {

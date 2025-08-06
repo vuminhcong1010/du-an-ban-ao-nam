@@ -23,7 +23,7 @@ export default defineConfig({
       },
       "/ws": {
         target: "http://localhost:8080",
-        ws: true, // ⚠️ Quan trọng: bật hỗ trợ WebSocket
+        ws: true, 
         changeOrigin: true,
         secure: false,
       },

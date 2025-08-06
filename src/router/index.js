@@ -79,7 +79,7 @@ const router = createRouter({
           path: "client-oder/:hoaDonId",
           name: "client-Oder",
           component: Oder,
-          props: (route) => ({ hoaDonId: Number(route.params.hoaDonId) }), // ép về Number
+          props: (route) => ({ hoaDonId: Number(route.params.hoaDonId) }),
         },
         // Thêm các route client khác ở đây
       ],
