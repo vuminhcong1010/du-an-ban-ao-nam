@@ -93,7 +93,6 @@ const dangNhap = async () => {
 }
 </script>
 
-  
   <style scoped>
   /* Các style dùng chung cho cả Login và Register */
   .auth-page {

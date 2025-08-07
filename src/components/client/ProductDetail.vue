@@ -258,7 +258,6 @@ const themVaoGioHang = async () => {
     const selectedSize = selectedSizes.value[0];
 
     try {
-        // 🔍 B1: Gọi API để lấy idChiTietSanPham
         const resId = await axios.get("http://localhost:8080/client/san-pham/chi-tiet-id", {
             params: {
                 idSanPham: product.value.id,

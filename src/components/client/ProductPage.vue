@@ -1,4 +1,4 @@
-<template>
+<template class="view">
     <div class="container product-page-container">
         <div class="row">
             <div class="col-md-3">
@@ -10,15 +10,15 @@
                         </div>
                         <div v-show="expandedSections.price" class="filter-content">
                             <div class="mb-3 d-flex align-items-center gap-2">
-                                <div class="input-group" style="max-width: 90px;">
+                                <div class="input-group" style="max-width: 900px;">
                                     <span class="input-group-text">VND</span>
-                                    <input type="number" class="form-control form-control-sm"
+                                    <input type="number max-width: 600px" class="form-control form-control-sm"
                                         v-model.number="priceRange[0]" @change="onPriceInputChange(0)" :min="minPrice"
                                         :max="priceRange[1]" />
                                 </div>
-                                <div class="input-group" style="max-width: 90px;">
+                                <div class="input-group" style="max-width: 900px;">
                                     <span class="input-group-text">VND</span>
-                                    <input type="number" class="form-control form-control-sm"
+                                    <input type="number max-width: 600px" class="form-control form-control-sm"
                                         v-model.number="priceRange[1]" @change="onPriceInputChange(1)"
                                         :min="priceRange[0]" :max="maxPrice" />
                                 </div>
@@ -32,7 +32,7 @@
                         <div class="filter-header" @click="toggleSection('category')">
                             <h5>Thể loại</h5>
                             <span class="filter-count" v-if="categoryCounts.total > 0">({{ categoryCounts.total
-                                }})</span>
+                            }})</span>
                             <i :class="expandedSections.category ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
                         </div>
                         <div v-show="expandedSections.category" class="filter-content">
@@ -42,7 +42,7 @@
                                 <label class="form-check-label" :for="cat">
                                     {{ cat }}
                                     <span class="filter-item-count" v-if="categoryCounts[cat]">({{ categoryCounts[cat]
-                                        }})</span>
+                                    }})</span>
                                 </label>
                             </div>
                         </div>
@@ -86,7 +86,7 @@
                                 <label class="form-check-label" :for="color + '-checkbox'" @click="toggleColor(color)">
                                     {{ color }}
                                     <span class="filter-item-count" v-if="colorCounts[color]">({{ colorCounts[color]
-                                        }})</span>
+                                    }})</span>
                                 </label>
                             </div>
                         </div>
@@ -120,7 +120,7 @@
                                 <label class="form-check-label" :for="`rating-${star}`">
                                     <span class="stars">{{ '★'.repeat(star) }}</span> & hướng lên
                                     <span class="filter-item-count" v-if="ratingCounts[star]">({{ ratingCounts[star]
-                                        }})</span>
+                                    }})</span>
                                 </label>
                             </div>
                         </div>
@@ -167,29 +167,30 @@
                     </div>
 
                     <div class="product-grid">
-                        <div class="product-card" v-for="product in paginatedProducts" :key="product.id">
-                            <div class="card h-100 position-relative" @click="goToProductDetail(product.id)">
-                                <img :src="product.image || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png'"
-                                    class="card-img-top" :alt="product.name" />
-                                <div v-if="product.discount && product.discount > 0" class="discount-badge">
-                                    -{{ product.discount }}%
+                        <div class="product-card" v-for="allProducts in paginatedProducts" :key="allProducts.id">
+                            <div class="card h-100 position-relative" @click="goToProductDetail(allProducts.id)">
+                                <img :src="allProducts.image || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png'"
+                                    class="card-img-top" :alt="allProducts.name" />
+                                <div v-if="allProducts.discount && allProducts.discount > 0" class="discount-badge">
+                                    -{{ allProducts.discount }}%
                                 </div>
                                 <div class="card-body">
-                                    <h6 class="card-title">{{ product.name }}</h6>
+                                    <h6 class="card-title">{{ allProducts.name }}</h6>
                                     <div class="rating-section">
                                         <span v-for="star in 5" :key="star" class="star">
-                                            <i v-if="star <= product.rating" class="bi bi-star-fill"></i>
+                                            <i v-if="star <= allProducts.rating" class="bi bi-star-fill"></i>
                                             <i v-else class="bi bi-star"></i>
                                         </span>
-                                        <small v-if="product.reviews !== undefined && product.reviews > 0">({{
-                                            product.reviews }})</small>
-                                        <small v-else>({{ product.quantity }})</small>
+                                        <small v-if="allProducts.reviews !== undefined && allProducts.reviews > 0">({{
+                                            allProducts.reviews }})</small>
+                                        <small v-else>({{ allProducts.quantity }})</small>
                                     </div>
                                     <div class="price-section">
-                                        <span v-if="product.discount && product.discount > 0" class="original-price">
-                                            {{ formatCurrency(product.originalPrice) }}
+                                        <span v-if="allProducts.discount && allProducts.discount > 0"
+                                            class="original-price">
+                                            {{ formatCurrency(allProducts.originalPrice) }}
                                         </span>
-                                        <span class="current-price">{{ formatCurrency(product.price) }}</span>
+                                        <span class="current-price">{{ formatCurrency(allProducts.price) }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -224,7 +225,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted} from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import '@vueform/slider/themes/default.css'
 import Slider from '@vueform/slider'
 import { useRouter } from 'vue-router'
@@ -500,13 +501,24 @@ const sortedProducts = computed(() => {
 
 
 function onPriceInputChange(index) {
-    if (priceRange.value[index] < minPrice.value) priceRange.value[index] = minPrice.value
-    if (priceRange.value[index] > maxPrice.value) priceRange.value[index] = maxPrice.value
+    // Ensure the input value stays within the overall minPrice and maxPrice bounds
+    let value = priceRange.value[index];
+    if (value < minPrice.value) {
+        value = minPrice.value;
+    } else if (value > maxPrice.value) {
+        value = maxPrice.value;
+    }
 
-    if (index === 0 && priceRange.value[0] > priceRange.value[1]) {
-        priceRange.value[0] = priceRange.value[1]
-    } else if (index === 1 && priceRange.value[1] < priceRange.value[0]) {
-        priceRange.value[1] = priceRange.value[0]
+    // Update the specific end of the price range
+    priceRange.value[index] = value;
+
+    // Ensure priceRange[0] <= priceRange[1]
+    if (priceRange.value[0] > priceRange.value[1]) {
+        if (index === 0) {
+            priceRange.value[1] = priceRange.value[0];
+        } else {
+            priceRange.value[0] = priceRange.value[1];
+        }
     }
     currentPage.value = 1; // Reset page when filter changes
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -523,7 +535,6 @@ function mapColorToCssClass(apiColor) {
     return colorMap[key] || '#CCCCCC';
 }
 
-
 const fetchProducts = async () => {
     loading.value = true;
     try {
@@ -533,39 +544,75 @@ const fetchProducts = async () => {
         }
         const data = await response.json();
 
-        if (Array.isArray(data) && data.length > 0) {
-            const mapped = data.map(item => ({
-                id: item.idSanPham,
-                name: item.tenSanPham,
-                image: item.anhSanPham,
-                price: item.giaSauKhiGiam,
-                originalPrice: item.giaTruocKhiGiam,
-                discount: item.phamTramGiam,
-                rating: item.diemDanhGia,
-                reviews: item.soLuongDanhGia,
-                category: item.tenDanhMuc,
-                sizes: item.kichCo ? [item.kichCo] : [],
-                colors: item.mauSac ? [item.mauSac] : [],
-                createdAt: item.ngayTaoChiTietSanPham,
-                quantity: item.soLuong
-            }));
+        console.log("Raw data from API:", data);
+        const products = data.data || [];
+        if (Array.isArray(products) && products.length > 0) {
+            const filteredData = products.filter(item => item.sp?.trangThai == 1);
+            console.log("Filtered (trangThai == 1):", filteredData);
+
+            const mapped = filteredData.map(item => {
+                const firstChiTietDotGiamGia = item.chiTietDotGiamGia?.[0] || {};
+                const firstDotGiamGia = firstChiTietDotGiamGia.idDotGiamGia || {};
+                const firstDanhMuc = item.danhMucs?.[0] || {};
+                const danhGiaList = item.danhGias || [];
+                const ctspList = item.ctsp || [];
+
+                let currentPrice = ctspList[0]?.gia || 0; // Default to original product price
+                let originalProductPrice = currentPrice; // Initialize original price
+
+                let discountPercentage = 0;
+                let hasDiscount = false;
+
+                if (
+                    firstDotGiamGia &&
+                    firstChiTietDotGiamGia &&
+                    firstDotGiamGia.phamTramGiam > 0
+                ) {
+                    currentPrice = firstChiTietDotGiamGia.giaSauKhiGiam || currentPrice;
+                    originalProductPrice = firstChiTietDotGiamGia.giaTruocKhiGiam || originalProductPrice;
+                    discountPercentage = firstDotGiamGia.phamTramGiam;
+                    hasDiscount = true;
+                }
+
+                return {
+                    id: item.sp.id,
+                    name: item.sp.tenSanPham,
+                    image: item.anhSanPham?.[0] || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png',
+
+                    price: currentPrice,
+                    originalPrice: hasDiscount ? originalProductPrice : 0,
+                    discount: hasDiscount ? discountPercentage : 0,
+
+                    rating: danhGiaList.length > 0
+                        ? (danhGiaList.reduce((sum, dg) => sum + dg.diemDanhGia, 0) / danhGiaList.length)
+                        : 0,
+                    reviews: danhGiaList.length,
+
+                    category: firstDanhMuc.tenDanhMuc || '',
+
+                    sizes: [...new Set(ctspList.map(ct => ct.idSize?.soCo).filter(Boolean))],
+                    colors: [...new Set(ctspList.map(ct => ct.idMau?.ten).filter(Boolean))],
+
+                    createdAt: ctspList[0]?.ngayTao || null,
+                    quantity: ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0)
+                };
+            });
 
             allProducts.value = mapped;
-            // Tính toán minPrice và maxPrice
-            minPrice.value = 0; // Đặt giá thấp nhất mặc định là 0
 
-            const allOriginalPrices = allProducts.value
-                .map(p => p.originalPrice)
-                .filter(price => typeof price === 'number' && price > 0); // Chỉ lấy giá trị hợp lệ > 0
+            const allPrices = allProducts.value
+                .map(p => p.price)
+                .filter(price => typeof price === 'number');
 
-            if (allOriginalPrices.length > 0) {
-                maxPrice.value = Math.max(...allOriginalPrices);
+            if (allPrices.length > 0) {
+                minPrice.value = Math.min(...allPrices);
+                maxPrice.value = Math.max(...allPrices);
             } else {
-                maxPrice.value = 1000000; // Giá trị mặc định nếu không có giá gốc hợp lệ
+                minPrice.value = 0;
+                maxPrice.value = 1000000;
             }
 
-            priceRange.value = [minPrice.value, maxPrice.value]; // Gán giá trị mặc định cho priceRange
-            console.log("Initial Price Range:", priceRange.value); // Để kiểm tra trong console
+            priceRange.value = [minPrice.value, maxPrice.value];
 
         } else {
             minPrice.value = 0;
@@ -603,12 +650,16 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
 @import 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css';
 
 /* Container chính */
+.view {
+    background-color: #F3F4F6;
+}
 .product-page-container {
     margin-left: 88px;
     padding-top: 120px;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    background-color: #F3F4F6;
 }
 
 /* Ẩn tooltip slider */
@@ -808,7 +859,7 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     box-shadow: none;
     transition: all 0.2s ease-in-out;
     text-align: center;
-    background: #fff;
+  background-color: #F3F4F6;
 }
 
 
