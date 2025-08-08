@@ -57,7 +57,7 @@
                         @focus="sp.soLuongCu = sp.soLuong" @change="capNhatSoLuongSanPham(sp)" />
 
                     <!-- Nút xóa sản phẩm -->
-                    <button class="remove-btn" @click="xoaSanPhamVaTraTonKho(sp.idSanPhamChiTiet)">🗑️</button>
+                    <button class="remove-btn" >🗑️</button>
                 </div>
             </div>
 
@@ -91,31 +91,6 @@ export default {
         }
     },
     methods: {
-        async xoaSanPhamVaTraTonKho(idSanPhamChiTiet) {
-            const sp = this.danhSachGio.find(item => item.idSanPhamChiTiet === idSanPhamChiTiet);
-            if (sp) {
-                await this.traVeTonKho(sp);
-            }
-
-            this.$emit('removeItem', idSanPhamChiTiet);
-            window.dispatchEvent(new Event("cap-nhat-gio"));
-        },
-        async capNhatSoLuongSanPham(sp) {
-            try {
-                await axios.put("http://localhost:8080/client/CapNhatSoLuongTrongGio", {
-                    idSanPhamChiTiet: sp.idSanPhamChiTiet,
-                    soLuongMoi: sp.soLuong
-                }, {
-                    withCredentials: true
-                });
-                window.dispatchEvent(new Event("cap-nhat-gio"));
-            } catch (err) {
-                alert(err.response?.data || "Lỗi cập nhật số lượng");
-                // Nếu cập nhật lỗi (ví dụ vượt quá tồn kho), reset lại số lượng cũ (tuỳ bạn)
-                sp.soLuong = sp.soLuongCu || 1;
-            }
-        }
-        ,
         async xoaToanBoGioHang() {
             try {
                 await axios.delete("http://localhost:8080/client/XoaGioHang", {
@@ -125,7 +100,6 @@ export default {
                 this.$emit('update:danhSachGio', []);
                 this.$emit('capNhatGio');
                 window.dispatchEvent(new Event("cap-nhat-gio"));
-
                 alert("🗑️ Đã xóa toàn bộ giỏ hàng và cập nhật tồn kho!");
             } catch (err) {
                 console.error("Lỗi khi xóa giỏ hàng:", err);

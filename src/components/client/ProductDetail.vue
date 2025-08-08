@@ -364,18 +364,8 @@ const themVaoGioHang = async () => {
             position: "top-right"
         });
 
-        // ✅ Trừ số lượng tồn kho
-        product.value.quantity -= quantity.value;
-        if (product.value.quantity < 0) product.value.quantity = 0;
-
-        // ✅ Cập nhật số lượng còn lại
-        remainingQuantity.value = product.value.quantity;
-        quantity.value = product.value.quantity > 0 ? 1 : 0;
-
-        // ✅ Tự động cập nhật trạng thái “Hết hàng” nếu hết số lượng
-        if (product.value.quantity === 0) {
-            product.value.trangThai = "Hết hàng";
-        }
+        // ✅ Không trừ tồn kho nữa (vì BE đã không xử lý tồn kho)
+        // Nếu bạn vẫn muốn hiển thị tồn kho, có thể gọi API load lại sản phẩm chi tiết
 
         // Gửi sự kiện cập nhật giỏ hàng
         window.dispatchEvent(new Event("cap-nhat-gio"));
@@ -388,6 +378,7 @@ const themVaoGioHang = async () => {
         });
     }
 };
+
 
 
 
