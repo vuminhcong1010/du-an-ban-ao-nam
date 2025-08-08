@@ -91,15 +91,34 @@
             <div class="col-md-5">
                 <div class="card p-4 sticky-summary">
                     <h5 class="mb-3">Tóm tắt đơn hàng</h5>
-
                     <div v-for="(item, index) in order" :key="index" class="d-flex align-items-center mb-3">
                         <img :src="item.duongDanAnh" alt="Ảnh sản phẩm" width="60" class="me-3 rounded" />
-                        <div>
-                            <p class="mb-1">{{ item.tenSanPham }}</p>
-                            <small>{{ item.soLuong }} × {{ formatCurrency(item.gia) }} = {{
-                                formatCurrency(item.thanhTien) }}</small>
+
+                        <!-- Thông tin sản phẩm -->
+                        <div style="flex-grow: 1;">
+                            <!-- Tên sản phẩm -->
+                            <p class="mb-1 fw-semibold">{{ item.tenSanPham }}</p>
+
+                            <!-- Giá bán -->
+                            <div class="text-muted small mb-1">
+                                {{ formatCurrency(item.giaBan) }}
+                            </div>
+
+                            <!-- Tổng tiền sản phẩm -->
+                            <div class="fw-bold text-dark small">
+                                Tổng: {{ formatCurrency(item.giaBan * item.soLuong) }}
+                            </div>
+
                         </div>
+
+                        <!-- Ô nhập số lượng -->
+                        <div class="ms-3 d-flex align-items-center">
+                            <input type="number" v-model="item.soLuong" min="1"
+                                class="form-control form-control-sm text-center" style="width: 60px;" />
+                        </div>
+
                     </div>
+
                     <div class="d-flex mb-3">
                         <input type="text" class="form-control" placeholder="Mã giảm giá" v-model="maGiamGia"
                             style="flex: 10; margin-right: 8px;" />
@@ -206,41 +225,33 @@ watch(selectedDistrict, (newVal) => {
     }
 });
 
-function groupProducts(products) {
-    const grouped = {};
-
-    products.forEach((item) => {
-        const id = item.idSanPham;
-
-        if (!grouped[id]) {
-            grouped[id] = { ...item };
-        } else {
-            grouped[id].soLuong += item.soLuong;
-            grouped[id].thanhTien += item.thanhTien;
-        }
-    });
-
-    return Object.values(grouped);
-}
-// Load dữ liệu từ API
 async function fetchOrder() {
     try {
         const res = await axios.get(`http://localhost:8080/client/laySanPhamTheoHoaDon/${route.params.hoaDonId}`, {
             withCredentials: true
         });
 
-        order.value = groupProducts(res.data);
+        // Gán thêm thuộc tính giaBan khi load dữ liệu
+        order.value = res.data.map(item => {
+            const giaBan = item.thanhTien / item.soLuong;
+            return {
+                ...item,
+                giaBan, // lưu lại đơn giá gốc
+            };
+        });
     } catch (e) {
         console.error('Lỗi khi lấy đơn hàng:', e);
     }
 }
+
+
 
 function formatCurrency(value) {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
 }
 
 const tongTienSanPham = computed(() =>
-    order.value.reduce((sum, item) => sum + item.thanhTien, 0)
+    order.value.reduce((sum, item) => sum + (item.giaBan * item.soLuong), 0)
 );
 
 const tongCong = computed(() => tongTienSanPham.value); // Ensure shipping is a number

@@ -5,7 +5,7 @@
                 <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
                 <li class="breadcrumb-item"><a href="/products">Các sản phẩm</a></li>
                 <li class="breadcrumb-item active" aria-current="page">{{ product ? product.name : 'Chi tiết sản phẩm'
-                }}</li>
+                    }}</li>
             </ol>
         </nav>
 
@@ -26,17 +26,17 @@
                 <div v-if="product.images.length > 0">
                     <img :src="selectedImage" class="img-fluid product-detail-image mb-3" />
 
-                        <div class="d-flex flex-wrap gap-2">
-                            <img v-for="(img, index) in product.images.slice(0, 4)" :key="index" :src="img"
-                                class="img-thumbnail" :class="{ 'border border-primary': img === selectedImage }"
-                                @click="selectedImage = img"
-                                style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" />
-                        </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <img v-for="(img, index) in product.images.slice(0, 4)" :key="index" :src="img"
+                            class="img-thumbnail" :class="{ 'border border-primary': img === selectedImage }"
+                            @click="selectedImage = img"
+                            style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" />
+                    </div>
 
-                        <span v-if="product.discount && product.discount > 0"
-                            class="discount-badge-detail position-absolute top-0  end-0 bg-danger text-white px-2 py-1 m-3 rounded">
-                            -{{ product.discount }}%
-                        </span>
+                    <span v-if="product.discount && product.discount > 0"
+                        class="discount-badge-detail position-absolute top-0  end-0 bg-danger text-white px-2 py-1 m-3 rounded">
+                        -{{ product.discount }}%
+                    </span>
                 </div>
             </div>
 
@@ -65,12 +65,13 @@
                 </div>
 
                 <div class="product-meta mb-3">
-                    <p class="availability">
-                        Khả dụng:
-                        <span :class="product.quantity > 0 ? 'text-success' : 'text-danger'">
+                    <p>
+                        <strong>Khả dụng:</strong>
+                        <span :style="{ color: product.quantity > 0 ? 'green' : 'red' }">
                             {{ product.quantity > 0 ? 'Còn hàng' : 'Hết hàng' }}
                         </span>
                     </p>
+
                     <p class="sku">Mã sản phẩm: {{ product.maSanPham }}</p>
                 </div>
 
@@ -88,14 +89,20 @@
                         </span>
                     </div>
                 </div>
-                <div v-if="product.sizes && product.sizes.length > 0" class="mb-4">
+                <div class="mb-4">
                     <h6 class="mb-2">Kích cỡ:</h6>
                     <div class="d-flex flex-wrap gap-2">
-                        <span v-for="size in product.sizes" :key="size" class="badge size-badge"
-                            :class="{ 'bg-primary text-white': selectedSizes.includes(size), 'bg-secondary': !selectedSizes.includes(size) }"
-                            style="cursor: pointer;" @click="toggleSize(size)">
-                            {{ size }}
+                        <span v-for="size in availableSizes" :key="size.soCo" class="badge size-badge" :class="{
+                            'bg-primary text-white': selectedSizes.includes(size),
+                            'bg-secondary text-light': !selectedSizes.includes(size)
+                        }" :style="{
+                            cursor: 'pointer',
+                            opacity: size.soLuong > 0 ? 1 : 0.4
+                        }" @click="toggleSize(size)"
+                            :title="size.soLuong > 0 ? `Còn ${size.soLuong} sản phẩm` : 'Hết hàng'">
+                            {{ size.soCo }}
                         </span>
+
                     </div>
                 </div>
 
@@ -104,14 +111,17 @@
                         <input type="number" class="form-control text-center quantity-input" v-model.number="quantity"
                             min="1" />
                     </div>
-                    <button class="btn btn-dark add-to-cart-btn" :disabled="product.quantity === 0 || quantity === 0"
-                        @click="themVaoGioHang">
+                    <button :disabled="product.quantity === 0" @click="themVaoGioHang" class="btn btn-dark">
                         Thêm vào giỏ hàng
                     </button>
                 </div>
 
+
                 <p class="product-category-bottom mb-3">Thể loại: <span class="fw-bold">{{ product.category }}</span>
                 </p>
+                <div v-if="product.quantity === 0" class="alert alert-warning mt-3">
+                    Sản phẩm bạn chọn hiện đã hết hàng. Vui lòng chọn màu sắc hoặc kích cỡ khác.
+                </div>
 
                 <div class="product-actions d-flex align-items-center">
                     <a href="#" class="action-link">
@@ -131,7 +141,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch ,onUnmounted} from 'vue';
+import { ref, onMounted, watch, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useToast } from 'vue-toastification'
@@ -148,6 +158,8 @@ const selectedImage = ref('');
 const selectedColors = ref([]);
 const selectedSizes = ref([]);
 const remainingQuantity = ref(0);
+const sizeEnabled = ref(false);
+const availableSizes = ref([]);
 let slideshowInterval = null;
 
 function startSlideshow() {
@@ -166,21 +178,93 @@ onUnmounted(() => {
     if (slideshowInterval) clearInterval(slideshowInterval);
 });
 
-function toggleColor(color) {
+async function toggleColor(color) {
     if (selectedColors.value.includes(color)) {
         selectedColors.value = [];
-    } else {
-        selectedColors.value = [color];
+        selectedSizes.value = [];
+        sizeEnabled.value = false;
+        return;
+    }
+
+    selectedColors.value = [color];
+    selectedSizes.value = [];
+    quantity.value = 1;
+
+    try {
+        const res = await axios.get('http://localhost:8080/client/Tim-kich-co', {
+            params: {
+                idSp: product.value.id,
+                tenMau: color
+            }
+        });
+
+        if (res.data?.data?.length > 0) {
+            sizeEnabled.value = true;
+            availableSizes.value = res.data.data.map(kc => ({
+                id: kc.id,
+                soCo: kc.idSize.soCo,
+                hienThi: kc.hienThi || kc.idSize.soCo,
+                soLuong: kc.soLuong
+            }));
+
+        } else {
+            sizeEnabled.value = false;
+        }
+    } catch (e) {
+        console.error("Lỗi gọi API kích cỡ:", e);
+        sizeEnabled.value = false;
     }
 }
 
-function toggleSize(size) {
+
+async function toggleSize(size) {
+    if (!selectedColors.value.length) {
+        alert("Vui lòng chọn màu sắc trước.");
+        return;
+    }
+    if (product.value.quantity <= 0) {
+        toast.warning("Sản phẩm bạn chọn đã hết hàng. Vui lòng chọn loại khác.");
+    }
+
+    const selectedColor = selectedColors.value[0];
+
     if (selectedSizes.value.includes(size)) {
         selectedSizes.value = [];
-    } else {
-        selectedSizes.value = [size];
+        return;
+    }
+
+    selectedSizes.value = [size];
+    quantity.value = 1;
+
+    try {
+        const res = await axios.get("http://localhost:8080/client/san-pham-chi-tiet", {
+            params: {
+                idSanPham: product.value.id,
+                mauSac: selectedColor,
+                kichCo: size.soCo
+            }
+        });
+
+        const detail = res.data;
+        if (!detail) {
+            alert("Không tìm thấy sản phẩm chi tiết.");
+            return;
+        }
+
+        // Cập nhật UI từ dữ liệu backend
+        product.value.price = detail.giaSauKhiGiam;
+        product.value.originalPrice = detail.giaTruocKhiGiam;
+        product.value.discount = detail.phamTramGiam;
+        product.value.images = detail.anhSanPham || [];
+        selectedImage.value = product.value.images[0] || '';
+        product.value.quantity = detail.chiTietSanPhams[0]?.soLuong || 0;
+        remainingQuantity.value = product.value.quantity > 0 ? product.value.quantity - quantity.value : 0;
+    } catch (err) {
+        console.error("Lỗi khi fetch chi tiết sản phẩm:", err);
+        alert("Không thể cập nhật sản phẩm chi tiết.");
     }
 }
+
 
 
 const colorMap = {
@@ -249,77 +333,63 @@ const themVaoGioHang = async () => {
         return;
     }
 
+    if (quantity.value <= 0) {
+        alert('Vui lòng chọn số lượng hợp lệ.');
+        return;
+    }
+
     if (quantity.value > product.value.quantity) {
-        alert('Số lượng vượt quá tồn kho!');
+        alert(`Chỉ còn ${product.value.quantity} sản phẩm trong kho.`);
         return;
     }
 
     const selectedColor = selectedColors.value[0];
-    const selectedSize = selectedSizes.value[0];
+    const selectedSizeObj = selectedSizes.value[0];
+    const kichCo = selectedSizeObj.soCo;
 
     try {
-        const resId = await axios.get("http://localhost:8080/client/san-pham/chi-tiet-id", {
-            params: {
-                idSanPham: product.value.id,
-                mauSac: selectedColor,
-                kichCo: selectedSize
-            }
-        });
-
-        const idChiTietSanPham = resId.data;
-
-        if (!idChiTietSanPham) {
-            alert("Không tìm thấy phiên bản sản phẩm phù hợp.");
-            return;
-        }
-
-        // 🛒 B2: Gửi dữ liệu thêm vào giỏ hàng
         const payload = {
             idSanPham: product.value.id,
-            idChiTietSanPham,
             soLuong: quantity.value,
-            gia: product.value.price,
-            tongTien: product.value.price * quantity.value,
-            tenSanPham: product.value.name,
-            anhSanPham: product.value.images?.[0] || '',
-            phanTramGiamGia: product.value.discount || 0,
             mauSacList: [selectedColor],
-            kichCoList: [selectedSize],
+            kichCoList: [kichCo]
         };
 
-        const addToCartRes = await axios.post("http://localhost:8080/client/ThemSanPham", payload, {
+        const res = await axios.post("http://localhost:8080/client/ThemSanPham", payload, {
             withCredentials: true
         });
 
-        toast.success("🎉 Thêm sản phẩm vào giỏ hàng thành công!", {
+        toast.success("🎉 " + res.data, {
             timeout: 3000,
             position: "top-right"
         });
 
-        // 🛠️ B3: Gọi API cập nhật số lượng tồn kho
-        await axios.post("http://localhost:8080/client/cap-nhat-so-luong", {
-            idChiTietSanPham,
-            soLuong: quantity.value
-        });
-
-        // 🎯 B4: Cập nhật UI
+        // ✅ Trừ số lượng tồn kho
         product.value.quantity -= quantity.value;
         if (product.value.quantity < 0) product.value.quantity = 0;
+
+        // ✅ Cập nhật số lượng còn lại
         remainingQuantity.value = product.value.quantity;
         quantity.value = product.value.quantity > 0 ? 1 : 0;
+
+        // ✅ Tự động cập nhật trạng thái “Hết hàng” nếu hết số lượng
+        if (product.value.quantity === 0) {
+            product.value.trangThai = "Hết hàng";
+        }
 
         // Gửi sự kiện cập nhật giỏ hàng
         window.dispatchEvent(new Event("cap-nhat-gio"));
 
     } catch (err) {
-        console.error("❌ Lỗi khi xử lý giỏ hàng:", err);
-        toast.error("❌ Thêm sản phẩm thất bại. Vui lòng thử lại sau!", {
+        console.error("❌ Lỗi khi thêm sản phẩm vào giỏ hàng:", err);
+        toast.error("❌ Thêm sản phẩm thất bại. Vui lòng thử lại!", {
             timeout: 4000,
             position: "top-right"
         });
-
     }
 };
+
+
 
 
 const fetchProductDetail = async (productId) => {
@@ -426,6 +496,11 @@ function goBack() {
 </script>
 
 <style scoped>
+.disabled-size {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
 .product-detail-page-container {
     padding: 30px 0;
     /* Giữ padding trên dưới */
