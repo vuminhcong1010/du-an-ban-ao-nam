@@ -35,35 +35,29 @@
                                     <span class="new-price">{{ sp.gia.toLocaleString() }} đ</span>
                                 </template>
                             </p>
-                            <!-- Hiển thị Màu sắc -->
-                            <p v-if="sp.mauSacList && sp.mauSacList.length">
+                            <p class="color-size-group"
+                                v-if="(sp.mauSacList && sp.mauSacList.length) || (sp.kichCoList && sp.kichCoList.length)">
+                                <!-- Màu sắc -->
                                 <span v-for="mau in sp.mauSacList" :key="mau" class="color-circle"
                                     :style="{ backgroundColor: mapColorToCssClass(mau) }" :title="mau"></span>
-                            </p>
 
-
-
-                            <!-- Hiển thị Kích cỡ -->
-                            <p v-if="sp.kichCoList && sp.kichCoList.length">
+                                <!-- Kích cỡ -->
                                 <span v-for="size in sp.kichCoList" :key="size" class="badge size-badge">{{ size
-                                }}</span>
+                                    }}</span>
                             </p>
+
 
                             <!-- Tổng tiền của món này -->
                             <p class="item-total">Tổng: {{ (sp.gia * sp.soLuong).toLocaleString() }} đ</p>
                         </div>
 
                     </div>
-
-                    <!-- Nút tăng giảm số lượng nằm ngang, cùng hàng với ảnh và info -->
-                    <div class="item-quantity">
-                        <button @click="sp.soLuong = Math.max(1, sp.soLuong - 1)">−</button>
-                        <span>{{ sp.soLuong }}</span>
-                        <button @click="sp.soLuong++">+</button>
-                    </div>
+                    <!-- Số lượng: input thay vì nút tăng/giảm -->
+                    <input class="item-quantity" type="number" v-model.number="sp.soLuong" min="1"
+                        @focus="sp.soLuongCu = sp.soLuong" @change="capNhatSoLuongSanPham(sp)" />
 
                     <!-- Nút xóa sản phẩm -->
-                    <button class="remove-btn" @click="xoaSanPhamVaTraTonKho(sp.idSanPhamChiTiet)">🗑️</button>
+                    <button class="remove-btn" >🗑️</button>
                 </div>
             </div>
 
@@ -97,60 +91,16 @@ export default {
         }
     },
     methods: {
-        async traVeTonKho(sp) {
-            try {
-                const res = await axios.get("http://localhost:8080/client/san-pham/chi-tiet-id", {
-                    params: {
-                        idSanPham: sp.idSanPham,
-                        mauSac: sp.mauSacList?.[0],
-                        kichCo: sp.kichCoList?.[0]
-                    }
-                });
-                const idChiTiet = res.data;
-
-                if (!idChiTiet) {
-                    console.warn("Không tìm thấy idChiTietSanPham để trả lại tồn kho");
-                    return;
-                }
-
-                await axios.post("http://localhost:8080/client/cap-nhat-so-luong", {
-                    idChiTietSanPham: idChiTiet,
-                    soLuong: -sp.soLuong  // dùng số âm để cộng ngược trở lại
-                });
-            } catch (err) {
-                console.error("Lỗi khi trả lại tồn kho:", err);
-            }
-        },
-
-        async xoaSanPhamVaTraTonKho(idSanPhamChiTiet) {
-            const sp = this.danhSachGio.find(item => item.idSanPhamChiTiet === idSanPhamChiTiet);
-            if (sp) {
-                await this.traVeTonKho(sp);
-            }
-
-            this.$emit('removeItem', idSanPhamChiTiet);
-            window.dispatchEvent(new Event("cap-nhat-gio"));
-        },
-
         async xoaToanBoGioHang() {
             try {
-                // Gọi API trả lại tồn kho từng sản phẩm
-                for (const sp of this.danhSachGio) {
-                    await this.traVeTonKho(sp);
-                }
-
-                // Xóa giỏ hàng sau khi đã hoàn tất cộng lại số lượng tồn kho
                 await axios.delete("http://localhost:8080/client/XoaGioHang", {
                     withCredentials: true
                 });
 
-
-                window.dispatchEvent(new Event('cap-nhat-gio'));
-
                 this.$emit('update:danhSachGio', []);
                 this.$emit('capNhatGio');
-
-                alert("Đã xóa toàn bộ giỏ hàng thành công!");
+                window.dispatchEvent(new Event("cap-nhat-gio"));
+                alert("🗑️ Đã xóa toàn bộ giỏ hàng và cập nhật tồn kho!");
             } catch (err) {
                 console.error("Lỗi khi xóa giỏ hàng:", err);
                 alert("Xóa giỏ hàng thất bại, vui lòng thử lại.");
@@ -375,11 +325,11 @@ export default {
 
 /* mỗi item giỏ hàng */
 .cart-item {
+    border-bottom: 1px solid #eee;
+    padding: 12px 0;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 0;
-    border-bottom: 1px solid #eee;
+    gap: 12px;
 }
 
 .discount-info {
@@ -394,7 +344,7 @@ export default {
     font-size: 0.9rem;
     color: #444;
     font-weight: 600;
-    margin-top: 4px;
+    margin-top: 8px;
 }
 
 .item-img {
@@ -409,6 +359,15 @@ export default {
     flex: 1;
     display: flex;
     flex-direction: column;
+    gap: 6px;
+    /* khoảng cách giữa các dòng info */
+}
+
+.item-info p {
+    margin: 0;
+    /* bỏ margin mặc định */
+    line-height: 1.3;
+    /* giúp các dòng dễ đọc */
 }
 
 .item-name {
@@ -432,45 +391,30 @@ export default {
     color: #000;
 }
 
-/* Số lượng nằm ngang, cùng hàng với sản phẩm */
 .item-quantity {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 3px 8px;
-    user-select: none;
-}
-
-.item-quantity button {
-    border: none;
-    background: none;
-    font-size: 18px;
-    cursor: pointer;
-    width: 25px;
-    height: 25px;
-    line-height: 25px;
+    width: 60px;
+    height: 32px;
+    padding: 4px 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
     text-align: center;
-    color: #333;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    outline: none;
+    margin-left: 10px;
+
 }
 
-.item-quantity button:hover:not(:disabled) {
-    background-color: #eee;
-    border-radius: 3px;
+.item-quantity:focus {
+    border-color: #1e90ff;
+    box-shadow: 0 0 0 3px rgba(30, 144, 255, 0.2);
+    background-color: #f9fbff;
 }
 
-.item-quantity button:disabled {
-    color: #ccc;
-    cursor: not-allowed;
-}
-
-.item-quantity span {
-    min-width: 20px;
-    text-align: center;
-    font-weight: 600;
+.item-quantity:hover {
+    border-color: #888;
+    background-color: #f7f7f7;
 }
 
 /* Nút xóa từng sản phẩm */
@@ -482,6 +426,7 @@ export default {
     font-size: 18px;
     padding: 5px;
     transition: color 0.3s ease;
+    margin-left: 8px;
 }
 
 .remove-btn:hover {
