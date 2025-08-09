@@ -32,7 +32,7 @@
                         <div class="filter-header" @click="toggleSection('category')">
                             <h5>Thể loại</h5>
                             <span class="filter-count" v-if="categoryCounts.total > 0">({{ categoryCounts.total
-                            }})</span>
+                                }})</span>
                             <i :class="expandedSections.category ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
                         </div>
                         <div v-show="expandedSections.category" class="filter-content">
@@ -42,7 +42,7 @@
                                 <label class="form-check-label" :for="cat">
                                     {{ cat }}
                                     <span class="filter-item-count" v-if="categoryCounts[cat]">({{ categoryCounts[cat]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -86,7 +86,7 @@
                                 <label class="form-check-label" :for="color + '-checkbox'" @click="toggleColor(color)">
                                     {{ color }}
                                     <span class="filter-item-count" v-if="colorCounts[color]">({{ colorCounts[color]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -120,7 +120,7 @@
                                 <label class="form-check-label" :for="`rating-${star}`">
                                     <span class="stars">{{ '★'.repeat(star) }}</span> & hướng lên
                                     <span class="filter-item-count" v-if="ratingCounts[star]">({{ ratingCounts[star]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -167,30 +167,39 @@
                     </div>
 
                     <div class="product-grid">
-                        <div class="product-card" v-for="allProducts in paginatedProducts" :key="allProducts.id">
-                            <div class="card h-100 position-relative" @click="goToProductDetail(allProducts.id)">
-                                <img :src="allProducts.image || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png'"
-                                    class="card-img-top" :alt="allProducts.name" />
-                                <div v-if="allProducts.discount && allProducts.discount > 0" class="discount-badge">
-                                    -{{ allProducts.discount }}%
+                        <div class="product-card" v-for="product in paginatedProducts" :key="product.id">
+                            <div class="card h-100 position-relative" @click="goToProductDetail(product.id)">
+                                <img :src="product.image || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png'"
+                                    class="card-img-top" :alt="product.name" />
+                                <div v-if="product.discount && product.discount > 0" class="discount-badge">
+                                    -{{ product.discount }}%
                                 </div>
                                 <div class="card-body">
-                                    <h6 class="card-title">{{ allProducts.name }}</h6>
+                                    <h6 class="card-title">{{ product.name }}</h6>
                                     <div class="rating-section">
                                         <span v-for="star in 5" :key="star" class="star">
-                                            <i v-if="star <= allProducts.rating" class="bi bi-star-fill"></i>
+                                            <i v-if="star <= product.rating" class="bi bi-star-fill"></i>
                                             <i v-else class="bi bi-star"></i>
                                         </span>
-                                        <small v-if="allProducts.reviews !== undefined && allProducts.reviews > 0">({{
-                                            allProducts.reviews }})</small>
-                                        <small v-else>({{ allProducts.quantity }})</small>
+                                        <small v-if="product.reviews !== undefined && product.reviews > 0">({{
+                                            product.reviews }})</small>
+                                        <small v-else>({{ product.quantity }})</small>
                                     </div>
                                     <div class="price-section">
-                                        <span v-if="allProducts.discount && allProducts.discount > 0"
+                                        <span v-if="product.discount > 0 && product.minOriginalPrice !== product.maxOriginalPrice"
                                             class="original-price">
-                                            {{ formatCurrency(allProducts.originalPrice) }}
+                                            {{ formatCurrency(product.minOriginalPrice) }} - {{ formatCurrency(product.maxOriginalPrice) }}
                                         </span>
-                                        <span class="current-price">{{ formatCurrency(allProducts.price) }}</span>
+                                        <span v-else-if="product.discount > 0" class="original-price">
+                                            {{ formatCurrency(product.maxOriginalPrice) }}
+                                        </span>
+
+                                        <span class="current-price" v-if="product.minPrice !== product.maxPrice">
+                                            {{ formatCurrency(product.minPrice) }} - {{ formatCurrency(product.maxPrice) }}
+                                        </span>
+                                        <span class="current-price" v-else>
+                                            {{ formatCurrency(product.maxPrice) }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -382,7 +391,7 @@ const colorCounts = computed(() => {
 
 // Unique colors (already exists, but ensures it's based on loaded products)
 const uniqueColors = computed(() => {
-    // Filter out 'total' key and ensure it's sorted alphabetically
+    // Filter out 'total' key and ensure it's based on loaded products
     return Object.keys(colorCounts.value)
         .filter(key => key !== 'total')
         .sort((a, b) => a.localeCompare(b));
@@ -458,8 +467,8 @@ function toggleSortDirection() {
 
 const filteredProducts = computed(() => {
     return allProducts.value.filter((p) => {
-        const productPrice = typeof p.price === 'number' ? p.price : 0;
-        const inPriceRange = productPrice >= priceRange.value[0] && productPrice <= priceRange.value[1];
+        // Updated to use minPriceForFilter and maxPriceForFilter
+        const inPriceRange = p.minPriceForFilter >= priceRange.value[0] && p.maxPriceForFilter <= priceRange.value[1];
         const inCategory = selectedCategories.value.length === 0 || (p.category && selectedCategories.value.includes(p.category));
         const inSize = selectedSizes.value.length === 0 || (p.sizes && p.sizes.some((s) => selectedSizes.value.includes(s)));
         const inColor = selectedColors.value.length === 0 || (p.colors && p.colors.some((c) => selectedColors.value.includes(c)));
@@ -479,7 +488,8 @@ const sortedProducts = computed(() => {
             sorted.sort((a, b) => (a.name || '').localeCompare(b.name || '') * dir);
             break;
         case 'price':
-            sorted.sort((a, b) => ((a.price || 0) - (b.price || 0)) * dir);
+            // Sort by minPrice of the range
+            sorted.sort((a, b) => ((a.minPrice || 0) - (b.minPrice || 0)) * dir);
             break;
         case 'rating':
             sorted.sort((a, b) => ((b.rating || 0) - (a.rating || 0)) * dir);
@@ -551,36 +561,63 @@ const fetchProducts = async () => {
             console.log("Filtered (trangThai == 1):", filteredData);
 
             const mapped = filteredData.map(item => {
-                const firstChiTietDotGiamGia = item.chiTietDotGiamGia?.[0] || {};
-                const firstDotGiamGia = firstChiTietDotGiamGia.idDotGiamGia || {};
                 const firstDanhMuc = item.danhMucs?.[0] || {};
                 const danhGiaList = item.danhGias || [];
                 const ctspList = item.ctsp || [];
 
-                let currentPrice = ctspList[0]?.gia || 0; // Default to original product price
-                let originalProductPrice = currentPrice; // Initialize original price
-
+                let minGiaBan = Infinity;
+                let maxGiaBan = 0;
+                let minGiaGoc = Infinity; // For original prices before any discount
+                let maxGiaGoc = 0; // For original prices before any discount
                 let discountPercentage = 0;
                 let hasDiscount = false;
 
-                if (
-                    firstDotGiamGia &&
-                    firstChiTietDotGiamGia &&
-                    firstDotGiamGia.phamTramGiam > 0
-                ) {
-                    currentPrice = firstChiTietDotGiamGia.giaSauKhiGiam || currentPrice;
-                    originalProductPrice = firstChiTietDotGiamGia.giaTruocKhiGiam || originalProductPrice;
-                    discountPercentage = firstDotGiamGia.phamTramGiam;
-                    hasDiscount = true;
-                }
+                // Loop through ctspList to find min/max prices considering discounts
+                ctspList.forEach(ctsp => {
+                    const ctspGia = ctsp.gia || 0;
+                    let effectivePrice = ctspGia;
+                    let effectiveOriginalPrice = ctspGia;
+
+                    // Find applicable discount for this specific ctsp
+                    const applicableDiscount = item.chiTietDotGiamGia
+                        ?.find(d => d.idChiTietSanPham?.id === ctsp.id);
+
+                    if (applicableDiscount && applicableDiscount.idDotGiamGia && applicableDiscount.idDotGiamGia.phamTramGiam > 0) {
+                        effectivePrice = applicableDiscount.giaSauKhiGiam || effectivePrice;
+                        effectiveOriginalPrice = applicableDiscount.giaTruocKhiGiam || effectiveOriginalPrice;
+                        discountPercentage = Math.max(discountPercentage, applicableDiscount.idDotGiamGia.phamTramGiam);
+                        hasDiscount = true;
+                    }
+
+                    if (effectivePrice < minGiaBan) minGiaBan = effectivePrice;
+                    if (effectivePrice > maxGiaBan) maxGiaBan = effectivePrice;
+                    if (effectiveOriginalPrice < minGiaGoc) minGiaGoc = effectiveOriginalPrice;
+                    if (effectiveOriginalPrice > maxGiaGoc) maxGiaGoc = effectiveOriginalPrice;
+                });
+
+                // Handle cases where there's no ctsp or prices are 0
+                if (minGiaBan === Infinity) minGiaBan = 0;
+                if (maxGiaBan === 0 && minGiaBan === 0) maxGiaBan = minGiaBan; // If all prices are 0, set max to min
+                if (minGiaGoc === Infinity) minGiaGoc = 0;
+                if (maxGiaGoc === 0 && minGiaGoc === 0) maxGiaGoc = minGiaGoc;
 
                 return {
                     id: item.sp.id,
                     name: item.sp.tenSanPham,
                     image: item.anhSanPham?.[0] || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png',
 
-                    price: currentPrice,
-                    originalPrice: hasDiscount ? originalProductPrice : 0,
+                    // Store min/max prices (after discount)
+                    minPrice: minGiaBan,
+                    maxPrice: maxGiaBan,
+                    // Store min/max original prices (before discount)
+                    minOriginalPrice: minGiaGoc,
+                    maxOriginalPrice: maxGiaGoc,
+
+                    // These are used for filtering based on the currently displayed price range
+                    // For filtering, we typically care about the range of *final* prices
+                    minPriceForFilter: minGiaBan,
+                    maxPriceForFilter: maxGiaBan,
+
                     discount: hasDiscount ? discountPercentage : 0,
 
                     rating: danhGiaList.length > 0
@@ -600,16 +637,17 @@ const fetchProducts = async () => {
 
             allProducts.value = mapped;
 
-            const allPrices = allProducts.value
-                .map(p => p.price)
+            // Calculate overall min/max prices for the slider based on all products' *effective* min prices
+            const allEffectiveMinPrices = allProducts.value
+                .map(p => p.minPrice)
                 .filter(price => typeof price === 'number');
 
-            if (allPrices.length > 0) {
-                minPrice.value = Math.min(...allPrices);
-                maxPrice.value = Math.max(...allPrices);
+            if (allEffectiveMinPrices.length > 0) {
+                minPrice.value = Math.min(...allEffectiveMinPrices);
+                maxPrice.value = Math.max(...allProducts.value.map(p => p.maxPrice).filter(price => typeof price === 'number')); // Overall max price
             } else {
                 minPrice.value = 0;
-                maxPrice.value = 1000000;
+                maxPrice.value = 1000000; // Default max if no products
             }
 
             priceRange.value = [minPrice.value, maxPrice.value];
@@ -1021,5 +1059,9 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
         align-items: flex-start !important;
         gap: 15px;
     }
+}
+
+.current-price {
+  color: #0a2c57 !important;
 }
 </style>

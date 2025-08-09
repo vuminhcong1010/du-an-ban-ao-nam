@@ -61,7 +61,7 @@ const router = createRouter({
           component: HomePage,
         },
         {
-          path: "/dang-nhap-khach-hang",
+          path: "dang-nhap-khach-hang",
           name: "dang-nhap-khach-hang",
           component: DangNhapCustomer,
         },
