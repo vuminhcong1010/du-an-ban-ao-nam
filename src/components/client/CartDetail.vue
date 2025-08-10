@@ -43,7 +43,7 @@
 
                                 <!-- Kích cỡ -->
                                 <span v-for="size in sp.kichCoList" :key="size" class="badge size-badge">{{ size
-                                    }}</span>
+                                }}</span>
                             </p>
 
 
@@ -54,16 +54,16 @@
                     </div>
                     <!-- Số lượng: input thay vì nút tăng/giảm -->
                     <input class="item-quantity" type="number" v-model.number="sp.soLuong" min="1"
-                        @focus="sp.soLuongCu = sp.soLuong" @change="capNhatSoLuongSanPham(sp)" />
+                        @focus="sp.soLuongCu = sp.soLuong" />
 
                     <!-- Nút xóa sản phẩm -->
-                    <button class="remove-btn" >🗑️</button>
+                    <button class="remove-btn" @click="xoaSanPham(sp)">🗑️</button>
                 </div>
             </div>
 
             <!-- Thanh toán cố định dưới cùng -->
             <div class="cart-footer">
-                <button class="checkout-btn" @click.self="thanhToan, $emit('close')">
+                <button class="checkout-btn" @click.self="thanhToan">
                     Thanh toán <span class="total-price">{{ tongTien.toLocaleString() }} đ</span>
                 </button>
             </div>
@@ -106,6 +106,28 @@ export default {
                 alert("Xóa giỏ hàng thất bại, vui lòng thử lại.");
             }
         },
+        async xoaSanPham(sp) {
+            if (!confirm(`Bạn có chắc muốn xóa "${sp.tenSanPham}" khỏi giỏ hàng?`)) return;
+            console.log(sp);
+
+            try {
+                await axios.delete(`http://localhost:8080/client/XoaSanPham/${sp.idSanPhamChitiet}`, {
+                    withCredentials: true
+                });
+
+                // Cập nhật lại giỏ hàng trên giao diện
+                const gioMoi = this.danhSachGio.filter(item => item.idSanPhamChiTiet !== sp.idSanPhamChiTiet);
+                this.$emit('update:danhSachGio', gioMoi);
+                this.$emit('capNhatGio');
+                window.dispatchEvent(new Event("cap-nhat-gio"));
+
+                alert(`🗑️ Đã xóa sản phẩm "${sp.tenSanPham}" khỏi giỏ hàng!`);
+            } catch (err) {
+                console.error("Lỗi khi xóa sản phẩm:", err);
+                alert("Xóa sản phẩm thất bại, vui lòng thử lại.");
+            }
+        }
+        ,
         async thanhToan() {
             try {
                 const res = await axios.post("http://localhost:8080/client/clientTaoHoaDonChiTiet", null, {

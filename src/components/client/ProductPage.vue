@@ -32,7 +32,7 @@
                         <div class="filter-header" @click="toggleSection('category')">
                             <h5>Thể loại</h5>
                             <span class="filter-count" v-if="categoryCounts.total > 0">({{ categoryCounts.total
-                            }})</span>
+                                }})</span>
                             <i :class="expandedSections.category ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
                         </div>
                         <div v-show="expandedSections.category" class="filter-content">
@@ -42,7 +42,7 @@
                                 <label class="form-check-label" :for="cat">
                                     {{ cat }}
                                     <span class="filter-item-count" v-if="categoryCounts[cat]">({{ categoryCounts[cat]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -86,7 +86,7 @@
                                 <label class="form-check-label" :for="color + '-checkbox'" @click="toggleColor(color)">
                                     {{ color }}
                                     <span class="filter-item-count" v-if="colorCounts[color]">({{ colorCounts[color]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -120,7 +120,7 @@
                                 <label class="form-check-label" :for="`rating-${star}`">
                                     <span class="stars">{{ '★'.repeat(star) }}</span> & hướng lên
                                     <span class="filter-item-count" v-if="ratingCounts[star]">({{ ratingCounts[star]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -186,12 +186,36 @@
                                         <small v-else>({{ allProducts.quantity }})</small>
                                     </div>
                                     <div class="price-section">
-                                        <span v-if="allProducts.discount && allProducts.discount > 0"
-                                            class="original-price">
-                                            {{ formatCurrency(allProducts.originalPrice) }}
-                                        </span>
-                                        <span class="current-price">{{ formatCurrency(allProducts.price) }}</span>
+                                        <!-- Nếu có giảm giá -->
+                                        <template v-if="allProducts.discount > 0">
+                                            <span class="original-price">
+                                                {{ formatCurrency(allProducts.originalPriceRange.min) }}
+                                                <template
+                                                    v-if="allProducts.originalPriceRange.min !== allProducts.originalPriceRange.max">
+                                                    - {{ formatCurrency(allProducts.originalPriceRange.max) }}
+                                                </template>
+                                            </span>
+                                            <span class="current-price">
+                                                {{ formatCurrency(allProducts.priceRange.min) }}
+                                                <template
+                                                    v-if="allProducts.priceRange.min !== allProducts.priceRange.max">
+                                                    - {{ formatCurrency(allProducts.priceRange.max) }}
+                                                </template>
+                                            </span>
+                                        </template>
+
+                                        <!-- Nếu không có giảm giá -->
+                                        <template v-else>
+                                            <span class="current-price">
+                                                {{ formatCurrency(allProducts.priceRange.min) }}
+                                                <template
+                                                    v-if="allProducts.priceRange.min !== allProducts.priceRange.max">
+                                                    - {{ formatCurrency(allProducts.priceRange.max) }}
+                                                </template>
+                                            </span>
+                                        </template>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
@@ -458,8 +482,12 @@ function toggleSortDirection() {
 
 const filteredProducts = computed(() => {
     return allProducts.value.filter((p) => {
-        const productPrice = typeof p.price === 'number' ? p.price : 0;
-        const inPriceRange = productPrice >= priceRange.value[0] && productPrice <= priceRange.value[1];
+        const productMinPrice = p.priceRange?.min || 0;
+        const productMaxOriginalPrice = (p.originalPriceRange?.max ?? p.priceRange?.max) || 0;
+        const inPriceRange =
+            productMinPrice >= priceRange.value[0] &&
+            productMaxOriginalPrice <= priceRange.value[1];
+
         const inCategory = selectedCategories.value.length === 0 || (p.category && selectedCategories.value.includes(p.category));
         const inSize = selectedSizes.value.length === 0 || (p.sizes && p.sizes.some((s) => selectedSizes.value.includes(s)));
         const inColor = selectedColors.value.length === 0 || (p.colors && p.colors.some((c) => selectedColors.value.includes(c)));
@@ -547,41 +575,64 @@ const fetchProducts = async () => {
         console.log("Raw data from API:", data);
         const products = data.data || [];
         if (Array.isArray(products) && products.length > 0) {
-            const filteredData = products.filter(item => item.sp?.trangThai == 1);
+            const filteredData = products.filter(item =>
+                Array.isArray(item.chiTietSanPham) &&
+                item.chiTietSanPham.some(ct => ct.trangThai === 1)
+            );
+
             console.log("Filtered (trangThai == 1):", filteredData);
 
-            const mapped = filteredData.map(item => {
-                const firstChiTietDotGiamGia = item.chiTietDotGiamGia?.[0] || {};
-                const firstDotGiamGia = firstChiTietDotGiamGia.idDotGiamGia || {};
-                const firstDanhMuc = item.danhMucs?.[0] || {};
-                const danhGiaList = item.danhGias || [];
-                const ctspList = item.ctsp || [];
+            const mapped = await Promise.all(filteredData.map(async (item) => {
+                const firstDanhMuc = item.danhMucList?.[0] || {};
+                const danhGiaList = item.danhGiaList || [];
+                const ctspList = item.chiTietSanPham || [];
 
-                let currentPrice = ctspList[0]?.gia || 0; // Default to original product price
-                let originalProductPrice = currentPrice; // Initialize original price
+                // Lấy tất cả giá chi tiết sản phẩm
+                const giaList = ctspList
+                    .filter(ct => ct.trangThai === 1 && typeof ct.gia === 'number')
+                    .map(ct => ct.gia);
 
+                let originalPriceRange = { min: Math.min(...giaList), max: Math.max(...giaList) };
                 let discountPercentage = 0;
-                let hasDiscount = false;
 
-                if (
-                    firstDotGiamGia &&
-                    firstChiTietDotGiamGia &&
-                    firstDotGiamGia.phamTramGiam > 0
-                ) {
-                    currentPrice = firstChiTietDotGiamGia.giaSauKhiGiam || currentPrice;
-                    originalProductPrice = firstChiTietDotGiamGia.giaTruocKhiGiam || originalProductPrice;
-                    discountPercentage = firstDotGiamGia.phamTramGiam;
-                    hasDiscount = true;
+                // Fetch giảm giá
+                try {
+                    const discountResponse = await fetch(`http://localhost:8080/client/giam-gia/${item.sanPham.id}`);
+                    if (discountResponse.ok) {
+                        const discountData = await discountResponse.json();
+                        const discountList = Array.isArray(discountData.data) ? discountData.data : [];
+
+                        if (discountList.length > 0) {
+                            const uniquePercents = [...new Set(discountList.map(d => d.phamTramGiam || d))];
+                            if (uniquePercents.length === 1) {
+                                discountPercentage = uniquePercents[0];
+                            } else {
+                                const sum = uniquePercents.reduce((a, b) => a + b, 0);
+                                discountPercentage = Math.round(sum / uniquePercents.length);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error("Lỗi khi fetch phần trăm giảm giá:", err);
+                }
+
+                let priceRange = { ...originalPriceRange };
+
+                if (discountPercentage > 0) {
+                    priceRange = {
+                        min: Math.round(originalPriceRange.min * (1 - discountPercentage / 100)),
+                        max: Math.round(originalPriceRange.max * (1 - discountPercentage / 100)),
+                    };
                 }
 
                 return {
-                    id: item.sp.id,
-                    name: item.sp.tenSanPham,
+                    id: item.sanPham.id,
+                    name: item.sanPham.tenSanPham,
                     image: item.anhSanPham?.[0] || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png',
 
-                    price: currentPrice,
-                    originalPrice: hasDiscount ? originalProductPrice : 0,
-                    discount: hasDiscount ? discountPercentage : 0,
+                    discount: discountPercentage,
+                    priceRange,
+                    originalPriceRange: discountPercentage > 0 ? originalPriceRange : null,
 
                     rating: danhGiaList.length > 0
                         ? (danhGiaList.reduce((sum, dg) => sum + dg.diemDanhGia, 0) / danhGiaList.length)
@@ -596,21 +647,21 @@ const fetchProducts = async () => {
                     createdAt: ctspList[0]?.ngayTao || null,
                     quantity: ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0)
                 };
-            });
+            }));
+
 
             allProducts.value = mapped;
 
-            const allPrices = allProducts.value
-                .map(p => p.price)
-                .filter(price => typeof price === 'number');
+            const allMinDiscountedPrices = allProducts.value.map(p => p.priceRange?.min || 0);
+            const allMaxOriginalPrices = allProducts.value.map(p =>
+                (p.originalPriceRange?.max ?? p.priceRange?.max) || 0
+            );
 
-            if (allPrices.length > 0) {
-                minPrice.value = Math.min(...allPrices);
-                maxPrice.value = Math.max(...allPrices);
-            } else {
-                minPrice.value = 0;
-                maxPrice.value = 1000000;
-            }
+            minPrice.value = Math.min(...allMinDiscountedPrices);
+            maxPrice.value = Math.max(...allMaxOriginalPrices);
+
+            priceRange.value = [minPrice.value, maxPrice.value];
+
 
             priceRange.value = [minPrice.value, maxPrice.value];
 
@@ -629,8 +680,8 @@ const fetchProducts = async () => {
         loading.value = false;
     }
 };
-
 onMounted(fetchProducts);
+
 
 watch(sortOrder, () => {
     currentPage.value = 1;
@@ -653,6 +704,7 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
 .view {
     background-color: #F3F4F6;
 }
+
 .product-page-container {
     margin-left: 88px;
     padding-top: 120px;
@@ -859,7 +911,7 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     box-shadow: none;
     transition: all 0.2s ease-in-out;
     text-align: center;
-  background-color: #F3F4F6;
+    background-color: #F3F4F6;
 }
 
 

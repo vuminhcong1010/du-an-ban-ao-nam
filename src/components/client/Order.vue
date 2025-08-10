@@ -30,8 +30,8 @@
                             <label for="province" class="form-label">TỈNH/THÀNH PHỐ</label>
                             <select id="province" class="form-select" v-model="selectedProvince" required>
                                 <option value="" disabled>Chọn tỉnh/thành phố</option>
-                                <option v-for="p in provinces" :key="p.code" :value="p.code">
-                                    {{ p.name }}
+                                <option v-for="p in provinces" :key="p.ProvinceID" :value="p.ProvinceID">
+                                    {{ p.ProvinceName }}
                                 </option>
                             </select>
                         </div>
@@ -43,8 +43,8 @@
                             <select id="district" class="form-select" v-model="selectedDistrict" required
                                 :disabled="!selectedProvince">
                                 <option value="" disabled>Chọn quận/huyện</option>
-                                <option v-for="d in districts" :key="d.code" :value="d.code">
-                                    {{ d.name }}
+                                <option v-for="d in districts" :key="d.DistrictID" :value="d.DistrictID">
+                                    {{ d.DistrictName }}
                                 </option>
                             </select>
                         </div>
@@ -56,8 +56,8 @@
                             <select id="ward" class="form-select" v-model="selectedWard" required
                                 :disabled="!selectedDistrict">
                                 <option value="" disabled>Chọn xã/phường</option>
-                                <option v-for="w in wards" :key="w.code" :value="w.code">
-                                    {{ w.name }}
+                                <option v-for="w in wards" :key="w.WardCode" :value="w.WardCode">
+                                    {{ w.WardName }}
                                 </option>
                             </select>
                         </div>
@@ -94,30 +94,41 @@
                     <div v-for="(item, index) in order" :key="index" class="d-flex align-items-center mb-3">
                         <img :src="item.duongDanAnh" alt="Ảnh sản phẩm" width="60" class="me-3 rounded" />
 
-                        <!-- Thông tin sản phẩm -->
                         <div style="flex-grow: 1;">
-                            <!-- Tên sản phẩm -->
                             <p class="mb-1 fw-semibold">{{ item.tenSanPham }}</p>
+                            <small class="text-success ms-2"> Tiết kiệm -{{ Math.round(item.phanTramGiamGia) }}%</small>
+                            <!-- Giá gốc và giá sau giảm nếu có giảm -->
+                            <div class="small mb-1">
+                                <template v-if="item.phanTramGiamGia > 0">
 
-                            <!-- Giá bán -->
+                                    <span class="text-decoration-line-through text-muted me-2">
+                                        {{ formatCurrency(item.giaBan) }}
+                                    </span>
+                                    <span class="text-danger fw-bold">
+                                        {{ formatCurrency(item.giaSauGiam) }}
+                                    </span>
+                                </template>
+                                <template v-else>
+                                    <span>{{ formatCurrency(item.giaBan) }}</span>
+                                </template>
+                            </div>
+
                             <div class="text-muted small mb-1">
-                                {{ formatCurrency(item.giaBan) }}
+                                Màu: {{ item.tenMau }} | Size: {{ item.tenKichCo }}
                             </div>
 
-                            <!-- Tổng tiền sản phẩm -->
                             <div class="fw-bold text-dark small">
-                                Tổng: {{ formatCurrency(item.giaBan * item.soLuong) }}
+                                Tổng: {{ formatCurrency((item.phanTramGiamGia > 0 ? item.giaSauGiam : item.giaBan) *
+                                    item.soLuong) }}
                             </div>
-
                         </div>
 
-                        <!-- Ô nhập số lượng -->
                         <div class="ms-3 d-flex align-items-center">
                             <input type="number" v-model="item.soLuong" min="1"
                                 class="form-control form-control-sm text-center" style="width: 60px;" />
                         </div>
-
                     </div>
+
 
                     <div class="d-flex mb-3">
                         <input type="text" class="form-control" placeholder="Mã giảm giá" v-model="maGiamGia"
@@ -130,7 +141,24 @@
                         <span>Tổng Tiền</span>
                         <span>{{ formatCurrency(tongTienSanPham) }}</span>
                     </div>
-                    <hr />
+                    <!-- Trước phần Tổng tiền -->
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Phí vận chuyển</span>
+                        <span>{{ formatCurrency(shipFee) }}</span>
+                    </div>
+                    <!-- Mã giảm giá nếu có -->
+                    <div v-if="giamGiaDaApDung" class="d-flex justify-content-between text-success">
+                        <span>Giảm giá
+                            <template v-if="giamGiaDaApDung.soTienGiam">
+                                (-{{ formatCurrency(giamGiaDaApDung.soTienGiam) }})
+                            </template>
+                            <template v-else>
+                                (-{{ giamGiaDaApDung.phamTramGiamGia }}%)
+                            </template>
+                        </span>
+                        <span>-{{ formatCurrency(tienGiam) }}</span>
+                    </div>
+
                     <div class="d-flex justify-content-between fw-bold fs-5">
                         <span>Tổng cộng</span>
                         <span>{{ formatCurrency(tongCong) }}</span>
@@ -146,16 +174,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, watchEffect } from 'vue';
 import axios from 'axios';
 import { useRoute, useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification'
+const toast = useToast();
+
 
 const router = useRouter();
 const route = useRoute();
 const order = ref([]);
 
-const phiVanChuyen = ref(0);
 const maGiamGia = ref('');
+const tokenGHN = 'c6846aa1-74f6-11f0-bae3-5e3443de31a0';
+const shopId = 5939518; // Replace with your actual shop_id
+const fromDistrictId = 1644; // Your shop's sending district/county ID (int)
 
 const provinces = ref([]);
 const districts = ref([]);
@@ -164,103 +197,294 @@ const selectedProvince = ref('');
 const selectedDistrict = ref('');
 const selectedWard = ref('');
 
+const availableServices = ref([]);
+const serviceId = ref(null); // This will hold the service_id once available
+const shipFee = ref(0);
+const giamGiaDaApDung = ref(null);
+const tienGiam = ref(0);
+
+
+
+async function apDungGiamGia() {
+    if (!maGiamGia.value.trim()) {
+        toast.warning("Vui lòng nhập mã giảm giá.");
+        return;
+    }
+
+    try {
+        const response = await axios.get(`http://localhost:8080/client/tim-phieu-giam-gia?maPhieuGG=${maGiamGia.value}`);
+        const phieu = response.data;
+
+        // Trường hợp backend trả về null hoặc không tìm thấy mã
+        if (!phieu || !phieu.id || phieu.trangThai !== 1) {
+            toast.error("❌ Mã giảm giá không tồn tại hoặc đã hết hạn sử dụng.");
+            giamGiaDaApDung.value = null;
+            tienGiam.value = 0;
+            return;
+        }
+
+        // Kiểm tra thời gian hiệu lực
+        const now = new Date();
+        const ngayBatDau = new Date(phieu.ngayBatDau);
+        const ngayKetThuc = new Date(phieu.ngayKetThuc);
+        if (now < ngayBatDau || now > ngayKetThuc) {
+            toast.error("❌ Mã giảm giá này đã hết hạn hoặc chưa bắt đầu.");
+            giamGiaDaApDung.value = null;
+            tienGiam.value = 0;
+            return;
+        }
+
+        // Kiểm tra điều kiện đơn hàng tối thiểu
+        if (phieu.giamToiThieu && tongTienSanPham.value < phieu.giamToiThieu) {
+            toast.error(`⚠️ Đơn hàng tối thiểu ${formatCurrency(phieu.giamToiThieu)} để áp dụng mã này.`);
+            return;
+        }
+
+        // Lưu mã giảm giá hợp lệ
+        giamGiaDaApDung.value = phieu;
+
+        // Tính tiền được giảm
+        if (phieu.soTienGiam) {
+            tienGiam.value = phieu.soTienGiam;
+        } else if (phieu.phamTramGiamGia) {
+            const giamTheoPhanTram = (tongTienSanPham.value * phieu.phamTramGiamGia) / 100;
+            tienGiam.value = Math.min(giamTheoPhanTram, phieu.giamToiDa || giamTheoPhanTram);
+        }
+
+        toast.success("🎉 Áp dụng mã giảm giá thành công!");
+    } catch (e) {
+        console.error("Lỗi khi áp dụng mã giảm giá:", e);
+        toast.error("⚠️ Có lỗi xảy ra khi kiểm tra mã giảm giá. Vui lòng thử lại.");
+        giamGiaDaApDung.value = null;
+        tienGiam.value = 0;
+    }
+}
+
 const form = ref({
     email: '',
     firstName: '',
-    thonXom: '', // Changed from 'address'
+    thonXom: '',
     phone: '',
     paymentMethod: 'card',
     orderNote: ''
 });
 
-// Fetching address data from API
+const headers = {
+    token: tokenGHN,
+    'Content-Type': 'application/json',
+};
+
+// 1. Fetch Provinces on Component Mount
 const fetchProvinces = async () => {
     try {
-        const res = await axios.get('http://provinces.open-api.vn/api/p/');
-        provinces.value = res.data;
-    } catch (error) {
-        console.error("Error fetching provinces:", error);
+        const { data } = await axios.get('https://online-gateway.ghn.vn/shiip/public-api/master-data/province', { headers });
+        provinces.value = data.data;
+    } catch (e) {
+        console.error('Lỗi khi lấy danh sách tỉnh/thành phố:', e);
     }
 };
 
-const fetchDistricts = async (provinceCode) => {
+// 2. Fetch Districts based on selected Province
+const fetchDistricts = async (provinceId) => {
+    // Reset lower level selections and fees when province changes
+    districts.value = [];
+    wards.value = [];
+    selectedDistrict.value = '';
+    selectedWard.value = '';
+    availableServices.value = [];
+    serviceId.value = null;
+    shipFee.value = 0;
+
+    if (!provinceId) return; // Don't fetch if no province is selected
+
     try {
-        const res = await axios.get(`http://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
-        districts.value = res.data.districts;
-    } catch (error) {
-        console.error("Error fetching districts:", error);
+        const { data } = await axios.post('https://online-gateway.ghn.vn/shiip/public-api/master-data/district', { province_id: provinceId }, { headers });
+        districts.value = data.data;
+    } catch (e) {
+        console.error('Lỗi khi lấy danh sách quận/huyện:', e);
     }
 };
 
-const fetchWards = async (districtCode) => {
+// 3. Fetch Wards based on selected District
+const fetchWards = async (districtId) => {
+    // Reset lower level selections and fees when district changes
+    wards.value = [];
+    selectedWard.value = '';
+    availableServices.value = []; // Also reset services as they depend on the destination district
+    serviceId.value = null;
+    shipFee.value = 0;
+
+    if (!districtId) return; // Don't fetch if no district is selected
+
     try {
-        const res = await axios.get(`http://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
-        wards.value = res.data.wards;
-    } catch (error) {
-        console.error("Error fetching wards:", error);
+        const { data } = await axios.post('https://online-gateway.ghn.vn/shiip/public-api/master-data/ward', { district_id: districtId }, { headers });
+        wards.value = data.data;
+    } catch (e) {
+        console.error('Lỗi khi lấy danh sách xã/phường:', e);
     }
 };
 
-watch(selectedProvince, (newVal) => {
-    if (newVal) {
-        fetchDistricts(newVal);
-        selectedDistrict.value = '';
-        wards.value = [];
-        selectedWard.value = '';
+// 4. Fetch Available Services based on origin and destination districts
+const fetchAvailableServices = async (toDistrictId) => {
+    availableServices.value = [];
+    serviceId.value = null; // Clear serviceId
+    shipFee.value = 0; // Clear shipping fee
+
+    if (!toDistrictId) return; // Don't fetch if no destination district is selected
+
+    try {
+        const { data } = await axios.post(
+            'https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/available-services',
+            { shop_id: shopId, from_district: fromDistrictId, to_district: Number(toDistrictId) },
+            { headers }
+        );
+        availableServices.value = data.data || [];
+        if (availableServices.value.length > 0) {
+            // Automatically select the first available service
+            serviceId.value = availableServices.value[0].service_id;
+            // No need to call calculateShipFee here, the watchEffect will handle it
+        } else {
+            console.warn('Không có dịch vụ vận chuyển khả dụng cho tuyến này.');
+        }
+    } catch (e) {
+        console.error('Lỗi khi lấy danh sách dịch vụ vận chuyển:', e);
+    }
+};
+
+// 5. Calculate Shipping Fee
+const calculateShipFee = async () => {
+    shipFee.value = 0; // Reset fee before calculating
+
+    // Ensure all necessary parameters are available before making the call
+    if (!serviceId.value || !selectedWard.value || !selectedDistrict.value) {
+        // console.log("Missing parameters for fee calculation:", { serviceId: serviceId.value, selectedWard: selectedWard.value, selectedDistrict: selectedDistrict.value });
+        return;
+    }
+
+    try {
+        const { data } = await axios.post(
+            'https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee',
+            {
+                service_id: serviceId.value,
+                insurance_value: 0, // Adjust as needed
+                coupon: null,
+                from_district_id: fromDistrictId,
+                to_district_id: Number(selectedDistrict.value),
+                to_ward_code: selectedWard.value,
+                weight: 1000, // Example weight in grams
+                length: 15,  // Example dimensions in cm
+                width: 15,
+                height: 15
+            },
+            { headers: { ...headers, shop_id: shopId } }
+        );
+        if (data.code === 200 && data.data) {
+            shipFee.value = data.data.service_fee || data.data.total || 0;
+            console.log('Phí vận chuyển:', shipFee.value);
+        } else {
+            console.warn('Không thể tính phí vận chuyển:', data.message);
+        }
+    } catch (e) {
+        console.error('Lỗi khi tính phí vận chuyển:', e);
+        shipFee.value = 0; // Ensure fee is 0 on error
+    }
+};
+
+// *** Centralized Watchers for a More Robust Flow ***
+
+// Watcher for Province selection: Triggers fetching districts
+watch(selectedProvince, (newProvinceId) => {
+    fetchDistricts(newProvinceId);
+});
+
+// Watcher for District selection: Triggers fetching wards and available services
+watch(selectedDistrict, (newDistrictId) => {
+    fetchWards(newDistrictId);
+    fetchAvailableServices(newDistrictId); // Services depend on selectedDistrict
+});
+
+// WatchEffect for Shipping Fee Calculation: Triggers when ALL dependencies are ready
+// This is the most crucial part to ensure the fee is calculated
+watchEffect(() => {
+    // Only calculate if serviceId, selectedDistrict, and selectedWard are all set
+    if (serviceId.value !== null && selectedDistrict.value !== '' && selectedWard.value !== '') {
+        calculateShipFee();
     } else {
-        districts.value = [];
-        wards.value = [];
-        selectedDistrict.value = '';
-        selectedWard.value = '';
+        // Optionally reset shipFee if dependencies are not met, to prevent stale data
+        shipFee.value = 0;
     }
 });
 
-watch(selectedDistrict, (newVal) => {
-    if (newVal) {
-        fetchWards(newVal);
-        selectedWard.value = '';
-    } else {
-        wards.value = [];
-        selectedWard.value = '';
-    }
-});
 
-async function fetchOrder() {
+// Existing order fetching and currency formatting functions
+const fetchOrder = async () => {
     try {
-        const res = await axios.get(`http://localhost:8080/client/laySanPhamTheoHoaDon/${route.params.hoaDonId}`, {
-            withCredentials: true
-        });
+        const res = await axios.get(`http://localhost:8080/client/laySanPhamTheoHoaDon/${route.params.hoaDonId}`);
+        const products = res.data;
 
-        // Gán thêm thuộc tính giaBan khi load dữ liệu
-        order.value = res.data.map(item => {
-            const giaBan = item.thanhTien / item.soLuong;
+        // Với từng sản phẩm, gọi API lấy phần trăm giảm
+        const productsWithDiscount = await Promise.all(products.map(async (item) => {
+            const discountRes = await axios.get(`http://localhost:8080/client/giam-gia-chi-tiet/${item.idSanPhamChiTiet}`);
+            const discounts = discountRes.data.data;
+
+            // Tính trung bình phần trăm giảm (nếu có)
+            let avgDiscount = 0;
+            if (discounts && discounts.length > 0) {
+                const totalDiscount = discounts.reduce((acc, val) => acc + val, 0);
+                avgDiscount = totalDiscount / discounts.length;
+            }
+
+            // Tính giá bán gốc (giá 1 sản phẩm = thanhTien / soLuong)
+            const giaGoc = item.thanhTien / item.soLuong;
+
+            // Tính giá sau giảm
+            const giaSauGiam = giaGoc * (1 - avgDiscount / 100);
+
             return {
                 ...item,
-                giaBan, // lưu lại đơn giá gốc
+                giaBan: giaGoc,
+                phanTramGiamGia: avgDiscount,
+                giaSauGiam,
             };
-        });
-    } catch (e) {
-        console.error('Lỗi khi lấy đơn hàng:', e);
-    }
-}
+        }));
 
+        order.value = productsWithDiscount;
+    } catch (error) {
+        console.error('Lỗi lấy đơn hàng hoặc giảm giá:', error);
+    }
+};
+const tongTienSanPham = computed(() => {
+    return order.value.reduce((total, item) => {
+        if (item.phanTramGiamGia > 0) {
+            return total + item.giaSauGiam * item.soLuong;
+        }
+        return total + item.giaBan * item.soLuong;
+    }, 0);
+});
 
 
 function formatCurrency(value) {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
 }
 
-const tongTienSanPham = computed(() =>
-    order.value.reduce((sum, item) => sum + (item.giaBan * item.soLuong), 0)
-);
 
-const tongCong = computed(() => tongTienSanPham.value); // Ensure shipping is a number
+const tongCong = computed(() => tongTienSanPham.value + shipFee.value - tienGiam.value);
 
 async function thanhToan() {
-    const provinceName = provinces.value.find(p => p.code == selectedProvince.value)?.name || '';
-    const districtName = districts.value.find(d => d.code == selectedDistrict.value)?.name || '';
-    const wardName = wards.value.find(w => w.code == selectedWard.value)?.name || '';
+    // Validation: Check if required fields are filled and a shipping fee has been calculated
+    if (!form.value.email || !form.value.firstName || !form.value.phone || !selectedProvince.value || !selectedDistrict.value || !selectedWard.value) {
+        alert("Vui lòng điền đầy đủ thông tin liên hệ và địa chỉ nhận hàng.");
+        return;
+    }
+    if (shipFee.value === 0 && selectedWard.value && selectedDistrict.value) {
+        // If fee is 0 but addresses are chosen, it might mean no service or calculation error
+        alert("Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại.");
+        return;
+    }
 
+    const provinceName = provinces.value.find(p => p.ProvinceID == selectedProvince.value)?.ProvinceName || '';
+    const districtName = districts.value.find(d => d.DistrictID == selectedDistrict.value)?.DistrictName || '';
+    const wardName = wards.value.find(w => w.WardCode == selectedWard.value)?.WardName || '';
 
     let fullAddress = [];
     if (form.value.thonXom) fullAddress.push(form.value.thonXom);
@@ -272,7 +496,7 @@ async function thanhToan() {
 
     const data = {
         tongTienSanPham: tongTienSanPham.value,
-        phiVanChuyen: Number(form.value.shipping),
+        phiVanChuyen: shipFee.value,
         hoTen: form.value.firstName,
         diaChi: combinedAddress,
         ghiChu: form.value.orderNote,
@@ -297,29 +521,30 @@ onMounted(() => {
     fetchOrder();
 });
 </script>
-
 <style scoped>
 .order-container {
     margin-top: 3rem;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #1c1c1c;
-    background-color: #f9f9f9;
+    background-color: #F3F4F6;
     padding: 1rem;
     min-height: 80vh;
     display: flex;
-    gap: 2rem;
-    justify-content: center;
+    justify-content: space-between;
+    gap: 3rem;
+    /* Tăng khoảng cách giữa 2 cột */
     align-items: flex-start;
-    flex-wrap: wrap;
+    max-width: 1200px;
+    /* Giới hạn chiều rộng tổng thể */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Cột Thông tin thanh toán */
 .col-md-7 {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 0 12px rgb(0 0 0 / 0.1);
-    padding: 2rem 2.5rem;
-    flex: 1 1 480px;
+    margin-top: 50px;
+    padding: 2rem 3rem;
+    flex: 1;
     max-width: 700px;
 }
 
@@ -370,12 +595,16 @@ input.form-control:focus {
 /* Optional small text */
 .mb-3 {
     margin-bottom: 1.2rem;
+
 }
 
 /* Cột Tóm tắt đơn hàng */
 .col-md-5 {
     flex: 0 0 400px;
     max-width: 400px;
+    margin-left: 80px;
+    margin-top: 100px;
+    /* đẩy cột này xa hơn khỏi cột trái */
 }
 
 .card {
@@ -433,6 +662,17 @@ h5 {
 .input-group {
     display: flex;
     margin-bottom: 1.5rem;
+}
+
+input.form-control,
+select.form-select,
+textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1.8px solid #ccc;
+    box-sizing: border-box;
 }
 
 .input-group input.form-control {

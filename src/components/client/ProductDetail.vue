@@ -41,14 +41,36 @@
             </div>
 
             <div class="col-md-6 product-info-section">
-                <div class="d-flex justify-content-between align-items-baseline mb-2 product-price-section">
+                <div class="mb-2 product-price-section">
                     <h2 class="product-name-heading">{{ product.name }}</h2>
-                    <div class="price-display">
-                        <span v-if="product.discount && product.discount > 0" class="original-price-detail">
-                            {{ formatCurrency(product.originalPrice) }}
-                        </span>
-                        <span class="current-price-detail">{{ formatCurrency(product.price) }}</span>
+                    <div class="price-display mt-1">
+                        <!-- Nếu có giảm giá -->
+                        <template v-if="product.discount > 0">
+                            <span class="original-price-detail">
+                                {{ formatCurrency(product.minOriginalPrice) }}
+                                <template v-if="product.minOriginalPrice !== product.maxOriginalPrice">
+                                    - {{ formatCurrency(product.maxOriginalPrice) }}
+                                </template>
+                            </span>
+                            <span class="current-price-detail">
+                                {{ formatCurrency(product.minPrice) }}
+                                <template v-if="product.minPrice !== product.maxPrice">
+                                    - {{ formatCurrency(product.maxPrice) }}
+                                </template>
+                            </span>
+                        </template>
+
+                        <!-- Không giảm giá -->
+                        <template v-else>
+                            <span class="current-price-detail">
+                                {{ formatCurrency(product.minPrice) }}
+                                <template v-if="product.minPrice !== product.maxPrice">
+                                    - {{ formatCurrency(product.maxPrice) }}
+                                </template>
+                            </span>
+                        </template>
                     </div>
+
                 </div>
 
                 <div class="rating-section mb-3">
@@ -216,12 +238,21 @@ async function toggleColor(color) {
     }
 }
 
+function getDiscountPercentage(discounts) {
+    if (!discounts || !discounts.length) return 0;
+    const unique = [...new Set(discounts)];
+    if (unique.length === 1) return unique[0];
+    // trung bình
+    const sum = discounts.reduce((a, b) => a + b, 0);
+    return Math.round(sum / discounts.length);
+}
 
 async function toggleSize(size) {
     if (!selectedColors.value.length) {
-        alert("Vui lòng chọn màu sắc trước.");
+        toast.warning("Vui lòng chọn màu sắc trước.");
         return;
     }
+
     if (product.value.quantity <= 0) {
         toast.warning("Sản phẩm bạn chọn đã hết hàng. Vui lòng chọn loại khác.");
     }
@@ -237,33 +268,54 @@ async function toggleSize(size) {
     quantity.value = 1;
 
     try {
-        const res = await axios.get("http://localhost:8080/client/san-pham-chi-tiet", {
-            params: {
-                idSanPham: product.value.id,
-                mauSac: selectedColor,
-                kichCo: size.soCo
-            }
+        // Gọi API chi tiết sản phẩm theo màu và size
+        const resDetail = await axios.get("http://localhost:8080/client/san-pham-chi-tiet", {
+            params: { idSanPham: product.value.id, mauSac: selectedColor, kichCo: size.soCo }
         });
 
-        const detail = res.data;
-        if (!detail) {
-            alert("Không tìm thấy sản phẩm chi tiết.");
+        const detail = resDetail.data;
+        const chiTiet = detail.chiTietSanPhams?.[0];
+
+        if (!chiTiet || typeof chiTiet.gia !== 'number') {
+            toast.error("Không tìm thấy thông tin sản phẩm phù hợp.");
             return;
         }
 
-        // Cập nhật UI từ dữ liệu backend
-        product.value.price = detail.giaSauKhiGiam;
-        product.value.originalPrice = detail.giaTruocKhiGiam;
-        product.value.discount = detail.phamTramGiam;
+        const originalPrice = chiTiet.gia;
+
+        // Gọi API giảm giá theo ID chi tiết sản phẩm
+        const resDisc = await axios.get(`http://localhost:8080/client/giam-gia-chi-tiet/${chiTiet.id}`);
+        const discounts = resDisc.data?.data || [];
+
+        const discountPerc = getDiscountPercentage(discounts);
+        const discountedPrice = Math.round(originalPrice * (100 - discountPerc) / 100);
+
+        // Cập nhật product
+        product.value.discount = discountPerc;
+
+        product.value.minOriginalPrice = originalPrice;
+        product.value.maxOriginalPrice = originalPrice;
+
+        product.value.minPrice = discountedPrice;
+        product.value.maxPrice = discountedPrice;
+
         product.value.images = detail.anhSanPham || [];
         selectedImage.value = product.value.images[0] || '';
-        product.value.quantity = detail.chiTietSanPhams[0]?.soLuong || 0;
-        remainingQuantity.value = product.value.quantity > 0 ? product.value.quantity - quantity.value : 0;
+
+        product.value.quantity = chiTiet.soLuong || 0;
+        remainingQuantity.value = product.value.quantity - quantity.value;
+
+        // Cập nhật các thông tin bổ sung nếu cần
+        product.value.maSanPham = chiTiet.idSanPham.maSanPham || "";
+        product.value.description = chiTiet.moTa || "";
+        product.value.category = chiTiet.idSanPham.idChatLieu?.tenChatLieu || "Không rõ";
+
     } catch (err) {
         console.error("Lỗi khi fetch chi tiết sản phẩm:", err);
-        alert("Không thể cập nhật sản phẩm chi tiết.");
+        toast.error("Không thể cập nhật sản phẩm chi tiết.");
     }
 }
+
 
 
 
@@ -364,8 +416,8 @@ const themVaoGioHang = async () => {
             position: "top-right"
         });
 
-        // ✅ Không trừ tồn kho nữa (vì BE đã không xử lý tồn kho)
-        // Nếu bạn vẫn muốn hiển thị tồn kho, có thể gọi API load lại sản phẩm chi tiết
+        // ✅ Sau khi thêm thành công, tải lại chi tiết sản phẩm để cập nhật tồn kho
+        await toggleSize(selectedSizeObj);
 
         // Gửi sự kiện cập nhật giỏ hàng
         window.dispatchEvent(new Event("cap-nhat-gio"));
@@ -389,58 +441,74 @@ const fetchProductDetail = async (productId) => {
     product.value = null;
     quantity.value = 1;
 
-    if (!productId) {
-        error.value = "Không có ID sản phẩm được cung cấp.";
-        loading.value = false;
-        return;
-    }
-
     try {
-        // Lấy sản phẩm gốc theo ID
         const res = await fetch(`http://localhost:8080/client/san-pham/${productId}`);
         if (!res.ok) throw new Error("Sản phẩm không tìm thấy.");
-        console.log("id san pha ", productId)
         const singleProduct = await res.json();
 
-        // Gộp dữ liệu
-        const kichCoSet = new Set();
-        const mauSacSet = new Set();
-        let tongSoLuong = 0;
-        const allVariants = singleProduct.listChiTietSanPham || [];
-        allVariants.forEach(item => {
-            if (item.kichCo) kichCoSet.add(item.kichCo.trim());
-            if (item.mauSac) mauSacSet.add(item.mauSac.trim());
-        });
-        selectedImage.value = singleProduct.listAnhSanPham?.[0] || '';
+        const dgRes = await fetch(`http://localhost:8080/client/giam-gia/${productId}`);
+        let discountPercentage = 0;
+        if (dgRes.ok) {
+            const list = await dgRes.json();
+            const arr = Array.isArray(list) ? list : (list.data || []);
+            const unique = [...new Set(arr)];
+            if (unique.length === 1) {
+                discountPercentage = unique[0];
+            } else if (unique.length > 1) {
+                const sum = unique.reduce((a, b) => a + b, 0);
+                discountPercentage = Math.round(sum / unique.length);
+            }
+        }
+
+
+        const prices = singleProduct.giaTruocKhiGiam || [];
+        const minOriginal = Math.min(...prices);
+        const maxOriginal = Math.max(...prices);
+
+        let minDiscount = minOriginal;
+        let maxDiscount = maxOriginal;
+        if (discountPercentage > 0) {
+            minDiscount = Math.round(minOriginal * (100 - discountPercentage) / 100);
+            maxDiscount = Math.round(maxOriginal * (100 - discountPercentage) / 100);
+        }
+
         product.value = {
             id: singleProduct.idSanPham,
             name: singleProduct.tenSanPham,
             images: singleProduct.listAnhSanPham || [],
-            price: singleProduct.giaSauKhiGiam,
-            originalPrice: singleProduct.giaTruocKhiGiam,
-            discount: singleProduct.phamTramGiam,
+            discount: discountPercentage,
+
+            // Gốc
+            minOriginalPrice: minOriginal,
+            maxOriginalPrice: maxOriginal,
+
+            // Sau giảm
+            minPrice: minDiscount,
+            maxPrice: maxDiscount,
+
             rating: singleProduct.diemDanhGia,
             reviews: singleProduct.soLuongDanhGia,
             category: singleProduct.tenDanhMuc,
             colors: singleProduct.listMauSac || [],
             sizes: singleProduct.listKichCo || [],
-            createdAt: singleProduct.ngayTaoChiTietSanPham,
-            quantity: singleProduct.soLuong,
-            maSanPham: singleProduct.maSanPham,
             description: (singleProduct.listMoTa || []).join(' '),
-
+            maSanPham: singleProduct.maSanPham,
+            quantity: singleProduct.soLuong
         };
-        remainingQuantity.value = singleProduct.soLuong > 0 ? singleProduct.soLuong - 1 : 0;
-        selectedImage.value = singleProduct.listAnhSanPham?.[0] || '';
-        startSlideshow()
+
+        selectedImage.value = product.value.images[0] || '';
+        remainingQuantity.value = product.value.quantity > 0 ? product.value.quantity - 1 : 0;
+        startSlideshow();
 
     } catch (e) {
-        console.error("Lỗi khi fetch chi tiết sản phẩm:", e);
+        console.error("Error fetching product:", e);
         error.value = `Không thể tải chi tiết sản phẩm: ${e.message}`;
     } finally {
         loading.value = false;
     }
 };
+
+
 
 
 onMounted(() => {
