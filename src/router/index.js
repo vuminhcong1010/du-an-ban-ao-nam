@@ -46,6 +46,9 @@ import ClientSanPham from "@/components/client/ProductPage.vue";
 import Oder from "@/components/client/Order.vue";
 import ClientSanPhamDetail from "@/components/client/ProductDetail.vue";
 import ThongKeBaoCao from "@/components/admin/ThongKeBaoCao.vue";
+import DangKiCustomer from "@/components/admin/DangKiCustomer.vue";
+import LoginGG from "@/components/client/loginGG.vue";
+import XacNhanThongTinCustomer from "@/components/admin/XacNhanThongTinCustomer.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -66,6 +69,11 @@ const router = createRouter({
           component: DangNhapCustomer,
         },
         {
+          path: "dang-ki-khach-hang",
+          name: "dang-ki-khach-hang",
+          component: DangKiCustomer,
+        },
+        {
           path: "client-san-pham",
           name: "client-san-pham",
           component: ClientSanPham,
@@ -79,7 +87,7 @@ const router = createRouter({
           path: "client-oder/:hoaDonId",
           name: "client-Oder",
           component: Oder,
-          props: (route) => ({ hoaDonId: Number(route.params.hoaDonId) }),
+          props: (route) => ({hoaDonId: Number(route.params.hoaDonId)}),
         },
         // Thêm các route client khác ở đây
       ],
@@ -108,199 +116,209 @@ const router = createRouter({
           path: "", // Đường dẫn mặc định khi truy cập '/' (sau khi đăng nhập)
           name: "admin-dashboard",
           component: ThongKeTongHop, // Ví dụ: Trang Dashboard của Admin
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         // Các routes admin khác của bạn (giữ nguyên)
         {
           path: "/hoa-don",
           name: "hoadon",
           component: HoaDon,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/hoa-don-chi-tiet/:maHoaDon",
           name: "hoadonchitiet",
           component: HoaDonChiTiet,
           props: true,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/ban-hang",
           name: "banhang",
           component: BanHang,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/san-pham/chat-lieu",
           name: "chat-lieu",
           component: ChatLieu,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/san-pham/tay-ao",
           name: "tay-ao",
           component: TayAo,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/san-pham/co-ao",
           name: "co-ao",
           component: CoAo,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/san-pham/mau",
           name: "mau",
           component: Mau,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/san-pham/kich-co",
           name: "kich-co",
           component: KichCo,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/san-pham/kieu-ao",
           name: "kieu-ao",
           component: KieuAo,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/san-pham",
           name: "san-pham",
           component: SanPham,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/san-pham/add",
           name: "them-san-pham",
           component: ThemSP,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/san-pham/chi-tiet-san-pham/:id1",
           name: "chi-tiet-san-pham",
           component: ChiTietSanPham,
           props: true,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/san-pham/danh-muc",
           name: "danh-muc",
           component: DanhMuc,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/test",
           name: "test",
           component: Test1,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/khach-hang",
           name: "khachhang",
           component: QuanLyKhachHang,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/khach-hang/add",
           name: "AddKhachHang",
           component: KhachHangAddPage,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/khach-hang/edit/:id",
           name: "EditKhachHang",
           component: KhachHangEditPage,
           props: true,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/nhan-vien",
           name: "nhanvien",
           component: NhanVien,
-          meta: { requiresAuth: true, requiresRole: "ADMIN" },
+          meta: {requiresAuth: true, requiresRole: "ADMIN"},
         },
         {
           path: "/nhan-vien/them",
           name: "themnhanvien",
           component: ThemNhanVien,
-          meta: { requiresAuth: true, requiresRole: "ADMIN" },
+          meta: {requiresAuth: true, requiresRole: "ADMIN"},
         },
         {
           path: "/nhan-vien/sua/:id",
           name: "SuaNhanVien",
           component: ThemNhanVien,
           props: true,
-          meta: { requiresAuth: true, requiresRole: "ADMIN" },
+          meta: {requiresAuth: true, requiresRole: "ADMIN"},
         },
         {
           path: "/phieu-giam-gia",
           name: "phieugiamgia",
           component: PhieuGiamGia,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/phieu-giam-gia/them",
           name: "ThemPhieuGiamGia",
           component: ThemPhieuGiamGia,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/phieu-giam-gia/sua/:id",
           name: "SuaPhieuGiamGia",
           component: SuaPhieuGiamGia,
           props: true,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/dot-giam-gia",
           name: "dotgiamgia",
           component: DotGiamGia,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/dot-giam-gia/them",
           name: "themdotgiamgia",
           component: ThemDotGiamGia,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/dot-giam-gia/sua/:id",
           name: "suadoigiamgia",
           component: SuaDotGiamGia,
           props: true,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/thong-tin-ca-nhan",
           name: "ThongTinCaNhan",
           component: ThongTinNhanVien,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/thong-ke",
           name: "thongke",
           component: ThongKeTongHop,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/thong-ke/bao-cao",
           name: "thongke-bao-cao",
           component: ThongKeBaoCao,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/phieu-giam-gia-ban-hang",
           name: "phieugiamgiabh",
           component: PhieuGiamGiaBH,
-          meta: { requiresAuth: true },
+          meta: {requiresAuth: true},
         },
         {
           path: "/chat",
           name: "chat",
           component: Chat,
+        },
+        {
+          path: "/gg",
+          name: "gg",
+          component: LoginGG,
+        },
+        {
+          path: "/xntt",
+          name: "xntt",
+          component: XacNhanThongTinCustomer,
         },
       ],
     },
@@ -320,7 +338,17 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = Cookies.get("token");
-
+  const email = Cookies.get("email");
+  let trangThai = false
+  let thongTin = null;
+  if(Cookies.get("thongTinKhachHang")){
+    thongTin = JSON.parse(Cookies.get("thongTinKhachHang"));
+    if(thongTin.matKhau){
+      trangThai = true
+    }
+  }
+  
+  
   // ✅ 1. Chưa có token => chỉ cho phép vào /dang-nhap và /quen-mat-khau
   if (
     !token &&
@@ -329,10 +357,13 @@ router.beforeEach((to, from, next) => {
       "/quen-mat-khau",
       "/dang-nhap-khach-hang",
       "/coolmen",
+      "/gg",
+      "/xntt"
     ].includes(to.path) &&
     !to.path.startsWith("/coolmen")
   ) {
-    return next("/dang-nhap");
+    // return next("/dang-nhap");
+    return next("/coolmen");
   }
 
   // ✅ 2. Đã có token nhưng vào lại /dang-nhap => đá về /
@@ -352,10 +383,23 @@ router.beforeEach((to, from, next) => {
       }
     } catch (err) {
       Cookies.remove("token");
-      return next("/dang-nhap");
+      // return next("/dang-nhap");
+      return next("/coolmen");
     }
   }
 
+    if (to.path === "/xntt" && (!email || thongTin)) {
+      return next("/coolmen"); // Hoặc route khác bạn muốn
+    }
+
+      if (thongTin) {
+        if (
+          to.path === "/coolmen/dang-nhap-khach-hang" ||
+          to.path === "/coolmen/dang-ki-khach-hang"
+        ) {
+          return next("/coolmen"); // hoặc chuyển sang trang chủ, hoặc trang khác bạn muốn
+        }
+      }
   next();
 });
 

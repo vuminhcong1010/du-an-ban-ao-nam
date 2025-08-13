@@ -36,7 +36,7 @@
     </section>
   </div>
 </template>
-
+<!-- 
 <script>
 // --- IMPORT HÌNH ẢNH SỬ DỤNG CÚ PHÁP ES MODULES ---
 // Đảm bảo các tệp ảnh này tồn tại trong thư mục src/assets/
@@ -88,8 +88,72 @@ export default {
         { name: 'Decor', image: decorImage },
       ]
     };
+    
   },
 };
+
+</script> -->
+<script setup>
+// --- IMPORT HÌNH ẢNH SỬ DỤNG CÚ PHÁP ES MODULES ---
+import heroBgImage from '@/assets/anh1.jpg';
+import axios from 'axios';
+// Logo placeholders
+import logoPlaceholder1 from '@/assets/anh1.jpg';
+import logoPlaceholder2 from '@/assets/anh1.jpg';
+import logoPlaceholder3 from '@/assets/anh1.jpg';
+import logoPlaceholder4 from '@/assets/anh1.jpg';
+import logoPlaceholder5 from '@/assets/anh1.jpg';
+import logoPlaceholder6 from '@/assets/logo.png';
+
+// Product categories
+import clothingImage from '@/assets/anh1.jpg';
+import tshirtsImage from '@/assets/anh2.jpg';
+import hoodiesImage from '@/assets/anh1.jpg';
+import musicImage from '@/assets/anh2.jpg';
+import albumsImage from '@/assets/anh1.jpg';
+import postersImage from '@/assets/anh2.jpg';
+import accessoriesImage from '@/assets/anh1.jpg';
+import decorImage from '@/assets/anh2.jpg';
+import Cookies from 'js-cookie';
+import { onMounted } from 'vue';
+// Hero background
+const heroBg = heroBgImage;
+
+// Logos
+const logo1 = logoPlaceholder1;
+const logo2 = logoPlaceholder2;
+const logo3 = logoPlaceholder3;
+const logo4 = logoPlaceholder4;
+const logo5 = logoPlaceholder5;
+const logo6 = logoPlaceholder6;
+
+// Categories
+const categories = [
+  { name: 'Clothing', image: clothingImage },
+  { name: 'T-Shirts', image: tshirtsImage },
+  { name: 'Hoodies', image: hoodiesImage },
+  { name: 'Music', image: musicImage },
+  { name: 'Albums', image: albumsImage },
+  { name: 'Posters', image: postersImage },
+  { name: 'Accessories', image: accessoriesImage },
+  { name: 'Decor', image: decorImage },
+];
+
+const email = Cookies.get('email')
+const thongTin = Cookies.get("thongTinKhachHang")
+onMounted(() => {
+  if (email) {
+    axios.get(`http://localhost:8080/find-by-email/${email}`)
+      .then(res => {
+        Cookies.set("thongTinKhachHang", JSON.stringify(res.data))
+        console.log(JSON.parse(Cookies.get("thongTinKhachHang")))
+      })
+      .catch(err => {
+        console.error('Lỗi khi gọi API:', err)
+      })
+  }
+})
+
 </script>
 
 <style scoped>
