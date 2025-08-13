@@ -26,8 +26,25 @@
         </div>
 
         <!-- User -->
-        <div class="user-icon">
+        <div class="user-icon" ref="userIcon" @click="toggleUserDropdown">
           <a href="#"><i class="fas fa-user"></i></a>
+
+          <div v-if="showUserDropdown" class="user-dropdown">
+            <ul>
+              <li v-if="isLoggedIn">
+                <a href="/coolmen/tai-khoan">Thông tin cá nhân</a>
+              </li>
+              <li v-if="isLoggedIn">
+                <a href="/coolmen/lich-su-dat-hang">Lịch sử đặt hàng</a>
+              </li>
+              <li v-if="isLoggedIn">
+                <a href="#" @click.prevent="logout">Đăng xuất</a>
+              </li>
+              <li v-else>
+                <a href="/coolmen/dang-nhap">Đăng nhập</a>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <!-- Giỏ hàng -->
@@ -35,18 +52,25 @@
           <a href="#"><i class="fas fa-shopping-cart"></i></a>
           <span v-if="soLuongGio > 0" class="badge">{{ soLuongGio }}</span>
 
-          <CartDetail v-if="hienChiTiet" :danhSachGio="danhSachGio" @close="hienChiTiet = false"
-            @removeItem="xoaSanPham" @update:danhSachGio="capNhatGioHangLocal" @capNhatGio="capNhatGioHang" />
-
+          <CartDetail
+            v-if="hienChiTiet"
+            :danhSachGio="danhSachGio"
+            @close="hienChiTiet = false"
+            @removeItem="xoaSanPham"
+            @update:danhSachGio="capNhatGioHangLocal"
+            @capNhatGio="capNhatGioHang"
+          />
         </div>
       </div>
     </div>
   </header>
 </template>
 
+
 <script>
 import axios from 'axios'
-import CartDetail from './CartDetail.vue'  // sửa đường dẫn nếu cần
+import CartDetail from './CartDetail.vue'
+import Cookies from 'js-cookie'
 
 export default {
   name: 'AppHeader',
@@ -56,69 +80,87 @@ export default {
       searchQuery: '',
       soLuongGio: 0,
       hienChiTiet: false,
-      danhSachGio: []
+      danhSachGio: [],
+      showUserDropdown: false,
+    }
+  },
+  computed: {
+    isLoggedIn() {
+      const token = localStorage.getItem('clientAuthToken')
+      const user = localStorage.getItem('loggedInUser')
+      return !!token || !!user
     }
   },
   mounted() {
-    this.capNhatGioHang();
-    window.addEventListener("cap-nhat-gio", () => {
-      this.capNhatGioHang();
-    });
-  }
-  ,
+    this.capNhatGioHang()
+    window.addEventListener("cap-nhat-gio", this.capNhatGioHang)
+    document.addEventListener("click", this.handleClickOutside)
+  },
   unmounted() {
     window.removeEventListener("cap-nhat-gio", this.capNhatGioHang)
+    document.removeEventListener("click", this.handleClickOutside)
   },
   methods: {
     performSearch() {
-      console.log('Đang tìm kiếm:', this.searchQuery);
+      console.log('Đang tìm kiếm:', this.searchQuery)
     },
     async capNhatGioHang() {
       try {
         const res = await axios.get('http://localhost:8080/client/LoadSanPham', {
           withCredentials: true
-        });
+        })
 
-        const data = Array.isArray(res.data) ? res.data : [];
+        const data = Array.isArray(res.data) ? res.data : []
 
         data.forEach(sp => {
           if (!sp.tongTien || sp.tongTien === 0) {
-            sp.tongTien = sp.soLuong * sp.gia;
+            sp.tongTien = sp.soLuong * sp.gia
           }
           if (!sp.anhSanPham) {
-            sp.anhSanPham = '/placeholder.png';
+            sp.anhSanPham = '/placeholder.png'
           }
-        });
+        })
 
-        this.danhSachGio = data;
-        this.soLuongGio = data.reduce((tong, sp) => tong + sp.soLuong, 0);
+        this.danhSachGio = data
+        this.soLuongGio = data.reduce((tong, sp) => tong + sp.soLuong, 0)
       } catch (error) {
-        this.danhSachGio = [];
-        this.soLuongGio = 0;
-        console.error('Lỗi khi lấy giỏ hàng:', error);
+        this.danhSachGio = []
+        this.soLuongGio = 0
+        console.error('Lỗi khi lấy giỏ hàng:', error)
       }
     },
     toggleGioHang() {
-      this.hienChiTiet = !this.hienChiTiet;
+      this.hienChiTiet = !this.hienChiTiet
     },
     capNhatGioHangLocal(newDanhSach) {
-      this.danhSachGio = newDanhSach;
-      this.soLuongGio = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0);
-      sessionStorage.removeItem("gioHang");  
-      localStorage.removeItem("gioHang");  
+      this.danhSachGio = newDanhSach
+      this.soLuongGio = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0)
+      sessionStorage.removeItem("gioHang")
+      localStorage.removeItem("gioHang")
     },
     xoaSanPham(idSanPhamChiTiet) {
-      this.danhSachGio = this.danhSachGio.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet);
-      this.soLuongGio = this.danhSachGio.reduce((tong, sp) => tong + sp.soLuong, 0);
+      this.danhSachGio = this.danhSachGio.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet)
+      this.soLuongGio = this.danhSachGio.reduce((tong, sp) => tong + sp.soLuong, 0)
+    },
+    toggleUserDropdown() {
+      this.showUserDropdown = !this.showUserDropdown
+    },
+    handleClickOutside(event) {
+      if (this.$refs.userIcon && !this.$refs.userIcon.contains(event.target)) {
+        this.showUserDropdown = false
+      }
+    },
+    logout() {
+      localStorage.removeItem('clientAuthToken')
+      localStorage.removeItem('loggedInUser')
+      Cookies.remove('thongTinKhachHang')
+      this.showUserDropdown = false
+      window.location.href = '/coolmen/dang-nhap' // Redirect sau logout
     }
-
-
   }
-
-
 }
-
 </script>
+
 
 <style scoped>
 .badge {
@@ -360,4 +402,47 @@ export default {
     width: auto;
   }
 }
+.user-icon {
+  position: relative;
+  cursor: pointer;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 180px;
+  z-index: 1001;
+  padding: 5px 0;
+}
+
+.user-dropdown ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.user-dropdown li {
+  padding: 0;
+  margin: 0;
+}
+
+.user-dropdown a {
+  display: block;
+  padding: 10px 15px;
+  text-decoration: none;
+  color: #333;
+  font-weight: normal;
+  transition: background-color 0.2s ease;
+}
+
+.user-dropdown a:hover {
+  background-color: #f0f0f0;
+  color: #007bff;
+}
+
 </style>

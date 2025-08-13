@@ -72,7 +72,7 @@
                 <h5 class="mt-4">Tùy chọn thanh toán</h5>
                 <div class="radio-card-group mb-3">
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'card' }">
-                        <input type="radio" value="card" v-model="form.paymentMethod" /> 💳 Thẻ tín dụng / ghi nợ
+                        <input type="radio" value="card" v-model="form.paymentMethod" /> 💳 Thanh Toán Qua VNPay
                     </label>
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'cod' }">
                         <input type="radio" value="cod" v-model="form.paymentMethod" /> 💵 COD
@@ -96,7 +96,9 @@
 
                         <div style="flex-grow: 1;">
                             <p class="mb-1 fw-semibold">{{ item.tenSanPham }}</p>
-                            <small class="text-success ms-2"> Tiết kiệm -{{ Math.round(item.phanTramGiamGia) }}%</small>
+                            <small v-if="item.phanTramGiamGia > 0" class="text-success ms-2">
+                                Tiết kiệm -{{ Math.round(item.phanTramGiamGia) }}%
+                            </small>
                             <!-- Giá gốc và giá sau giảm nếu có giảm -->
                             <div class="small mb-1">
                                 <template v-if="item.phanTramGiamGia > 0">
@@ -129,12 +131,17 @@
                         </div>
                     </div>
 
-
-                    <div class="d-flex mb-3">
-                        <input type="text" class="form-control" placeholder="Mã giảm giá" v-model="maGiamGia"
-                            style="flex: 10; margin-right: 8px;" />
-                        <button class="btn btn-dark" @click="apDungGiamGia" style="flex: 3;">Áp dụng</button>
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <img src="/src/assets/293cb84a6429a3426672.svg" alt="voucher-icon"
+                            style="width: 20px; height: 20px; margin-right: 6px;">
+                        <span style="flex-grow: 1; font-size: 15px; color: #333333; font-weight: bolder;">Coolmen
+                            Voucher</span>
+                        <a href="#" style="color: #0088ff; font-size: 14px; text-decoration: none;"
+                            @click="showVoucherModal = true">Chọn
+                            hoặc nhập
+                            mã</a>
                     </div>
+
 
 
                     <div class="d-flex justify-content-between">
@@ -171,6 +178,76 @@
             </div>
         </div>
     </div>
+    <!-- Modal chọn mã giảm giá -->
+    <div v-if="showVoucherModal" class="modal-backdrop">
+        <div class="modal-box">
+            <!-- Header -->
+            <div class="modal-header">
+                <h5 class="modal-title">Chọn Coolmen Voucher</h5>
+                <button @click="showVoucherModal = false" class="close-button">&times;</button>
+            </div>
+            <!-- Body -->
+            <div class="modal-body">
+                <!-- Nhập mã -->
+                <div class="voucher-row">
+                    <label class="voucher-label">Mã Voucher</label>
+                    <input type="text" v-model="maGiamGia" class="voucher-input" placeholder="Mã Coolmen Voucher" />
+                    <button class="voucher-button" @click="apDungGiamGia">ÁP DỤNG</button>
+                </div>
+
+
+                <!-- Gợi ý mã -->
+                <div class="voucher-list">
+                    <div class="voucher-card" :class="{ selected: giamGiaDaApDung?.id === voucher.data.id }"
+                        v-for="voucher in voucherDeXuat" :key="voucher.id">
+                        <!-- Left -->
+                        <div class="voucher-left">
+                            <!-- Logo & tag -->
+                            <div class="voucher-logo">
+                                <img src="/src/assets/logo.png" alt="Coolmen Logo" />
+                                <div class="voucher-brand">COOLMEN</div>
+                            </div>
+                        </div>
+
+                        <!-- Middle content -->
+                        <div class="voucher-content">
+                            <div class="voucher-top">
+                                <span class="voucher-flash">⚡ Số lượng có hạn</span>
+                                <span class="voucher-discount">
+                                    {{ voucher.moTa }}
+                                </span>
+                            </div>
+                            <div class="voucher-min-order">Đơn Tối Thiểu {{ voucher.donToiThieu }}</div>
+                            <div class="voucher-max-discount" v-if="voucher.data.giamToiDa">
+                                Giảm Tối Đa {{ formatCurrency(voucher.data.giamToiDa) }}
+                            </div>
+                            <div class="voucher-expired">
+                                HSD: {{ voucher.hsd }}
+                            </div>
+                        </div>
+
+                        <!-- Radio -->
+                        <div class="voucher-select">
+                            <input type="radio" :value="voucher.id" v-model="selectedVoucher"
+                                @click="chonVoucher(voucher)" />
+                        </div>
+
+                        <!-- Hiện thông báo nếu voucher này đang được áp dụng -->
+                        <div v-if="giamGiaDaApDung?.id === voucher.data.id" class="voucher-applied-message">
+                            🎉 Mã giảm giá đã được áp dụng!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer">
+                <button class="btn cancel" @click="showVoucherModal = false">TRỞ LẠI</button>
+                <button class="btn ok" @click="showVoucherModal = false">OK</button>
+            </div>
+        </div>
+    </div>
+
 </template>
 
 <script setup>
@@ -202,63 +279,180 @@ const serviceId = ref(null); // This will hold the service_id once available
 const shipFee = ref(0);
 const giamGiaDaApDung = ref(null);
 const tienGiam = ref(0);
+const showVoucherModal = ref(false);
 
+const voucherDeXuat = ref([]);
+const selectedVoucher = ref(null);
+const danhSachPhieu = ref([]);
+const daHienThongBaoKhongCoMa = ref(false);
+const daHienThongBaoThanhCong = ref(false);
+const tongTienTruocDo = ref(0);
+
+
+async function fetchPhieuGiamGia() {
+    try {
+        const response = await axios.get("http://localhost:8080/client/phieuGiamGias");
+        voucherDeXuat.value = response.data.filter(p =>
+            p.loaiPhieu === 'Công khai' && p.trangThai === 1
+        ).map(v => ({
+            id: v.id,
+            moTa: v.phamTramGiamGia
+                ? `Giảm ${v.phamTramGiamGia}%`
+                : `Giảm ${formatCurrency(v.soTienGiam)}`,
+            donToiThieu: formatCurrency(v.giamToiThieu || 0),
+            hsd: new Date(v.ngayKetThuc).toLocaleDateString("vi-VN"),
+            data: v,
+        }));
+        danhSachPhieu.value = response.data;
+    } catch (error) {
+        console.error("Lỗi khi lấy phiếu giảm giá:", error);
+        toast.error("Không thể tải danh sách phiếu giảm giá.");
+    }
+}
+function xoaMaGiamGia() {
+    giamGiaDaApDung.value = null;
+    tienGiam.value = 0;
+    selectedVoucher.value = null;
+    maGiamGia.value = '';
+}
+
+function apDungTuDongPhieuTotNhat(danhSachPhieu) {
+    const tong = tongTienSanPham.value;
+    if (tong === 0) {
+        xoaMaGiamGia();
+        daHienThongBaoKhongCoMa.value = false; // reset khi không có sản phẩm
+        return;
+    }
+
+    let phieuTotNhat = null;
+    let giamTotNhat = 0;
+
+    for (const p of danhSachPhieu) {
+        const donToiThieu = p.giamToiThieu || 0;
+        if (tong < donToiThieu) continue;
+
+        let tienGiam = 0;
+
+        if (p.soTienGiam) {
+            tienGiam = Math.min(p.soTienGiam, tong);
+        } else if (p.phamTramGiamGia) {
+            const giamPhanTram = Math.round((tong * p.phamTramGiamGia) / 100);
+            tienGiam = Math.min(giamPhanTram, p.giamToiDa || tong);
+        }
+
+        if (
+            tienGiam > giamTotNhat ||
+            (tienGiam === giamTotNhat && p.soTienGiam && !phieuTotNhat?.soTienGiam)
+        ) {
+            giamTotNhat = tienGiam;
+            phieuTotNhat = p;
+        }
+    }
+
+    if (phieuTotNhat) {
+        giamGiaDaApDung.value = phieuTotNhat;
+        tienGiam.value = giamTotNhat;
+        selectedVoucher.value = phieuTotNhat.id;
+        maGiamGia.value = phieuTotNhat.maPhieuGiamGia;
+
+        if (!daHienThongBaoThanhCong.value) {
+            toast.success(`Tự động áp dụng mã giảm ${phieuTotNhat.soTienGiam ? 'tiền mặt' : 'phần trăm'} tốt nhất!`);
+            daHienThongBaoThanhCong.value = true;
+        }
+
+
+        daHienThongBaoKhongCoMa.value = false; // reset thông báo lỗi
+    } else {
+        xoaMaGiamGia();
+        daHienThongBaoThanhCong.value = false;
+
+        if (!daHienThongBaoKhongCoMa.value) {
+            toast.info("Không còn mã giảm giá nào phù hợp với tổng đơn.");
+            daHienThongBaoKhongCoMa.value = true;
+        }
+    }
+
+}
+
+
+function chonVoucher(voucher) {
+    if (giamGiaDaApDung.value && giamGiaDaApDung.value.id === voucher.data.id) {
+        selectedVoucher.value = null;
+        giamGiaDaApDung.value = null;
+        tienGiam.value = 0;
+        maGiamGia.value = '';
+        toast.info("Mã giảm giá đã được hủy.");
+        return;
+    }
+
+    selectedVoucher.value = voucher.id;
+    maGiamGia.value = voucher.data.maPhieuGiamGia;
+}
+
+
+function tinhTienGiam(phieu) {
+    const tong = tongTienSanPham.value;
+
+    let tienGiam = 0;
+
+    if (phieu.soTienGiam) {
+        tienGiam = Math.min(phieu.soTienGiam, tong);
+    } else if (phieu.phamTramGiamGia) {
+        tienGiam = Math.round((tong * phieu.phamTramGiamGia) / 100);
+
+        // Áp dụng giảm tối đa nếu có
+        if (phieu.giamToiDa) {
+            tienGiam = Math.min(tienGiam, phieu.giamToiDa);
+        }
+    }
+
+    return tienGiam;
+}
 
 
 async function apDungGiamGia() {
-    if (!maGiamGia.value.trim()) {
-        toast.warning("Vui lòng nhập mã giảm giá.");
+    const voucher = voucherDeXuat.value.find(v => v.id === selectedVoucher.value);
+
+    if (!voucher && !maGiamGia.value.trim()) {
+        toast.warning("Vui lòng chọn hoặc nhập mã giảm giá.");
+        return;
+    }
+
+    // Nếu đã áp dụng phiếu này rồi => không làm gì
+    if (giamGiaDaApDung.value && voucher && giamGiaDaApDung.value.id === voucher.data.id) {
+        toast.info("Mã giảm giá này đã được áp dụng.");
         return;
     }
 
     try {
-        const response = await axios.get(`http://localhost:8080/client/tim-phieu-giam-gia?maPhieuGG=${maGiamGia.value}`);
+        let response;
+        if (voucher) {
+            response = await axios.get(`http://localhost:8080/client/TimPhieuGiamGias/${voucher.data.maPhieuGiamGia}`);
+        } else {
+            response = await axios.get(`http://localhost:8080/client/TimPhieuGiamGias/${maGiamGia.value}`);
+        }
+
         const phieu = response.data;
 
-        // Trường hợp backend trả về null hoặc không tìm thấy mã
-        if (!phieu || !phieu.id || phieu.trangThai !== 1) {
-            toast.error("❌ Mã giảm giá không tồn tại hoặc đã hết hạn sử dụng.");
-            giamGiaDaApDung.value = null;
-            tienGiam.value = 0;
+        // Check điều kiện đơn tối thiểu
+        const donToiThieu = phieu.giamToiThieu || 0;
+        if (tongTienSanPham.value < donToiThieu) {
+            toast.warning(`Đơn hàng phải tối thiểu ${formatCurrency(donToiThieu)} để dùng mã này.`);
             return;
         }
 
-        // Kiểm tra thời gian hiệu lực
-        const now = new Date();
-        const ngayBatDau = new Date(phieu.ngayBatDau);
-        const ngayKetThuc = new Date(phieu.ngayKetThuc);
-        if (now < ngayBatDau || now > ngayKetThuc) {
-            toast.error("❌ Mã giảm giá này đã hết hạn hoặc chưa bắt đầu.");
-            giamGiaDaApDung.value = null;
-            tienGiam.value = 0;
-            return;
-        }
-
-        // Kiểm tra điều kiện đơn hàng tối thiểu
-        if (phieu.giamToiThieu && tongTienSanPham.value < phieu.giamToiThieu) {
-            toast.error(`⚠️ Đơn hàng tối thiểu ${formatCurrency(phieu.giamToiThieu)} để áp dụng mã này.`);
-            return;
-        }
-
-        // Lưu mã giảm giá hợp lệ
         giamGiaDaApDung.value = phieu;
-
-        // Tính tiền được giảm
-        if (phieu.soTienGiam) {
-            tienGiam.value = phieu.soTienGiam;
-        } else if (phieu.phamTramGiamGia) {
-            const giamTheoPhanTram = (tongTienSanPham.value * phieu.phamTramGiamGia) / 100;
-            tienGiam.value = Math.min(giamTheoPhanTram, phieu.giamToiDa || giamTheoPhanTram);
-        }
-
-        toast.success("🎉 Áp dụng mã giảm giá thành công!");
-    } catch (e) {
-        console.error("Lỗi khi áp dụng mã giảm giá:", e);
-        toast.error("⚠️ Có lỗi xảy ra khi kiểm tra mã giảm giá. Vui lòng thử lại.");
+        tienGiam.value = tinhTienGiam(phieu);
+        toast.success("Áp dụng mã giảm giá thành công!");
+    } catch (err) {
+        console.error(err);
+        toast.error("Mã giảm giá không hợp lệ hoặc đã hết hạn.");
         giamGiaDaApDung.value = null;
         tienGiam.value = 0;
     }
 }
+
+
 
 const form = ref({
     email: '',
@@ -416,28 +610,23 @@ watchEffect(() => {
 });
 
 
-// Existing order fetching and currency formatting functions
 const fetchOrder = async () => {
     try {
         const res = await axios.get(`http://localhost:8080/client/laySanPhamTheoHoaDon/${route.params.hoaDonId}`);
         const products = res.data;
 
-        // Với từng sản phẩm, gọi API lấy phần trăm giảm
         const productsWithDiscount = await Promise.all(products.map(async (item) => {
             const discountRes = await axios.get(`http://localhost:8080/client/giam-gia-chi-tiet/${item.idSanPhamChiTiet}`);
             const discounts = discountRes.data.data;
 
-            // Tính trung bình phần trăm giảm (nếu có)
             let avgDiscount = 0;
             if (discounts && discounts.length > 0) {
                 const totalDiscount = discounts.reduce((acc, val) => acc + val, 0);
                 avgDiscount = totalDiscount / discounts.length;
             }
 
-            // Tính giá bán gốc (giá 1 sản phẩm = thanhTien / soLuong)
             const giaGoc = item.thanhTien / item.soLuong;
 
-            // Tính giá sau giảm
             const giaSauGiam = giaGoc * (1 - avgDiscount / 100);
 
             return {
@@ -471,13 +660,11 @@ function formatCurrency(value) {
 const tongCong = computed(() => tongTienSanPham.value + shipFee.value - tienGiam.value);
 
 async function thanhToan() {
-    // Validation: Check if required fields are filled and a shipping fee has been calculated
-    if (!form.value.email || !form.value.firstName || !form.value.phone || !selectedProvince.value || !selectedDistrict.value || !selectedWard.value) {
+    if (!form.value.phone || !selectedProvince.value || !selectedDistrict.value || !selectedWard.value) {
         alert("Vui lòng điền đầy đủ thông tin liên hệ và địa chỉ nhận hàng.");
         return;
     }
-    if (shipFee.value === 0 && selectedWard.value && selectedDistrict.value) {
-        // If fee is 0 but addresses are chosen, it might mean no service or calculation error
+    if (shipFee.value === 0) {
         alert("Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại.");
         return;
     }
@@ -497,28 +684,76 @@ async function thanhToan() {
     const data = {
         tongTienSanPham: tongTienSanPham.value,
         phiVanChuyen: shipFee.value,
+        tongCong: tongCong.value,
+        tienGiam: tienGiam.value || 0,
         hoTen: form.value.firstName,
         diaChi: combinedAddress,
         ghiChu: form.value.orderNote,
-        sdt: form.value.phone
+        sdt: form.value.phone,
+        email: form.value.email,
+        maPhieuGiamGia: maGiamGia.value || null,
+        sanPhamTrongGio: order.value.map(item => ({
+            idSanPhamChiTiet: item.idSanPhamChiTiet,
+            soLuong: item.soLuong,
+            gia: item.phanTramGiamGia > 0 ? item.giaSauGiam : item.giaBan
+        }))
     };
+    console.log("Dữ liệu thanh toán:", data);
+
 
     try {
         await axios.put(`http://localhost:8080/client/capNhatHoaDon/${route.params.hoaDonId}`, data, {
             withCredentials: true
         });
 
+        sessionStorage.removeItem("gioHang");     // Xóa local/session storage nếu có
+        localStorage.removeItem("gioHang");
+        window.dispatchEvent(new Event("cap-nhat-gio"));  // Gửi sự kiện để AppHeader reload lại giỏ hàng
         alert("Thanh toán thành công!");
         router.push({ name: "client-san-pham" });
     } catch (e) {
         console.error("Lỗi thanh toán:", e);
         alert("Thanh toán thất bại");
     }
+
 }
 
 onMounted(() => {
     fetchProvinces(); // Fetch provinces on component mount
     fetchOrder();
+    fetchPhieuGiamGia();
+    watchEffect(() => {
+        if (tongTienSanPham.value > 0 && danhSachPhieu.value.length > 0 && !giamGiaDaApDung.value) {
+            apDungTuDongPhieuTotNhat(danhSachPhieu.value);
+        }
+    });
+
+    
+    watch(order, () => {
+        const tongHienTai = tongTienSanPham.value;
+
+        if (danhSachPhieu.value.length === 0) return;
+
+        const daCoMa = !!giamGiaDaApDung.value;
+
+        const donToiThieu = giamGiaDaApDung.value?.giamToiThieu || 0;
+
+        if (tongHienTai < donToiThieu && daCoMa) {
+            xoaMaGiamGia();
+
+            if (!daHienThongBaoKhongCoMa.value) {
+                toast.info("Không còn mã giảm giá nào phù hợp với tổng đơn.");
+                daHienThongBaoKhongCoMa.value = true;
+                daHienThongBaoThanhCong.value = false; // reset
+            }
+
+        } else if (tongHienTai >= donToiThieu && !daCoMa) {
+            apDungTuDongPhieuTotNhat(danhSachPhieu.value);
+        }
+
+        tongTienTruocDo.value = tongHienTai;
+    }, { deep: true });
+
 });
 </script>
 <style scoped>
@@ -830,5 +1065,340 @@ textarea:focus {
     outline: none;
     border-color: #9f7aea;
     box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.3);
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-box {
+    background: #fff;
+    width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.modal-header {
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.modal-tabs {
+    display: flex;
+    border-bottom: 1px solid #eee;
+}
+
+.tab {
+    flex: 1;
+    padding: 10px 0;
+    text-align: center;
+    font-weight: 500;
+    background: #f5f5f5;
+    border: none;
+    cursor: pointer;
+}
+
+.tab.active {
+    background: #fff;
+    border-bottom: 2px solid #ee4d2d;
+    color: #ee4d2d;
+}
+
+.modal-body {
+    padding: 16px;
+}
+
+.voucher-input-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.voucher-input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.apply-button {
+    padding: 8px 12px;
+    background-color: #ee4d2d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.voucher-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+
+.voucher-card {
+    position: relative;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    transition: border-color 0.3s;
+    background-color: #fff;
+}
+
+.voucher-card.selected {
+    border-color: #28a745;
+    background-color: #f0fff5;
+}
+
+.voucher-applied-message {
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    font-size: 13px;
+    color: #28a745;
+    font-weight: 500;
+}
+
+.voucher-left {
+    display: flex;
+    gap: 10px;
+}
+
+.voucher-tag {
+    background: #2dc258;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+
+.voucher-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.voucher-desc {
+    font-weight: 500;
+    margin: 0;
+}
+
+.voucher-expiry {
+    font-size: 12px;
+    color: gray;
+    margin: 0;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 12px 16px;
+    border-top: 1px solid #eee;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn.cancel {
+    background: #f5f5f5;
+}
+
+.btn.ok {
+    background: #ee4d2d;
+    color: white;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.voucher-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    /* khoảng cách giữa các phần tử */
+    margin-bottom: 16px;
+}
+
+.voucher-label {
+    min-width: 90px;
+    font-weight: 500;
+}
+
+.voucher-input {
+    flex: 1;
+    /* để chiếm hết phần còn lại */
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    height: 38px;
+}
+
+.voucher-button {
+    background-color: #ee4d2d;
+    color: white;
+    border: none;
+    padding: 0 16px;
+    height: 38px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.voucher-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.voucher-card {
+    display: flex;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #f0f0f0;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    align-items: center;
+}
+
+.voucher-left {
+    width: 90px;
+    position: relative;
+    text-align: center;
+}
+
+.voucher-logo {
+    position: relative;
+}
+
+.voucher-logo img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    margin: 0 auto;
+}
+
+.voucher-badge {
+    position: absolute;
+    top: -8px;
+    left: -12px;
+    background: #fbc02d;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.voucher-brand {
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #666;
+}
+
+.voucher-content {
+    flex: 1;
+    padding-left: 16px;
+}
+
+.voucher-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.voucher-flash {
+    font-size: 11px;
+    background-color: #ffebee;
+    color: #e53935;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.voucher-discount {
+    font-size: 16px;
+    color: #333;
+    font-weight: bold;
+}
+
+.voucher-min-order {
+    font-size: 13px;
+    color: #666;
+}
+
+.voucher-note {
+    font-size: 12px;
+    color: #e53935;
+    border: 1px solid #e53935;
+    display: inline-block;
+    padding: 2px 6px;
+    margin-top: 4px;
+    border-radius: 2px;
+}
+
+.voucher-expired {
+    font-size: 12px;
+    color: #999;
+    margin-top: 6px;
+}
+
+.voucher-select {
+    margin-left: auto;
 }
 </style>

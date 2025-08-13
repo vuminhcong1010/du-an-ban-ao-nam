@@ -20,6 +20,7 @@
           <div class="invalid-feedback" v-if="usernameError">{{ usernameError }}</div>
         </div>
 
+
         <div class="form-group mb-3">
           <label for="password">Mật khẩu</label>
           <input
@@ -34,8 +35,10 @@
           <div class="invalid-feedback" v-if="passwordError">{{ passwordError }}</div>
         </div>
 
+
         <button type="submit" class="btn btn-primary w-100" style="background-color: #0a2c57; color: white;">Đăng nhập</button>
       </form>
+
 
       <div class="text-center mt-3">
         <router-link to="/quen-mat-khau">Quên mật khẩu?</router-link>
@@ -44,54 +47,106 @@
   </div>
 </template>
 
-<script setup>
-import axios from 'axios'
-import { ref } from 'vue'
-import Cookies from 'js-cookie'
-import { useToast } from "vue-toastification";
-const toast = useToast();
-const login = ref({
-  username: '',
-  password: ''
-})
 
-const usernameError = ref('')
-const passwordError = ref('')
+<script setup>
+import { ref } from 'vue';
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import { useRouter } from 'vue-router';
+
+
+const usernameError = ref('');
+const passwordError = ref('');
+const login = ref({
+  username: '', // Đảm bảo khớp với LoginDtoRequest của bạn
+  password: ''
+});
+
+
+const router = useRouter();
+
 
 const dangNhap = async () => {
-  // Reset lỗi trước khi gọi API
-  usernameError.value = ''
-  passwordError.value = ''
+  usernameError.value = '';
+  passwordError.value = '';
+
 
   try {
-    const response = await axios.post("http://localhost:8080/login-customer", login.value, {withCredentials: true})
+    // Gửi request đến đúng endpoint
+    const response = await axios.post("http://localhost:8080/login-customer", login.value);
 
-    if (response.data.data === false) {
-      // Phân tích lỗi nếu backend trả về thông báo
-      const msg = response.data.message || 'Lỗi đăng nhập'
 
-      // Nếu cần bạn có thể dùng điều kiện như:
+    // --- Bắt đầu sửa đổi logic xử lý phản hồi ---
+    // Dựa trên JSON mẫu bạn cung cấp, khi thành công, `response.data` sẽ chứa `data: { id: ..., ... }`
+    // và `message: null`. Khi thất bại, có thể `response.data.data` là null/false
+    // và `response.data.message` sẽ có giá trị.
+
+
+    if (response.data && response.data.data && response.data.data.id) {
+      // Trường hợp đăng nhập thành công: `response.data.data` có ID
+      const userData = response.data.data;
+      console.log('Đăng nhập thành công:', userData);
+
+
+      // LƯU Ý: VÌ BACKEND HIỆN TẠI KHÔNG TRẢ VỀ TOKEN TRONG PHẢN HỒI NÀY,
+      // BẠN SẼ KHÔNG CÓ `loginData.token`.
+      // Bạn cần sửa backend để trả về token như đã hướng dẫn trước đó.
+      // Tạm thời, chúng ta vẫn sẽ chuyển hướng.
+
+
+      // Lưu thông tin người dùng vào Local Storage hoặc Cookies (ví dụ: thông tin user, không phải token)
+      // Cookies.set("thongTinKhachHang", JSON.stringify(userData), { expires: 0.3 }); // Hoặc dùng localStorage
+      localStorage.setItem("loggedInUser", JSON.stringify(userData)); // Lưu thông tin người dùng
+
+
+      // Nếu backend đã được sửa để trả về JWT, thì làm như sau:
+      // if (userData.token) {
+      //   localStorage.setItem("clientAuthToken", userData.token);
+      // }
+
+
+      // Chuyển hướng đến trang chủ /coolmen
+      await router.push('/coolmen');
+
+
+    } else if (response.data && response.data.message) {
+      // Trường hợp đăng nhập thất bại và có thông báo lỗi từ backend
+      const msg = response.data.message;
+      console.error("Đăng nhập thất bại:", msg);
       if (msg.toLowerCase().includes('tài khoản')) {
-        usernameError.value = msg
+        usernameError.value = msg;
       } else if (msg.toLowerCase().includes('mật khẩu')) {
-        passwordError.value = msg
+        passwordError.value = msg;
       } else {
-        // Nếu không rõ, hiển thị lỗi cho cả 2
-        usernameError.value = msg
-        passwordError.value = msg
+        usernameError.value = msg;
+        passwordError.value = msg;
       }
-
     } else {
-      Cookies.set("thongTinKhachHang", JSON.stringify(response.data.data), { expires: 0.3 });
-      const thongTin = JSON.parse(Cookies.get("thongTinKhachHang"));
-      console.log(thongTin);
-      // window.location.href = "/coolmen"
+      // Trường hợp không rõ lỗi hoặc phản hồi không đúng định dạng
+      usernameError.value = 'Lỗi đăng nhập không xác định hoặc phản hồi không hợp lệ.';
+      passwordError.value = 'Vui lòng kiểm tra lại thông tin.';
     }
+    // --- Kết thúc sửa đổi logic xử lý phản hồi ---
+
+
   } catch (err) {
-    usernameError.value = 'Lỗi kết nối đến máy chủ!'
+    console.error("Lỗi khi gửi yêu cầu đăng nhập:", err);
+    if (err.response) {
+      // Lỗi từ phản hồi HTTP (ví dụ: status 401, 400)
+      const errorMsg = err.response.data.message || 'Thông tin đăng nhập không đúng.';
+      usernameError.value = errorMsg;
+      passwordError.value = errorMsg;
+    } else if (err.request) {
+      // Yêu cầu đã được gửi nhưng không nhận được phản hồi (lỗi mạng, server down)
+      usernameError.value = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng hoặc thử lại sau.';
+    } else {
+      // Lỗi khác
+      usernameError.value = 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.';
+    }
   }
-}
+};
 </script>
+
 
   <style scoped>
   /* Các style dùng chung cho cả Login và Register */
@@ -104,7 +159,7 @@ const dangNhap = async () => {
     font-family: 'Arial', sans-serif;
     color: #333;
   }
-  
+ 
   .auth-container {
     background: #ffffff;
     padding: 40px;
@@ -114,30 +169,30 @@ const dangNhap = async () => {
     width: 100%;
     max-width: 400px;
   }
-  
+ 
   .logo {
     margin-bottom: 30px;
   }
-  
+ 
   .logo img {
     max-width: 150px; /* Điều chỉnh kích thước logo */
     height: auto;
     display: block; /* Để căn giữa dễ hơn */
     margin: 0 auto;
   }
-  
+ 
   h2 {
     color: #0a2c57; /* Màu chủ đạo */
     margin-bottom: 25px;
     font-size: 2em;
     font-weight: 700;
   }
-  
+ 
   .form-group {
     margin-bottom: 20px;
     text-align: left;
   }
-  
+ 
   .form-group label {
     display: block;
     margin-bottom: 8px;
@@ -145,7 +200,7 @@ const dangNhap = async () => {
     color: #555;
     font-size: 0.95em;
   }
-  
+ 
   .form-group input {
     width: 100%;
     padding: 12px 15px;
@@ -155,13 +210,13 @@ const dangNhap = async () => {
     box-sizing: border-box; /* Đảm bảo padding không làm tăng kích thước input */
     transition: border-color 0.3s ease;
   }
-  
+ 
   .form-group input:focus {
     border-color: #0a2c57;
     outline: none;
     box-shadow: 0 0 0 3px rgba(10, 44, 87, 0.1); /* Hiệu ứng focus nhẹ */
   }
-  
+ 
   .auth-button {
     width: 100%;
     padding: 15px;
@@ -175,34 +230,34 @@ const dangNhap = async () => {
     transition: background-color 0.3s ease, transform 0.2s ease;
     margin-top: 15px;
   }
-  
+ 
   .auth-button:hover {
     background-color: #071f3e; /* Màu tối hơn khi hover */
     transform: translateY(-2px); /* Hiệu ứng nhấc nhẹ */
   }
-  
+ 
   .links {
     margin-top: 25px;
     font-size: 0.9em;
     color: #777;
   }
-  
+ 
   .links a {
     color: #0a2c57; /* Màu chủ đạo */
     text-decoration: none;
     font-weight: 500;
     transition: color 0.3s ease;
   }
-  
+ 
   .links a:hover {
     text-decoration: underline;
     color: #071f3e;
   }
-  
+ 
   .links span {
     margin: 0 10px;
   }
-  
+ 
   .error-message {
     color: #d9534f; /* Màu đỏ cho lỗi */
     margin-top: 20px;
@@ -222,6 +277,7 @@ const dangNhap = async () => {
     border-radius: 5px;
   }
 
+
 .btn-primary {
   width: 100%;
   padding: 10px;
@@ -236,8 +292,10 @@ const dangNhap = async () => {
   margin-top: 15px;
 }
 
+
 .btn-primary:hover {
   background-color: #071f3e;
   transform: translateY(-2px);
 }
   </style>
+

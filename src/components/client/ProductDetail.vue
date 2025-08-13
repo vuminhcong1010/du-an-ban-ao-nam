@@ -451,12 +451,14 @@ const fetchProductDetail = async (productId) => {
         if (dgRes.ok) {
             const list = await dgRes.json();
             const arr = Array.isArray(list) ? list : (list.data || []);
-            const unique = [...new Set(arr)];
-            if (unique.length === 1) {
-                discountPercentage = unique[0];
-            } else if (unique.length > 1) {
-                const sum = unique.reduce((a, b) => a + b, 0);
-                discountPercentage = Math.round(sum / unique.length);
+            const discountList = arr
+                .map(d => Number(d))
+                .filter(p => !isNaN(p));
+
+
+            if (discountList.length > 0) {
+                const sum = discountList.reduce((a, b) => a + b, 0);
+                discountPercentage = Math.round(sum / discountList.length);
             }
         }
 

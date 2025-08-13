@@ -598,18 +598,21 @@ const fetchProducts = async () => {
                 // Fetch giảm giá
                 try {
                     const discountResponse = await fetch(`http://localhost:8080/client/giam-gia/${item.sanPham.id}`);
+
                     if (discountResponse.ok) {
                         const discountData = await discountResponse.json();
                         const discountList = Array.isArray(discountData.data) ? discountData.data : [];
-
                         if (discountList.length > 0) {
-                            const uniquePercents = [...new Set(discountList.map(d => d.phamTramGiam || d))];
-                            if (uniquePercents.length === 1) {
-                                discountPercentage = uniquePercents[0];
-                            } else {
-                                const sum = uniquePercents.reduce((a, b) => a + b, 0);
-                                discountPercentage = Math.round(sum / uniquePercents.length);
+                            const percents = discountList
+                                .map(d => Number(d)) 
+                                .filter(p => !isNaN(p));
+
+
+                            if (percents.length > 0) {
+                                const sum = percents.reduce((a, b) => a + b, 0);
+                                discountPercentage = Math.round(sum / percents.length);
                             }
+
                         }
                     }
                 } catch (err) {
@@ -651,7 +654,6 @@ const fetchProducts = async () => {
 
 
             allProducts.value = mapped;
-
             const allMinDiscountedPrices = allProducts.value.map(p => p.priceRange?.min || 0);
             const allMaxOriginalPrices = allProducts.value.map(p =>
                 (p.originalPriceRange?.max ?? p.priceRange?.max) || 0

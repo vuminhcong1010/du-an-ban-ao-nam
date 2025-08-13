@@ -136,7 +136,7 @@ export default {
 
                 const hoaDonId = res.data.hoaDonId;
 
-                this.$emit('clearCart');
+                this.$emit('close');
                 this.$router.push({ name: 'client-Oder', params: { hoaDonId } });
                 console.log("Thanh toán thành công, chuyển đến trang đơn hàng:", hoaDonId);
             } catch (err) {

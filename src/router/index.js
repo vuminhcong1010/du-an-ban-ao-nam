@@ -40,12 +40,13 @@ import PhieuGiamGiaBH from "@/components/admin/PhieuGiamGiaBH.vue";
 
 import ThongKeTongHop from "@/components/admin/ThongKeTongHop.vue";
 
-import DangNhapCustomer from "@/components/admin/DangNhapCustomer.vue";
+import DangNhapCustomer from "@/components/client/DangNhapCustomer.vue";
 import ThongTinNhanVien from "@/components/admin/ThongTinNhanVien.vue";
 import ClientSanPham from "@/components/client/ProductPage.vue";
 import Oder from "@/components/client/Order.vue";
 import ClientSanPhamDetail from "@/components/client/ProductDetail.vue";
 import ThongKeBaoCao from "@/components/admin/ThongKeBaoCao.vue";
+import LichSuDatHang from "@/components/client/OrderHistory.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -81,10 +82,33 @@ const router = createRouter({
           component: Oder,
           props: (route) => ({ hoaDonId: Number(route.params.hoaDonId) }),
         },
+         {
+          path: "tai-khoan",
+          name: "client-my-account",
+          component: () => import("@/components/client/MyAccount.vue"), // Tạo component này
+          meta: { requiresAuthClient: true },
+        },
+        {
+          path: "lich-su-dat-hang",
+          name: "client-order-history",
+          component: LichSuDatHang,
+          meta: { requiresAuthClient: true },
+        },
+        {
+          path: "order/:id",
+          name: "OrderDetail",
+          component: () => import("@/components/client/OrderDetail.vue"), // Tạo file này
+        },
+
         // Thêm các route client khác ở đây
       ],
     },
-
+     // --- CLIENT AUTHENTICATION ROUTES (không có layout) ---
+   {
+      path: "/coolmen/dang-nhap", // Đường dẫn đầy đủ, không nằm trong layout
+      name: "dang-nhap-khach-hang",
+      component: DangNhapCustomer,
+    },
     // --- ADMIN AUTHENTICATION ROUTES (không có layout) ---
     {
       path: "/dang-nhap",
@@ -358,5 +382,19 @@ router.beforeEach((to, from, next) => {
 
   next();
 });
-
+router.beforeEach((to, from, next) => {
+  if (to.meta.requiresAuthClient) {
+    const token = localStorage.getItem("clientAuthToken");
+    const user = localStorage.getItem("loggedInUser");
+    if (token || user) {
+      // User is authenticated
+      next();
+    } else {
+      // User is not authenticated, redirect to login page
+      next({ name: "client-login" });
+    }
+  } else {
+    next(); // Allow navigation
+  }
+});
 export default router;
