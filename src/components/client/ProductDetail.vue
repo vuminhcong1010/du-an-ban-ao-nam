@@ -376,17 +376,26 @@ const themVaoGioHang = async () => {
     if (!product.value) return;
 
     if (selectedColors.value.length === 0) {
-        alert('Vui lòng chọn ít nhất một màu sắc.');
+          toast.error("❌ Vui lòng chọn ít nhất một màu sắc", {
+            timeout: 4000,
+            position: "top-right"
+        });
         return;
     }
 
     if (selectedSizes.value.length === 0) {
-        alert('Vui lòng chọn ít nhất một kích cỡ.');
+         toast.error("❌ Vui lòng chọn ít nhất một kích cỡ.", {
+            timeout: 4000,
+            position: "top-right"
+        });
         return;
     }
 
     if (quantity.value <= 0) {
-        alert('Vui lòng chọn số lượng hợp lệ.');
+         toast.error("❌ Vui lòng chọn số lượng hợp lệ.", {
+            timeout: 4000,
+            position: "top-right"
+        });
         return;
     }
 
@@ -417,7 +426,6 @@ const themVaoGioHang = async () => {
         });
 
         // ✅ Sau khi thêm thành công, tải lại chi tiết sản phẩm để cập nhật tồn kho
-        await toggleSize(selectedSizeObj);
 
         // Gửi sự kiện cập nhật giỏ hàng
         window.dispatchEvent(new Event("cap-nhat-gio"));
@@ -532,7 +540,10 @@ watch(quantity, (newQuantity) => {
 watch(quantity, (val) => {
     if (val > product.value.quantity) {
         quantity.value = product.value.quantity;
-        alert("Không thể mua quá số lượng tồn kho!");
+         toast.error("❌ Không thể mua quá số lượng tồn kho!", {
+            timeout: 4000,
+            position: "top-right"
+        });
     }
 });
 

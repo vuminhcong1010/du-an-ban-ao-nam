@@ -1,6 +1,19 @@
 <template>
     <div class="order-container container my-5">
-        <div class="row">
+        <div v-if="order.length === 0" class="empty-cart-wrapper">
+    <div class="empty-cart text-center">
+        <div class="empty-icon">🛒</div>
+        <h4>Giỏ hàng của bạn đang trống.</h4>
+        <p>Vui lòng thêm một số sản phẩm vào giỏ hàng của bạn.</p>
+        <button class="btn browse-products-btn" @click="quayLaiSanPham">
+            Duyệt qua các sản phẩm của chúng tôi
+        </button>
+    </div>
+</div>
+
+
+
+        <div v-else class="row">
             <div class="col-md-7">
                 <h4>Thông tin liên lạc</h4>
                 <form @submit.prevent="thanhToan" novalidate>
@@ -84,8 +97,6 @@
                     <textarea id="orderNote" rows="3" v-model="form.orderNote"
                         placeholder="Ghi chú về đơn hàng, ví dụ ghi chú đặc biệt về việc giao hàng"></textarea>
                 </div>
-
-
             </div>
 
             <div class="col-md-5">
@@ -96,22 +107,22 @@
 
                         <div style="flex-grow: 1;">
                             <p class="mb-1 fw-semibold">{{ item.tenSanPham }}</p>
-                            <small v-if="item.phanTramGiamGia > 0" class="text-success ms-2">
-                                Tiết kiệm -{{ Math.round(item.phanTramGiamGia) }}%
-                            </small>
-                            <!-- Giá gốc và giá sau giảm nếu có giảm -->
                             <div class="small mb-1">
-                                <template v-if="item.phanTramGiamGia > 0">
-
-                                    <span class="text-decoration-line-through text-muted me-2">
-                                        {{ formatCurrency(item.giaBan) }}
-                                    </span>
-                                    <span class="text-danger fw-bold">
-                                        {{ formatCurrency(item.giaSauGiam) }}
-                                    </span>
+                                <template v-if="item.hasDiscount">
+                                    <small class="text-success ms-2" v-if="item.phanTramGiamGia > 0">
+                                        Tiết kiệm -{{ item.phanTramGiamGia }}%
+                                    </small>
+                                    <div>
+                                        <span class="text-decoration-line-through text-muted me-2">
+                                            {{ formatCurrency(item.giaTruocKhiGiam) }}
+                                        </span>
+                                        <span class="text-danger fw-bold">
+                                            {{ formatCurrency(item.giaSauKhiGiam) }}
+                                        </span>
+                                    </div>
                                 </template>
                                 <template v-else>
-                                    <span>{{ formatCurrency(item.giaBan) }}</span>
+                                    <span class="fw-bold">{{ formatCurrency(item.giaTruocKhiGiam) }}</span>
                                 </template>
                             </div>
 
@@ -120,15 +131,19 @@
                             </div>
 
                             <div class="fw-bold text-dark small">
-                                Tổng: {{ formatCurrency((item.phanTramGiamGia > 0 ? item.giaSauGiam : item.giaBan) *
+                                Tổng:
+                                {{ formatCurrency((item.hasDiscount ? item.giaSauKhiGiam : item.giaTruocKhiGiam) *
                                     item.soLuong) }}
                             </div>
+
                         </div>
 
                         <div class="ms-3 d-flex align-items-center">
-                            <input type="number" v-model="item.soLuong" min="1"
-                                class="form-control form-control-sm text-center" style="width: 60px;" />
+                            <input type="number" v-model="item.soLuong" @change="kiemTraSoLuong(item)"
+                                class="form-control form-control-sm " style="width: 80px;" />
+
                         </div>
+
                     </div>
 
                     <div style="display: flex; align-items: center; margin-bottom: 8px;">
@@ -142,18 +157,14 @@
                             mã</a>
                     </div>
 
-
-
                     <div class="d-flex justify-content-between">
                         <span>Tổng Tiền</span>
                         <span>{{ formatCurrency(tongTienSanPham) }}</span>
                     </div>
-                    <!-- Trước phần Tổng tiền -->
                     <div class="d-flex justify-content-between mt-2">
                         <span>Phí vận chuyển</span>
                         <span>{{ formatCurrency(shipFee) }}</span>
                     </div>
-                    <!-- Mã giảm giá nếu có -->
                     <div v-if="giamGiaDaApDung" class="d-flex justify-content-between text-success">
                         <span>Giảm giá
                             <template v-if="giamGiaDaApDung.soTienGiam">
@@ -178,17 +189,13 @@
             </div>
         </div>
     </div>
-    <!-- Modal chọn mã giảm giá -->
     <div v-if="showVoucherModal" class="modal-backdrop">
         <div class="modal-box">
-            <!-- Header -->
             <div class="modal-header">
                 <h5 class="modal-title">Chọn Coolmen Voucher</h5>
                 <button @click="showVoucherModal = false" class="close-button">&times;</button>
             </div>
-            <!-- Body -->
             <div class="modal-body">
-                <!-- Nhập mã -->
                 <div class="voucher-row">
                     <label class="voucher-label">Mã Voucher</label>
                     <input type="text" v-model="maGiamGia" class="voucher-input" placeholder="Mã Coolmen Voucher" />
@@ -196,20 +203,16 @@
                 </div>
 
 
-                <!-- Gợi ý mã -->
                 <div class="voucher-list">
                     <div class="voucher-card" :class="{ selected: giamGiaDaApDung?.id === voucher.data.id }"
                         v-for="voucher in voucherDeXuat" :key="voucher.id">
-                        <!-- Left -->
                         <div class="voucher-left">
-                            <!-- Logo & tag -->
                             <div class="voucher-logo">
                                 <img src="/src/assets/logo.png" alt="Coolmen Logo" />
                                 <div class="voucher-brand">COOLMEN</div>
                             </div>
                         </div>
 
-                        <!-- Middle content -->
                         <div class="voucher-content">
                             <div class="voucher-top">
                                 <span class="voucher-flash">⚡ Số lượng có hạn</span>
@@ -226,13 +229,11 @@
                             </div>
                         </div>
 
-                        <!-- Radio -->
                         <div class="voucher-select">
                             <input type="radio" :value="voucher.id" v-model="selectedVoucher"
                                 @click="chonVoucher(voucher)" />
                         </div>
 
-                        <!-- Hiện thông báo nếu voucher này đang được áp dụng -->
                         <div v-if="giamGiaDaApDung?.id === voucher.data.id" class="voucher-applied-message">
                             🎉 Mã giảm giá đã được áp dụng!
                         </div>
@@ -240,14 +241,12 @@
                 </div>
             </div>
 
-            <!-- Footer -->
             <div class="modal-footer">
                 <button class="btn cancel" @click="showVoucherModal = false">TRỞ LẠI</button>
                 <button class="btn ok" @click="showVoucherModal = false">OK</button>
             </div>
         </div>
     </div>
-
 </template>
 
 <script setup>
@@ -255,6 +254,7 @@ import { ref, onMounted, computed, watch, watchEffect } from 'vue';
 import axios from 'axios';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification'
+import { nextTick } from 'vue';
 const toast = useToast();
 
 
@@ -287,6 +287,7 @@ const danhSachPhieu = ref([]);
 const daHienThongBaoKhongCoMa = ref(false);
 const daHienThongBaoThanhCong = ref(false);
 const tongTienTruocDo = ref(0);
+const dangTuHuyMaGiamGia = ref(false);
 
 
 async function fetchPhieuGiamGia() {
@@ -314,6 +315,32 @@ function xoaMaGiamGia() {
     tienGiam.value = 0;
     selectedVoucher.value = null;
     maGiamGia.value = '';
+}
+function kiemTraSoLuong(item) {
+    // ⚠️ Nếu người dùng nhập chuỗi hoặc để trống
+    const soLuong = Number(item.soLuong);
+
+    if (isNaN(soLuong) || item.soLuong === '' || soLuong <= 0) {
+        item.soLuong = 1;
+        nextTick(() => {
+            toast.warning(`❌ Số lượng không hợp lệ.`, { timeout: 3000 });
+        });
+        return;
+    }
+
+    if (soLuong > item.soLuongTon) {
+        item.soLuong = item.soLuongTon;
+        nextTick(() => {
+            toast.warning(`⚠️ Chỉ còn ${item.soLuongTon} sản phẩm trong kho.`, { timeout: 3000 });
+        });
+    }
+
+    if (soLuong < 1) {
+        item.soLuong = 1;
+        nextTick(() => {
+            toast.warning(`❌ Số lượng phải tối thiểu là 1.`, { timeout: 3000 });
+        });
+    }
 }
 
 function apDungTuDongPhieuTotNhat(danhSachPhieu) {
@@ -367,7 +394,6 @@ function apDungTuDongPhieuTotNhat(danhSachPhieu) {
         daHienThongBaoThanhCong.value = false;
 
         if (!daHienThongBaoKhongCoMa.value) {
-            toast.info("Không còn mã giảm giá nào phù hợp với tổng đơn.");
             daHienThongBaoKhongCoMa.value = true;
         }
     }
@@ -376,19 +402,26 @@ function apDungTuDongPhieuTotNhat(danhSachPhieu) {
 
 
 function chonVoucher(voucher) {
-    if (giamGiaDaApDung.value && giamGiaDaApDung.value.id === voucher.data.id) {
-        selectedVoucher.value = null;
-        giamGiaDaApDung.value = null;
-        tienGiam.value = 0;
-        maGiamGia.value = '';
+    if (selectedVoucher.value === voucher.id) {
+        // Người dùng click lại mã đang áp dụng => hủy
+        xoaMaGiamGia();
         toast.info("Mã giảm giá đã được hủy.");
-        return;
+        daHienThongBaoThanhCong.value = false;
+        daHienThongBaoKhongCoMa.value = false;
+
+        // Đánh dấu là hủy bằng tay => ngăn auto-apply
+        dangTuHuyMaGiamGia.value = true;
+
+        nextTick(() => {
+            dangTuHuyMaGiamGia.value = false;
+        });
+
+    } else {
+        selectedVoucher.value = voucher.id;
+        maGiamGia.value = voucher.data.maPhieuGiamGia;
+        apDungGiamGia();
     }
-
-    selectedVoucher.value = voucher.id;
-    maGiamGia.value = voucher.data.maPhieuGiamGia;
 }
-
 
 function tinhTienGiam(phieu) {
     const tong = tongTienSanPham.value;
@@ -600,20 +633,23 @@ watch(selectedDistrict, (newDistrictId) => {
 // WatchEffect for Shipping Fee Calculation: Triggers when ALL dependencies are ready
 // This is the most crucial part to ensure the fee is calculated
 watchEffect(() => {
-    // Only calculate if serviceId, selectedDistrict, and selectedWard are all set
     if (serviceId.value !== null && selectedDistrict.value !== '' && selectedWard.value !== '') {
         calculateShipFee();
     } else {
-        // Optionally reset shipFee if dependencies are not met, to prevent stale data
         shipFee.value = 0;
     }
 });
-
 
 const fetchOrder = async () => {
     try {
         const res = await axios.get(`http://localhost:8080/client/laySanPhamTheoHoaDon/${route.params.hoaDonId}`);
         const products = res.data;
+
+        // Nếu không có sản phẩm nào => clear giỏ hàng
+        if (!products || products.length === 0) {
+            order.value = [];
+            return;
+        }
 
         const productsWithDiscount = await Promise.all(products.map(async (item) => {
             const discountRes = await axios.get(`http://localhost:8080/client/giam-gia-chi-tiet/${item.idSanPhamChiTiet}`);
@@ -625,31 +661,27 @@ const fetchOrder = async () => {
                 avgDiscount = totalDiscount / discounts.length;
             }
 
-            const giaGoc = item.thanhTien / item.soLuong;
-
-            const giaSauGiam = giaGoc * (1 - avgDiscount / 100);
-
             return {
                 ...item,
-                giaBan: giaGoc,
-                phanTramGiamGia: avgDiscount,
-                giaSauGiam,
+                phanTramGiamGia: Math.round(avgDiscount),
+                hasDiscount: item.giaTruocKhiGiam !== item.giaSauKhiGiam
             };
         }));
 
         order.value = productsWithDiscount;
     } catch (error) {
         console.error('Lỗi lấy đơn hàng hoặc giảm giá:', error);
+        order.value = []; // fallback nếu lỗi
     }
 };
+
 const tongTienSanPham = computed(() => {
     return order.value.reduce((total, item) => {
-        if (item.phanTramGiamGia > 0) {
-            return total + item.giaSauGiam * item.soLuong;
-        }
-        return total + item.giaBan * item.soLuong;
+        const gia = item.hasDiscount ? item.giaSauKhiGiam : item.giaTruocKhiGiam;
+        return total + gia * item.soLuong;
     }, 0);
 });
+
 
 
 function formatCurrency(value) {
@@ -661,11 +693,17 @@ const tongCong = computed(() => tongTienSanPham.value + shipFee.value - tienGiam
 
 async function thanhToan() {
     if (!form.value.phone || !selectedProvince.value || !selectedDistrict.value || !selectedWard.value) {
-        alert("Vui lòng điền đầy đủ thông tin liên hệ và địa chỉ nhận hàng.");
+        toast.warning("Vui lòng điền đầy đủ thông tin liên hệ và địa chỉ nhận hàng.", {
+            timeout: 4000,
+            position: "top-right"
+        });
         return;
     }
     if (shipFee.value === 0) {
-        alert("Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại.");
+        toast.error("❌ Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại.", {
+            timeout: 4000,
+            position: "top-right"
+        });
         return;
     }
 
@@ -695,8 +733,9 @@ async function thanhToan() {
         sanPhamTrongGio: order.value.map(item => ({
             idSanPhamChiTiet: item.idSanPhamChiTiet,
             soLuong: item.soLuong,
-            gia: item.phanTramGiamGia > 0 ? item.giaSauGiam : item.giaBan
+            gia: item.phanTramGiamGia > 0 ? item.giaSauKhiGiam : item.giaTruocKhiGiam
         }))
+
     };
     console.log("Dữ liệu thanh toán:", data);
 
@@ -709,7 +748,10 @@ async function thanhToan() {
         sessionStorage.removeItem("gioHang");     // Xóa local/session storage nếu có
         localStorage.removeItem("gioHang");
         window.dispatchEvent(new Event("cap-nhat-gio"));  // Gửi sự kiện để AppHeader reload lại giỏ hàng
-        alert("Thanh toán thành công!");
+        toast.success("✅ Thanh toán thành công!", {
+            timeout: 4000,
+            position: "top-right"
+        });
         router.push({ name: "client-san-pham" });
     } catch (e) {
         console.error("Lỗi thanh toán:", e);
@@ -721,14 +763,27 @@ async function thanhToan() {
 onMounted(() => {
     fetchProvinces(); // Fetch provinces on component mount
     fetchOrder();
+    window.addEventListener("cap-nhat-gio", fetchOrder);
     fetchPhieuGiamGia();
     watchEffect(() => {
-        if (tongTienSanPham.value > 0 && danhSachPhieu.value.length > 0 && !giamGiaDaApDung.value) {
+        if (
+            tongTienSanPham.value > 0 &&
+            danhSachPhieu.value.length > 0 &&
+            !giamGiaDaApDung.value &&
+            !dangTuHuyMaGiamGia.value // thêm điều kiện này
+        ) {
             apDungTuDongPhieuTotNhat(danhSachPhieu.value);
         }
     });
+    watch(order, (newOrder, oldOrder) => {
+        if (!oldOrder.length) return; // tránh lỗi lúc khởi tạo
+        newOrder.forEach((item, idx) => {
+            if (item.soLuong !== oldOrder[idx]?.soLuong) {
+                nextTick(() => kiemTraSoLuong(item));
+            }
+        });
+    }, { deep: true });
 
-    
     watch(order, () => {
         const tongHienTai = tongTienSanPham.value;
 
@@ -742,19 +797,22 @@ onMounted(() => {
             xoaMaGiamGia();
 
             if (!daHienThongBaoKhongCoMa.value) {
-                toast.info("Không còn mã giảm giá nào phù hợp với tổng đơn.");
                 daHienThongBaoKhongCoMa.value = true;
                 daHienThongBaoThanhCong.value = false; // reset
             }
-
-        } else if (tongHienTai >= donToiThieu && !daCoMa) {
+        } else if (tongHienTai >= donToiThieu && !daCoMa && !dangTuHuyMaGiamGia.value) {
             apDungTuDongPhieuTotNhat(danhSachPhieu.value);
         }
+
 
         tongTienTruocDo.value = tongHienTai;
     }, { deep: true });
 
 });
+function quayLaiSanPham() {
+    router.push({ name: "client-san-pham" });
+}
+
 </script>
 <style scoped>
 .order-container {
@@ -767,10 +825,8 @@ onMounted(() => {
     display: flex;
     justify-content: space-between;
     gap: 3rem;
-    /* Tăng khoảng cách giữa 2 cột */
     align-items: flex-start;
     max-width: 1200px;
-    /* Giới hạn chiều rộng tổng thể */
     margin-left: auto;
     margin-right: auto;
 }
@@ -1401,4 +1457,50 @@ textarea:focus {
 .voucher-select {
     margin-left: auto;
 }
+.empty-cart {
+    text-align: center;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-left: 370px;
+    margin-top: 70px;
+}
+
+.empty-cart img {
+    width: 120px;
+    margin-bottom: 20px;
+}
+
+.empty-cart h4 {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.empty-cart p {
+    margin-bottom: 20px;
+    color: #777;
+}
+.empty-cart .empty-icon {
+    font-size: 120px;
+    color: #ccc;
+    margin-bottom: 10px;
+}
+.browse-products-btn {
+    background-color: #6f42c1;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.browse-products-btn:hover {
+    background-color: #5a32a3;
+    color: white;
+}
+
 </style>

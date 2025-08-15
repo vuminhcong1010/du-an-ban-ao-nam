@@ -84,6 +84,7 @@ export default {
       showUserDropdown: false,
     }
   },
+  
   computed: {
     isLoggedIn() {
       const token = localStorage.getItem('clientAuthToken')
@@ -155,7 +156,7 @@ export default {
       localStorage.removeItem('loggedInUser')
       Cookies.remove('thongTinKhachHang')
       this.showUserDropdown = false
-      window.location.href = '/coolmen/dang-nhap' // Redirect sau logout
+      window.location.href = '/coolmen/dang-nhap-khach-hang' 
     }
   }
 }
@@ -444,5 +445,8 @@ export default {
   background-color: #f0f0f0;
   color: #007bff;
 }
-
+.user-icon .user-dropdown a { /* Thêm .user-icon vào selector */
+  font-size: 14px; /* Hoặc 0.9em */
+  padding: 8px 15px; /* Điều chỉnh lại padding nếu cần để phù hợp với font nhỏ hơn */
+}
 </style>

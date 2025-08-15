@@ -253,6 +253,8 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import '@vueform/slider/themes/default.css'
 import Slider from '@vueform/slider'
 import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
+const toast = useToast();
 
 const router = useRouter()
 const allProducts = ref([]);

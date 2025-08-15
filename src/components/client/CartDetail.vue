@@ -4,83 +4,106 @@
             <div class="cart-header">
                 <button class="close-btn" @click.stop="$emit('close')">×</button>
                 <h3>Giỏ hàng ({{ tongSoLuong }})</h3>
-                <button class="trash-btn" @click="xoaToanBoGioHang()">
+
+                <!-- Nút xóa toàn bộ giỏ hàng chỉ hiện khi có sản phẩm -->
+                <button v-if="danhSachGio.length > 0" class="trash-btn" @click="xoaToanBoGioHang()">
                     🗑️
                 </button>
             </div>
 
             <div class="cart-items">
-                <div class="cart-item" v-for="sp in danhSachGio" :key="sp.idSanPhamChiTiet">
-                    <img :src="sp.anhSanPham || '/placeholder.png'" alt="Sản phẩm" class="item-img" />
-                    <div class="item-info">
+                <!-- Khi có sản phẩm -->
+                <div v-if="danhSachGio.length > 0">
+                    <div class="cart-item" v-for="sp in danhSachGio" :key="sp.idSanPhamChiTiet">
+                        <img :src="sp.anhSanPham || '/placeholder.png'" alt="Sản phẩm" class="item-img" />
                         <div class="item-info">
                             <p class="item-name">{{ sp.tenSanPham }}</p>
 
-                            <!-- Hiển thị Tiết kiệm nếu có giảm giá -->
                             <p v-if="sp.phanTramGiamGia && sp.phanTramGiamGia > 0" class="discount-info">
                                 Tiết kiệm {{ sp.phanTramGiamGia }}%
                             </p>
 
-                            <!-- Giá cũ gạch ngang nếu có -->
                             <p class="item-price">
-                                <!-- Nếu có giảm giá, hiển thị cả giá cũ và mới -->
                                 <template v-if="sp.phanTramGiamGia && sp.phanTramGiamGia > 0">
-                                    <span class="old-price">{{ ((sp.gia / (1 - sp.phanTramGiamGia /
-                                        100))).toLocaleString() }} đ</span>
-                                    <span class="new-price">{{ sp.gia.toLocaleString() }} đ</span>
+                                    <span class="old-price">{{
+                                        (
+                                            sp.gia /
+                                            (1 - sp.phanTramGiamGia / 100)
+                                        ).toLocaleString()
+                                    }}
+                                        đ</span>
+                                    <span class="new-price">{{
+                                        sp.gia.toLocaleString()
+                                    }}
+                                        đ</span>
                                 </template>
-
-                                <!-- Nếu KHÔNG giảm giá, chỉ hiển thị giá hiện tại -->
                                 <template v-else>
-                                    <span class="new-price">{{ sp.gia.toLocaleString() }} đ</span>
+                                    <span class="new-price">{{
+                                        sp.gia.toLocaleString()
+                                    }}
+                                        đ</span>
                                 </template>
                             </p>
-                            <p class="color-size-group"
-                                v-if="(sp.mauSacList && sp.mauSacList.length) || (sp.kichCoList && sp.kichCoList.length)">
-                                <!-- Màu sắc -->
+
+                            <p class="color-size-group" v-if="
+                                (sp.mauSacList && sp.mauSacList.length) ||
+                                (sp.kichCoList && sp.kichCoList.length)
+                            ">
                                 <span v-for="mau in sp.mauSacList" :key="mau" class="color-circle"
                                     :style="{ backgroundColor: mapColorToCssClass(mau) }" :title="mau"></span>
 
-                                <!-- Kích cỡ -->
-                                <span v-for="size in sp.kichCoList" :key="size" class="badge size-badge">{{ size
-                                }}</span>
+                                <span v-for="size in sp.kichCoList" :key="size" class="badge size-badge">
+                                    {{ size }}
+                                </span>
                             </p>
 
-
-                            <!-- Tổng tiền của món này -->
-                            <p class="item-total">Tổng: {{ (sp.gia * sp.soLuong).toLocaleString() }} đ</p>
+                            <p class="item-total">
+                                Tổng: {{ (sp.gia * sp.soLuong).toLocaleString() }} đ
+                            </p>
                         </div>
 
-                    </div>
-                    <!-- Số lượng: input thay vì nút tăng/giảm -->
-                    <input class="item-quantity" type="number" v-model.number="sp.soLuong" min="1"
-                        @focus="sp.soLuongCu = sp.soLuong" />
+                        <input class="item-quantity" type="number" v-model="sp.soLuong" @change="capNhatSoLuong(sp)" />
 
-                    <!-- Nút xóa sản phẩm -->
-                    <button class="remove-btn" @click="xoaSanPham(sp)">🗑️</button>
+                        <button class="remove-btn" @click="xoaSanPham(sp)">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Khi giỏ hàng trống -->
+                <div v-else class="empty-cart">
+                    <div class="empty-icon">🛒</div>
+                    <h4>Giỏ hàng của bạn đang trống.</h4>
+                    <p>Vui lòng thêm một số sản phẩm vào giỏ hàng của bạn.</p>
+                    <button class="btn btn-primary browse-products-btn" @click="goToProducts">
+                        Duyệt qua các sản phẩm của chúng tôi
+                    </button>
+
                 </div>
             </div>
 
-            <!-- Thanh toán cố định dưới cùng -->
-            <div class="cart-footer">
+            <!-- Thanh toán chỉ hiển thị khi có sản phẩm -->
+            <div v-if="danhSachGio.length > 0" class="cart-footer">
                 <button class="checkout-btn" @click.self="thanhToan">
-                    Thanh toán <span class="total-price">{{ tongTien.toLocaleString() }} đ</span>
+                    Thanh toán
+                    <span class="total-price">{{ tongTien.toLocaleString() }} đ</span>
                 </button>
             </div>
-
         </div>
     </div>
 </template>
 
 <script>
 import axios from 'axios';
+import { useToast } from 'vue-toastification'
+const toast = useToast();
 
 export default {
     props: {
         danhSachGio: {
             type: Array,
             required: true
-        }
+        },
     },
     computed: {
         tongSoLuong() {
@@ -91,7 +114,13 @@ export default {
         }
     },
     methods: {
+        goToProducts() {
+            this.$emit('close'); // Đóng popup giỏ hàng
+            this.$router.push({ name: 'client-san-pham' }); // Chuyển sang trang sản phẩm
+        },
+
         async xoaToanBoGioHang() {
+            if (!confirm(`Bạn có chắc muốn xóa giỏ hàng?`)) return;
             try {
                 await axios.delete("http://localhost:8080/client/XoaGioHang", {
                     withCredentials: true
@@ -100,10 +129,16 @@ export default {
                 this.$emit('update:danhSachGio', []);
                 this.$emit('capNhatGio');
                 window.dispatchEvent(new Event("cap-nhat-gio"));
-                alert("🗑️ Đã xóa toàn bộ giỏ hàng và cập nhật tồn kho!");
+                toast.success("✅ Đã xóa toàn bộ giỏ hàng !", {
+                    timeout: 3000,
+                    position: "top-right"
+                });
             } catch (err) {
                 console.error("Lỗi khi xóa giỏ hàng:", err);
-                alert("Xóa giỏ hàng thất bại, vui lòng thử lại.");
+                toast.error("❌ Xóa giỏ hàng thất bại, vui lòng thử lại.", {
+                    timeout: 3000,
+                    position: "top-right"
+                });
             }
         },
         async xoaSanPham(sp) {
@@ -121,29 +156,99 @@ export default {
                 this.$emit('capNhatGio');
                 window.dispatchEvent(new Event("cap-nhat-gio"));
 
-                alert(`🗑️ Đã xóa sản phẩm "${sp.tenSanPham}" khỏi giỏ hàng!`);
+                toast.success(`✅ Đã xóa sản phẩm "${sp.tenSanPham}" khỏi giỏ hàng!`, {
+                    timeout: 3000,
+                    position: "top-right"
+                });
             } catch (err) {
                 console.error("Lỗi khi xóa sản phẩm:", err);
-                alert("Xóa sản phẩm thất bại, vui lòng thử lại.");
+                toast.error("❌ Xóa sản phẩm thất bại, vui lòng thử lại.", {
+                    timeout: 3000,
+                    position: "top-right"
+                });
             }
-        }
-        ,
-        async thanhToan() {
+        },
+        async capNhatSoLuong(sp) {
             try {
-                const res = await axios.post("http://localhost:8080/client/clientTaoHoaDonChiTiet", null, {
+                this.dangCapNhat = true;
+
+                // Ép kiểu về số
+                const soLuong = parseInt(sp.soLuong);
+
+                // ✅ Nếu không phải số hợp lệ
+                if (isNaN(soLuong) || sp.soLuong === '') {
+                    if (sp.soLuong !== 1) {
+                        toast.warning(`❌ Số lượng không hợp lệ.`, { timeout: 3000 });
+                    }
+                    sp.soLuong = 1;
+                    return;
+                }
+
+                // ✅ Nếu vượt quá số lượng tồn
+                if (soLuong > sp.soLuongTon) {
+                    toast.warning(`⚠️ Chỉ còn ${sp.soLuongTon} sản phẩm trong kho.`, { timeout: 3000 });
+                    sp.soLuong = sp.soLuongTon;
+                    return;
+                }
+
+                // ✅ Nếu nhỏ hơn 1
+                if (soLuong < 1) {
+                    toast.warning(`❌ Số lượng phải tối thiểu là 1.`, { timeout: 3000 });
+                    sp.soLuong = 1;
+                    return;
+                }
+
+                // Gửi API cập nhật số lượng
+                await axios.post("http://localhost:8080/client/CapNhatSoLuong", sp, {
                     withCredentials: true
                 });
 
-                const hoaDonId = res.data.hoaDonId;
+                this.$emit('capNhatGio');
+                window.dispatchEvent(new Event("cap-nhat-gio"));
 
+            } catch (err) {
+                console.error("Lỗi cập nhật số lượng:", err);
+                alert("Lỗi khi cập nhật số lượng sản phẩm.");
+            } finally {
+                this.dangCapNhat = false;
+            }
+        }
+
+        ,
+        async thanhToan() {
+            if (this.dangCapNhat) {
+                toast.warning(" Đang cập nhật số lượng sản phẩm. Vui lòng đợi một chút...", {
+                    timeout: 4000,
+                    position: "top-right"
+                });
+                return;
+            }
+
+            try {
+                const res = await axios.post(
+                    "http://localhost:8080/client/clientTaoHoaDonChiTiet",
+                    this.danhSachGio,
+                    { withCredentials: true }
+                );
+
+                const hoaDonId = res.data.hoaDonId;
                 this.$emit('close');
-                this.$router.push({ name: 'client-Oder', params: { hoaDonId } });
-                console.log("Thanh toán thành công, chuyển đến trang đơn hàng:", hoaDonId);
+                this.$router.push({
+                    name: "client-Oder",
+                    params: { hoaDonId }
+                }).then(() => {
+                    window.location.reload();
+                });
+
             } catch (err) {
                 console.error(err);
-                alert("Thanh toán thất bại.");
+                toast.error("❌ Mua hàng  thất bại, vui lòng thử lại.", {
+                    timeout: 3000,
+                    position: "top-right"
+                });
             }
-        },
+        }
+        ,
         mapColorToCssClass(apiColor) {
             if (!apiColor) return '#CCCCCC';
             const key = apiColor.trim().toLowerCase();
@@ -165,6 +270,7 @@ export default {
     },
     data() {
         return {
+            dangCapNhat: false,
             colorMap: {
                 'đỏ': '#FF0000',
                 'đỏ đậm': '#8B0000',
@@ -219,6 +325,7 @@ export default {
                 'vàng chanh': '#FFF44F'
             }
         }
+
     }
 };
 
@@ -496,5 +603,43 @@ export default {
     font-weight: 600;
     font-size: 1rem;
     color: #fff;
+}
+
+.empty-cart {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.empty-cart .empty-icon {
+    font-size: 60px;
+    color: #ccc;
+    margin-bottom: 10px;
+}
+
+.empty-cart h4 {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #666;
+}
+
+.empty-cart p {
+    margin-bottom: 20px;
+    color: #999;
+}
+
+.browse-products-btn {
+    background-color: #6f42c1;
+    /* màu tím giống hình */
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.browse-products-btn:hover {
+    background-color: #5a32a3;
 }
 </style>
