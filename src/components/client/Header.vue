@@ -19,12 +19,6 @@
       </nav>
 
       <div class="header-actions">
-        <!-- Tìm kiếm -->
-        <div class="search-box">
-          <input type="text" placeholder="Tìm kiếm sản phẩm..." v-model="searchQuery">
-          <button @click="performSearch"><i class="fas fa-search"></i></button>
-        </div>
-
         <!-- User -->
         <div class="user-icon" ref="userIcon" @click="toggleUserDropdown">
           <a href="#"><i class="fas fa-user"></i></a>
@@ -41,7 +35,7 @@
                 <a href="#" @click.prevent="logout">Đăng xuất</a>
               </li>
               <li v-else>
-                <a href="/coolmen/dang-nhap">Đăng nhập</a>
+                <a href="/coolmen/dang-nhap-khach-hang">Đăng nhập</a>
               </li>
             </ul>
           </div>
@@ -92,6 +86,7 @@ export default {
       return !!token || !!user
     }
   },
+  
   mounted() {
     this.capNhatGioHang()
     window.addEventListener("cap-nhat-gio", this.capNhatGioHang)
@@ -210,23 +205,19 @@ export default {
 /* CSS cho Header (Chỉ ảnh hưởng đến component này nhờ 'scoped') */
 .main-header {
   background-color: #f8f8f8;
-  padding: 20px 0;
-  border-bottom: 1px solid #eee;
+  padding: 10px 0;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
-  width: 100%;
 }
 
 .container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  padding: 0 20px;
   box-sizing: border-box;
 }
 
@@ -257,28 +248,28 @@ export default {
   /* Khoảng cách giữa icon và chữ "CoolMen" */
   object-fit: contain;
 }
-
 .main-navigation ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
+    display: flex;
+    gap: 24px; /* khoảng cách giữa các mục */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    align-items: center;
 }
 
-.main-navigation li {
-  margin-left: 25px;
+.main-navigation ul li a {
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: #4b5563; /* gần với màu xám nhạt như trong ảnh */
+    font-family: 'Inter', sans-serif;
+    transition: color 0.3s ease;
 }
 
-.main-navigation a {
-  text-decoration: none;
-  color: #555;
-  font-weight: 600;
-  transition: color 0.3s ease;
+.main-navigation ul li a:hover {
+    color: #111827; /* màu đậm hơn khi hover */
 }
 
-.main-navigation a:hover {
-  color: #007bff;
-}
 
 .header-actions {
   display: flex;

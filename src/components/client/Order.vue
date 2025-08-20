@@ -1,15 +1,15 @@
 <template>
     <div class="order-container container my-5">
         <div v-if="order.length === 0" class="empty-cart-wrapper">
-    <div class="empty-cart text-center">
-        <div class="empty-icon">🛒</div>
-        <h4>Giỏ hàng của bạn đang trống.</h4>
-        <p>Vui lòng thêm một số sản phẩm vào giỏ hàng của bạn.</p>
-        <button class="btn browse-products-btn" @click="quayLaiSanPham">
-            Duyệt qua các sản phẩm của chúng tôi
-        </button>
-    </div>
-</div>
+            <div class="empty-cart text-center">
+                <div class="empty-icon">🛒</div>
+                <h4>Giỏ hàng của bạn đang trống.</h4>
+                <p>Vui lòng thêm một số sản phẩm vào giỏ hàng của bạn.</p>
+                <button class="btn browse-products-btn" @click="quayLaiSanPham">
+                    Duyệt qua các sản phẩm của chúng tôi
+                </button>
+            </div>
+        </div>
 
 
 
@@ -32,11 +32,19 @@
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="thonXom" class="form-label">THÔN XÓM</label>
-                        <input type="text" id="thonXom" class="form-control" v-model="form.thonXom"
+                    <div class="mb-3 position-relative d-flex align-items-center justify-content-between">
+                        <label for="thonXom" class="form-label mb-0">THÔN XÓM</label>
+                        <button class="btn btn-outline-secondary btn-icon" type="button"
+                            @click="showDiaChiModal = true">
+                            📍
+                        </button>
+                    </div>
+                    <div class="input-group position-relative">
+                        <input type="text" id="thonXom" class="form-control rounded-input" v-model="form.thonXom"
                             placeholder="Tổ dân phố 1" />
                     </div>
+
+
 
                     <div class="row">
                         <div class="col-md-12 mb-3">
@@ -85,7 +93,7 @@
                 <h5 class="mt-4">Tùy chọn thanh toán</h5>
                 <div class="radio-card-group mb-3">
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'card' }">
-                        <input type="radio" value="card" v-model="form.paymentMethod" /> 💳 Thanh Toán Qua VNPay
+                        <input type="radio" value="card" v-model="form.paymentMethod" /> 💳 VNPay
                     </label>
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'cod' }">
                         <input type="radio" value="cod" v-model="form.paymentMethod" /> 💵 COD
@@ -182,9 +190,13 @@
                         <span>{{ formatCurrency(tongCong) }}</span>
                     </div>
 
-                    <button class="btn btn-primary w-100 mt-3" @click="thanhToan">
-                        Thanh toán
+                    <button class="btn btn-primary w-100 mt-3 d-flex align-items-center justify-content-center"
+                        :disabled="isLoading" @click="thanhToan">
+                        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status"
+                            aria-hidden="true"></span>
+                        {{ isLoading ? 'Đang gửi mail...' : 'Thanh toán' }}
                     </button>
+
                 </div>
             </div>
         </div>
@@ -247,6 +259,109 @@
             </div>
         </div>
     </div>
+
+
+    <div v-if="showDiaChiModal" class="modal-custom">
+        <div class="modal-dialog-custom">
+            <div class="modal-header-custom"
+                style="display: flex; align-items: center; justify-content: space-between;">
+                <h5 style="margin: 0;">Chọn địa chỉ của khách hàng</h5>
+                <button class="btn btn-success btn-sm" @click="themDiaChi()" style="margin-left: 10px;">
+                    Thêm Địa Chỉ khách hàng
+                </button>
+                <button class="close-button" @click="showDiaChiModal = false, dongForm()"
+                    style="margin-left: 10px;">&times;</button>
+            </div>
+
+            <div v-for="diaChi in danhSachDiaChi" :key="diaChi.id" class="address-option"
+                :class="{ selected: diaChiDuocChon?.id === diaChi.id }" @click="chonDiaChiClick(diaChi)">
+                <div class="address-content">
+                    <div>
+                        <div><strong>Thôn :</strong> {{ diaChi.diaChiChiTiet }}</div>
+                        <div>{{ diaChi.xaPhuong }}, {{ diaChi.quanHuyen }}, {{ diaChi.tinhThanhPho }}</div>
+                    </div>
+                    <div v-if="diaChi.isMacDinh" class="default-address-label mt-1">MẶC ĐỊNH</div>
+                    <button v-if="!diaChi.isMacDinh" class="btn btn-outline-secondary btn-set-default"
+                        @click.stop="datLamMacDinh(diaChi)">
+                        Thiết lập mặc định
+                    </button>
+                </div>
+
+                <div class="address-action-buttons">
+
+                    <button class="btn btn-sm btn-edit" @click.stop="suaDiaChi(diaChi)" title="Sửa">
+                        <Edit />
+                    </button>
+                    <button class="btn btn-sm btn-delete" @click.stop="xoaDiaChi(diaChi)" title="Xóa">
+                        <Trash />
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer-custom">
+                <button class="btn btn-primary" :disabled="!diaChiDuocChon" @click="chonDiaChi">
+                    Chọn địa chỉ giao hàng
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Form Thêm/Sửa địa chỉ (trượt từ phải) -->
+    <div class="slide-panel" v-if="showForm" :class="{ 'slide-in': showForm, 'slide-out': isClosing }">
+        <div class="slide-header">
+              <h5>{{ isEditing ? 'Sửa địa chỉ' : 'Thêm địa chỉ mới' }}</h5>
+            <button class="close-button" @click="dongForm">×</button>
+        </div>
+
+        <div class="slide-body">
+            <div class="form-group">
+                <label>Tỉnh/Thành phố:</label>
+                <select v-model="formData.tinhThanhPho" @change="onProvinceChange" required>
+                    <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                    <option v-for="province in provinces" :key="province.ProvinceID" :value="province.ProvinceID">
+                        {{ province.ProvinceName }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Quận/Huyện:</label>
+                <select v-model="formData.quanHuyen" @change="onDistrictChange" required>
+                    <option value="">-- Chọn Quận/Huyện --</option>
+                    <option v-for="district in districts" :key="district.DistrictID" :value="district.DistrictID">
+                        {{ district.DistrictName }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Xã/Phường:</label>
+                <select v-model="formData.xaPhuong" required>
+                    <option value="">-- Chọn Xã/Phường --</option>
+                    <option v-for="ward in wards" :key="ward.WardCode" :value="ward.WardCode">
+                        {{ ward.WardName }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Địa chỉ chi tiết:</label>
+                <input type="text" v-model="formData.diaChiChiTiet" placeholder="Số nhà, tên đường..." required />
+            </div>
+
+            <div class="form-group">
+                <label><input type="checkbox" v-model="formData.isMacDinh" /> Đặt làm địa chỉ mặc định</label>
+            </div>
+        </div>
+        <div class="slide-footer">
+            <button class="btn btn-cancel" @click="dongForm">Hủy</button>
+            <button class="btn btn-save" @click="luuDiaChi">
+                {{ formData.id ? 'Cập nhật' : 'Thêm mới' }}
+            </button>
+
+        </div>
+
+
+    </div>
+
 </template>
 
 <script setup>
@@ -255,6 +370,8 @@ import axios from 'axios';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification'
 import { nextTick } from 'vue';
+import { Eye, Edit, Plus, Trash, Delete, Home, EyeOff } from 'lucide-vue-next';
+import Swal from 'sweetalert2';
 const toast = useToast();
 
 
@@ -288,14 +405,393 @@ const daHienThongBaoKhongCoMa = ref(false);
 const daHienThongBaoThanhCong = ref(false);
 const tongTienTruocDo = ref(0);
 const dangTuHuyMaGiamGia = ref(false);
+const isLoading = ref(false);
+const daTuChoiTuDongApDung = ref(false); // ✅ Cờ người dùng đã từ chối auto áp dụng
+const danhSachDiaChi = ref([]);
+const showDiaChiModal = ref(false); // ❌ Thiếu
+const diaChiDuocChon = ref(null); // Chứa địa chỉ được chọn
+const isEditing = ref(false);
+
+// Form Thêm/Sửa địa chỉ
+const showForm = ref(false); // Hiển thị form
+const isClosing = ref(false); // Trạng thái đang đóng
+
+// Dữ liệu địa chỉ đang thêm/sửa
+const formData = ref({
+    id: null,
+    tinhThanhPho: '',
+    quanHuyen: '',
+    xaPhuong: '',
+    diaChiChiTiet: '',
+    isMacDinh: false
+});
+
+function openForm(diaChi = null) {
+    if (diaChi) {
+        formData.value = { ...diaChi };
+    } else {
+        formData.value = {
+            id: null,
+            tinhThanhPho: '',
+            quanHuyen: '',
+            xaPhuong: '',
+            diaChiChiTiet: '',
+            isMacDinh: false
+        };
+    }
+    showForm.value = true;
+    isClosing.value = false;
+    fetchProvinces();
+    fetchDistricts();
+    fetchWards();
+}
+function dongForm() {
+    isClosing.value = true;
+    setTimeout(() => {
+        showForm.value = false;
+    }, 400);
+}
+
+async function luuDiaChi() {
+    const { tinhThanhPho, quanHuyen, xaPhuong, diaChiChiTiet, isMacDinh, id } = formData.value;
+
+    if (!tinhThanhPho || !quanHuyen || !xaPhuong || !diaChiChiTiet) {
+        toast.error('Vui lòng điền đầy đủ thông tin');
+        return;
+    }
+
+    const userRaw = localStorage.getItem('loggedInUser');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const khachHangId = user?.id;
+    if (!khachHangId) {
+        toast.error('Không tìm thấy thông tin khách hàng');
+        return;
+    }
+
+    // ✅ Tìm tên từ ID
+    const province = provinces.value.find(p => p.ProvinceID == tinhThanhPho);
+    const district = districts.value.find(d => d.DistrictID == quanHuyen);
+    const ward = wards.value.find(w => w.WardCode == xaPhuong);
+
+    const provinceName = province?.ProvinceName || '';
+    const districtName = district?.DistrictName || '';
+    const wardName = ward?.WardName || '';
+
+    // ✅ Kiểm tra trùng lặp
+    const diaChiDaTonTai = danhSachDiaChi.value.find(dc =>
+        dc.tinhThanhPho === provinceName &&
+        dc.quanHuyen === districtName &&
+        dc.xaPhuong === wardName &&
+        dc.diaChiChiTiet.trim().toLowerCase() === diaChiChiTiet.trim().toLowerCase() &&
+        (!id || dc.id !== id)
+    );
+
+    if (diaChiDaTonTai) {
+        toast.warning('Địa chỉ này đã được thêm');
+        return;
+    }
+
+    try {
+        const payload = {
+            tinhThanhPho: provinceName,
+            quanHuyen: districtName,
+            xaPhuong: wardName,
+            diaChiChiTiet,
+            isMacDinh: !!isMacDinh
+        };
+
+        if (id) {
+            await axios.put(`http://localhost:8080/client/sua-dia-chi/${id}`, payload);
+            toast.success('Cập nhật địa chỉ thành công');
+        } else {
+            await axios.post(`http://localhost:8080/client/them-dia-chi/${khachHangId}`, payload);
+            toast.success('Thêm địa chỉ thành công');
+        }
+
+        dongForm();
+        await layDiaChiTheoKhachHang();
+    } catch (error) {
+        console.error("Lỗi lưu địa chỉ:", error);
+        toast.error("Đã xảy ra lỗi khi lưu địa chỉ");
+    }
+}
+
+const onProvinceChange = async () => {
+    const provinceId = formData.value.tinhThanhPho;
+
+    formData.value.quanHuyen = '';
+    formData.value.xaPhuong = '';
+    districts.value = [];
+    wards.value = [];
+
+    if (!provinceId) return;
+
+    await fetchDistricts(provinceId);
+};
+const onDistrictChange = async () => {
+    const districtId = formData.value.quanHuyen;
+
+    formData.value.xaPhuong = '';
+    wards.value = [];
+
+    if (!districtId) return;
+
+    await fetchWards(districtId);
+};
+function getProvinceIdByName(name) {
+    const match = provinces.value.find(p => p.ProvinceName === name);
+    return match?.ProvinceID || '';
+}
+
+function getDistrictIdByName(name) {
+    const match = districts.value.find(d => d.DistrictName === name);
+    return match?.DistrictID || '';
+}
+
+function getWardCodeByName(name) {
+    const match = wards.value.find(w => w.WardName === name);
+    return match?.WardCode || '';
+}
+
+async function suaDiaChi(diaChi) {
+    isEditing.value = true;
+
+    try {
+        const userRaw = localStorage.getItem('loggedInUser');
+        const user = userRaw ? JSON.parse(userRaw) : null;
+        const khachHangId = user?.id;
+
+        if (!khachHangId) {
+            toast.error("Không tìm thấy thông tin khách hàng");
+            return;
+        }
+
+        const res = await axios.get(`http://localhost:8080/client/dia-chi-theo-khach-hang/${khachHangId}/dia-chi/${diaChi.id}`);
+        const diaChiCanSua = res.data;
+
+        if (!diaChiCanSua) {
+            toast.error("Không tìm thấy địa chỉ cần sửa");
+            return;
+        }
+
+        // 1. Gán tỉnh trước
+        formData.value.tinhThanhPho = getProvinceIdByName(diaChiCanSua.tinhThanhPho);
+        formData.value.id = diaChiCanSua.id;
+        formData.value.diaChiChiTiet = diaChiCanSua.diaChiChiTiet;
+        formData.value.isMacDinh = diaChiCanSua.isMacDinh;
+
+        // 2. Load huyện theo tỉnh đã gán
+        await onProvinceChange();
+
+        // 3. Sau khi districts đã load xong, gán huyện
+        formData.value.quanHuyen = getDistrictIdByName(diaChiCanSua.quanHuyen);
+
+        // 4. Load xã theo huyện đã gán
+        await onDistrictChange();
+
+        // 5. Sau khi wards đã load xong, gán xã
+        formData.value.xaPhuong = getWardCodeByName(diaChiCanSua.xaPhuong);
+
+        showForm.value = true;
+        isClosing.value = false;
+
+    } catch (error) {
+        console.error("Lỗi khi load địa chỉ để sửa:", error);
+        toast.error("Không thể tải địa chỉ để sửa");
+    }
+}
+
+
+
+function themDiaChi() {
+    isEditing.value = false;
+    openForm();
+}
+
+
+async function xoaDiaChi(diaChi) {
+    const result = await Swal.fire({
+        icon: 'warning',
+        title: 'Xóa địa chỉ',
+        html: `Địa chỉ sẽ bị xóa vĩnh viễn.<br>Bạn có chắc chắn muốn thực hiện?`,
+        showCancelButton: true,
+        confirmButtonText: 'Đồng ý',
+        cancelButtonText: 'Bỏ qua',
+        reverseButtons: true,
+        customClass: {
+            confirmButton: 'swal2-confirm btn btn-danger',
+            cancelButton: 'swal2-cancel btn btn-secondary'
+        }
+    });
+
+    if (result.isConfirmed) {
+        try {
+            await axios.delete(`http://localhost:8080/client/xoa-dia-chi/${diaChi.id}`);
+            toast.success("Xóa địa chỉ thành công");
+            await layDiaChiTheoKhachHang();
+        } catch (error) {
+            console.error("Lỗi khi xóa địa chỉ:", error);
+            toast.error("Không thể xóa địa chỉ");
+        }
+    }
+}
+
+
+
+
+const chonDiaChiClick = (diaChi) => {
+    diaChiDuocChon.value = diaChi;
+};
+const chonDiaChi = async () => {
+    if (!diaChiDuocChon.value) return;
+
+    const dc = diaChiDuocChon.value;
+    // Gán form
+    form.value.thonXom = dc.diaChiChiTiet || '';
+
+    // Gọi hàm gán địa chỉ và tính phí ship
+    await handleLayPhiVanChuyen(dc);
+    // Đóng modal
+    showDiaChiModal.value = false;
+};
+
+const handleLayPhiVanChuyen = async (diaChi) => {
+    if (!diaChi) return;
+
+    const normalizeVietnamese = (str) => {
+        if (!str) return '';
+        return str
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/^(tinh|thanh pho|quan|huyen|thi xa|xa|phuong|thi tran)\s+/i, '')
+            .toLowerCase()
+            .trim();
+    };
+
+    try {
+        // === GÁN selectedProvince ===
+        const provinceObj = provinces.value.find(p =>
+            normalizeVietnamese(diaChi.tinhThanhPho).includes(normalizeVietnamese(p.ProvinceName))
+        );
+        if (!provinceObj) {
+            console.warn("Không tìm thấy mã tỉnh.");
+            return;
+        }
+        selectedProvince.value = provinceObj.ProvinceID;
+        await fetchDistricts(provinceObj.ProvinceID);
+
+        // === GÁN selectedDistrict ===
+        const districtObj = districts.value.find(d =>
+            normalizeVietnamese(diaChi.quanHuyen).includes(normalizeVietnamese(d.DistrictName))
+        );
+        if (!districtObj) {
+            console.warn("Không tìm thấy mã huyện.");
+            return;
+        }
+        selectedDistrict.value = districtObj.DistrictID;
+        await fetchWards(districtObj.DistrictID);
+        await fetchAvailableServices(districtObj.DistrictID);
+
+        // === GÁN selectedWard ===
+        const wardObj = wards.value.find(w =>
+            normalizeVietnamese(diaChi.xaPhuong).includes(normalizeVietnamese(w.WardName))
+        );
+        if (!wardObj) {
+            console.warn("Không tìm thấy mã xã.");
+            return;
+        }
+        selectedWard.value = wardObj.WardCode;
+
+    } catch (err) {
+        console.error("Lỗi gán địa chỉ và tính phí:", err);
+    }
+};
+
+const datLamMacDinh = async (diaChi) => {
+    try {
+        const userRaw = localStorage.getItem('loggedInUser');
+        if (!userRaw) {
+            console.warn("Không tìm thấy thông tin người dùng trong localStorage");
+            return;
+        }
+
+        const user = JSON.parse(userRaw);
+        const khachHangId = user?.id;
+
+        if (!khachHangId) {
+            console.warn("Không có ID khách hàng");
+            return;
+        }
+
+        // Gọi API PUT để cập nhật địa chỉ mặc định
+        await axios.put("http://localhost:8080/client/capNhatDiaChiMacDinh", null, {
+            params: {
+                khachHangId: khachHangId,
+                diaChiId: diaChi.id
+            }
+        });
+
+        // Sau khi cập nhật thành công thì gọi lại API lấy danh sách địa chỉ
+        await layDiaChiTheoKhachHang();
+
+    } catch (error) {
+        console.error("Lỗi khi cập nhật địa chỉ mặc định:", error);
+    }
+};
+
+
+
+const layDiaChiTheoKhachHang = async () => {
+    try {
+        const userRaw = localStorage.getItem('loggedInUser');
+        if (!userRaw) {
+            console.warn("Không tìm thấy thông tin người dùng trong localStorage");
+            return;
+        }
+
+        const user = JSON.parse(userRaw);
+        const khachHangId = user?.id;
+
+        if (!khachHangId) {
+            console.warn("Không có ID khách hàng");
+            return;
+        }
+
+        const res = await axios.get("http://localhost:8080/client/timDiaChiTheoIdKhachHang", {
+            params: { khachHangId }
+        });
+
+        if (res.status === 200 && res.data.length > 0) {
+            danhSachDiaChi.value = res.data;
+            console.log("Đã lấy được địa chỉ:", danhSachDiaChi.value);
+        } else {
+            console.warn("Không có địa chỉ nào được tìm thấy.");
+        }
+    } catch (error) {
+        console.error("Lỗi khi lấy địa chỉ theo ID khách hàng:", error);
+    }
+};
 
 
 async function fetchPhieuGiamGia() {
     try {
-        const response = await axios.get("http://localhost:8080/client/phieuGiamGias");
-        voucherDeXuat.value = response.data.filter(p =>
-            p.loaiPhieu === 'Công khai' && p.trangThai === 1
-        ).map(v => ({
+        const userRaw = localStorage.getItem('loggedInUser');
+        let idKhachHang = null;
+        if (userRaw) {
+            const user = JSON.parse(userRaw);
+            idKhachHang = user?.id || null;
+        }
+
+        const response = await axios.get("http://localhost:8080/client/phieuGiamGias", {
+            params: {
+                idKhachHang: idKhachHang
+            }
+        });
+
+        const allVouchers = response.data
+            .filter(p => p.trangThai === 1); // Lọc trạng thái hợp lệ
+
+        voucherDeXuat.value = allVouchers.map(v => ({
             id: v.id,
             moTa: v.phamTramGiamGia
                 ? `Giảm ${v.phamTramGiamGia}%`
@@ -303,13 +799,23 @@ async function fetchPhieuGiamGia() {
             donToiThieu: formatCurrency(v.giamToiThieu || 0),
             hsd: new Date(v.ngayKetThuc).toLocaleDateString("vi-VN"),
             data: v,
+            ...v // giữ nguyên thông tin gốc để tiện xử lý sau
         }));
-        danhSachPhieu.value = response.data;
+
+        danhSachPhieu.value = allVouchers;
+
+        // ✅ Tự động áp dụng phiếu tốt nhất sau khi lấy xong
+        if (!dangTuHuyMaGiamGia.value && !daTuChoiTuDongApDung.value) {
+            apDungTuDongPhieuTotNhat(allVouchers);
+        }
+
     } catch (error) {
         console.error("Lỗi khi lấy phiếu giảm giá:", error);
         toast.error("Không thể tải danh sách phiếu giảm giá.");
     }
 }
+
+
 function xoaMaGiamGia() {
     giamGiaDaApDung.value = null;
     tienGiam.value = 0;
@@ -400,28 +906,33 @@ function apDungTuDongPhieuTotNhat(danhSachPhieu) {
 
 }
 
-
 function chonVoucher(voucher) {
     if (selectedVoucher.value === voucher.id) {
-        // Người dùng click lại mã đang áp dụng => hủy
+        dangTuHuyMaGiamGia.value = true; // ✅ đặt trước
+        daTuChoiTuDongApDung.value = true;
         xoaMaGiamGia();
         toast.info("Mã giảm giá đã được hủy.");
         daHienThongBaoThanhCong.value = false;
         daHienThongBaoKhongCoMa.value = false;
 
-        // Đánh dấu là hủy bằng tay => ngăn auto-apply
-        dangTuHuyMaGiamGia.value = true;
-
-        nextTick(() => {
+        // ❌ Không nên reset ngay lập tức
+        // Đợi vài giây hoặc thao tác khác rồi reset nếu cần
+        // Ví dụ sau 3 giây mới reset:
+        setTimeout(() => {
             dangTuHuyMaGiamGia.value = false;
-        });
+        }, 5000); // Hoặc để mặc định nếu không cần reset
 
     } else {
         selectedVoucher.value = voucher.id;
         maGiamGia.value = voucher.data.maPhieuGiamGia;
         apDungGiamGia();
+        daTuChoiTuDongApDung.value = false;
+        // ✅ Khi áp dụng lại thì reset cờ
+        dangTuHuyMaGiamGia.value = false;
     }
 }
+
+
 
 function tinhTienGiam(phieu) {
     const tong = tongTienSanPham.value;
@@ -492,7 +1003,7 @@ const form = ref({
     firstName: '',
     thonXom: '',
     phone: '',
-    paymentMethod: 'card',
+    paymentMethod: 'cod',
     orderNote: ''
 });
 
@@ -500,6 +1011,7 @@ const headers = {
     token: tokenGHN,
     'Content-Type': 'application/json',
 };
+
 
 // 1. Fetch Provinces on Component Mount
 const fetchProvinces = async () => {
@@ -675,6 +1187,8 @@ const fetchOrder = async () => {
     }
 };
 
+
+
 const tongTienSanPham = computed(() => {
     return order.value.reduce((total, item) => {
         const gia = item.hasDiscount ? item.giaSauKhiGiam : item.giaTruocKhiGiam;
@@ -693,76 +1207,101 @@ const tongCong = computed(() => tongTienSanPham.value + shipFee.value - tienGiam
 
 async function thanhToan() {
     if (!form.value.phone || !selectedProvince.value || !selectedDistrict.value || !selectedWard.value) {
-        toast.warning("Vui lòng điền đầy đủ thông tin liên hệ và địa chỉ nhận hàng.", {
-            timeout: 4000,
-            position: "top-right"
-        });
+        toast.warning("Vui lòng điền đầy đủ thông tin liên hệ và địa chỉ nhận hàng.");
         return;
     }
+
     if (shipFee.value === 0) {
-        toast.error("❌ Không thể tính phí vận chuyển. Vui lòng kiểm tra lại địa chỉ hoặc thử lại.", {
-            timeout: 4000,
-            position: "top-right"
-        });
+        toast.error("Không thể tính phí vận chuyển.");
         return;
     }
 
-    const provinceName = provinces.value.find(p => p.ProvinceID == selectedProvince.value)?.ProvinceName || '';
-    const districtName = districts.value.find(d => d.DistrictID == selectedDistrict.value)?.DistrictName || '';
-    const wardName = wards.value.find(w => w.WardCode == selectedWard.value)?.WardName || '';
-
-    let fullAddress = [];
-    if (form.value.thonXom) fullAddress.push(form.value.thonXom);
-    if (wardName) fullAddress.push(wardName);
-    if (districtName) fullAddress.push(districtName);
-    if (provinceName) fullAddress.push(provinceName);
-
-    const combinedAddress = fullAddress.join(', ');
-
-    const data = {
-        tongTienSanPham: tongTienSanPham.value,
-        phiVanChuyen: shipFee.value,
-        tongCong: tongCong.value,
-        tienGiam: tienGiam.value || 0,
-        hoTen: form.value.firstName,
-        diaChi: combinedAddress,
-        ghiChu: form.value.orderNote,
-        sdt: form.value.phone,
-        email: form.value.email,
-        maPhieuGiamGia: maGiamGia.value || null,
-        sanPhamTrongGio: order.value.map(item => ({
-            idSanPhamChiTiet: item.idSanPhamChiTiet,
-            soLuong: item.soLuong,
-            gia: item.phanTramGiamGia > 0 ? item.giaSauKhiGiam : item.giaTruocKhiGiam
-        }))
-
-    };
-    console.log("Dữ liệu thanh toán:", data);
-
+    isLoading.value = true;
 
     try {
+        // 👉 Khởi tạo dữ liệu trước
+        const provinceName = provinces.value.find(p => p.ProvinceID == selectedProvince.value)?.ProvinceName || '';
+        const districtName = districts.value.find(d => d.DistrictID == selectedDistrict.value)?.DistrictName || '';
+        const wardName = wards.value.find(w => w.WardCode == selectedWard.value)?.WardName || '';
+        const fullAddress = [form.value.thonXom, wardName, districtName, provinceName].filter(Boolean).join(', ');
+
+        const loggedInUser = localStorage.getItem('loggedInUser');
+        let idKhachHang = null;
+        if (loggedInUser) {
+            try {
+                const user = JSON.parse(loggedInUser);
+                idKhachHang = user?.id || null;
+            } catch (err) {
+                console.error("Lỗi khi parse loggedInUser:", err);
+            }
+        }
+
+        const data = {
+            tongTienSanPham: tongTienSanPham.value,
+            phiVanChuyen: shipFee.value,
+            tongCong: tongCong.value,
+            tienGiam: tienGiam.value || 0,
+            hoTen: form.value.firstName,
+            diaChi: fullAddress,
+            ghiChu: form.value.orderNote,
+            sdt: form.value.phone,
+            email: form.value.email,
+            idKhachHang: idKhachHang,
+            maPhieuGiamGia: maGiamGia.value || null,
+            hinhThucThanhToan: form.value.paymentMethod,
+            sanPhamTrongGio: order.value.map(item => ({
+                idSanPhamChiTiet: item.idSanPhamChiTiet,
+                soLuong: item.soLuong,
+                gia: item.phanTramGiamGia > 0 ? item.giaSauKhiGiam : item.giaTruocKhiGiam
+            }))
+        };
+
+        // 👉 Nếu chọn VNPay
+        if (form.value.paymentMethod === 'card') {
+            sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
+
+            const vnpayRequest = {
+                amount: tongCong.value.toString(),
+                hoaDonId: route.params.hoaDonId
+            };
+
+            const response = await axios.post(`http://localhost:8080/vnpay`, vnpayRequest);
+            const vnpayUrl = response.data;
+
+            window.location.href = vnpayUrl;
+            return;
+        }
+
+        // 👉 Nếu không chọn VNPay thì cập nhật hóa đơn ngay
         await axios.put(`http://localhost:8080/client/capNhatHoaDon/${route.params.hoaDonId}`, data, {
             withCredentials: true
         });
 
-        sessionStorage.removeItem("gioHang");     // Xóa local/session storage nếu có
+        sessionStorage.removeItem("gioHang");
         localStorage.removeItem("gioHang");
-        window.dispatchEvent(new Event("cap-nhat-gio"));  // Gửi sự kiện để AppHeader reload lại giỏ hàng
-        toast.success("✅ Thanh toán thành công!", {
-            timeout: 4000,
-            position: "top-right"
+        window.dispatchEvent(new Event("cap-nhat-gio"));
+
+        router.push({ name: "client-san-pham" }).then(() => {
+            toast.success("✅ Thanh toán thành công!");
         });
-        router.push({ name: "client-san-pham" });
+
     } catch (e) {
         console.error("Lỗi thanh toán:", e);
         alert("Thanh toán thất bại");
+    } finally {
+        isLoading.value = false;
     }
-
 }
 
-onMounted(() => {
-    fetchProvinces(); // Fetch provinces on component mount
-    fetchOrder();
+
+
+
+
+
+onMounted(async () => {
+    await fetchProvinces();
+    await fetchOrder();
+    await layDiaChiTheoKhachHang();
     window.addEventListener("cap-nhat-gio", fetchOrder);
     fetchPhieuGiamGia();
     watchEffect(() => {
@@ -770,11 +1309,14 @@ onMounted(() => {
             tongTienSanPham.value > 0 &&
             danhSachPhieu.value.length > 0 &&
             !giamGiaDaApDung.value &&
-            !dangTuHuyMaGiamGia.value // thêm điều kiện này
+            !dangTuHuyMaGiamGia.value &&
+            !daHienThongBaoThanhCong.value &&
+            !daTuChoiTuDongApDung.value
         ) {
             apDungTuDongPhieuTotNhat(danhSachPhieu.value);
         }
     });
+
     watch(order, (newOrder, oldOrder) => {
         if (!oldOrder.length) return; // tránh lỗi lúc khởi tạo
         newOrder.forEach((item, idx) => {
@@ -800,7 +1342,10 @@ onMounted(() => {
                 daHienThongBaoKhongCoMa.value = true;
                 daHienThongBaoThanhCong.value = false; // reset
             }
-        } else if (tongHienTai >= donToiThieu && !daCoMa && !dangTuHuyMaGiamGia.value) {
+        } else if (tongHienTai >= donToiThieu &&
+            !daCoMa &&
+            !dangTuHuyMaGiamGia.value &&
+            !daTuChoiTuDongApDung.value) {
             apDungTuDongPhieuTotNhat(danhSachPhieu.value);
         }
 
@@ -808,6 +1353,72 @@ onMounted(() => {
         tongTienTruocDo.value = tongHienTai;
     }, { deep: true });
 
+    // Lấy thông tin người dùng từ localStorage
+    const userRaw = localStorage.getItem('loggedInUser');
+    if (!userRaw) return;
+
+    const user = JSON.parse(userRaw);
+
+    // Gán thông tin form
+    form.value.email = user.email || user.tenTaiKhoan || '';
+    form.value.firstName = user.tenKhachHang || '';
+    form.value.phone = user.soDienThoai || '';
+
+    // Tìm địa chỉ mặc định
+    const diaChiMacDinh = user.diaChis?.find(dc => dc.isMacDinh === true);
+    if (!diaChiMacDinh) {
+        console.warn("Không tìm thấy địa chỉ mặc định.");
+        return;
+    }
+
+    form.value.thonXom = diaChiMacDinh.diaChiChiTiet || '';
+
+    // Tìm mã tỉnh/huyện/xã từ tên
+    function normalizeVietnamese(str) {
+        if (!str) return '';
+        return str
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "") // remove diacritics
+            .replace(/^(tinh|thanh pho|quan|huyen|thi xa|xa|phuong|thi tran)\s+/i, '') // remove prefixes
+            .toLowerCase()
+            .trim();
+    }
+
+    const provinceObj = provinces.value.find(p =>
+        normalizeVietnamese(diaChiMacDinh.tinhThanhPho).includes(normalizeVietnamese(p.ProvinceName))
+    );
+
+    if (!provinceObj) {
+        console.warn("Không tìm thấy mã tỉnh tương ứng.");
+        return;
+    }
+
+    selectedProvince.value = provinceObj.ProvinceID;
+    await fetchDistricts(provinceObj.ProvinceID);
+
+    const districtObj = districts.value.find(d =>
+        normalizeVietnamese(diaChiMacDinh.quanHuyen).includes(normalizeVietnamese(d.DistrictName))
+    );
+
+    if (!districtObj) {
+        console.warn("Không tìm thấy mã huyện tương ứng.");
+        return;
+    }
+
+    selectedDistrict.value = districtObj.DistrictID;
+    await fetchWards(districtObj.DistrictID);
+    await fetchAvailableServices(districtObj.DistrictID);
+
+    const wardObj = wards.value.find(w =>
+        normalizeVietnamese(diaChiMacDinh.xaPhuong).includes(normalizeVietnamese(w.WardName))
+    );
+
+    if (!wardObj) {
+        console.warn("Không tìm thấy mã xã/phường tương ứng.");
+        return;
+    }
+
+    selectedWard.value = wardObj.WardCode;
 });
 function quayLaiSanPham() {
     router.push({ name: "client-san-pham" });
@@ -1457,6 +2068,7 @@ textarea:focus {
 .voucher-select {
     margin-left: auto;
 }
+
 .empty-cart {
     text-align: center;
     padding: 40px 20px;
@@ -1483,11 +2095,13 @@ textarea:focus {
     margin-bottom: 20px;
     color: #777;
 }
+
 .empty-cart .empty-icon {
     font-size: 120px;
     color: #ccc;
     margin-bottom: 10px;
 }
+
 .browse-products-btn {
     background-color: #6f42c1;
     color: white;
@@ -1503,4 +2117,395 @@ textarea:focus {
     color: white;
 }
 
+
+.modal-custom {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+}
+
+.modal-dialog-custom {
+    background: white;
+    padding: 20px;
+    width: 600px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header-custom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.modal-body-custom {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.address-option {
+    position: relative;
+    /* Thêm dòng này */
+    border: 1px solid #ccc;
+    padding: 12px 16px 50px 16px;
+    /* Thêm khoảng padding dưới để đủ chỗ chứa nút */
+    margin-bottom: 10px;
+    border-radius: 8px;
+    background-color: #fff;
+    transition: border-color 0.3s;
+}
+
+.address-option:hover {
+    border-color: #007bff;
+}
+
+.address-content {
+    font-size: 14px;
+    color: #333;
+}
+
+.btn-set-default {
+    font-size: 13px;
+    padding: 4px 8px;
+    white-space: nowrap;
+    border: 1px solid #696969;
+}
+
+.default-address-label {
+    display: inline-block;
+    background-color: #d1e7dd;
+    /* nền xanh nhạt */
+    color: #0f5132;
+    /* chữ xanh đậm */
+    padding: 2px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+.modal-footer-custom {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    color: #666;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    margin: 0;
+    transition: color 0.2s ease;
+}
+
+.close-button:hover {
+    color: #000;
+}
+
+.default-address-label {
+    display: inline-block;
+    background-color: #d1e7dd;
+    color: #0f5132;
+    padding: 2px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.set-default-button {
+    border: 1px solid #ccc;
+    background: white;
+    color: #333;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.set-default-button:hover {
+    background-color: #f1f1f1;
+}
+
+.modal-footer-custom.no-gap {
+    margin-top: 8px;
+    padding-top: 0;
+}
+
+.modal-footer-custom {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    color: #666;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.close-button:hover {
+    color: #000;
+}
+
+.mb-3.position-relative.d-flex {
+    gap: 8px;
+}
+
+.btn-icon {
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 1px solid #5930a3;
+}
+
+.input-group.position-relative {
+    position: relative;
+    margin-top: 4px;
+}
+
+.rounded-input {
+    border-radius: 8px;
+    padding-right: 40px;
+    /* nếu thêm nút trong input thì dành chỗ */
+}
+
+.default-address-label {
+    display: inline-block;
+    background-color: #d1e7dd;
+    /* nền xanh nhạt */
+    color: #0f5132;
+    /* chữ xanh đậm */
+    padding: 2px 6px;
+    font-size: 12px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+
+
+.address-option.selected {
+    border: 2px solid #007bff;
+    background-color: #eaf3ff;
+}
+
+address-option {
+    position: relative;
+    /* quan trọng để chứa nút action */
+    border: 1px solid #ddd;
+    padding: 10px 10px 50px 10px;
+    /* để dành chỗ cho nút action ở dưới */
+    margin-bottom: 12px;
+    border-radius: 6px;
+}
+
+.address-content {
+    /* Nội dung địa chỉ */
+}
+
+/* Nút "Thiết lập mặc định" */
+.btn-set-default {
+    margin-top: 10px;
+}
+
+/* Khung chứa nút action nhỏ */
+.address-action-buttons {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    display: flex;
+    gap: 6px;
+    /* khoảng cách giữa các nút */
+}
+
+.address-action-buttons button {
+    font-size: 12px;
+    /* nhỏ lại */
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+/* Các nút nhỏ gọn */
+.address-action-buttons .btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.address-action-buttons .btn-add {
+    background-color: #6f42c1;
+    /* tím */
+    color: white;
+    border: none;
+}
+
+.address-action-buttons .btn-edit {
+    background-color: #ffc107;
+    /* vàng */
+    border: none;
+    color: black;
+}
+
+.address-action-buttons .btn-delete {
+    background-color: #dc3545;
+    /* đỏ */
+    border: none;
+    color: white;
+}
+
+/* Nút chọn địa chỉ giao hàng */
+.btn-select-address {
+    width: 100%;
+    padding: 12px;
+    font-weight: bold;
+    font-size: 1.1em;
+    border-radius: 6px;
+    margin-top: 12px;
+}
+
+.slide-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 420px;
+    height: 100%;
+    background-color: #fff;
+    box-shadow: -3px 0 6px rgba(0, 0, 0, 0.2);
+    transition: transform 0.4s ease;
+    z-index: 9999;
+}
+
+.slide-in {
+    transform: translateX(0%);
+}
+
+.slide-out {
+    transform: translateX(100%);
+}
+
+.slide-header {
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.slide-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    padding: 16px;
+    border-top: 1px solid #eee;
+}
+
+/* Base button */
+.btn {
+    height: 40px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+/* Cancel Button */
+.btn-cancel {
+    background-color: #6c757d;
+    color: white;
+    width: 100px;
+}
+
+.form-group select,
+.form-group input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+.form-group select:focus,
+.form-group input[type="text"]:focus {
+    border-color: #6f42c1;
+}
+
+/* Save Button */
+.btn-save {
+    background-color: #6f42c1;
+    color: white;
+    min-width: 140px;
+    padding: 0 24px;
+}
+
+.btn-cancel:hover {
+    background-color: #3a3e43;
+    /* hoặc giữ #6c757d nếu bạn không muốn đổi màu */
+    color: white;
+}
+
+.btn-save:hover {
+    background-color: #4d1aab;
+    /* hoặc giữ #6f42c1 nếu bạn không muốn đổi */
+    color: white;
+}
+
+.btn-footer {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 14px;
+    min-width: 100px;
+}
+
+.slide-body {
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.swal2-container {
+    z-index: 99999 !important;
+}
 </style>

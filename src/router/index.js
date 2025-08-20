@@ -37,6 +37,7 @@ import ClientSanPham from "@/components/client/ProductPage.vue";
 import Oder from "@/components/client/Order.vue";
 import ClientSanPhamDetail from "@/components/client/ProductDetail.vue";
 import LichSuDatHang from "@/components/client/OrderHistory.vue";
+import VnpayReturn from "@/components/client/VnpayReturn.vue"; 
 import MyAccount from "@/components/client/MyAccount.vue"; // Make sure this file exists
 import OrderDetail from "@/components/client/OrderDetail.vue"; // Make sure this file exists
 import LoginGG from "@/components/client/LoginGG.vue"; // Google Login Page
@@ -74,11 +75,17 @@ const router = createRouter({
           component: ClientSanPhamDetail,
         },
         {
+          path: "/vnpay-return",
+          name: "vnpay-return",
+          component: VnpayReturn,
+        },
+        {
           path: "client-oder/:hoaDonId",
           name: "client-Oder",
           component: Oder,
           props: (route) => ({ hoaDonId: Number(route.params.hoaDonId) }),
         },
+
         {
           path: "tai-khoan",
           name: "client-my-account",

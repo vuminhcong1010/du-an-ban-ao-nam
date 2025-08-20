@@ -5,7 +5,7 @@
                 <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
                 <li class="breadcrumb-item"><a href="/products">Các sản phẩm</a></li>
                 <li class="breadcrumb-item active" aria-current="page">{{ product ? product.name : 'Chi tiết sản phẩm'
-                    }}</li>
+                }}</li>
             </ol>
         </nav>
 
@@ -133,12 +133,15 @@
                         <input type="number" class="form-control text-center quantity-input" v-model.number="quantity"
                             min="1" />
                     </div>
-                    <button :disabled="product.quantity === 0" @click="themVaoGioHang" class="btn btn-dark">
-                        Thêm vào giỏ hàng
-                    </button>
+                    <div class="d-flex align-items-stretch gap-2 mt-3">
+                        <button class="btn btn-dark flex-grow-1" @click="themVaoGioHang">
+                            Thêm vào giỏ hàng
+                        </button>
+                        <!-- <button class="btn btn-danger flex-grow-1" @click="muaNgay">
+                            <i class="fa fa-bolt me-1"></i> Mua ngay
+                        </button> -->
+                    </div>
                 </div>
-
-
                 <p class="product-category-bottom mb-3">Thể loại: <span class="fw-bold">{{ product.category }}</span>
                 </p>
                 <div v-if="product.quantity === 0" class="alert alert-warning mt-3">
@@ -372,11 +375,92 @@ const colorMap = {
     'xanh olive': '#808000',
     'vàng chanh': '#FFF44F'
 };
+
+const muaNgay = async () => {
+    if (!product.value) return;
+
+    // Kiểm tra màu sắc
+    if (selectedColors.value.length === 0) {
+        toast.error("❌ Vui lòng chọn ít nhất một màu sắc");
+        return;
+    }
+
+    // Kiểm tra kích cỡ
+    if (selectedSizes.value.length === 0) {
+        toast.error("❌ Vui lòng chọn ít nhất một kích cỡ.");
+        return;
+    }
+
+    // Kiểm tra số lượng
+    if (quantity.value <= 0 || quantity.value > product.value.quantity) {
+        toast.error(`❌ Số lượng không hợp lệ.`);
+        return;
+    }
+
+    // Lấy dữ liệu từ lựa chọn
+    const selectedColor = selectedColors.value[0];
+    const selectedSizeObj = selectedSizes.value[0];
+    const kichCo = selectedSizeObj.soCo;
+
+    // Payload gửi lên BE
+    const payload = {
+        idSanPham: product.value.id,
+        soLuong: quantity.value,
+        mauSacList: [selectedColor],
+        kichCoList: [kichCo]
+    };
+
+    try {
+        // ✅ Bước 1: Thêm sản phẩm vào giỏ hàng
+        await axios.post("http://localhost:8080/client/ThemSanPham", payload, {
+            withCredentials: true
+        });
+
+        // ✅ Bước 2: Lấy lại danh sách giỏ hàng
+        const gioHangRes = await axios.get("http://localhost:8080/client/LayGioHang", {
+            withCredentials: true
+        });
+
+        const danhSachGio = gioHangRes.data || [];
+
+        if (danhSachGio.length === 0) {
+            toast.error("❌ Không có sản phẩm trong giỏ hàng.");
+            return;
+        }
+
+        // ✅ Bước 3: Gửi danh sách để tạo hóa đơn chi tiết
+        const res = await axios.post(
+            "http://localhost:8080/client/clientTaoHoaDonChiTiet",
+            danhSachGio,
+            { withCredentials: true }
+        );
+
+        const hoaDonId = res.data.hoaDonId;
+
+        if (!hoaDonId) {
+            toast.error("❌ Không tạo được hóa đơn chi tiết.");
+            return;
+        }
+
+        // ✅ Bước 4: Chuyển hướng tới trang hóa đơn chi tiết
+        router.push({
+            name: "client-Oder", // Trùng với name bạn định nghĩa trong router
+            params: { hoaDonId }
+        });
+
+    } catch (err) {
+        console.error("❌ Lỗi khi thực hiện mua ngay:", err);
+        toast.error("❌ Mua ngay thất bại, vui lòng thử lại.");
+    }
+};
+
+
+
 const themVaoGioHang = async () => {
     if (!product.value) return;
 
     if (selectedColors.value.length === 0) {
-          toast.error("❌ Vui lòng chọn ít nhất một màu sắc", {
+        toast.error("❌ Vui lòng chọn ít nhất một màu sắc", {
             timeout: 4000,
             position: "top-right"
         });
@@ -384,7 +468,7 @@ const themVaoGioHang = async () => {
     }
 
     if (selectedSizes.value.length === 0) {
-         toast.error("❌ Vui lòng chọn ít nhất một kích cỡ.", {
+        toast.error("❌ Vui lòng chọn ít nhất một kích cỡ.", {
             timeout: 4000,
             position: "top-right"
         });
@@ -392,7 +476,7 @@ const themVaoGioHang = async () => {
     }
 
     if (quantity.value <= 0) {
-         toast.error("❌ Vui lòng chọn số lượng hợp lệ.", {
+        toast.error("❌ Vui lòng chọn số lượng hợp lệ.", {
             timeout: 4000,
             position: "top-right"
         });
@@ -438,9 +522,6 @@ const themVaoGioHang = async () => {
         });
     }
 };
-
-
-
 
 
 const fetchProductDetail = async (productId) => {
@@ -540,7 +621,7 @@ watch(quantity, (newQuantity) => {
 watch(quantity, (val) => {
     if (val > product.value.quantity) {
         quantity.value = product.value.quantity;
-         toast.error("❌ Không thể mua quá số lượng tồn kho!", {
+        toast.error("❌ Không thể mua quá số lượng tồn kho!", {
             timeout: 4000,
             position: "top-right"
         });
@@ -868,7 +949,6 @@ function goBack() {
 
     .d-flex.justify-content-between.align-items-baseline.mb-2 {
         flex-direction: column;
-        /* Xếp chồng tên sản phẩm và giá trên mobile */
         align-items: flex-start !important;
     }
 
@@ -896,5 +976,12 @@ function goBack() {
         width: 100%;
         /* Chiếm toàn bộ chiều rộng trên mobile */
     }
+}
+
+.quantity-input {
+    width: 80px;
+    /* hoặc auto nếu bạn muốn nhỏ gọn hơn */
+    height: 100%;
+    /* đảm bảo bằng chiều cao nút */
 }
 </style>

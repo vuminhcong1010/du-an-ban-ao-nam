@@ -149,7 +149,7 @@
                             <div class="dropdown">
                                 <div class="d-flex align-items-center gap-2">
                                     <button class="btn btn-outline-secondary px-2" @click="toggleSortDirection">
-                                        <i :class="sortDirection === 'desc' ? 'bi bi-sort-down-alt' : 'bi bi-sort-up-alt'"
+                                        <i :class="sortDirection === 'asc' ? 'bi bi-sort-down-alt' : 'bi bi-sort-up-alt'"
                                             style="font-size: 1rem;"></i>
                                     </button>
                                     <div style="min-width: 170px;">
@@ -166,56 +166,59 @@
                         </div>
                     </div>
 
-                    <div class="product-grid">
-                        <div class="product-card" v-for="allProducts in paginatedProducts" :key="allProducts.id">
-                            <div class="card h-100 position-relative" @click="goToProductDetail(allProducts.id)">
-                                <img :src="allProducts.image || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png'"
-                                    class="card-img-top" :alt="allProducts.name" />
-                                <div v-if="allProducts.discount && allProducts.discount > 0" class="discount-badge">
-                                    -{{ allProducts.discount }}%
-                                </div>
-                                <div class="card-body">
-                                    <h6 class="card-title">{{ allProducts.name }}</h6>
-                                    <div class="rating-section">
-                                        <span v-for="star in 5" :key="star" class="star">
-                                            <i v-if="star <= allProducts.rating" class="bi bi-star-fill"></i>
-                                            <i v-else class="bi bi-star"></i>
-                                        </span>
-                                        <small v-if="allProducts.reviews !== undefined && allProducts.reviews > 0">({{
-                                            allProducts.reviews }})</small>
-                                        <small v-else>({{ allProducts.quantity }})</small>
+                    <div class="product-page-content">
+                        <div class="product-grid">
+                            <div class="product-card" v-for="allProducts in paginatedProducts" :key="allProducts.id">
+                                <div class="card h-100 position-relative" @click="goToProductDetail(allProducts.id)">
+                                    <img :src="allProducts.image || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png'"
+                                        class="card-img-top" :alt="allProducts.name" />
+                                    <div v-if="allProducts.discount && allProducts.discount > 0" class="discount-badge">
+                                        -{{ allProducts.discount }}%
                                     </div>
-                                    <div class="price-section">
-                                        <!-- Nếu có giảm giá -->
-                                        <template v-if="allProducts.discount > 0">
-                                            <span class="original-price">
-                                                {{ formatCurrency(allProducts.originalPriceRange.min) }}
-                                                <template
-                                                    v-if="allProducts.originalPriceRange.min !== allProducts.originalPriceRange.max">
-                                                    - {{ formatCurrency(allProducts.originalPriceRange.max) }}
-                                                </template>
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ allProducts.name }}</h6>
+                                        <div class="rating-section">
+                                            <span v-for="star in 5" :key="star" class="star">
+                                                <i v-if="star <= allProducts.rating" class="bi bi-star-fill"></i>
+                                                <i v-else class="bi bi-star"></i>
                                             </span>
-                                            <span class="current-price">
-                                                {{ formatCurrency(allProducts.priceRange.min) }}
-                                                <template
-                                                    v-if="allProducts.priceRange.min !== allProducts.priceRange.max">
-                                                    - {{ formatCurrency(allProducts.priceRange.max) }}
-                                                </template>
-                                            </span>
-                                        </template>
+                                            <small
+                                                v-if="allProducts.reviews !== undefined && allProducts.reviews > 0">({{
+                                                    allProducts.reviews }})</small>
+                                            <small v-else>({{ allProducts.quantity }})</small>
+                                        </div>
+                                        <div class="price-section">
+                                            <!-- Nếu có giảm giá -->
+                                            <template v-if="allProducts.discount > 0">
+                                                <span class="original-price">
+                                                    {{ formatCurrency(allProducts.originalPriceRange.min) }}
+                                                    <template
+                                                        v-if="allProducts.originalPriceRange.min !== allProducts.originalPriceRange.max">
+                                                        - {{ formatCurrency(allProducts.originalPriceRange.max) }}
+                                                    </template>
+                                                </span>
+                                                <span class="current-price">
+                                                    {{ formatCurrency(allProducts.priceRange.min) }}
+                                                    <template
+                                                        v-if="allProducts.priceRange.min !== allProducts.priceRange.max">
+                                                        - {{ formatCurrency(allProducts.priceRange.max) }}
+                                                    </template>
+                                                </span>
+                                            </template>
 
-                                        <!-- Nếu không có giảm giá -->
-                                        <template v-else>
-                                            <span class="current-price">
-                                                {{ formatCurrency(allProducts.priceRange.min) }}
-                                                <template
-                                                    v-if="allProducts.priceRange.min !== allProducts.priceRange.max">
-                                                    - {{ formatCurrency(allProducts.priceRange.max) }}
-                                                </template>
-                                            </span>
-                                        </template>
+                                            <!-- Nếu không có giảm giá -->
+                                            <template v-else>
+                                                <span class="current-price">
+                                                    {{ formatCurrency(allProducts.priceRange.min) }}
+                                                    <template
+                                                        v-if="allProducts.priceRange.min !== allProducts.priceRange.max">
+                                                        - {{ formatCurrency(allProducts.priceRange.max) }}
+                                                    </template>
+                                                </span>
+                                            </template>
+                                        </div>
+
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -267,7 +270,7 @@ const priceRange = ref([0, 0])
 const selectedCategories = ref([])
 const selectedSizes = ref([])
 const sortOrder = ref('latest')
-const sortDirection = ref('desc')
+const sortDirection = ref('asc')
 const selectedColors = ref([])
 const discountOnly = ref(false)
 const selectedRating = ref(0)
@@ -478,7 +481,7 @@ function toggleColor(color) {
 }
 
 function toggleSortDirection() {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+    sortDirection.value = sortDirection.value === 'desc' ? 'asc' : 'desc'
     window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -606,7 +609,7 @@ const fetchProducts = async () => {
                         const discountList = Array.isArray(discountData.data) ? discountData.data : [];
                         if (discountList.length > 0) {
                             const percents = discountList
-                                .map(d => Number(d)) 
+                                .map(d => Number(d))
                                 .filter(p => !isNaN(p));
 
 
@@ -900,12 +903,19 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     border-radius: 6px;
     font-size: 15px;
 }
+/* Bọc ngoài product-grid */
+.product-page-content {
+    max-width: 1200px; /* hoặc 1280px tùy ý */
+    margin: 0 auto; /* căn giữa */
+    padding: 0 20px; /* thêm khoảng cách lề */
+}
 
 /* Product Grid giống ảnh 2 */
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
 }
 
 /* Card sản phẩm */
@@ -914,7 +924,7 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     border-radius: 0;
     box-shadow: none;
     transition: all 0.2s ease-in-out;
-    text-align: center;
+    text-align: left;
     background-color: #F3F4F6;
 }
 
@@ -932,7 +942,6 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     font-size: 14px;
     font-weight: normal;
     color: #333;
-    margin: 10px 0;
     white-space: normal;
     overflow: hidden;
     text-overflow: ellipsis;

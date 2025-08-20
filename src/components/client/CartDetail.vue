@@ -6,7 +6,7 @@
                 <h3>Giỏ hàng ({{ tongSoLuong }})</h3>
 
                 <!-- Nút xóa toàn bộ giỏ hàng chỉ hiện khi có sản phẩm -->
-                <button v-if="danhSachGio.length > 0" class="trash-btn" @click="xoaToanBoGioHang()">
+                <button v-if="danhSachGio.length > 0" class="trash-btn" @click="xoaGioHang()">
                     🗑️
                 </button>
             </div>
@@ -96,6 +96,7 @@
 <script>
 import axios from 'axios';
 import { useToast } from 'vue-toastification'
+import Swal from 'sweetalert2'
 const toast = useToast();
 
 export default {
@@ -119,17 +120,33 @@ export default {
             this.$router.push({ name: 'client-san-pham' }); // Chuyển sang trang sản phẩm
         },
 
-        async xoaToanBoGioHang() {
-            if (!confirm(`Bạn có chắc muốn xóa giỏ hàng?`)) return;
+        async xoaGioHang() {
+            const result = await Swal.fire({
+                icon: 'warning',
+                title: 'Xóa giỏ hàng',
+                html: `Toàn bộ sản phẩm trong giỏ hàng sẽ bị xóa vĩnh viễn.<br>Bạn có chắc chắn muốn thực hiện?`,
+                showCancelButton: true,
+                confirmButtonText: 'Đồng ý',
+                cancelButtonText: 'Bỏ qua',
+                reverseButtons: true,
+                customClass: {
+                    confirmButton: 'swal2-confirm btn btn-danger',
+                    cancelButton: 'swal2-cancel btn btn-secondary'
+                }
+            });
+
+            if (!result.isConfirmed) return;
+
             try {
-                await axios.delete("http://localhost:8080/client/XoaGioHang", {
+                await axios.delete(`http://localhost:8080/client/XoaGioHang`, {
                     withCredentials: true
                 });
 
                 this.$emit('update:danhSachGio', []);
                 this.$emit('capNhatGio');
                 window.dispatchEvent(new Event("cap-nhat-gio"));
-                toast.success("✅ Đã xóa toàn bộ giỏ hàng !", {
+
+                toast.success("✅ Giỏ hàng đã được xóa!", {
                     timeout: 3000,
                     position: "top-right"
                 });
@@ -140,17 +157,30 @@ export default {
                     position: "top-right"
                 });
             }
-        },
+        }
+        ,
         async xoaSanPham(sp) {
-            if (!confirm(`Bạn có chắc muốn xóa "${sp.tenSanPham}" khỏi giỏ hàng?`)) return;
-            console.log(sp);
+            const result = await Swal.fire({
+                icon: 'warning',
+                title: 'Xóa sản phẩm',
+                html: `Sản phẩm <strong>"${sp.tenSanPham}"</strong> sẽ bị xóa khỏi giỏ hàng.<br>Bạn có chắc chắn muốn xóa?`,
+                showCancelButton: true,
+                confirmButtonText: 'Đồng ý',
+                cancelButtonText: 'Bỏ qua',
+                reverseButtons: true,
+                customClass: {
+                    confirmButton: 'swal2-confirm btn btn-primary',
+                    cancelButton: 'swal2-cancel btn btn-secondary'
+                }
+            });
+
+            if (!result.isConfirmed) return;
 
             try {
                 await axios.delete(`http://localhost:8080/client/XoaSanPham/${sp.idSanPhamChitiet}`, {
                     withCredentials: true
                 });
 
-                // Cập nhật lại giỏ hàng trên giao diện
                 const gioMoi = this.danhSachGio.filter(item => item.idSanPhamChiTiet !== sp.idSanPhamChiTiet);
                 this.$emit('update:danhSachGio', gioMoi);
                 this.$emit('capNhatGio');
@@ -167,7 +197,8 @@ export default {
                     position: "top-right"
                 });
             }
-        },
+        }
+        ,
         async capNhatSoLuong(sp) {
             try {
                 this.dangCapNhat = true;
@@ -213,7 +244,6 @@ export default {
                 this.dangCapNhat = false;
             }
         }
-
         ,
         async thanhToan() {
             if (this.dangCapNhat) {

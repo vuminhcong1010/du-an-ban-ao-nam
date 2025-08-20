@@ -67,7 +67,7 @@
           </button>
 
 
-          <a href="http://localhost:8080/oauth2/authorization/google" class="btn-google">
+          <a href="http://localhost:8080/auth/authorize/google" class="btn-google">
             <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" />
             <span>Đăng nhập bằng Google</span>
           </a>
