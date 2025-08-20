@@ -93,12 +93,16 @@
                 <h5 class="mt-4">Tùy chọn thanh toán</h5>
                 <div class="radio-card-group mb-3">
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'card' }">
-                        <input type="radio" value="card" v-model="form.paymentMethod" /> 💳 VNPay
+                        <input type="radio" value="card" v-model="form.paymentMethod" />
+                        <img src="/src/assets/vnpay-logo-vinadesign-25-12-57-55.jpg" alt="VNPay Logo" class="vnpay-logo" />VNPay
                     </label>
+
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'cod' }">
-                        <input type="radio" value="cod" v-model="form.paymentMethod" /> 💵 COD
+                        <input type="radio" value="cod" v-model="form.paymentMethod" />
+                        💵 COD
                     </label>
                 </div>
+
 
                 <div class="mb-3">
                     <label for="orderNote" class="form-label">Ghi chú đơn hàng (Tùy chọn)</label>
@@ -307,7 +311,7 @@
     <!-- Form Thêm/Sửa địa chỉ (trượt từ phải) -->
     <div class="slide-panel" v-if="showForm" :class="{ 'slide-in': showForm, 'slide-out': isClosing }">
         <div class="slide-header">
-              <h5>{{ isEditing ? 'Sửa địa chỉ' : 'Thêm địa chỉ mới' }}</h5>
+            <h5>{{ isEditing ? 'Sửa địa chỉ' : 'Thêm địa chỉ mới' }}</h5>
             <button class="close-button" @click="dongForm">×</button>
         </div>
 
@@ -1269,6 +1273,9 @@ async function thanhToan() {
             const vnpayUrl = response.data;
 
             window.location.href = vnpayUrl;
+            sessionStorage.removeItem("gioHang");
+            localStorage.removeItem("gioHang");
+            window.dispatchEvent(new Event("cap-nhat-gio"));
             return;
         }
 
@@ -2507,5 +2514,10 @@ address-option {
 
 .swal2-container {
     z-index: 99999 !important;
+}
+.vnpay-logo {
+  height: 20px;
+  margin-left: 6px;
+  vertical-align: middle;
 }
 </style>
