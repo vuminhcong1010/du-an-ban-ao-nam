@@ -41,7 +41,7 @@ import VnpayReturn from "@/components/client/VnpayReturn.vue";
 import MyAccount from "@/components/client/MyAccount.vue"; // Make sure this file exists
 import OrderDetail from "@/components/client/OrderDetail.vue"; // Make sure this file exists
 import gioHang from "@/components/client/GioHangPage.vue"; // Make sure this file exists
-import LoginGG from "@/components/client/LoginGG.vue"; // Google Login Page
+// import LoginGG from "@/components/client/LoginGG.vue"; // Google Login Page
 import XacNhanThongTinCustomer from "@/components/client/XacNhanThongTinCustomer.vue"; // Component for confirming customer info (path inconsistency, consider moving)
 
 // --- ADMIN COMPONENTS ---
@@ -113,11 +113,11 @@ const router = createRouter({
           meta: { requiresAuthClient: true }, // Order details usually require login
         },
         // Direct routes that don't need ClientLayout but are client-related
-        {
-          path: "/gg", // Google Login outside main client layout
-          name: "gg",
-          component: LoginGG,
-        },
+        // {
+        //   path: "/gg", // Google Login outside main client layout
+        //   name: "gg",
+        //   component: LoginGG,
+        // },
         {
           path: "/xntt", // Confirm Customer Info outside main client layout
           name: "xntt",

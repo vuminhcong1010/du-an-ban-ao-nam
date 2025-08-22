@@ -86,6 +86,14 @@
                         <input type="radio" value="card" v-model="form.paymentMethod" />
                         <img src="/src/assets/vnpay-logo-vinadesign-25-12-57-55.jpg" alt="VNPay Logo" class="vnpay-logo" />VNPay
                     </label>
+                    <label class="radio-card" :class="{ selected: form.paymentMethod === 'momo' }">
+                        <input type="radio" value="momo" v-model="form.paymentMethod" />
+                        <img src="/src/assets/vnpay-logo-vinadesign-25-12-57-55.jpg" alt="VNPay Logo" class="vnpay-logo" />MOMO
+                    </label>
+                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'qrcode' }">
+                        <input type="radio" value="qrcode" v-model="form.paymentMethod" />
+                        <img src="/src/assets/vnpay-logo-vinadesign-25-12-57-55.jpg" alt="VNPay Logo" class="vnpay-logo" />QR Code
+                    </label>
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'cod' }">
                         <input type="radio" value="cod" v-model="form.paymentMethod" />
                         💵 COD
@@ -1172,13 +1180,78 @@ async function thanhToan() {
 
             const vnpayRequest = {
               amount: Math.round(tongCong.value),
-                hoaDonId: route.params.hoaDonId
+              hoaDonId: route.params.hoaDonId
             };
 
             const response = await axios.post(`http://localhost:8080/vnpay`, vnpayRequest);
             const vnpayUrl = response.data;
 
             window.location.href = vnpayUrl;
+            sessionStorage.removeItem("gioHang");
+            localStorage.removeItem("gioHang");
+            window.dispatchEvent(new Event("cap-nhat-gio"));
+            return;
+        }
+        if (form.value.paymentMethod === 'momo') {
+            sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
+
+            const vnpayRequest = {
+              amount: Math.round(tongCong.value),
+                hoaDonId: route.params.hoaDonId
+            };
+
+            const response = await axios.post(`http://localhost:8080/momo`, vnpayRequest);
+            const vnpayUrl = response.data.shortLink;
+
+            window.location.href = vnpayUrl;
+            sessionStorage.removeItem("gioHang");
+            localStorage.removeItem("gioHang");
+            window.dispatchEvent(new Event("cap-nhat-gio"));
+            return;
+        }
+        if (form.value.paymentMethod === 'qrcode') {
+            sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
+            const randomNumber = Math.floor(Math.random() * 1000) + 1;
+            const cancelPage = "http://localhost:5173/vnpay-return"
+            const successPage = "https://www.google.com/success"
+            const convertData = {
+                data: "{'amount':"+Math.round(tongCong.value)+",'cancelUrl':'"+ cancelPage+"','description':'"+data.ghiChu +"','orderCode':"+ randomNumber +",'returnUrl':'"+ successPage+"'}"
+            };
+            
+            let signature = ""
+            await axios.post("http://localhost:8080/convert",convertData).then(res =>{
+                
+                signature = res.data
+                console.log(signature);
+                
+            })
+            let ttkh = ref({
+                orderCode: randomNumber,
+                amount: Math.round(tongCong.value),
+                description: data.ghiChu,
+            
+                buyerName: data.hoTen,
+                buyerPhone:  data.sdt,
+                buyerAddress:  data.diaChi,
+                cancelUrl: cancelPage,
+                returnUrl: successPage,
+                signature: signature
+            })
+
+            await axios.post("https://api-merchant.payos.vn/v2/payment-requests",ttkh.value,{
+                    headers:{
+                        "Content-Type": "application/json",
+                        "x-client-id": "0e92cf06-3fe2-4e62-b56c-691c19251a35", 
+                        "x-api-key": "2dcc721a-fa13-4ff6-80ca-7b6b89a81749"
+                    }
+                }).then(Response =>{
+                    localStorage.setItem("ttkh",JSON.stringify(ttkh.value))
+                    console.log(JSON.parse(localStorage.getItem("ttkh")));
+                    window.location.href = "http://localhost:5173/vnpay-return"
+                }).catch(()=>{
+                        window.location.href="/error"
+                    })
+            
             sessionStorage.removeItem("gioHang");
             localStorage.removeItem("gioHang");
             window.dispatchEvent(new Event("cap-nhat-gio"));
