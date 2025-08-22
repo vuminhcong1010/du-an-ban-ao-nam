@@ -1,24 +1,10 @@
 <template>
     <div class="container product-detail-page-container">
-        <nav aria-label="breadcrumb" class="mb-4">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
-                <li class="breadcrumb-item"><a href="/products">Các sản phẩm</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ product ? product.name : 'Chi tiết sản phẩm'
-                }}</li>
-            </ol>
-        </nav>
-
         <div v-if="loading" class="text-center my-5">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
             <p class="mt-2">Đang tải chi tiết sản phẩm...</p>
-        </div>
-
-        <div v-else-if="error" class="alert alert-danger text-center my-5">
-            {{ error }}
-            <button class="btn btn-primary mt-3" @click="goBack">Quay lại trang sản phẩm</button>
         </div>
 
         <div v-else-if="product" class="row product-detail-content">
@@ -137,9 +123,9 @@
                         <button class="btn btn-dark flex-grow-1" @click="themVaoGioHang">
                             Thêm vào giỏ hàng
                         </button>
-                        <!-- <button class="btn btn-danger flex-grow-1" @click="muaNgay">
+                        <button class="btn btn-danger flex-grow-1" @click="muaNgay">
                             <i class="fa fa-bolt me-1"></i> Mua ngay
-                        </button> -->
+                        </button>
                     </div>
                 </div>
                 <p class="product-category-bottom mb-3">Thể loại: <span class="fw-bold">{{ product.category }}</span>
@@ -311,7 +297,7 @@ async function toggleSize(size) {
         // Cập nhật các thông tin bổ sung nếu cần
         product.value.maSanPham = chiTiet.idSanPham.maSanPham || "";
         product.value.description = chiTiet.moTa || "";
-        product.value.category = chiTiet.idSanPham.idChatLieu?.tenChatLieu || "Không rõ";
+        product.value.category = detail.tenDanhMuc?.[0] || "Không rõ"; // Lấy danh mục đầu tiên
 
     } catch (err) {
         console.error("Lỗi khi fetch chi tiết sản phẩm:", err);
@@ -397,12 +383,11 @@ const muaNgay = async () => {
         return;
     }
 
-    // Lấy dữ liệu từ lựa chọn
+    // Chuẩn bị dữ liệu gửi BE
     const selectedColor = selectedColors.value[0];
     const selectedSizeObj = selectedSizes.value[0];
     const kichCo = selectedSizeObj.soCo;
 
-    // Payload gửi lên BE
     const payload = {
         idSanPham: product.value.id,
         soLuong: quantity.value,
@@ -411,40 +396,26 @@ const muaNgay = async () => {
     };
 
     try {
-        // ✅ Bước 1: Thêm sản phẩm vào giỏ hàng
-        await axios.post("http://localhost:8080/client/ThemSanPham", payload, {
+        // ✅ Gọi trực tiếp API Mua Ngay
+        const res = await axios.post("http://localhost:8080/client/MuaNgay", payload, {
             withCredentials: true
         });
-
-        // ✅ Bước 2: Lấy lại danh sách giỏ hàng
-        const gioHangRes = await axios.get("http://localhost:8080/client/LayGioHang", {
-            withCredentials: true
-        });
-
-        const danhSachGio = gioHangRes.data || [];
-
-        if (danhSachGio.length === 0) {
-            toast.error("❌ Không có sản phẩm trong giỏ hàng.");
-            return;
-        }
-
-        // ✅ Bước 3: Gửi danh sách để tạo hóa đơn chi tiết
-        const res = await axios.post(
-            "http://localhost:8080/client/clientTaoHoaDonChiTiet",
-            danhSachGio,
-            { withCredentials: true }
-        );
 
         const hoaDonId = res.data.hoaDonId;
 
         if (!hoaDonId) {
-            toast.error("❌ Không tạo được hóa đơn chi tiết.");
+            toast.error("❌ Không tạo được hóa đơn.");
             return;
         }
 
-        // ✅ Bước 4: Chuyển hướng tới trang hóa đơn chi tiết
+        toast.success("🎉 Mua ngay thành công!", {
+            timeout: 3000,
+            position: "top-right"
+        });
+
+        // ✅ Điều hướng đến trang hóa đơn
         router.push({
-            name: "client-Oder", // Trùng với name bạn định nghĩa trong router
+            name: "client-Oder",
             params: { hoaDonId }
         });
 
@@ -661,6 +632,7 @@ function goBack() {
     /* Hoặc đặt một max-width lớn hơn nếu bạn có một layout tổng thể cố định */
     /* max-width: 1200px; /* Ví dụ: tăng chiều rộng tối đa */
     margin: auto;
+    margin-top: 50px;
     /* Để căn giữa nếu có max-width */
 }
 

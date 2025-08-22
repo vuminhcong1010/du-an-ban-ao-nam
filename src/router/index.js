@@ -37,9 +37,10 @@ import ClientSanPham from "@/components/client/ProductPage.vue";
 import Oder from "@/components/client/Order.vue";
 import ClientSanPhamDetail from "@/components/client/ProductDetail.vue";
 import LichSuDatHang from "@/components/client/OrderHistory.vue";
-import VnpayReturn from "@/components/client/VnpayReturn.vue"; 
+import VnpayReturn from "@/components/client/VnpayReturn.vue";
 import MyAccount from "@/components/client/MyAccount.vue"; // Make sure this file exists
 import OrderDetail from "@/components/client/OrderDetail.vue"; // Make sure this file exists
+import gioHang from "@/components/client/GioHangPage.vue"; // Make sure this file exists
 import LoginGG from "@/components/client/LoginGG.vue"; // Google Login Page
 import XacNhanThongTinCustomer from "@/components/client/XacNhanThongTinCustomer.vue"; // Component for confirming customer info (path inconsistency, consider moving)
 
@@ -98,6 +99,12 @@ const router = createRouter({
           component: LichSuDatHang,
           meta: { requiresAuthClient: true }, // Add this meta field for client auth
         },
+        {
+          path: "/gio-hang",
+          name: "client-gio-hang",
+          component: gioHang,
+        },
+
         {
           path: "order/:id",
           name: "OrderDetail",

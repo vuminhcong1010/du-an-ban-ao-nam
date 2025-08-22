@@ -42,18 +42,12 @@
         </div>
 
         <!-- Giỏ hàng -->
-        <div class="cart-icon" @click="toggleGioHang">
-          <a href="#"><i class="fas fa-shopping-cart"></i></a>
-          <span v-if="soLuongGio > 0" class="badge">{{ soLuongGio }}</span>
-
-          <CartDetail
-            v-if="hienChiTiet"
-            :danhSachGio="danhSachGio"
-            @close="hienChiTiet = false"
-            @removeItem="xoaSanPham"
-            @update:danhSachGio="capNhatGioHangLocal"
-            @capNhatGio="capNhatGioHang"
-          />
+        <!-- Giỏ hàng (chuyển sang route) -->
+        <div class="cart-icon">
+          <router-link to="/gio-hang">
+            <i class="fas fa-shopping-cart"></i>
+            <span v-if="soLuongGio > 0" class="badge">{{ soLuongGio }}</span>
+          </router-link>
         </div>
       </div>
     </div>
@@ -78,7 +72,7 @@ export default {
       showUserDropdown: false,
     }
   },
-  
+
   computed: {
     isLoggedIn() {
       const token = localStorage.getItem('clientAuthToken')
@@ -86,7 +80,7 @@ export default {
       return !!token || !!user
     }
   },
-  
+
   mounted() {
     this.capNhatGioHang()
     window.addEventListener("cap-nhat-gio", this.capNhatGioHang)
@@ -107,7 +101,7 @@ export default {
         })
 
         const data = Array.isArray(res.data) ? res.data : []
-
+          console.log('Dữ liệu giỏ hàng:', data)
         data.forEach(sp => {
           if (!sp.tongTien || sp.tongTien === 0) {
             sp.tongTien = sp.soLuong * sp.gia
@@ -118,13 +112,17 @@ export default {
         })
 
         this.danhSachGio = data
-        this.soLuongGio = data.reduce((tong, sp) => tong + sp.soLuong, 0)
+       this.soLuongGio = data.length
       } catch (error) {
         this.danhSachGio = []
         this.soLuongGio = 0
         console.error('Lỗi khi lấy giỏ hàng:', error)
       }
     },
+    diDenTrangGioHang() {
+      this.$router.push({ name: 'client-cart' })
+    },
+
     toggleGioHang() {
       this.hienChiTiet = !this.hienChiTiet
     },
@@ -151,7 +149,7 @@ export default {
       localStorage.removeItem('loggedInUser')
       Cookies.remove('thongTinKhachHang')
       this.showUserDropdown = false
-      window.location.href = '/coolmen/dang-nhap-khach-hang' 
+      window.location.href = '/coolmen/dang-nhap-khach-hang'
     }
   }
 }
@@ -248,26 +246,30 @@ export default {
   /* Khoảng cách giữa icon và chữ "CoolMen" */
   object-fit: contain;
 }
+
 .main-navigation ul {
-    display: flex;
-    gap: 24px; /* khoảng cách giữa các mục */
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    align-items: center;
+  display: flex;
+  gap: 24px;
+  /* khoảng cách giữa các mục */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  align-items: center;
 }
 
 .main-navigation ul li a {
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
-    color: #4b5563; /* gần với màu xám nhạt như trong ảnh */
-    font-family: 'Inter', sans-serif;
-    transition: color 0.3s ease;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  /* gần với màu xám nhạt như trong ảnh */
+  font-family: 'Inter', sans-serif;
+  transition: color 0.3s ease;
 }
 
 .main-navigation ul li a:hover {
-    color: #111827; /* màu đậm hơn khi hover */
+  color: #111827;
+  /* màu đậm hơn khi hover */
 }
 
 
@@ -394,6 +396,7 @@ export default {
     width: auto;
   }
 }
+
 .user-icon {
   position: relative;
   cursor: pointer;
@@ -436,8 +439,12 @@ export default {
   background-color: #f0f0f0;
   color: #007bff;
 }
-.user-icon .user-dropdown a { /* Thêm .user-icon vào selector */
-  font-size: 14px; /* Hoặc 0.9em */
-  padding: 8px 15px; /* Điều chỉnh lại padding nếu cần để phù hợp với font nhỏ hơn */
+
+.user-icon .user-dropdown a {
+  /* Thêm .user-icon vào selector */
+  font-size: 14px;
+  /* Hoặc 0.9em */
+  padding: 8px 15px;
+  /* Điều chỉnh lại padding nếu cần để phù hợp với font nhỏ hơn */
 }
 </style>

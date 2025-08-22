@@ -1,206 +1,121 @@
 <template>
     <div class="order-container container my-5">
-        <div v-if="order.length === 0" class="empty-cart-wrapper">
-            <div class="empty-cart text-center">
-                <div class="empty-icon">🛒</div>
-                <h4>Giỏ hàng của bạn đang trống.</h4>
-                <p>Vui lòng thêm một số sản phẩm vào giỏ hàng của bạn.</p>
-                <button class="btn browse-products-btn" @click="quayLaiSanPham">
-                    Duyệt qua các sản phẩm của chúng tôi
-                </button>
+        <div class="checkout">
+            <!-- Địa chỉ nhận hàng -->
+            <div class="box address-box">
+                <div class="addr-header">
+                    <span class="addr-icon">📍</span>
+                    <span class="addr-title">Địa Chỉ Nhận Hàng</span>
+                </div>
+                <div class="addr-detail">
+                    <div class="addr-info">
+                        <strong>{{ form.firstName || 'Khách hàng' }}</strong>
+                        <span>({{ form.phone || 'Chưa có SĐT' }})</span>
+                        <span v-if="diaChiDangChon?.isMacDinh" class="default-address-label">MẶC ĐỊNH</span>
+                        <span class="addr-text">{{ diaChiHienThiText || 'Chưa có địa chỉ. Vui lòng thêm địa chỉ giao hàng.' }}</span>
+                    </div>
+                    <button class="btn small" @click="showDiaChiModal = true">Thay Đổi</button>
+                </div>
             </div>
-        </div>
 
-
-
-        <div v-else class="row">
-            <div class="col-md-7">
-                <h4>Thông tin liên lạc</h4>
-                <form @submit.prevent="thanhToan" novalidate>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">E-MAIL</label>
-                        <input type="email" id="email" class="form-control" v-model="form.email" required
-                            placeholder="coolmen@gmail.com" />
-                    </div>
-
-                    <h4 class="mt-4">Chi tiết thanh toán</h4>
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label for="firstName" class="form-label">Họ và TÊN</label>
-                            <input type="text" id="firstName" class="form-control" v-model="form.firstName" required
-                                placeholder="John" />
+            <!-- Danh sách sản phẩm -->
+            <div class="box">
+                <div class="table-head">
+                    <span>Sản phẩm</span>
+                    <span>Đơn giá</span>
+                    <span>Số lượng</span>
+                    <span>Thành tiền</span>
+                </div>
+                <div class="table-row" v-for="(item, index) in order" :key="index">
+                    <div class="cell cell-info">
+                        <img :src="item.duongDanAnh" alt="Ảnh sản phẩm" class="thumb" />
+                        <div>
+                            <div class="name">{{ item.tenSanPham }}</div>
+                            <div v-if="item.phanTramGiamGia > 0" class="save-badge">Tiết kiệm {{ item.phanTramGiamGia }}%</div>
+                            <div class="variant">{{ item.tenMau }}, {{ item.tenKichCo }}</div>
                         </div>
                     </div>
-
-                    <div class="mb-3 position-relative d-flex align-items-center justify-content-between">
-                        <label for="thonXom" class="form-label mb-0">THÔN XÓM</label>
-                        <button class="btn btn-outline-secondary btn-icon" type="button"
-                            @click="showDiaChiModal = true">
-                            📍
-                        </button>
+                    <div class="cell cell-price">
+                        <template v-if="item.hasDiscount">
+                            <span class="old">{{ formatCurrency(item.giaTruocKhiGiam) }}</span>
+                            <span class="new">{{ formatCurrency(item.giaSauKhiGiam) }}</span>
+                        </template>
+                        <template v-else>
+                            <span class="new">{{ formatCurrency(item.giaTruocKhiGiam) }}</span>
+                        </template>
                     </div>
-                    <div class="input-group position-relative">
-                        <input type="text" id="thonXom" class="form-control rounded-input" v-model="form.thonXom"
-                            placeholder="Tổ dân phố 1" />
+                    <div class="cell cell-qty">
+                        <input type="number" v-model="item.soLuong" @change="kiemTraSoLuong(item)" class="qty" />
                     </div>
+                    <div class="cell cell-amount">{{ formatCurrency((item.hasDiscount ? item.giaSauKhiGiam : item.giaTruocKhiGiam) * item.soLuong) }}</div>
+                </div>
+            </div>
 
-
-
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label for="province" class="form-label">TỈNH/THÀNH PHỐ</label>
-                            <select id="province" class="form-select" v-model="selectedProvince" required>
-                                <option value="" disabled>Chọn tỉnh/thành phố</option>
-                                <option v-for="p in provinces" :key="p.ProvinceID" :value="p.ProvinceID">
-                                    {{ p.ProvinceName }}
-                                </option>
-                            </select>
+            <!-- Lời nhắn + Voucher + Vận chuyển -->
+            <div class="box">
+                <div class="row-inline note-line">
+                    <label class="lbl">Lời nhắn:</label>
+                    <input class="note" v-model="form.orderNote" placeholder="Lưu ý cho Người bán..." />
+                </div>
+                <div class="row-inline voucher-line">
+                    <img src="/src/assets/293cb84a6429a3426672.svg" alt="voucher-icon" class="voucher-ic" />
+                    <span class="voucher-title">Coolmen Voucher</span>
+                    <a href="#" class="link" @click.prevent="showVoucherModal = true">Chọn hoặc nhập mã</a>
+                </div>
+                <div v-if="giamGiaDaApDung" class="applied-voucher">
+                    <img src="/src/assets/logo.png" alt="logo" class="applied-logo" />
+                    <div class="applied-main">
+                        <div class="applied-title">
+                            {{ giamGiaDaApDung.phamTramGiamGia ? `Giảm ${giamGiaDaApDung.phamTramGiamGia}%` : `Giảm ${formatCurrency(giamGiaDaApDung.soTienGiam)}` }}
                         </div>
+                        <div class="applied-desc">Đã áp dụng: <strong>{{ giamGiaDaApDung.maPhieuGiamGia || 'Voucher' }}</strong> <span class="save">-{{ formatCurrency(tienGiam) }}</span></div>
                     </div>
+                </div>
+                <div class="row-inline total-line">
+                    <div class="spacer"></div>
+                    <span>Tổng số tiền ({{ order.length }} sản phẩm):</span>
+                    <span class="bold">{{ formatCurrency(tongTienSanPham) }}</span>
+                </div>
+            </div>
 
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label for="district" class="form-label">QUẬN/HUYỆN</label>
-                            <select id="district" class="form-select" v-model="selectedDistrict" required
-                                :disabled="!selectedProvince">
-                                <option value="" disabled>Chọn quận/huyện</option>
-                                <option v-for="d in districts" :key="d.DistrictID" :value="d.DistrictID">
-                                    {{ d.DistrictName }}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
-                            <label for="ward" class="form-label">XÃ/PHƯỜNG</label>
-                            <select id="ward" class="form-select" v-model="selectedWard" required
-                                :disabled="!selectedDistrict">
-                                <option value="" disabled>Chọn xã/phường</option>
-                                <option v-for="w in wards" :key="w.WardCode" :value="w.WardCode">
-                                    {{ w.WardName }}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="phone" class="form-label">ĐIỆN THOẠI</label>
-                        <input type="tel" id="phone" class="form-control" v-model="form.phone" required
-                            placeholder="+84 123 456 789" />
-                    </div>
-                </form>
-                <h5 class="mt-4">Tùy chọn thanh toán</h5>
-                <div class="radio-card-group mb-3">
+            <!-- Phương thức thanh toán -->
+            <div class="box">
+                <div class="pay-title">Phương thức thanh toán</div>
+                <div class="radio-card-group">
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'card' }">
                         <input type="radio" value="card" v-model="form.paymentMethod" />
                         <img src="/src/assets/vnpay-logo-vinadesign-25-12-57-55.jpg" alt="VNPay Logo" class="vnpay-logo" />VNPay
                     </label>
-
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'cod' }">
                         <input type="radio" value="cod" v-model="form.paymentMethod" />
                         💵 COD
                     </label>
                 </div>
-
-
-                <div class="mb-3">
-                    <label for="orderNote" class="form-label">Ghi chú đơn hàng (Tùy chọn)</label>
-                    <textarea id="orderNote" rows="3" v-model="form.orderNote"
-                        placeholder="Ghi chú về đơn hàng, ví dụ ghi chú đặc biệt về việc giao hàng"></textarea>
-                </div>
             </div>
 
-            <div class="col-md-5">
-                <div class="card p-4 sticky-summary">
-                    <h5 class="mb-3">Tóm tắt đơn hàng</h5>
-                    <div v-for="(item, index) in order" :key="index" class="d-flex align-items-center mb-3">
-                        <img :src="item.duongDanAnh" alt="Ảnh sản phẩm" width="60" class="me-3 rounded" />
-
-                        <div style="flex-grow: 1;">
-                            <p class="mb-1 fw-semibold">{{ item.tenSanPham }}</p>
-                            <div class="small mb-1">
-                                <template v-if="item.hasDiscount">
-                                    <small class="text-success ms-2" v-if="item.phanTramGiamGia > 0">
-                                        Tiết kiệm -{{ item.phanTramGiamGia }}%
-                                    </small>
-                                    <div>
-                                        <span class="text-decoration-line-through text-muted me-2">
-                                            {{ formatCurrency(item.giaTruocKhiGiam) }}
-                                        </span>
-                                        <span class="text-danger fw-bold">
-                                            {{ formatCurrency(item.giaSauKhiGiam) }}
-                                        </span>
-                                    </div>
-                                </template>
-                                <template v-else>
-                                    <span class="fw-bold">{{ formatCurrency(item.giaTruocKhiGiam) }}</span>
-                                </template>
-                            </div>
-
-                            <div class="text-muted small mb-1">
-                                Màu: {{ item.tenMau }} | Size: {{ item.tenKichCo }}
-                            </div>
-
-                            <div class="fw-bold text-dark small">
-                                Tổng:
-                                {{ formatCurrency((item.hasDiscount ? item.giaSauKhiGiam : item.giaTruocKhiGiam) *
-                                    item.soLuong) }}
-                            </div>
-
-                        </div>
-
-                        <div class="ms-3 d-flex align-items-center">
-                            <input type="number" v-model="item.soLuong" @change="kiemTraSoLuong(item)"
-                                class="form-control form-control-sm " style="width: 80px;" />
-
-                        </div>
-
-                    </div>
-
-                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <img src="/src/assets/293cb84a6429a3426672.svg" alt="voucher-icon"
-                            style="width: 20px; height: 20px; margin-right: 6px;">
-                        <span style="flex-grow: 1; font-size: 15px; color: #333333; font-weight: bolder;">Coolmen
-                            Voucher</span>
-                        <a href="#" style="color: #0088ff; font-size: 14px; text-decoration: none;"
-                            @click="showVoucherModal = true">Chọn
-                            hoặc nhập
-                            mã</a>
-                    </div>
-
-                    <div class="d-flex justify-content-between">
-                        <span>Tổng Tiền</span>
-                        <span>{{ formatCurrency(tongTienSanPham) }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mt-2">
-                        <span>Phí vận chuyển</span>
-                        <span>{{ formatCurrency(shipFee) }}</span>
-                    </div>
-                    <div v-if="giamGiaDaApDung" class="d-flex justify-content-between text-success">
-                        <span>Giảm giá
-                            <template v-if="giamGiaDaApDung.soTienGiam">
-                                (-{{ formatCurrency(giamGiaDaApDung.soTienGiam) }})
-                            </template>
-                            <template v-else>
-                                (-{{ giamGiaDaApDung.phamTramGiamGia }}%)
-                            </template>
-                        </span>
-                        <span>-{{ formatCurrency(tienGiam) }}</span>
-                    </div>
-
-                    <div class="d-flex justify-content-between fw-bold fs-5">
-                        <span>Tổng cộng</span>
-                        <span>{{ formatCurrency(tongCong) }}</span>
-                    </div>
-
-                    <button class="btn btn-primary w-100 mt-3 d-flex align-items-center justify-content-center"
-                        :disabled="isLoading" @click="thanhToan">
-                        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status"
-                            aria-hidden="true"></span>
-                        {{ isLoading ? 'Đang gửi mail...' : 'Thanh toán' }}
+            <!-- Tổng kết + Đặt hàng -->
+            <div class="box summary-bottom">
+                <div class="sum-row">
+                    <span>Tổng tiền hàng</span>
+                    <span>{{ formatCurrency(tongTienSanPham) }}</span>
+                </div>
+                <div class="sum-row">
+                    <span>Tổng tiền phí vận chuyển</span>
+                    <span>{{ formatCurrency(shipFee) }}</span>
+                </div>
+                <div v-if="giamGiaDaApDung" class="sum-row">
+                    <span>Giảm giá</span>
+                    <span>-{{ formatCurrency(tienGiam) }}</span>
+                </div>
+                <div class="sum-row grand">
+                    <span>Tổng thanh toán</span>
+                    <span>{{ formatCurrency(tongCong) }}</span>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" :disabled="isLoading" @click="thanhToan">
+                        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        {{ isLoading ? 'Đang xử lý...' : 'Đặt hàng' }}
                     </button>
-
                 </div>
             </div>
         </div>
@@ -217,8 +132,6 @@
                     <input type="text" v-model="maGiamGia" class="voucher-input" placeholder="Mã Coolmen Voucher" />
                     <button class="voucher-button" @click="apDungGiamGia">ÁP DỤNG</button>
                 </div>
-
-
                 <div class="voucher-list">
                     <div class="voucher-card" :class="{ selected: giamGiaDaApDung?.id === voucher.data.id }"
                         v-for="voucher in voucherDeXuat" :key="voucher.id">
@@ -228,7 +141,6 @@
                                 <div class="voucher-brand">COOLMEN</div>
                             </div>
                         </div>
-
                         <div class="voucher-content">
                             <div class="voucher-top">
                                 <span class="voucher-flash">⚡ Số lượng có hạn</span>
@@ -244,27 +156,22 @@
                                 HSD: {{ voucher.hsd }}
                             </div>
                         </div>
-
                         <div class="voucher-select">
                             <input type="radio" :value="voucher.id" v-model="selectedVoucher"
                                 @click="chonVoucher(voucher)" />
                         </div>
-
                         <div v-if="giamGiaDaApDung?.id === voucher.data.id" class="voucher-applied-message">
                             🎉 Mã giảm giá đã được áp dụng!
                         </div>
                     </div>
                 </div>
             </div>
-
             <div class="modal-footer">
                 <button class="btn cancel" @click="showVoucherModal = false">TRỞ LẠI</button>
                 <button class="btn ok" @click="showVoucherModal = false">OK</button>
             </div>
         </div>
     </div>
-
-
     <div v-if="showDiaChiModal" class="modal-custom">
         <div class="modal-dialog-custom">
             <div class="modal-header-custom"
@@ -276,7 +183,6 @@
                 <button class="close-button" @click="showDiaChiModal = false, dongForm()"
                     style="margin-left: 10px;">&times;</button>
             </div>
-
             <div v-for="diaChi in danhSachDiaChi" :key="diaChi.id" class="address-option"
                 :class="{ selected: diaChiDuocChon?.id === diaChi.id }" @click="chonDiaChiClick(diaChi)">
                 <div class="address-content">
@@ -290,9 +196,7 @@
                         Thiết lập mặc định
                     </button>
                 </div>
-
                 <div class="address-action-buttons">
-
                     <button class="btn btn-sm btn-edit" @click.stop="suaDiaChi(diaChi)" title="Sửa">
                         <Edit />
                     </button>
@@ -314,7 +218,6 @@
             <h5>{{ isEditing ? 'Sửa địa chỉ' : 'Thêm địa chỉ mới' }}</h5>
             <button class="close-button" @click="dongForm">×</button>
         </div>
-
         <div class="slide-body">
             <div class="form-group">
                 <label>Tỉnh/Thành phố:</label>
@@ -325,7 +228,6 @@
                     </option>
                 </select>
             </div>
-
             <div class="form-group">
                 <label>Quận/Huyện:</label>
                 <select v-model="formData.quanHuyen" @change="onDistrictChange" required>
@@ -335,7 +237,6 @@
                     </option>
                 </select>
             </div>
-
             <div class="form-group">
                 <label>Xã/Phường:</label>
                 <select v-model="formData.xaPhuong" required>
@@ -345,12 +246,10 @@
                     </option>
                 </select>
             </div>
-
             <div class="form-group">
                 <label>Địa chỉ chi tiết:</label>
                 <input type="text" v-model="formData.diaChiChiTiet" placeholder="Số nhà, tên đường..." required />
             </div>
-
             <div class="form-group">
                 <label><input type="checkbox" v-model="formData.isMacDinh" /> Đặt làm địa chỉ mặc định</label>
             </div>
@@ -360,12 +259,8 @@
             <button class="btn btn-save" @click="luuDiaChi">
                 {{ formData.id ? 'Cập nhật' : 'Thêm mới' }}
             </button>
-
         </div>
-
-
     </div>
-
 </template>
 
 <script setup>
@@ -415,6 +310,17 @@ const danhSachDiaChi = ref([]);
 const showDiaChiModal = ref(false); // ❌ Thiếu
 const diaChiDuocChon = ref(null); // Chứa địa chỉ được chọn
 const isEditing = ref(false);
+
+// Địa chỉ đang hiển thị (ưu tiên cái user chọn, nếu không có thì mặc định)
+const diaChiDangChon = computed(() => {
+    return diaChiDuocChon.value || danhSachDiaChi.value.find(dc => dc.isMacDinh) || null;
+});
+
+const diaChiHienThiText = computed(() => {
+    const dc = diaChiDangChon.value;
+    if (!dc) return '';
+    return [dc.diaChiChiTiet, dc.xaPhuong, dc.quanHuyen, dc.tinhThanhPho].filter(Boolean).join(', ');
+});
 
 // Form Thêm/Sửa địa chỉ
 const showForm = ref(false); // Hiển thị form
@@ -1265,7 +1171,7 @@ async function thanhToan() {
             sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
 
             const vnpayRequest = {
-                amount: tongCong.value.toString(),
+              amount: Math.round(tongCong.value),
                 hoaDonId: route.params.hoaDonId
             };
 
@@ -1440,21 +1346,9 @@ function quayLaiSanPham() {
     background-color: #F3F4F6;
     padding: 1rem;
     min-height: 80vh;
-    display: flex;
-    justify-content: space-between;
-    gap: 3rem;
-    align-items: flex-start;
     max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
-}
-
-/* Cột Thông tin thanh toán */
-.col-md-7 {
-    margin-top: 50px;
-    padding: 2rem 3rem;
-    flex: 1;
-    max-width: 700px;
 }
 
 h4 {
@@ -1507,15 +1401,6 @@ input.form-control:focus {
 
 }
 
-/* Cột Tóm tắt đơn hàng */
-.col-md-5 {
-    flex: 0 0 400px;
-    max-width: 400px;
-    margin-left: 80px;
-    margin-top: 100px;
-    /* đẩy cột này xa hơn khỏi cột trái */
-}
-
 .card {
     background-color: white;
     border-radius: 10px;
@@ -1524,6 +1409,121 @@ input.form-control:focus {
     display: flex;
     flex-direction: column;
 }
+
+/* Address card */
+.checkout {margin-top: 20px; display: flex; flex-direction: column; gap: 16px; }
+.box { background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgb(0 0 0 / 0.06); padding: 14px 16px; }
+.address-box { display: flex; flex-direction: column; gap: 8px; }
+.addr-header { display: flex; align-items: center; gap: 8px; border-bottom: 1px dashed #e5e7eb; padding-bottom: 6px; }
+.addr-icon { font-size: 18px; }
+.addr-title { font-weight: 700; color: #e74c3c; }
+.addr-detail { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.addr-info { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.addr-text { margin-left: 8px; }
+.addr-line { margin-top: 4px; color: #333; }
+.btn.small { border: 1px solid #5930a3; border-radius: 6px; background: #fff; padding: 6px 10px; cursor: pointer; transition: all .2s ease; }
+.btn.small:hover { background: #f5f0ff; border-color: #6f42c1; }
+.address-line {
+    margin-top: 4px;
+    color: #333;
+}
+
+/* Section title */
+.section-title {
+    font-size: 1.25rem;
+    margin: 18px 0 10px;
+}
+
+/* Product list like Shopee */
+.table-head {
+    display: grid;
+    grid-template-columns: 1fr 180px 120px 160px;
+    gap: 12px;
+    padding: 10px 12px;
+    color: #666;
+    font-weight: 600;
+}
+.table-row {
+    display: grid;
+    grid-template-columns: 1fr 180px 120px 160px;
+    gap: 12px;
+    align-items: center;
+    padding: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+.cell-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+.save-badge { color: #16a34a; font-weight: 700; font-size: 13px; margin-top: 2px; }
+.name {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+.variant {
+    color: #666;
+    font-size: 13px;
+}
+.cell-price .old { color: #9ca3af; text-decoration: line-through; margin-right: 8px; }
+.cell-price .new { font-weight: 700; }
+.cell-price,
+.cell-qty,
+.cell-amount {
+    text-align: right;
+}
+.cell-qty {
+    display: flex;
+    justify-content: flex-end;
+}
+.qty {
+    width: 72px;
+    height: 34px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 6px 8px;
+}
+
+/* Note + voucher row */
+.row-inline {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 0;
+}
+.note-line { grid-template-columns: auto 1fr; }
+.voucher-line { display: flex; align-items: center; gap: 6px; }
+.lbl { color: #555; font-weight: 600; }
+.note { width: 100%; border: 1px solid #ccc; border-radius: 6px; height: 36px; padding: 0 10px; }
+.spacer { flex: 1; }
+.voucher-ic { width: 16px; height: 16px; margin-right: 4px; }
+.voucher-title { font-weight: 700; color: #333; }
+.link { color: #0088ff; text-decoration: none; transition: color .2s ease; }
+.link:hover { color: #0066cc; }
+.bold { font-weight: 700; }
+.applied-voucher { margin-top: 6px; padding: 10px 12px; background: #f0fff6; border: 1px solid #31c48d; border-radius: 6px; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+.applied-logo { width: 26px; height: 26px; object-fit: contain; }
+.applied-main { display: flex; flex-direction: column; gap: 2px; }
+.applied-title { font-weight: 700; color: #333; }
+.applied-voucher .save { color: #16a34a; font-weight: 700; }
+.total-line { border-top: 1px dashed #e5e7eb; margin-top: 10px; padding-top: 10px; display: flex; align-items: center; gap: 8px; }
+
+/* Shipping row */
+.pay-title { font-weight: 700; margin-bottom: 12px; }
+.summary-bottom .sum-row { display: flex; justify-content: space-between; padding: 6px 0; }
+.summary-bottom .grand { font-weight: 800; font-size: 18px; border-top: 1px solid #eee; margin-top: 6px; padding-top: 10px; }
+.summary-bottom .actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+.btn.primary { background-color: #6f42c1; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgb(111 66 193 / 0.35); transition: background .2s ease, transform .1s ease; }
+.btn.primary:hover { background-color: #5930a3; }
+.radio-card { transition: border-color .2s ease, background .2s ease; }
+.radio-card:hover { border-color: #9f7aea; background-color: #faf7ff; }
 
 h5 {
     font-weight: 700;
@@ -2334,9 +2334,7 @@ address-option {
     border-radius: 6px;
 }
 
-.address-content {
-    /* Nội dung địa chỉ */
-}
+
 
 /* Nút "Thiết lập mặc định" */
 .btn-set-default {

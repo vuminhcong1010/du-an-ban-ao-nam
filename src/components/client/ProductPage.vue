@@ -167,7 +167,7 @@
                     </div>
 
                     <div class="product-page-content">
-                        <div class="product-grid">
+                        <transition-group name="grid" tag="div" class="product-grid" appear>
                             <div class="product-card" v-for="allProducts in paginatedProducts" :key="allProducts.id">
                                 <div class="card h-100 position-relative" @click="goToProductDetail(allProducts.id)">
                                     <img :src="allProducts.image || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png'"
@@ -221,7 +221,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </transition-group>
                     </div>
                 </div>
             </div>
@@ -728,6 +728,7 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
 
 /* Filter Sidebar */
 .filter-sidebar {
+    background-color: #f1f1f1;
     padding: 20px;
 }
 
@@ -918,14 +919,37 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     margin-top: 20px;
 }
 
+/* Transition-group animations for filtering */
+.grid-enter-from, .grid-leave-to {
+    opacity: 0;
+    transform: translateY(12px);
+}
+.grid-enter-active {
+    transition: all 250ms ease;
+}
+.grid-leave-active {
+    transition: all 220ms ease;
+    position: relative;
+}
+.grid-move {
+    transition: transform 300ms ease;
+}
+
 /* Card sản phẩm */
 .product-card .card {
     border: none !important;
     border-radius: 0;
     box-shadow: none;
-    transition: all 0.2s ease-in-out;
+    transition: all 0.3s ease-in-out;
     text-align: left;
-    background-color: #F3F4F6;
+    background-color: #e3e1e1;
+}
+
+/* Hiệu ứng hover */
+.product-card .card:hover {
+    transform: translateY(-5px); /* Nổi lên nhẹ */
+    border: 2px solid #0088ff;  /* Viền màu xanh */
+    box-shadow: 0 4px 12px rgba(0, 136, 255, 0.3); /* Đổ bóng nhẹ */
 }
 
 
