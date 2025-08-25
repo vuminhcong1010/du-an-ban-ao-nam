@@ -1,155 +1,217 @@
 <template>
     <div class="container product-detail-page-container">
-        <div v-if="loading" class="text-center my-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
+        <template v-if="loading">
+            <div class="text-center my-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Đang tải chi tiết sản phẩm...</p>
             </div>
-            <p class="mt-2">Đang tải chi tiết sản phẩm...</p>
-        </div>
+        </template>
 
-        <div v-else-if="product" class="row product-detail-content">
-            <div class="col-md-6 position-relative">
-                <div v-if="product.images.length > 0">
-                    <img :src="selectedImage" class="img-fluid product-detail-image mb-3" />
-
-                    <div class="d-flex flex-wrap gap-2">
-                        <img v-for="(img, index) in product.images.slice(0, 4)" :key="index" :src="img"
-                            class="img-thumbnail" :class="{ 'border border-primary': img === selectedImage }"
-                            @click="selectedImage = img"
-                            style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" />
-                    </div>
-
-                    <span v-if="product.discount && product.discount > 0"
-                        class="discount-badge-detail position-absolute top-0  end-0 bg-danger text-white px-2 py-1 m-3 rounded">
-                        -{{ product.discount }}%
-                    </span>
-                </div>
-            </div>
-
-            <div class="col-md-6 product-info-section">
-                <div class="mb-2 product-price-section">
-                    <h2 class="product-name-heading">{{ product.name }}</h2>
-                    <div class="price-display mt-1">
-                        <!-- Nếu có giảm giá -->
-                        <template v-if="product.discount > 0">
-                            <span class="original-price-detail">
-                                {{ formatCurrency(product.minOriginalPrice) }}
-                                <template v-if="product.minOriginalPrice !== product.maxOriginalPrice">
-                                    - {{ formatCurrency(product.maxOriginalPrice) }}
-                                </template>
-                            </span>
-                            <span class="current-price-detail">
-                                {{ formatCurrency(product.minPrice) }}
-                                <template v-if="product.minPrice !== product.maxPrice">
-                                    - {{ formatCurrency(product.maxPrice) }}
-                                </template>
-                            </span>
-                        </template>
-
-                        <!-- Không giảm giá -->
-                        <template v-else>
-                            <span class="current-price-detail">
-                                {{ formatCurrency(product.minPrice) }}
-                                <template v-if="product.minPrice !== product.maxPrice">
-                                    - {{ formatCurrency(product.maxPrice) }}
-                                </template>
-                            </span>
-                        </template>
-                    </div>
-
-                </div>
-
-                <div class="rating-section mb-3">
-                    <span v-for="star in 5" :key="star" class="star">
-                        <i v-if="star <= product.rating" class="bi bi-star-fill text-warning"></i>
-                        <i v-else class="bi bi-star text-muted"></i>
-                    </span>
-
-                    <span class="ms-2 product-quantity-display">
-                        Còn lại: {{ remainingQuantity > 0 ? remainingQuantity : 0 }} sản phẩm
-                    </span>
-
-
-                </div>
-
-                <div class="product-meta mb-3">
-                    <p>
-                        <strong>Khả dụng:</strong>
-                        <span :style="{ color: product.quantity > 0 ? 'green' : 'red' }">
-                            {{ product.quantity > 0 ? 'Còn hàng' : 'Hết hàng' }}
+        <template v-else-if="product">
+            <div class="row product-detail-content">
+                <div class="col-md-6 position-relative">
+                    <div v-if="product.images.length > 0">
+                        <img :src="selectedImage" class="img-fluid product-detail-image mb-3" />
+                        <div class="d-flex flex-wrap gap-2">
+                            <img v-for="(img, index) in product.images.slice(0, 4)" :key="index" :src="img"
+                                class="img-thumbnail" :class="{ 'border border-primary': img === selectedImage }"
+                                @click="selectedImage = img"
+                                style="width: 80px; height: 80px; object-fit: cover; cursor: pointer;" />
+                        </div>
+                        <span v-if="product.discount && product.discount > 0"
+                            class="discount-badge-detail position-absolute top-0 end-0 bg-danger text-white px-2 py-1 m-3 rounded">
+                            -{{ product.discount }}%
                         </span>
+                    </div>
+                </div>
+
+                <div class="col-md-6 product-info-section">
+                    <div class="mb-2 product-price-section">
+                        <h2 class="product-name-heading">{{ product.name }}</h2>
+                        <div class="price-display mt-1">
+                            <!-- Nếu có giảm giá -->
+                            <template v-if="product.discount > 0">
+                                <span class="original-price-detail">
+                                    {{ formatCurrency(product.minOriginalPrice) }}
+                                    <template v-if="product.minOriginalPrice !== product.maxOriginalPrice">
+                                        - {{ formatCurrency(product.maxOriginalPrice) }}
+                                    </template>
+                                </span>
+                                <span class="current-price-detail">
+                                    {{ formatCurrency(product.minPrice) }}
+                                    <template v-if="product.minPrice !== product.maxPrice">
+                                        - {{ formatCurrency(product.maxPrice) }}
+                                    </template>
+                                </span>
+                            </template>
+
+                            <!-- Không giảm giá -->
+                            <template v-else>
+                                <span class="current-price-detail">
+                                    {{ formatCurrency(product.minPrice) }}
+                                    <template v-if="product.minPrice !== product.maxPrice">
+                                        - {{ formatCurrency(product.maxPrice) }}
+                                    </template>
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="rating-section mb-3">
+                        <span v-for="star in 5" :key="star" class="star">
+                            <i v-if="star <= product.rating" class="bi bi-star-fill text-warning"></i>
+                            <i v-else class="bi bi-star text-muted"></i>
+                        </span>
+
+                        <span class="ms-2 product-quantity-display">
+                            Còn lại: {{ remainingQuantity > 0 ? remainingQuantity : 0 }} sản phẩm
+                        </span>
+                    </div>
+
+                    <div class="product-meta mb-3">
+                        <p>
+                            <strong>Khả dụng:</strong>
+                            <span :style="{ color: product.quantity > 0 ? 'green' : 'red' }">
+                                {{ product.quantity > 0 ? 'Còn hàng' : 'Hết hàng' }}
+                            </span>
+                        </p>
+                        <p class="sku">Mã sản phẩm: {{ product.maSanPham }}</p>
+                    </div>
+
+                    <p class="product-short-description mb-4">
+                        {{ product.description }}
                     </p>
 
-                    <p class="sku">Mã sản phẩm: {{ product.maSanPham }}</p>
-                </div>
-
-                <p class="product-short-description mb-4">
-                    {{ product.description }}
-                </p>
-                <div class="d-flex flex-wrap gap-2">
-                    <h6 class="mb-2">Màu Sắc:</h6>
-                    <div v-for="color in product.colors" :key="color" class="color-box-detail position-relative"
-                        :style="{ backgroundColor: mapColorToCssClass(color), cursor: 'pointer' }" :title="color"
-                        @click="toggleColor(color)">
-                        <span v-if="selectedColors.includes(color)"
-                            class="position-absolute top-50 start-50 translate-middle text-white fw-bold">
-                            ✓
-                        </span>
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <h6 class="mb-2">Kích cỡ:</h6>
                     <div class="d-flex flex-wrap gap-2">
-                        <span v-for="size in availableSizes" :key="size.soCo" class="badge size-badge" :class="{
-                            'bg-primary text-white': selectedSizes.includes(size),
-                            'bg-secondary text-light': !selectedSizes.includes(size)
-                        }" :style="{
-                            cursor: 'pointer',
-                            opacity: size.soLuong > 0 ? 1 : 0.4
-                        }" @click="toggleSize(size)"
-                            :title="size.soLuong > 0 ? `Còn ${size.soLuong} sản phẩm` : 'Hết hàng'">
-                            {{ size.soCo }}
-                        </span>
+                        <h6 class="mb-2">Màu Sắc:</h6>
+                        <div v-for="color in product.colors" :key="color" class="color-box-detail position-relative"
+                            :style="{ backgroundColor: mapColorToCssClass(color), cursor: 'pointer' }" :title="color"
+                            @click="toggleColor(color)">
+                            <span v-if="selectedColors.includes(color)"
+                                class="position-absolute top-50 start-50 translate-middle text-white fw-bold">
+                                ✓
+                            </span>
+                        </div>
+                    </div>
 
+                    <div class="mb-4">
+                        <h6 class="mb-2">Kích cỡ:</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span v-for="size in availableSizes" :key="size.soCo" class="badge size-badge" :class="{
+                                'bg-primary text-white': selectedSizes.includes(size),
+                                'bg-secondary text-light': !selectedSizes.includes(size)
+                            }" :style="{
+                                cursor: 'pointer',
+                                opacity: size.soLuong > 0 ? 1 : 0.4
+                            }" @click="toggleSize(size)"
+                                :title="size.soLuong > 0 ? `Còn ${size.soLuong} sản phẩm` : 'Hết hàng'">
+                                {{ size.soCo }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center mb-4 add-to-cart-section">
+                        <div class="input-group quantity-input-group me-3">
+                            <input type="number" class="form-control text-center quantity-input"
+                                v-model.number="quantity" min="1" />
+                        </div>
+                        <div class="d-flex align-items-stretch gap-2 mt-3">
+                            <button class="btn btn-dark flex-grow-1" @click="themVaoGioHang">
+                                Thêm vào giỏ hàng
+                            </button>
+                            <button class="btn btn-danger flex-grow-1" @click="muaNgay">
+                                <i class="fa fa-bolt me-1"></i> Mua ngay
+                            </button>
+                        </div>
+                    </div>
+
+                    <p class="product-category-bottom mb-3">Thể loại: <span class="fw-bold">{{ product.category
+                    }}</span></p>
+
+                    <div v-if="product.quantity === 0" class="alert alert-warning mt-3">
+                        Sản phẩm bạn chọn hiện đã hết hàng. Vui lòng chọn màu sắc hoặc kích cỡ khác.
+                    </div>
+
+                    <div class="product-actions d-flex align-items-center">
+                        <a href="#" class="action-link">
+                            <i class="bi bi-heart me-1"></i> Thêm vào danh sách mong muốn
+                        </a>
+                        <span class="mx-2 text-muted">|</span>
+                        <a href="#" class="action-link">
+                            <i class="bi bi-share me-1"></i> Chia sẻ
+                        </a>
                     </div>
                 </div>
+                <!-- Đánh giá -->
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 col-md-10">
+                        <div class="product-review-section mt-4">
+                            <h4 class="mb-3">Đánh giá ({{ totalReviews }})</h4>
+                            <div v-for="star in [5, 4, 3, 2, 1]" :key="star"
+                                class="rating-row d-flex align-items-center mb-2 position-relative">
+                                <div class="star-label">
+                                    {{ star }} <i class="bi bi-star text-warning"></i>
+                                </div>
+                                <div class="progress flex-grow-1 ms-2" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" role="progressbar"
+                                        :style="{ width: totalReviews > 0 ? ((ratingCounts[star] / totalReviews) * 100) + '%' : '0%' }">
+                                    </div>
+                                </div>
+                                <!-- Tooltip nằm ngoài progress để không bị ẩn -->
+                                <div class="rating-tooltip" v-if="ratingCounts[star] > 0">
+                                    {{ ratingCounts[star] }}
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <h5>Chia sẻ suy nghĩ của bạn</h5>
+                                <p>Nếu bạn đã sử dụng sản phẩm này, chúng tôi rất muốn nghe chia sẻ về trải nghiệm của
+                                    bạn.</p>
+                                <button class="btn btn-outline-primary" @click="toggleReviewForm">
+                                    {{ showReviewForm ? 'Đóng' : 'Viết đánh giá' }}
+                                </button>
+                            </div>
+                        </div>
 
-                <div class="d-flex align-items-center mb-4 add-to-cart-section">
-                    <div class="input-group quantity-input-group me-3">
-                        <input type="number" class="form-control text-center quantity-input" v-model.number="quantity"
-                            min="1" />
-                    </div>
-                    <div class="d-flex align-items-stretch gap-2 mt-3">
-                        <button class="btn btn-dark flex-grow-1" @click="themVaoGioHang">
-                            Thêm vào giỏ hàng
-                        </button>
-                        <button class="btn btn-danger flex-grow-1" @click="muaNgay">
-                            <i class="fa fa-bolt me-1"></i> Mua ngay
-                        </button>
-                    </div>
-                </div>
-                <p class="product-category-bottom mb-3">Thể loại: <span class="fw-bold">{{ product.category }}</span>
-                </p>
-                <div v-if="product.quantity === 0" class="alert alert-warning mt-3">
-                    Sản phẩm bạn chọn hiện đã hết hàng. Vui lòng chọn màu sắc hoặc kích cỡ khác.
-                </div>
+                        <div v-if="showReviewForm" class="review-form mt-3 p-3 bg-light rounded">
+                            <p><strong>Bạn đánh giá trải nghiệm của mình với sản phẩm này như thế nào?</strong> Chúng
+                                tôi luôn nỗ lực
+                                mang đến
+                                trải nghiệm 5 sao <span class="text-danger">*</span></p>
 
-                <div class="product-actions d-flex align-items-center">
-                    <a href="#" class="action-link">
-                        <i class="bi bi-heart me-1"></i> Thêm vào danh sách mong muốn
-                    </a>
-                    <span class="mx-2 text-muted">|</span>
-                    <a href="#" class="action-link">
-                        <i class="bi bi-share me-1"></i> Chia sẻ
-                    </a>
+                            <!-- Rating stars -->
+                            <!-- Rating stars -->
+                            <div class="d-flex mb-3">
+                                <span v-for="n in 5" :key="n" class="me-1" @mouseover="hoverRating = n"
+                                    @mouseleave="hoverRating = 0" @click="selectedRating = n" style="cursor: pointer;">
+                                    <i class="bi"
+                                        :class="[(hoverRating >= n || (!hoverRating && selectedRating >= n)) ? 'bi-star-fill text-warning' : 'bi-star']"
+                                        style="font-size: 24px;"></i>
+                                </span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Trải nghiệm của bạn thế nào? <span
+                                        class="text-danger">*</span></label>
+                                <textarea v-model="reviewContent" class="form-control" rows="3"
+                                    placeholder="Chất lượng tuyệt vời"></textarea>
+                            </div>
+                            <button @click="submitReview" class="btn btn-warning">Nộp</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div v-else class="alert alert-info text-center my-5">
-            Không tìm thấy thông tin chi tiết sản phẩm.
-        </div>
+        </template>
+
+        <template v-else>
+            <div class="alert alert-info text-center my-5">
+                Không tìm thấy thông tin chi tiết sản phẩm.
+            </div>
+        </template>
     </div>
 </template>
+
 
 <script setup>
 import { ref, onMounted, watch, onUnmounted } from 'vue';
@@ -172,6 +234,90 @@ const remainingQuantity = ref(0);
 const sizeEnabled = ref(false);
 const availableSizes = ref([]);
 let slideshowInterval = null;
+
+const productId = ref(route.params.id); // Lấy productId từ route params
+
+const reviews = ref([]);
+const totalReviews = ref(0);
+const ratingCounts = ref({
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0
+});
+
+const showReviewForm = ref(false);
+function toggleReviewForm() {
+    showReviewForm.value = !showReviewForm.value;
+}
+
+async function fetchReviews() {
+    try {
+        const response = await axios.get('http://localhost:8080/home/danhGiaList');
+        const allReviews = response.data;
+        reviews.value = allReviews.filter(r => r.sanPham?.id === Number(productId.value));
+        totalReviews.value = reviews.value.length;
+        ratingCounts.value = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        reviews.value.forEach(r => {
+            const star = r.diemDanhGia;
+            if (star >= 1 && star <= 5) {
+                ratingCounts.value[star] = (ratingCounts.value[star] || 0) + 1;
+            }
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách đánh giá:', error);
+    }
+}
+
+
+const selectedRating = ref(0); // Lưu điểm đánh giá khi click
+const hoverRating = ref(0); // Lưu trạng thái hover sao
+const reviewContent = ref('');
+
+const loggedInUser = localStorage.getItem('loggedInUser');
+let idKhachHang = null;
+if (loggedInUser) {
+    try {
+        const user = JSON.parse(loggedInUser);
+        idKhachHang = user?.id || null;
+    } catch (err) {
+        console.error("Lỗi khi parse loggedInUser:", err);
+    }
+}
+
+async function submitReview() {
+    if (!idKhachHang) {
+        toast.warning("Bạn cần đăng nhập để đánh giá sản phẩm.");
+        return;
+    }
+
+    if (selectedRating.value === 0 || reviewContent.value.trim() === '') {
+        toast.error("Vui lòng chọn số sao và nhập nội dung đánh giá.");
+        return;
+    }
+
+    try {
+        await axios.post('http://localhost:8080/home/danhGiaADD', {
+            idSanPham: Number(productId.value),
+            idKhachHang: idKhachHang,
+            diemDanhGia: selectedRating.value,
+            noiDungDanhGia: reviewContent.value
+        });
+
+        toast.success("Đánh giá đã được gửi thành công!");
+        showReviewForm.value = false;
+        reviewContent.value = '';
+        selectedRating.value = 0;
+        hoverRating.value = 0;
+        fetchReviews(); // Reload lại đánh giá
+    } catch (err) {
+        console.error(err);
+        toast.error("Đã có lỗi khi gửi đánh giá.");
+    }
+}
+
 
 function startSlideshow() {
     if (!product.value || product.value.images.length === 0) return;
@@ -257,7 +403,6 @@ async function toggleSize(size) {
     quantity.value = 1;
 
     try {
-        // Gọi API chi tiết sản phẩm theo màu và size
         const resDetail = await axios.get("http://localhost:8080/client/san-pham-chi-tiet", {
             params: { idSanPham: product.value.id, mauSac: selectedColor, kichCo: size.soCo }
         });
@@ -412,7 +557,7 @@ const muaNgay = async () => {
             timeout: 3000,
             position: "top-right"
         });
-
+        window.dispatchEvent(new Event("cap-nhat-gio"));
         // ✅ Điều hướng đến trang hóa đơn
         router.push({
             name: "client-Oder",
@@ -575,6 +720,7 @@ const fetchProductDetail = async (productId) => {
 
 onMounted(() => {
     fetchProductDetail(route.params.id);
+    fetchReviews();
 });
 
 
@@ -955,5 +1101,142 @@ function goBack() {
     /* hoặc auto nếu bạn muốn nhỏ gọn hơn */
     height: 100%;
     /* đảm bảo bằng chiều cao nút */
+}
+
+.product-review-section {
+    background-color: #f9f9fc;
+    padding: 18px 20px;
+    border-radius: 10px;
+    margin-top: 30px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    max-width: 100%;
+    width: 100%;
+    font-size: 15px;
+}
+
+.review-form {
+    padding: 12px 10px;
+    font-size: 14px;
+    max-width: 100%;
+}
+
+@media (min-width: 768px) {
+
+    .product-review-section,
+    .review-form {
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+.product-review-section h4 {
+    font-size: 22px;
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 25px;
+}
+
+.average-rating {
+    justify-content: center;
+}
+
+.average-rating span.fs-1 {
+    font-size: 48px;
+    color: #333;
+}
+
+.rating-breakdown {
+    max-width: 400px;
+    margin: 0;
+    padding-left: 0;
+}
+
+.rating-breakdown .progress {
+    background-color: #e6e6e6;
+    border-radius: 10px;
+    height: 12px;
+    overflow: hidden;
+}
+
+.rating-row .star-label {
+    width: 30px;
+    /* đảm bảo chiều rộng cố định cho phần hiển thị số sao */
+    font-weight: 500;
+}
+
+.rating-row .progress {
+    height: 5px !important;
+    /* giảm chiều cao thanh ngang */
+    background-color: #e0e0e0;
+    border-radius: 5px;
+}
+
+.rating-row .progress-bar {
+    height: 100%;
+    background-color: #ffc107;
+    /* màu vàng */
+    border-radius: 5px;
+}
+
+
+
+.rating-breakdown .d-flex {
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.rating-breakdown span {
+    font-weight: 500;
+}
+
+.rating-breakdown i.bi-star {
+    font-size: 16px;
+}
+
+.mt-4 h5 {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.mt-4 p {
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.btn-outline-primary {
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+    color: white;
+}
+
+.rating-row {
+    position: relative;
+}
+
+.rating-tooltip {
+    position: absolute;
+    top: -20px;
+    right: 10px;
+    background-color: #ffc107;
+    color: #000000;
+    padding: 2px 6px;
+    font-size: 12px;
+    border-radius: 4px;
+    display: none;
+    z-index: 10;
+}
+
+.rating-row:hover .rating-tooltip {
+    display: block;
 }
 </style>

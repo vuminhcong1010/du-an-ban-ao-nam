@@ -53,7 +53,7 @@ onMounted(async () => {
         // Gửi dữ liệu cập nhật hóa đơn
         await axios.put(`http://localhost:8080/client/capNhatHoaDon/${hoaDonId}`, storedData);
 
-        // 🔥 Gọi API xóa session BE giỏ hàng (nếu backend dùng HttpSession để lưu giỏ hàng)
+
         await axios.post("http://localhost:8080/client/ClearSessionGioHang", {}, {
           withCredentials: true
         });

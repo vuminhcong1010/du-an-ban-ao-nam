@@ -499,42 +499,40 @@ const submitForm = async () => {
   try {
     isSubmitting.value = true;
 
-
-    // Validate all steps before submitting
+    // Validate all steps
     validateStep1();
     validateStep2();
     validateStep3();
 
-
-    // Check if there are any errors
     const hasErrors = Object.values(errors).some((error) => error !== "");
     if (hasErrors) {
       alert("Vui lòng sửa các lỗi trước khi gửi!");
       return;
     }
 
+    // ✅ Lấy tên từ code
+    const provinceName = provinces.value.find((p) => p.code == form.tinh_thanh_pho)?.name || "";
+    const districtName = districts.value.find((d) => d.code == form.quan_huyen)?.name || "";
+    const wardName = wards.value.find((w) => w.code == form.xa_phuong)?.name || "";
 
-    // Prepare form data
+    // ✅ Tạo formData với tên thay vì code
     const formData = {
       ...form,
-      // Đảm bảo birthdate là định dạng hợp lệ (YYYY-MM-DD)
       birthdate: form.birthdate ? new Date(form.birthdate).toISOString().split("T")[0] : null,
-      // Chuyển gender thành true/false
       gender: form.gender === "true" || form.gender === true,
+      tinh_thanh_pho: provinceName,
+      quan_huyen: districtName,
+      xa_phuong: wardName,
     };
 
-
-    // Gửi dữ liệu đến API
     const response = await axios.post("http://localhost:8080/cap-nhat-thong-tin", formData, {
       headers: {
         "Content-Type": "application/json",
       },
     });
 
-
     console.log("Success:", response.data);
-    // alert("Onboarding hoàn tất!\n" + JSON.stringify(formData, null, 2));
-    window.location.href="/coolmen"
+    window.location.href = "/coolmen";
   } catch (error) {
     console.error("Error submitting form:", error.response ? error.response.data : error.message);
     alert("Có lỗi xảy ra, vui lòng thử lại: " + (error.response?.data?.message || error.message));
@@ -542,6 +540,7 @@ const submitForm = async () => {
     isSubmitting.value = false;
   }
 };
+
 
 
 // Initialize

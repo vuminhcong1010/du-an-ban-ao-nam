@@ -7,16 +7,43 @@
                     <span class="addr-icon">📍</span>
                     <span class="addr-title">Địa Chỉ Nhận Hàng</span>
                 </div>
+
                 <div class="addr-detail">
                     <div class="addr-info">
-                        <strong>{{ form.firstName || 'Khách hàng' }}</strong>
-                        <span>({{ form.phone || 'Chưa có SĐT' }})</span>
-                        <span v-if="diaChiDangChon?.isMacDinh" class="default-address-label">MẶC ĐỊNH</span>
-                        <span class="addr-text">{{ diaChiHienThiText || 'Chưa có địa chỉ. Vui lòng thêm địa chỉ giao hàng.' }}</span>
+                        <!-- Người nhận -->
+                        <div class="addr-line">
+                            <label class="addr-label">Người nhận:</label>
+                            <strong>{{ form.firstName || 'Khách hàng' }}</strong>
+                        </div>
+
+                        <!-- SĐT -->
+                        <div class="addr-line">
+                            <label class="addr-label">SĐT:</label>
+                            <span>{{ form.phone || 'Chưa có SĐT' }}</span>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="addr-line">
+                            <label class="addr-label">Email:</label>
+                            <span>{{ form.email || 'Chưa có email' }}</span>
+                        </div>
+
+                        <!-- Địa chỉ -->
+                        <div class="addr-line">
+                            <label class="addr-label">Địa chỉ:</label>
+                            <span class="addr-text">
+                                {{ diaChiHienThiText || 'Chưa có địa chỉ. Vui lòng thêm địa chỉ giao hàng.' }}
+                            </span>
+                            <span v-if="diaChiDangChon?.isMacDinh" class="default-address-label">MẶC ĐỊNH</span>
+                        </div>
                     </div>
-                    <button class="btn small" @click="showDiaChiModal = true">Thay Đổi</button>
+
+                    <button class="btn small" @click="moFormThayDoiDiaChi">Thay Đổi</button>
+
                 </div>
             </div>
+
+
 
             <!-- Danh sách sản phẩm -->
             <div class="box">
@@ -31,7 +58,8 @@
                         <img :src="item.duongDanAnh" alt="Ảnh sản phẩm" class="thumb" />
                         <div>
                             <div class="name">{{ item.tenSanPham }}</div>
-                            <div v-if="item.phanTramGiamGia > 0" class="save-badge">Tiết kiệm {{ item.phanTramGiamGia }}%</div>
+                            <div v-if="item.phanTramGiamGia > 0" class="save-badge">Tiết kiệm {{ item.phanTramGiamGia
+                                }}%</div>
                             <div class="variant">{{ item.tenMau }}, {{ item.tenKichCo }}</div>
                         </div>
                     </div>
@@ -47,7 +75,9 @@
                     <div class="cell cell-qty">
                         <input type="number" v-model="item.soLuong" @change="kiemTraSoLuong(item)" class="qty" />
                     </div>
-                    <div class="cell cell-amount">{{ formatCurrency((item.hasDiscount ? item.giaSauKhiGiam : item.giaTruocKhiGiam) * item.soLuong) }}</div>
+                    <div class="cell cell-amount">{{ formatCurrency((item.hasDiscount ? item.giaSauKhiGiam :
+                        item.giaTruocKhiGiam) *
+                        item.soLuong) }}</div>
                 </div>
             </div>
 
@@ -66,9 +96,13 @@
                     <img src="/src/assets/logo.png" alt="logo" class="applied-logo" />
                     <div class="applied-main">
                         <div class="applied-title">
-                            {{ giamGiaDaApDung.phamTramGiamGia ? `Giảm ${giamGiaDaApDung.phamTramGiamGia}%` : `Giảm ${formatCurrency(giamGiaDaApDung.soTienGiam)}` }}
+                            {{ giamGiaDaApDung.phamTramGiamGia ? `Giảm ${giamGiaDaApDung.phamTramGiamGia}%` : `Giảm
+                            ${formatCurrency(giamGiaDaApDung.soTienGiam)}` }}
                         </div>
-                        <div class="applied-desc">Đã áp dụng: <strong>{{ giamGiaDaApDung.maPhieuGiamGia || 'Voucher' }}</strong> <span class="save">-{{ formatCurrency(tienGiam) }}</span></div>
+                        <div class="applied-desc">Đã áp dụng: <strong>{{ giamGiaDaApDung.maPhieuGiamGia || 'Voucher'
+                                }}</strong>
+                            <span class="save">-{{ formatCurrency(tienGiam) }}</span>
+                        </div>
                     </div>
                 </div>
                 <div class="row-inline total-line">
@@ -84,7 +118,16 @@
                 <div class="radio-card-group">
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'card' }">
                         <input type="radio" value="card" v-model="form.paymentMethod" />
-                        <img src="/src/assets/vnpay-logo-vinadesign-25-12-57-55.jpg" alt="VNPay Logo" class="vnpay-logo" />VNPay
+                        <img src="/src/assets/vnpay-logo-vinadesign-25-12-57-55.jpg" alt="VNPay Logo"
+                            class="vnpay-logo" />VNPay
+                    </label>
+                    <label class="radio-card" :class="{ selected: form.paymentMethod === 'momo' }">
+                        <input type="radio" value="momo" v-model="form.paymentMethod" />
+                        <img src="/src/assets/momo.png" alt="MOMO Logo" class="vnpay-logo" />MOMO
+                    </label>
+                    <label class="radio-card" :class="{ selected: form.paymentMethod === 'qrcode' }">
+                        <input type="radio" value="qrcode" v-model="form.paymentMethod" />
+                        <img src="/src/assets/QRCode.png" alt="QRCode Logo" class="vnpay-logo" />QR Code
                     </label>
                     <label class="radio-card" :class="{ selected: form.paymentMethod === 'cod' }">
                         <input type="radio" value="cod" v-model="form.paymentMethod" />
@@ -113,7 +156,8 @@
                 </div>
                 <div class="actions">
                     <button class="btn primary" :disabled="isLoading" @click="thanhToan">
-                        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status"
+                            aria-hidden="true"></span>
                         {{ isLoading ? 'Đang xử lý...' : 'Đặt hàng' }}
                     </button>
                 </div>
@@ -261,6 +305,65 @@
             </button>
         </div>
     </div>
+
+    <div v-if="showDiaChiThuCong" class="modal-custom">
+        <div class="modal-dialog-custom">
+            <div class="modal-header-custom">
+                <h5>Nhập địa chỉ giao hàng</h5>
+                <button class="close-button" @click="showDiaChiThuCong = false">×</button>
+            </div>
+            <div class="modal-body-custom">
+                <div class="form-group">
+                    <label>Họ tên:</label>
+                    <input type="text" v-model="formThuCong.ten" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Số điện thoại:</label>
+                    <input type="text" v-model="formThuCong.soDienThoai" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" v-model="formThuCong.email" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label>Tỉnh/Thành phố:</label>
+                    <select v-model="formData.tinhThanhPho" @change="onProvinceChange" required>
+                        <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                        <option v-for="province in provinces" :key="province.ProvinceID" :value="province.ProvinceID">
+                            {{ province.ProvinceName }}
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Quận/Huyện:</label>
+                    <select v-model="formData.quanHuyen" @change="onDistrictChange" required>
+                        <option value="">-- Chọn Quận/Huyện --</option>
+                        <option v-for="district in districts" :key="district.DistrictID" :value="district.DistrictID">
+                            {{ district.DistrictName }}
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Xã/Phường:</label>
+                    <select v-model="formData.xaPhuong" required>
+                        <option value="">-- Chọn Xã/Phường --</option>
+                        <option v-for="ward in wards" :key="ward.WardCode" :value="ward.WardCode">
+                            {{ ward.WardName }}
+                        </option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Địa chỉ chi tiết:</label>
+                    <input type="text" v-model="formData.diaChiChiTiet" placeholder="Số nhà, tên đường..." required />
+                </div>
+            </div>
+            <div class="modal-footer-custom">
+                <button class="btn btn-primary" @click="xacNhanDiaChiThuCong">Xác Nhận</button>
+                <button class="btn btn-secondary" @click="showDiaChiThuCong = false">Hủy</button>
+            </div>
+        </div>
+    </div>
+
 </template>
 
 <script setup>
@@ -310,6 +413,84 @@ const danhSachDiaChi = ref([]);
 const showDiaChiModal = ref(false); // ❌ Thiếu
 const diaChiDuocChon = ref(null); // Chứa địa chỉ được chọn
 const isEditing = ref(false);
+const userRaw = localStorage.getItem('loggedInUser');
+const isLoggedIn = !!userRaw;
+const showDiaChiThuCong = ref(false);
+const formThuCong = ref({
+    ten: '',
+    soDienThoai: '',
+    email: '',
+    diaChi: ''
+});
+
+function xacNhanDiaChiThuCong() {
+    const { ten, soDienThoai, email } = formThuCong.value;
+    const { tinhThanhPho, quanHuyen, xaPhuong, diaChiChiTiet } = formData.value;
+
+    // Kiểm tra các trường bắt buộc
+    if (!ten || !soDienThoai || !email || !tinhThanhPho || !quanHuyen || !xaPhuong || !diaChiChiTiet) {
+        toast.error("Vui lòng điền đầy đủ thông tin");
+        return;
+    }
+
+    // Validate số điện thoại
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(soDienThoai)) {
+        toast.error("Số điện thoại không hợp lệ...");
+        return;
+    }
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        toast.error("Email không hợp lệ...");
+        return;
+    }
+    // Gộp địa chỉ hiển thị
+    const diaChi = `${diaChiChiTiet}, ${getWardName(xaPhuong)}, ${getDistrictName(quanHuyen)}, ${getProvinceName(tinhThanhPho)}`;
+
+    // Gán thông tin form
+    form.value.firstName = ten;
+    form.value.phone = soDienThoai;
+    form.value.email = email;
+    diaChiHienThiText.value = diaChi;
+
+    // Gán địa chỉ đang chọn
+    diaChiDuocChon.value = {
+        diaChiChiTiet,
+        xaPhuong: getWardName(xaPhuong),
+        quanHuyen: getDistrictName(quanHuyen),
+        tinhThanhPho: getProvinceName(tinhThanhPho),
+        isMacDinh: false
+    };
+
+    // Gán lại các selected để trigger watchers
+    selectedProvince.value = tinhThanhPho;
+    selectedDistrict.value = quanHuyen;
+    selectedWard.value = xaPhuong;
+
+    // Gọi hàm tính phí vận chuyển ngay sau khi nhập địa chỉ
+    handleLayPhiVanChuyen({
+        tinhThanhPho: getProvinceName(tinhThanhPho),
+        quanHuyen: getDistrictName(quanHuyen),
+        xaPhuong: getWardName(xaPhuong)
+    });
+
+    showDiaChiThuCong.value = false;
+    toast.success("Địa chỉ đã được cập nhật");
+}
+
+
+// Cập nhật hàm moFormThayDoiDiaChi
+function moFormThayDoiDiaChi() {
+    if (isLoggedIn) {
+        // Gán lại địa chỉ đang hiển thị trước khi mở modal
+        diaChiDuocChon.value = diaChiDangChon.value;
+        showDiaChiModal.value = true;
+    } else {
+        showDiaChiThuCong.value = true;
+    }
+}
 
 // Địa chỉ đang hiển thị (ưu tiên cái user chọn, nếu không có thì mặc định)
 const diaChiDangChon = computed(() => {
@@ -425,10 +606,23 @@ async function luuDiaChi() {
         toast.error("Đã xảy ra lỗi khi lưu địa chỉ");
     }
 }
+function getProvinceName(id) {
+    const province = provinces.value.find(p => p.ProvinceID === id);
+    return province ? province.ProvinceName : '';
+}
+
+function getDistrictName(id) {
+    const district = districts.value.find(d => d.DistrictID === id);
+    return district ? district.DistrictName : '';
+}
+
+function getWardName(code) {
+    const ward = wards.value.find(w => w.WardCode === code);
+    return ward ? ward.WardName : '';
+}
 
 const onProvinceChange = async () => {
     const provinceId = formData.value.tinhThanhPho;
-
     formData.value.quanHuyen = '';
     formData.value.xaPhuong = '';
     districts.value = [];
@@ -438,6 +632,7 @@ const onProvinceChange = async () => {
 
     await fetchDistricts(provinceId);
 };
+
 const onDistrictChange = async () => {
     const districtId = formData.value.quanHuyen;
 
@@ -448,6 +643,7 @@ const onDistrictChange = async () => {
 
     await fetchWards(districtId);
 };
+
 function getProvinceIdByName(name) {
     const match = provinces.value.find(p => p.ProvinceName === name);
     return match?.ProvinceID || '';
@@ -1171,7 +1367,7 @@ async function thanhToan() {
             sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
 
             const vnpayRequest = {
-              amount: Math.round(tongCong.value),
+                amount: Math.round(tongCong.value),
                 hoaDonId: route.params.hoaDonId
             };
 
@@ -1184,7 +1380,71 @@ async function thanhToan() {
             window.dispatchEvent(new Event("cap-nhat-gio"));
             return;
         }
+        if (form.value.paymentMethod === 'momo') {
+            sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
 
+            const vnpayRequest = {
+                amount: Math.round(tongCong.value),
+                hoaDonId: route.params.hoaDonId
+            };
+
+            const response = await axios.post(`http://localhost:8080/momo`, vnpayRequest);
+            const vnpayUrl = response.data.shortLink;
+
+            window.location.href = vnpayUrl;
+            sessionStorage.removeItem("gioHang");
+            localStorage.removeItem("gioHang");
+            window.dispatchEvent(new Event("cap-nhat-gio"));
+            return;
+        }
+        if (form.value.paymentMethod === 'qrcode') {
+            sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
+            const randomNumber = Math.floor(Math.random() * 1000) + 1;
+            const cancelPage = "http://localhost:5173/return"
+            const successPage = "https://www.google.com/success"
+            const convertData = {
+                data: "{'amount':" + Math.round(tongCong.value) + ",'cancelUrl':'" + cancelPage + "','description':'" + data.ghiChu + "','orderCode':" + randomNumber + ",'returnUrl':'" + successPage + "'}"
+            };
+
+            let signature = ""
+            await axios.post("http://localhost:8080/convert", convertData).then(res => {
+
+                signature = res.data
+                console.log(signature);
+
+            })
+            let ttkh = ref({
+                orderCode: randomNumber,
+                amount: Math.round(tongCong.value),
+                description: data.ghiChu,
+
+                buyerName: data.hoTen,
+                buyerPhone: data.sdt,
+                buyerAddress: data.diaChi,
+                cancelUrl: cancelPage,
+                returnUrl: successPage,
+                signature: signature
+            })
+
+            await axios.post("https://api-merchant.payos.vn/v2/payment-requests", ttkh.value, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-client-id": "0e92cf06-3fe2-4e62-b56c-691c19251a35",
+                    "x-api-key": "2dcc721a-fa13-4ff6-80ca-7b6b89a81749"
+                }
+            }).then(Response => {
+                localStorage.setItem("ttkh", JSON.stringify(ttkh.value))
+                console.log(JSON.parse(localStorage.getItem("ttkh")));
+                window.location.href = "http://localhost:5173/return"
+            }).catch(() => {
+                window.location.href = "/error"
+            })
+
+            sessionStorage.removeItem("gioHang");
+            localStorage.removeItem("gioHang");
+            window.dispatchEvent(new Event("cap-nhat-gio"));
+            return;
+        }
         // 👉 Nếu không chọn VNPay thì cập nhật hóa đơn ngay
         await axios.put(`http://localhost:8080/client/capNhatHoaDon/${route.params.hoaDonId}`, data, {
             withCredentials: true
@@ -1278,14 +1538,16 @@ onMounted(async () => {
     form.value.phone = user.soDienThoai || '';
 
     // Tìm địa chỉ mặc định
+    // Tìm địa chỉ mặc định
     const diaChiMacDinh = user.diaChis?.find(dc => dc.isMacDinh === true);
     if (!diaChiMacDinh) {
         console.warn("Không tìm thấy địa chỉ mặc định.");
         return;
     }
 
+    // ✅ GÁN LUÔN vào diaChiDuocChon để tránh báo lỗi thiếu địa chỉ
+    diaChiDuocChon.value = diaChiMacDinh;
     form.value.thonXom = diaChiMacDinh.diaChiChiTiet || '';
-
     // Tìm mã tỉnh/huyện/xã từ tên
     function normalizeVietnamese(str) {
         if (!str) return '';
@@ -1411,18 +1673,99 @@ input.form-control:focus {
 }
 
 /* Address card */
-.checkout {margin-top: 20px; display: flex; flex-direction: column; gap: 16px; }
-.box { background: #fff; border-radius: 8px; box-shadow: 0 1px 6px rgb(0 0 0 / 0.06); padding: 14px 16px; }
-.address-box { display: flex; flex-direction: column; gap: 8px; }
-.addr-header { display: flex; align-items: center; gap: 8px; border-bottom: 1px dashed #e5e7eb; padding-bottom: 6px; }
-.addr-icon { font-size: 18px; }
-.addr-title { font-weight: 700; color: #e74c3c; }
-.addr-detail { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.addr-info { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.addr-text { margin-left: 8px; }
-.addr-line { margin-top: 4px; color: #333; }
-.btn.small { border: 1px solid #5930a3; border-radius: 6px; background: #fff; padding: 6px 10px; cursor: pointer; transition: all .2s ease; }
-.btn.small:hover { background: #f5f0ff; border-color: #6f42c1; }
+.checkout {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.box {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgb(0 0 0 / 0.06);
+    padding: 14px 16px;
+}
+
+.address-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.addr-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px dashed #e5e7eb;
+    padding-bottom: 6px;
+}
+
+.addr-icon {
+    font-size: 18px;
+}
+
+.addr-title {
+    font-weight: 700;
+    color: #e74c3c;
+}
+
+.addr-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.addr-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.addr-line {
+    display: grid;
+    grid-template-columns: 100px auto;
+    /* cột label + cột nội dung */
+    gap: 8px;
+    align-items: center;
+}
+
+.addr-label {
+    font-weight: 600;
+    color: #444;
+    white-space: nowrap;
+}
+
+.addr-text {
+    color: #333;
+}
+
+.default-address-label {
+    background: #d1f1dc;
+    color: #2d7a46;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 6px;
+    margin-left: 6px;
+}
+
+.btn.small {
+    border: 1px solid #5930a3;
+    border-radius: 6px;
+    background: #fff;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: all .2s ease;
+}
+
+.btn.small:hover {
+    background: #f5f0ff;
+    border-color: #6f42c1;
+}
+
 .address-line {
     margin-top: 4px;
     color: #333;
@@ -1443,45 +1786,68 @@ input.form-control:focus {
     color: #666;
     font-weight: 600;
 }
+
 .table-row {
     display: grid;
-    grid-template-columns: 1fr 180px 120px 160px;
+    grid-template-columns: 1fr 180px 170px 150px;
     gap: 12px;
     align-items: center;
     padding: 12px;
     border-top: 1px solid #f0f0f0;
 }
+
 .cell-info {
     display: flex;
     align-items: center;
     gap: 12px;
 }
+
 .thumb {
     width: 48px;
     height: 48px;
     object-fit: cover;
     border-radius: 6px;
 }
-.save-badge { color: #16a34a; font-weight: 700; font-size: 13px; margin-top: 2px; }
+
+.save-badge {
+    color: #16a34a;
+    font-weight: 700;
+    font-size: 13px;
+    margin-top: 2px;
+}
+
 .name {
     font-weight: 600;
     margin-bottom: 2px;
 }
+
 .variant {
     color: #666;
     font-size: 13px;
 }
-.cell-price .old { color: #9ca3af; text-decoration: line-through; margin-right: 8px; }
-.cell-price .new { font-weight: 700; }
+
+.cell-price .old {
+    color: #9ca3af;
+    text-decoration: line-through;
+    margin-right: 8px;
+}
+
+.cell-price .new {
+    font-weight: 700;
+}
+
 .cell-price,
 .cell-qty,
 .cell-amount {
     text-align: right;
+    margin-right: 70px;
 }
+
 .cell-qty {
     display: flex;
     justify-content: flex-end;
 }
+
 .qty {
     width: 72px;
     height: 34px;
@@ -1498,32 +1864,151 @@ input.form-control:focus {
     align-items: center;
     padding: 10px 0;
 }
-.note-line { grid-template-columns: auto 1fr; }
-.voucher-line { display: flex; align-items: center; gap: 6px; }
-.lbl { color: #555; font-weight: 600; }
-.note { width: 100%; border: 1px solid #ccc; border-radius: 6px; height: 36px; padding: 0 10px; }
-.spacer { flex: 1; }
-.voucher-ic { width: 16px; height: 16px; margin-right: 4px; }
-.voucher-title { font-weight: 700; color: #333; }
-.link { color: #0088ff; text-decoration: none; transition: color .2s ease; }
-.link:hover { color: #0066cc; }
-.bold { font-weight: 700; }
-.applied-voucher { margin-top: 6px; padding: 10px 12px; background: #f0fff6; border: 1px solid #31c48d; border-radius: 6px; font-size: 14px; display: flex; align-items: center; gap: 6px; }
-.applied-logo { width: 26px; height: 26px; object-fit: contain; }
-.applied-main { display: flex; flex-direction: column; gap: 2px; }
-.applied-title { font-weight: 700; color: #333; }
-.applied-voucher .save { color: #16a34a; font-weight: 700; }
-.total-line { border-top: 1px dashed #e5e7eb; margin-top: 10px; padding-top: 10px; display: flex; align-items: center; gap: 8px; }
+
+.note-line {
+    grid-template-columns: auto 1fr;
+}
+
+.voucher-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lbl {
+    color: #555;
+    font-weight: 600;
+}
+
+.note {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    height: 36px;
+    padding: 0 10px;
+}
+
+.spacer {
+    flex: 1;
+}
+
+.voucher-ic {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+}
+
+.voucher-title {
+    font-weight: 700;
+    color: #333;
+}
+
+.link {
+    color: #0088ff;
+    text-decoration: none;
+    transition: color .2s ease;
+}
+
+.link:hover {
+    color: #0066cc;
+}
+
+.bold {
+    font-weight: 700;
+}
+
+.applied-voucher {
+    margin-top: 6px;
+    padding: 10px 12px;
+    background: #f0fff6;
+    border: 1px solid #31c48d;
+    border-radius: 6px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.applied-logo {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+}
+
+.applied-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.applied-title {
+    font-weight: 700;
+    color: #333;
+}
+
+.applied-voucher .save {
+    color: #16a34a;
+    font-weight: 700;
+}
+
+.total-line {
+    border-top: 1px dashed #e5e7eb;
+    margin-top: 10px;
+    padding-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 
 /* Shipping row */
-.pay-title { font-weight: 700; margin-bottom: 12px; }
-.summary-bottom .sum-row { display: flex; justify-content: space-between; padding: 6px 0; }
-.summary-bottom .grand { font-weight: 800; font-size: 18px; border-top: 1px solid #eee; margin-top: 6px; padding-top: 10px; }
-.summary-bottom .actions { display: flex; justify-content: flex-end; margin-top: 12px; }
-.btn.primary { background-color: #6f42c1; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgb(111 66 193 / 0.35); transition: background .2s ease, transform .1s ease; }
-.btn.primary:hover { background-color: #5930a3; }
-.radio-card { transition: border-color .2s ease, background .2s ease; }
-.radio-card:hover { border-color: #9f7aea; background-color: #faf7ff; }
+.pay-title {
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+.summary-bottom .sum-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+}
+
+.summary-bottom .grand {
+    font-weight: 800;
+    font-size: 18px;
+    border-top: 1px solid #eee;
+    margin-top: 6px;
+    padding-top: 10px;
+}
+
+.summary-bottom .actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.btn.primary {
+    background-color: #6f42c1;
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgb(111 66 193 / 0.35);
+    transition: background .2s ease, transform .1s ease;
+}
+
+.btn.primary:hover {
+    background-color: #5930a3;
+}
+
+.radio-card {
+    transition: border-color .2s ease, background .2s ease;
+}
+
+.radio-card:hover {
+    border-color: #9f7aea;
+    background-color: #faf7ff;
+}
 
 h5 {
     font-weight: 700;
@@ -1703,6 +2188,7 @@ hr {
 
 .radio-card:hover {
     border-color: #9f7aea;
+    background-color: #faf7ff;
 }
 
 .radio-card input[type="radio"] {
@@ -1888,7 +2374,7 @@ textarea:focus {
 
 .voucher-expiry {
     font-size: 12px;
-    color: gray;
+    color: #999;
     margin: 0;
 }
 
@@ -2230,7 +2716,6 @@ textarea:focus {
     font-size: 12px;
     border-radius: 4px;
     font-weight: 600;
-    margin-top: 4px;
 }
 
 .set-default-button {
@@ -2513,9 +2998,10 @@ address-option {
 .swal2-container {
     z-index: 99999 !important;
 }
+
 .vnpay-logo {
-  height: 20px;
-  margin-left: 6px;
-  vertical-align: middle;
+    height: 20px;
+    margin-left: 6px;
+    vertical-align: middle;
 }
 </style>

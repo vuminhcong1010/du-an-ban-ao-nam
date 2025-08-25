@@ -37,7 +37,8 @@ import ClientSanPham from "@/components/client/ProductPage.vue";
 import Oder from "@/components/client/Order.vue";
 import ClientSanPhamDetail from "@/components/client/ProductDetail.vue";
 import LichSuDatHang from "@/components/client/OrderHistory.vue";
-import VnpayReturn from "@/components/client/VnpayReturn.vue";
+import Return from "@/components/client/ReturnCard.vue";
+import ProductCategory from "@/components/client/ProductCategory.vue";
 import MyAccount from "@/components/client/MyAccount.vue"; // Make sure this file exists
 import OrderDetail from "@/components/client/OrderDetail.vue"; // Make sure this file exists
 import gioHang from "@/components/client/GioHangPage.vue"; // Make sure this file exists
@@ -76,9 +77,14 @@ const router = createRouter({
           component: ClientSanPhamDetail,
         },
         {
-          path: "/vnpay-return",
-          name: "vnpay-return",
-          component: VnpayReturn,
+          path: "/product-category/:idDanhMuc",
+          name: "product-category",
+          component: ProductCategory,
+        },
+        {
+          path: "/return",
+          name: "return",
+          component: Return,
         },
         {
           path: "client-oder/:hoaDonId",

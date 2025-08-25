@@ -10,11 +10,21 @@
 
       <nav class="main-navigation">
         <ul>
-          <li><a href="#">Trang chủ</a></li>
-          <li><a href="/coolmen/client-san-pham">Sản phẩm</a></li>
-          <li><a href="#">Danh mục</a></li>
-          <li><a href="#">Giảm giá</a></li>
-          <li><a href="#">Liên hệ</a></li>
+          <li>
+            <a href="/coolmen" :class="{ active: route.path === '/coolmen' }">Trang chủ</a>
+          </li>
+          <li>
+            <a href="/coolmen/client-san-pham" :class="{ active: route.path === '/coolmen/client-san-pham' }">Sản phẩm</a>
+          </li>
+          <li>
+            <a href="/coolmen/danh-muc" :class="{ active: route.path === '/coolmen/danh-muc' }">Danh mục</a>
+          </li>
+          <li>
+            <a href="/coolmen/giam-gia" :class="{ active: route.path === '/coolmen/giam-gia' }">Giảm giá</a>
+          </li>
+          <li>
+            <a href="/coolmen/lien-he" :class="{ active: route.path === '/coolmen/lien-he' }">Liên hệ</a>
+          </li>
         </ul>
       </nav>
 
@@ -22,7 +32,6 @@
         <!-- User -->
         <div class="user-icon" ref="userIcon" @click="toggleUserDropdown">
           <a href="#"><i class="fas fa-user"></i></a>
-
           <div v-if="showUserDropdown" class="user-dropdown">
             <ul>
               <li v-if="isLoggedIn">
@@ -42,7 +51,6 @@
         </div>
 
         <!-- Giỏ hàng -->
-        <!-- Giỏ hàng (chuyển sang route) -->
         <div class="cart-icon">
           <router-link to="/gio-hang">
             <i class="fas fa-shopping-cart"></i>
@@ -55,108 +63,87 @@
 </template>
 
 
-<script>
+
+<script setup>
+import { onMounted, ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
-import CartDetail from './CartDetail.vue'
 import Cookies from 'js-cookie'
 
-export default {
-  name: 'AppHeader',
-  components: { CartDetail },
-  data() {
-    return {
-      searchQuery: '',
-      soLuongGio: 0,
-      hienChiTiet: false,
-      danhSachGio: [],
-      showUserDropdown: false,
-    }
-  },
+const route = useRoute()
 
-  computed: {
-    isLoggedIn() {
-      const token = localStorage.getItem('clientAuthToken')
-      const user = localStorage.getItem('loggedInUser')
-      return !!token || !!user
-    }
-  },
+const searchQuery = ref('')
+const soLuongGio = ref(0)
+const hienChiTiet = ref(false)
+const danhSachGio = ref([])
+const showUserDropdown = ref(false)
 
-  mounted() {
-    this.capNhatGioHang()
-    window.addEventListener("cap-nhat-gio", this.capNhatGioHang)
-    document.addEventListener("click", this.handleClickOutside)
-  },
-  unmounted() {
-    window.removeEventListener("cap-nhat-gio", this.capNhatGioHang)
-    document.removeEventListener("click", this.handleClickOutside)
-  },
-  methods: {
-    performSearch() {
-      console.log('Đang tìm kiếm:', this.searchQuery)
-    },
-    async capNhatGioHang() {
-      try {
-        const res = await axios.get('http://localhost:8080/client/LoadSanPham', {
-          withCredentials: true
-        })
+const userIcon = ref(null)
 
-        const data = Array.isArray(res.data) ? res.data : []
-          console.log('Dữ liệu giỏ hàng:', data)
-        data.forEach(sp => {
-          if (!sp.tongTien || sp.tongTien === 0) {
-            sp.tongTien = sp.soLuong * sp.gia
-          }
-          if (!sp.anhSanPham) {
-            sp.anhSanPham = '/placeholder.png'
-          }
-        })
+const isLoggedIn = computed(() => {
+  const token = localStorage.getItem('clientAuthToken')
+  const user = localStorage.getItem('loggedInUser')
+  return !!token || !!user
+})
 
-        this.danhSachGio = data
-       this.soLuongGio = data.length
-      } catch (error) {
-        this.danhSachGio = []
-        this.soLuongGio = 0
-        console.error('Lỗi khi lấy giỏ hàng:', error)
+const capNhatGioHang = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/client/LoadSanPham', {
+      withCredentials: true
+    })
+    const data = Array.isArray(res.data) ? res.data : []
+    data.forEach(sp => {
+      if (!sp.tongTien || sp.tongTien === 0) {
+        sp.tongTien = sp.soLuong * sp.gia
       }
-    },
-    diDenTrangGioHang() {
-      this.$router.push({ name: 'client-cart' })
-    },
-
-    toggleGioHang() {
-      this.hienChiTiet = !this.hienChiTiet
-    },
-    capNhatGioHangLocal(newDanhSach) {
-      this.danhSachGio = newDanhSach
-      this.soLuongGio = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0)
-      sessionStorage.removeItem("gioHang")
-      localStorage.removeItem("gioHang")
-    },
-    xoaSanPham(idSanPhamChiTiet) {
-      this.danhSachGio = this.danhSachGio.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet)
-      this.soLuongGio = this.danhSachGio.reduce((tong, sp) => tong + sp.soLuong, 0)
-    },
-    toggleUserDropdown() {
-      this.showUserDropdown = !this.showUserDropdown
-    },
-    handleClickOutside(event) {
-      if (this.$refs.userIcon && !this.$refs.userIcon.contains(event.target)) {
-        this.showUserDropdown = false
+      if (!sp.anhSanPham) {
+        sp.anhSanPham = '/placeholder.png'
       }
-    },
-    logout() {
-      localStorage.removeItem('clientAuthToken')
-      localStorage.removeItem('loggedInUser')
-      Cookies.remove('thongTinKhachHang')
-      this.showUserDropdown = false
-      window.location.href = '/coolmen/dang-nhap-khach-hang'
-    }
+    })
+
+    danhSachGio.value = data
+    soLuongGio.value = data.length
+  } catch (error) {
+    danhSachGio.value = []
+    soLuongGio.value = 0
+    console.error('Lỗi khi lấy giỏ hàng:', error)
   }
 }
+
+const handleClickOutside = (event) => {
+  if (userIcon.value && !userIcon.value.contains(event.target)) {
+    showUserDropdown.value = false
+  }
+}
+
+const toggleUserDropdown = () => {
+  showUserDropdown.value = !showUserDropdown.value
+}
+
+const logout = () => {
+  localStorage.removeItem('clientAuthToken')
+  localStorage.removeItem('loggedInUser')
+  Cookies.remove('thongTinKhachHang')
+  showUserDropdown.value = false
+  window.location.href = '/coolmen/dang-nhap-khach-hang'
+}
+
+onMounted(() => {
+  capNhatGioHang()
+  window.addEventListener('cap-nhat-gio', capNhatGioHang)
+  document.addEventListener('click', handleClickOutside)
+})
 </script>
 
 
+
 <style scoped>
+.main-navigation a.active {
+  color: #007bff;
+  font-weight: bold;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 2px;
+}
 .badge {
   background: purple;
   color: white;
