@@ -105,7 +105,7 @@ const formatCurrency = (val) => {
 
 const xacNhanThanhToan = async () => {
   const data = {
-    maHoaDon: props.maHoaDon, // phải truyền prop này từ cha vào
+    maHoaDon: props.maHoaDon,
   };
 
   if (hinhThuc.value === "khac") {
@@ -124,7 +124,18 @@ const xacNhanThanhToan = async () => {
     data.soTienKhachTra = soTienKhachTra.value;
   }
 
-  await thanhToanDonHang(data);
+  try {
+    await thanhToanDonHang(data);
+
+    // ✅ 1. Đóng modal
+    emit("close");
+
+    // ✅ 2. Gọi hàm ở cha
+    emit("thanh-toan-thanh-cong"); // bạn đặt tên event tùy ý
+  } catch (err) {
+    console.error(err);
+    alert("Thanh toán thất bại!");
+  }
 };
 
 
