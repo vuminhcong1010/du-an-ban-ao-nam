@@ -1,789 +1,311 @@
 <script setup>
-import { ref, onMounted, watch, computed } from "vue";
-import { UserCog, Truck } from "lucide-vue-next";
-import PopupChonKhachHang from "./ThemKhachHangHoaDon.vue";
-import ChonDiaChiKhachHang from "./ChonDiaChiKhachHangHoaDon.vue";
+import { ref, reactive, watch } from "vue";
 import axios from "axios";
-import { defineEmits } from "vue";
 
-const emit = defineEmits(["capNhatThongTinKhachHang"]);
 const props = defineProps({
-  order: Object,
+  tongTien: {
+    type: Number,
+    required: true,
+  },
+  visible: {
+    type: Boolean,
+    default: false,
+  },
+  maHoaDon: {  // ✅ Thêm prop này
+    type: String,
+    required: true,
+  },
+  loaiThanhToan: String,
 });
 
-// 0 = tại quầy, 1 = giao hàng
-const phuongThucVanChuyen = ref(0);
+const emit = defineEmits(["close", "xac-nhan"]);
 
-// khách hàng:
-// Hiển thị popup chọn khách hàng
-const hienThiPopupChonKhach = ref(false);
+const hinhThuc = ref("tien_mat");
+const maGiaoDichChinh = ref("");
+const soTienKhachTra = ref(props.tongTien);
 
-// Thông tin khách hàng đã chọn
-const khachHangDuocChon = ref(null);
+const danhSachThanhToan = reactive([
+  { tenPhuongThuc: "Tiền mặt", maGiaoDich: "", soTien: props.tongTien },
+]);
 
-// Mở popup
-const moPopupChonKhach = () => {
-  hienThiPopupChonKhach.value = true;
-};
+const PHUONG_THUC = [
+  { label: "Tiền mặt", value: "tien_mat" },
+  { label: "COD", value: "cod" },
+  { label: "VNPay", value: "vnpay" },
+  { label: "Momo", value: "momo" },
+  { label: "QR code", value: "qrcode" },
+];
 
-// Nhận khách hàng được chọn từ popup
-const chonKhachHang = (khachHang) => {
-  khachHangDuocChon.value = khachHang;
-  hienThiPopupChonKhach.value = false;
+const phuongThucChonNhieu = ref([]);
 
-  // Gán mặc định tên/sđt người nhận
-  tenNguoiNhan.value = khachHang.tenKhachHang;
-  sdtNguoiNhan.value = khachHang.soDienThoai;
-  emailNguoiNhan.value = khachHang.email;
-};
-
-// Bỏ chọn khách hàng
-const boChonKhachHang = () => {
-  khachHangDuocChon.value = null;
-  diaChiGiaoHang.value = {
-    diaChiChiTiet: "",
-    xaPhuong: "",
-    quanHuyen: "",
-    tinhThanhPho: "",
-  };
-  tenNguoiNhan.value = "";
-  sdtNguoiNhan.value = "";
-  emailNguoiNhan.value = "";
-  popupVisible.value = false;
-
-  // 🔥 Xoá luôn mã giảm giá trong order
-  if (props.order) {
-    props.order.giamGia = null;
+// Cập nhật khi hinhThuc thay đổi
+watch(hinhThuc, (val) => {
+  danhSachThanhToan.length = 0;
+  if (val === "khac") {
+    phuongThucChonNhieu.value = [];
+  } else {
+    const phuongThuc = PHUONG_THUC.find((p) => p.value === val);
+    danhSachThanhToan.push({
+      tenPhuongThuc: phuongThuc ? phuongThuc.label : "Không xác định",
+      maGiaoDich: "",
+      soTien: props.tongTien,
+    });
   }
+});
 
-  // Gửi cập nhật để xóa luôn trong component cha
-  capNhatOrderKhachHang();
-};
+// Cập nhật khi chọn nhiều phương thức
+watch(phuongThucChonNhieu, (list) => {
+  danhSachThanhToan.length = 0;
+  if (list.length) {
+    const chiaTien = props.tongTien / list.length;
+    list.forEach((val) => {
+      const pt = PHUONG_THUC.find((p) => p.value === val);
+      danhSachThanhToan.push({
+        tenPhuongThuc: pt ? pt.label : val,
+        maGiaoDich: "",
+        soTien: chiaTien,
+      });
+    });
+  }
+});
 
-const tenNguoiNhan = ref("");
-const sdtNguoiNhan = ref("");
-const emailNguoiNhan = ref("");
-//-------//
-
-// lấy địa chỉ:
-
-const diaChiGiaoHang = ref({
-  diaChiChiTiet: "",
-  xaPhuong: "",
-  quanHuyen: "",
-  tinhThanhPho: "",
-}); // Địa chỉ đã chọn
+// ✅ Cập nhật khi tongTien thay đổi
 watch(
-  diaChiGiaoHang,
-  (val) => {
-    localStorage.setItem("diaChiGiaoHang", JSON.stringify(val));
-  },
-  { deep: true }
-);
-
-const popupVisible = ref(false); // Hiển thị popup chọn địa chỉ
-const moPopupDiaChi = () => {
-  if (!khachHangDuocChon.value?.id) return;
-  popupVisible.value = true;
-};
-const dongPopupDiaChi = () => {
-  popupVisible.value = false;
-};
-const chonDiaChi = async (dc) => {
-  // Cập nhật trực tiếp object diaChiGiaoHang
-  diaChiGiaoHang.value = {
-    diaChiChiTiet: dc.diaChiChiTiet,
-    xaPhuong: dc.xaPhuong,
-    quanHuyen: dc.quanHuyen,
-    tinhThanhPho: dc.tinhThanhPho,
-  };
-
-  // Tìm tỉnh theo tên và load quận
-  const tinh = danhSachTinh.value.find((t) => t.name === dc.tinhThanhPho);
-  if (tinh) {
-    const resQuan = await axios.get(
-      `https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`
-    );
-    danhSachQuan.value = resQuan.data.districts;
-
-    // Tìm quận và load phường
-    const quan = resQuan.data.districts.find((q) => q.name === dc.quanHuyen);
-    if (quan) {
-      const resPhuong = await axios.get(
-        `https://provinces.open-api.vn/api/d/${quan.code}?depth=2`
-      );
-      danhSachPhuong.value = resPhuong.data.wards;
-    }
-  }
-
-  // Đóng popup sau khi chọn xong
-  popupVisible.value = false;
-  // ✅ THÊM DÒNG NÀY để đảm bảo cập nhật địa chỉ sang order
-  // capNhatOrderKhachHang();
-};
-
-const danhSachTinh = ref([]);
-const danhSachQuan = ref([]);
-const danhSachPhuong = ref([]);
-
-const tinhDuocChon = ref(null);
-const quanDuocChon = ref(null);
-const phuongDuocChon = ref(null);
-
-onMounted(async () => {
-  const res = await axios.get("https://provinces.open-api.vn/api/?depth=1");
-  danhSachTinh.value = res.data;
-  // Nếu đã có địa chỉ từ trước thì tự động load lại danh sách quận và phường tương ứng
-  if (diaChiGiaoHang.value.tinhThanhPho) {
-    const tinh = danhSachTinh.value.find(
-      (t) => t.name === diaChiGiaoHang.value.tinhThanhPho
-    );
-    if (tinh) {
-      const resQuan = await axios.get(
-        `https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`
-      );
-      danhSachQuan.value = resQuan.data.districts;
-
-      const quan = danhSachQuan.value.find(
-        (q) => q.name === diaChiGiaoHang.value.quanHuyen
-      );
-      if (quan) {
-        const resPhuong = await axios.get(
-          `https://provinces.open-api.vn/api/d/${quan.code}?depth=2`
-        );
-        danhSachPhuong.value = resPhuong.data.wards;
+  () => props.tongTien,
+  (newVal) => {
+    soTienKhachTra.value = newVal;
+    if (hinhThuc.value !== "khac") {
+      danhSachThanhToan.length = 0;
+      const phuongThuc = PHUONG_THUC.find((p) => p.value === hinhThuc.value);
+      danhSachThanhToan.push({
+        tenPhuongThuc: phuongThuc ? phuongThuc.label : "Không xác định",
+        maGiaoDich: "",
+        soTien: newVal,
+      });
+    } else {
+      if (phuongThucChonNhieu.value.length) {
+        const chiaTien = newVal / phuongThucChonNhieu.value.length;
+        danhSachThanhToan.forEach((pt) => (pt.soTien = chiaTien));
       }
     }
   }
-});
+);
 
-const layQuanTheoTinh = async () => {
-  const tinh = danhSachTinh.value.find(
-    (t) => t.name === diaChiGiaoHang.value.tinhThanhPho
-  );
-  if (!tinh) return;
-
-  const res = await axios.get(
-    `https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`
-  );
-  danhSachQuan.value = res.data.districts;
-
-  // Reset các trường phụ thuộc
-  diaChiGiaoHang.value.quanHuyen = "";
-  diaChiGiaoHang.value.xaPhuong = "";
-};
-
-const layPhuongTheoQuan = async () => {
-  const quan = danhSachQuan.value.find(
-    (q) => q.name === diaChiGiaoHang.value.quanHuyen
-  );
-  if (!quan) return;
-
-  const res = await axios.get(
-    `https://provinces.open-api.vn/api/d/${quan.code}?depth=2`
-  );
-  danhSachPhuong.value = res.data.wards;
-
-  diaChiGiaoHang.value.xaPhuong = "";
-};
-
-const diaChiDayDu = computed(() => {
-  const dc = diaChiGiaoHang.value;
-  if (
-    !dc ||
-    !dc.diaChiChiTiet ||
-    !dc.xaPhuong ||
-    !dc.quanHuyen ||
-    !dc.tinhThanhPho
-  )
-    return "";
-  return `${dc.diaChiChiTiet}, ${dc.xaPhuong}, ${dc.quanHuyen}, ${dc.tinhThanhPho}`;
-});
-
-// chuyển dữ liệu sang bán hàng:
-const capNhatOrderKhachHang = () => {
-  emit("capNhatThongTinKhachHang", {
-    idKhachHang: khachHangDuocChon.value?.id || null,
-    tenKhachHang: khachHangDuocChon.value?.tenKhachHang || "Khách lẻ",
-    tenNguoiNhan: tenNguoiNhan.value,
-    sdt: sdtNguoiNhan.value,
-    gmail: emailNguoiNhan.value,
-    diaChi: diaChiDayDu.value,
-    hinhThucNhanHang: phuongThucVanChuyen.value,
-    phiVanChuyen: phivanchuyen.value,
+const themDong = () => {
+  danhSachThanhToan.push({
+    tenPhuongThuc: "Tiền mặt",
+    maGiaoDich: "",
+    soTien: 0,
   });
 };
 
-const isUpdatingFromProps = ref(false);
-
-// Gọi khi chọn khách, chọn địa chỉ, hoặc thay đổi input
-watch(
-  [
-    khachHangDuocChon,
-    diaChiGiaoHang,
-    tenNguoiNhan,
-    sdtNguoiNhan,
-    emailNguoiNhan,
-    phuongThucVanChuyen,
-  ],
-  () => {
-    if (!isUpdatingFromProps.value) {
-      capNhatOrderKhachHang();
-    }
-  },
-  { deep: true }
-);
-
-watch(
-  () => props.order,
-  (newOrder) => {
-    isUpdatingFromProps.value = true; // ⛔ chặn watcher emit tạm thời
-
-    if (newOrder?.khachHang) {
-      khachHangDuocChon.value = {
-        id: newOrder.khachHang.idKhachHang,
-        tenKhachHang: newOrder.khachHang.tenKhachHang,
-        soDienThoai: newOrder.khachHang.sdt,
-        email: "",
-        gioiTinh: true,
-      };
-
-      tenNguoiNhan.value = newOrder.khachHang.tenNguoiNhan || "";
-      sdtNguoiNhan.value = newOrder.khachHang.sdt || "";
-      emailNguoiNhan.value = newOrder.khachHang.gmail || "";
-      phuongThucVanChuyen.value = newOrder.hinhThucNhanHang ?? 0;
-
-      if (newOrder.khachHang.diaChi) {
-        const parts = newOrder.khachHang.diaChi.split(",").map((s) => s.trim());
-        diaChiGiaoHang.value = {
-          diaChiChiTiet: parts[0] || "",
-          xaPhuong: parts[1] || "",
-          quanHuyen: parts[2] || "",
-          tinhThanhPho: parts[3] || "",
-        };
-      }
-    }
-
-    // Sau khi cập nhật xong props → cho phép emit lại
-    setTimeout(() => {
-      isUpdatingFromProps.value = false;
-    }, 0);
-  },
-  { immediate: true, deep: true }
-);
-
-// theo dõi địa chỉ:
-watch(
-  [
-    () => diaChiGiaoHang.value.diaChiChiTiet,
-    () => diaChiGiaoHang.value.xaPhuong,
-    () => diaChiGiaoHang.value.quanHuyen,
-    () => diaChiGiaoHang.value.tinhThanhPho,
-  ],
-  () => {
-    if (!isUpdatingFromProps.value) {
-      // diaChiDayDu();
-      capNhatOrderKhachHang();
-    }
-  }
-);
-
-// --------------------------------------------------------------------------------------------------------------------------
-// tính phí giao hàng:
-
-const tokenGHN = "8e2a56e5-6a41-11f0-8120-026f4833faa3";
-
-// Hàm chuẩn hóa tiếng Việt
-function normalizeVN(str) {
-  return str
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-// Hàm lấy district_id và ward_code từ địa chỉ
-
-// =================== HÀM MỚI ĐỂ "DỌN DẸP" ĐỊA CHỈ ===================
-/**
- * Loại bỏ các tiền tố như "Tỉnh", "Thành phố", "Quận", "Phường"... khỏi chuỗi.
- * @param {string} str - Chuỗi địa chỉ cần làm sạch.
- * @returns {string} - Chuỗi đã được làm sạch.
- */
-function cleanAddressPart(str) {
-  if (!str) return "";
-  let cleanedStr = normalizeVN(str); // Chuẩn hóa (vd: "Thành Phố" -> "thanh pho")
-  const prefixes = [
-    "thanh pho",
-    "tinh",
-    "quan",
-    "huyen",
-    "phuong",
-    "xa",
-    "thi tran",
-  ];
-
-  for (const prefix of prefixes) {
-    if (cleanedStr.startsWith(prefix + " ")) {
-      cleanedStr = cleanedStr.substring(prefix.length + 1);
-    }
-  }
-  return cleanedStr.trim();
-}
-
-// =================== HÀM getDistrictAndWard ĐÃ ĐƯỢC NÂNG CẤP ===================
-async function getDistrictAndWard(address) {
-  console.log(`Bắt đầu phân tích địa chỉ: "${address}"`);
-  const addressParts = address.split(",").map((part) => part.trim());
-
-  if (addressParts.length < 4) {
-    console.error(
-      "Lỗi phân tích địa chỉ: Chuỗi địa chỉ không đủ 4 phần (Đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành)."
-    );
-    return null;
-  }
-
-  const [street, wardName, districtName, provinceName] = addressParts;
-
-  // Dọn dẹp trước các phần của địa chỉ người dùng nhập vào
-  const cleanInputProvince = cleanAddressPart(provinceName);
-  const cleanInputDistrict = cleanAddressPart(districtName);
-  const cleanInputWard = cleanAddressPart(wardName);
-
-  try {
-    // 1. Tìm Tỉnh/Thành phố
-    const provincesRes = await fetch(
-      "https://online-gateway.ghn.vn/shiip/public-api/master-data/province",
-      {
-        headers: { Token: tokenGHN },
-      }
-    );
-    const provinces = (await provincesRes.json()).data;
-    const province = provinces.find(
-      (p) => cleanAddressPart(p.ProvinceName) === cleanInputProvince
-    );
-    if (!province) {
-      console.error("Không tìm thấy Tỉnh/Thành phố:", provinceName);
-      return null;
-    }
-    console.log("Tìm thấy Province:", province);
-
-    // 2. Tìm Quận/Huyện
-    const districtsRes = await fetch(
-      "https://online-gateway.ghn.vn/shiip/public-api/master-data/district",
-      {
-        method: "POST",
-        headers: { Token: tokenGHN, "Content-Type": "application/json" },
-        body: JSON.stringify({ province_id: province.ProvinceID }),
-      }
-    );
-    const districts = (await districtsRes.json()).data;
-    const district = districts.find(
-      (d) => cleanAddressPart(d.DistrictName) === cleanInputDistrict
-    );
-    if (!district) {
-      console.error(
-        "Không tìm thấy Quận/Huyện:",
-        districtName,
-        "trong tỉnh",
-        provinceName
-      );
-      return null;
-    }
-    console.log("Tìm thấy District:", district);
-
-    // 3. Tìm Phường/Xã
-    const wardsRes = await fetch(
-      `https://online-gateway.ghn.vn/shiip/public-api/master-data/ward?district_id=${district.DistrictID}`,
-      {
-        headers: { Token: tokenGHN },
-      }
-    );
-    const wards = (await wardsRes.json()).data;
-    const ward = wards.find(
-      (w) => cleanAddressPart(w.WardName) === cleanInputWard
-    );
-    if (!ward) {
-      console.error(
-        "Không tìm thấy Phường/Xã:",
-        wardName,
-        "trong quận",
-        districtName
-      );
-      return null;
-    }
-    console.log("Tìm thấy Ward:", ward);
-
-    return {
-      district_id: district.DistrictID,
-      ward_code: ward.WardCode,
-    };
-  } catch (err) {
-    console.error("Lỗi nghiêm trọng khi gọi API GHN:", err.message);
-    return null;
-  }
-}
-
-// Hàm tính phí vận chuyển
-
-const myShopInfo = {
-  district_id: 1442, // Mã của Quận Cầu Giấy, Hà Nội
-  shop_id: "5913364", // ShopId của bạn
+const formatCurrency = (val) => {
+  return val?.toLocaleString("vi-VN") + " ₫";
 };
 
-async function tinhPhiVanChuyen({
-  fromDistrictId,
-  toDistrictId,
-  toWardCode,
-  weight,
-  insuranceValue,
-}) {
-  try {
-    const response = await fetch(
-      "https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Token: tokenGHN,
-          ShopId: myShopInfo.shop_id, // ShopId vẫn có thể lấy từ cấu hình chung
-        },
-        body: JSON.stringify({
-          // SỬA Ở ĐÂY: Dùng tham số được truyền vào
-          from_district_id: fromDistrictId,
-          service_type_id: 2,
-          to_district_id: toDistrictId,
-          to_ward_code: toWardCode,
-          weight,
-          insurance_value: insuranceValue,
-        }),
-      }
+const xacNhanThanhToan = async () => {
+  const data = {
+    maHoaDon: props.maHoaDon,
+  };
+
+  if (hinhThuc.value === "khac") {
+    const tongNhap = danhSachThanhToan.reduce(
+      (acc, pt) => acc + (pt.soTien || 0),
+      0
     );
+    if (tongNhap !== props.tongTien) {
+      alert("Tổng số tiền các phương thức không khớp với tổng cần thanh toán.");
+      return;
+    }
+    data.thanhToan = JSON.parse(JSON.stringify(danhSachThanhToan));
+  } else {
+    data.hinhThuc = hinhThuc.value;
+    data.maGiaoDich = maGiaoDichChinh.value;
+    data.soTienKhachTra = soTienKhachTra.value;
+  }
 
-    const result = await response.json();
-    if (result.code !== 200) throw new Error(result.message);
-    return result.data.total;
+  try {
+    await thanhToanDonHang(data);
+
+    // ✅ 1. Đóng modal
+    emit("close");
+
+    // ✅ 2. Gọi hàm ở cha
+    emit("thanh-toan-thanh-cong"); // bạn đặt tên event tùy ý
   } catch (err) {
-    console.error("Lỗi tính phí vận chuyển:", err.message);
-    return null;
-  }
-}
-const phivanchuyen = ref(0);
-const theoDoiPhiVanChuyen = ref(0);
-const daThayDoiPhiVanChuyen = computed(() => {
-  return Number(phivanchuyen.value) !== Number(theoDoiPhiVanChuyen.value);
-});
-const tinhPhi = async () => {
-  if (!diaChiDayDu.value) {
-    alert("Vui lòng nhập đầy đủ địa chỉ giao hàng.");
-    return;
-  }
-
-  const result = await getDistrictAndWard(diaChiDayDu.value);
-  if (!result) {
-    alert("Không thể xác định địa chỉ giao hàng.");
-    return;
-  }
-  console.log("da vao phan tinh phi");
-  const phi = await tinhPhiVanChuyen({
-    fromDistrictId: myShopInfo.district_id,
-    toDistrictId: result.district_id,
-    toWardCode: result.ward_code,
-    weight: 500, // Bạn có thể tuỳ chỉnh trọng lượng (gram)
-    insuranceValue: props.order?.tongTienHang || 0,
-  });
-  console.log(phi);
-
-  if (phi != null) {
-    phivanchuyen.value = phi;
-    theoDoiPhiVanChuyen.value = phi;
-    capNhatOrderKhachHang();
+    console.error(err);
+    alert("Thanh toán thất bại!");
   }
 };
-const suaPhi = async () => {
-  capNhatOrderKhachHang();
-  theoDoiPhiVanChuyen.value = phivanchuyen.value
-}
+
+
+const thanhToanDonHang = async (data) => {
+  const danhSachThanhToan = [];
+
+  if (Array.isArray(data.thanhToan)) {
+    data.thanhToan.forEach((pt) => {
+      danhSachThanhToan.push({
+        maHinhThuc: pt.maGiaoDich || "",
+        phuongThucThanhToan: pt.tenPhuongThuc,
+        soTien: pt.soTien,
+        moTa: "",
+        ghiChu: "",
+        trangThaiThanhToan: 1,
+      });
+    });
+  } else {
+    danhSachThanhToan.push({
+      maHinhThuc: data.maGiaoDich || "",
+      phuongThucThanhToan: data.hinhThuc,
+      soTien: data.soTienKhachTra,
+      moTa: "",
+      ghiChu: "",
+      trangThaiThanhToan: 1,
+    });
+  }
+
+  const payload = {
+    hoaDonId: data.maHoaDon,
+    danhSachThanhToan,
+  };
+
+  console.log("Gửi thanh toán với payload:", payload);
+
+  // ✅ Chọn API theo loaiThanhToan
+  const apiUrl =
+    props.loaiThanhToan === "phu-phi"
+      ? "http://localhost:8080/thanh-toan/phu-phi"
+      : "http://localhost:8080/thanh-toan/hoan-phi";
+
+  try {
+    const res = await axios.post(apiUrl, payload);
+    console.log("✅ Thanh toán thành công:", res.data);
+    alert("Thanh toán thành công!");
+  } catch (err) {
+    console.error("❌ Lỗi khi thanh toán:", err);
+    alert("Thanh toán thất bại!");
+  }
+};
+
+
 </script>
 
+
+
+<style scoped>
+.modal {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+</style>
+
 <template>
-  <!-- PHẦN KHÁCH HÀNG -->
-  <div class="row gx-4">
-    <div class="col-md-6">
-      <div class="bg-white p-3 rounded mb-4 align-items-center border">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0">👤 Khách hàng</h5>
-          <button
-            class="btn border rounded-circle d-flex align-items-center justify-content-center"
-            style="
-              width: 36px;
-              height: 36px;
-              background-color: #0a2c57;
-              color: white;
-            "
-            title="Chọn khách hàng"
-            @click="moPopupChonKhach"
-          >
-            <UserCog size="20" />
+  <div v-if="visible" class=" , modal show d-block" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Thanh toán</h5>
+          <button type="button" class="btn-close" @click="emit('close')"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="fw-bold">Số tiền phải thanh toán:</label>
+            <div class="fs-5 text-danger fw-bold">
+              {{ formatCurrency(tongTien) }}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="fw-bold">Hình thức thanh toán</label>
+            <select v-model="hinhThuc" class="form-select">
+              <option value="tien_mat">Tiền mặt</option>
+              <option value="cod">COD</option>
+              <option value="vnpay">VNPay</option>
+              <option value="momo">Momo</option>
+              <option value="qrcode">QR code</option>
+              <option value="khac">Khác (chọn nhiều)</option>
+            </select>
+          </div>
+
+          <!-- Nếu chọn "khác" thì hiển thị multi-select -->
+          <div v-if="hinhThuc === 'khac'" class="mb-3">
+            <label class="fw-bold">Chọn các phương thức:</label>
+            <select
+              v-model="phuongThucChonNhieu"
+              class="form-select"
+              multiple
+              size="5"
+            >
+              <option v-for="pt in PHUONG_THUC" :key="pt.value" :value="pt.value">
+                {{ pt.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Table khi chọn "khác" -->
+          <div v-if="hinhThuc === 'khac'" class="table-responsive">
+            <table class="table table-bordered text-center">
+              <thead>
+                <tr>
+                  <th>STT</th>
+                  <th>Tên phương thức</th>
+                  <th>Mã giao dịch</th>
+                  <th>Số tiền</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(pt, index) in danhSachThanhToan" :key="index">
+                  <td>{{ index + 1 }}</td>
+                  <td>{{ pt.tenPhuongThuc }}</td>
+                  <td>
+                    <input
+                      v-model="pt.maGiaoDich"
+                      class="form-control"
+                      placeholder="Mã giao dịch nếu có"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      v-model.number="pt.soTien"
+                      type="number"
+                      class="form-control"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <button class="btn btn-outline-primary btn-sm" @click="themDong">
+              + Thêm dòng
+            </button>
+          </div>
+
+          <!-- Form đơn khi KHÔNG chọn "khác" -->
+          <div class="row mb-3" v-if="hinhThuc !== 'khac'">
+            <div class="col-md-6">
+              <label class="fw-bold">Mã giao dịch:</label>
+              <input
+                v-model="maGiaoDichChinh"
+                class="form-control"
+                placeholder="Mã giao dịch nếu có"
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="fw-bold">Số tiền khách trả:</label>
+              <input
+                v-model.number="soTienKhachTra"
+                type="number"
+                class="form-control"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="emit('close')">Hủy bỏ</button>
+          <button class="btn btn-primary" @click="xacNhanThanhToan">
+            Xác nhận
           </button>
         </div>
-        <!-- hiển thị thông tin khách hàng -->
-        <div v-if="khachHangDuocChon && khachHangDuocChon.tenKhachHang">
-          <div class="mb-2">
-            <strong>Tên khách hàng:</strong>
-            {{ khachHangDuocChon.tenKhachHang }}
-          </div>
-          <!-- Chỉ hiển thị các thông tin khác nếu KHÔNG phải khách lẻ -->
-          <template v-if="khachHangDuocChon.id">
-            <div class="mb-2">
-              <strong>Số điện thoại:</strong>
-              {{ khachHangDuocChon.soDienThoai }}
-            </div>
-            <div class="mb-2">
-              <strong>Email:</strong>
-              {{ khachHangDuocChon.email || "Chưa cập nhật" }}
-            </div>
-            <div class="mb-2">
-              <strong>Giới tính:</strong>
-              {{ khachHangDuocChon.gioiTinh ? "Nam" : "Nữ" }}
-            </div>
-            <button
-              class="btn btn-sm btn-outline-danger mt-2"
-              @click="boChonKhachHang"
-            >
-              Bỏ chọn khách hàng
-            </button>
-          </template>
-        </div>
-        <div v-else class="text-muted">
-          <strong>Tên khách hàng:</strong> Khách lẻ.
-        </div>
       </div>
     </div>
-
-    <div class="col-md-6">
-      <div class="bg-white p-3 rounded mb-4 border">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0">🚚 Thông tin giao hàng</h5>
-          <Truck size="20" class="text-muted" />
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label">Phương thức vận chuyển:</label>
-          <div>
-            <div class="form-check form-check-inline">
-              <input
-                class="form-check-input"
-                type="radio"
-                id="shippingDirect"
-                :value="0"
-                v-model="phuongThucVanChuyen"
-              />
-              <label class="form-check-label" for="shippingDirect"
-                >Tại quầy</label
-              >
-            </div>
-            <div class="form-check form-check-inline">
-              <input
-                class="form-check-input"
-                type="radio"
-                id="shippingDelivery"
-                :value="1"
-                v-model="phuongThucVanChuyen"
-              />
-              <label class="form-check-label" for="shippingDelivery"
-                >Giao hàng</label
-              >
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Nếu chọn GIAO HÀNG -->
-        <div v-if="phuongThucVanChuyen === 1">
-          <div class="row mb-3">
-            <!-- Tên người nhận -->
-            <div class="col-md-6">
-              <label for="tenNguoiNhan" class="form-label"
-                >Tên người nhận:</label
-              >
-              <input
-                type="text"
-                id="tenNguoiNhan"
-                class="form-control"
-                placeholder="Nhập tên người nhận"
-                v-model="tenNguoiNhan"
-              />
-            </div>
-
-            <!-- Số điện thoại người nhận -->
-            <div class="col-md-6">
-              <label for="soDienThoaiNguoiNhan" class="form-label"
-                >Số điện thoại người nhận:</label
-              >
-              <input
-                type="text"
-                id="soDienThoaiNguoiNhan"
-                class="form-control"
-                placeholder="Nhập số điện thoại người nhận"
-                v-model="sdtNguoiNhan"
-              />
-            </div>
-          </div>
-          <!-- Email người nhận (full width) -->
-          <div class="row mb-3">
-            <div class="col-md-12">
-              <label for="emailNguoiNhan" class="form-label">Email người nhận:</label>
-              <input
-                type="email"
-                id="emailNguoiNhan"
-                class="form-control"
-                placeholder="Nhập email người nhận"
-                v-model="emailNguoiNhan"
-              />
-            </div>
-          </div>
-
-          <!-- dia chi -->
-
-          <div class="alert alert-info py-2" role="alert">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="mb-0">Địa chỉ giao hàng:</h5>
-
-              <button
-                class="btn border rounded-circle d-flex align-items-center justify-content-center"
-                style="
-                  width: 36px;
-                  height: 36px;
-                  background-color: #0a2c57;
-                  color: white;
-                "
-                title="Chọn địa chỉ"
-                @click="moPopupDiaChi"
-              >
-                <UserCog size="20" />
-              </button>
-            </div>
-
-            <!-- Form địa chỉ -->
-            <div class="row g-3">
-              <!-- Tỉnh/Thành phố -->
-              <div class="col-md-6">
-                <label>Tỉnh/Thành phố</label>
-                <select
-                  class="form-select bg-white"
-                  v-model="diaChiGiaoHang.tinhThanhPho"
-                  @change="layQuanTheoTinh"
-                >
-                  <option disabled value="">-- Chọn Tỉnh --</option>
-                  <option
-                    v-for="tinh in danhSachTinh"
-                    :key="tinh.code"
-                    :value="tinh.name"
-                  >
-                    {{ tinh.name }}
-                  </option>
-                </select>
-              </div>
-
-              <!-- Quận/Huyện -->
-              <div class="col-md-6">
-                <label>Quận/Huyện</label>
-                <select
-                  class="form-select bg-white"
-                  v-model="diaChiGiaoHang.quanHuyen"
-                  @change="layPhuongTheoQuan"
-                  :disabled="!diaChiGiaoHang.tinhThanhPho"
-                >
-                  <option disabled value="">-- Chọn Quận --</option>
-                  <option
-                    v-for="quan in danhSachQuan"
-                    :key="quan.code"
-                    :value="quan.name"
-                  >
-                    {{ quan.name }}
-                  </option>
-                </select>
-              </div>
-
-              <!-- Phường/Xã -->
-              <div class="col-md-6">
-                <label>Phường/Xã</label>
-                <select
-                  class="form-select bg-white"
-                  v-model="diaChiGiaoHang.xaPhuong"
-                  :disabled="!diaChiGiaoHang.quanHuyen"
-                >
-                  <option disabled value="">-- Chọn Phường --</option>
-                  <option
-                    v-for="phuong in danhSachPhuong"
-                    :key="phuong.code"
-                    :value="phuong.name"
-                  >
-                    {{ phuong.name }}
-                  </option>
-                </select>
-              </div>
-
-              <!-- Số nhà/Đường -->
-              <div class="col-md-6">
-                <label>Địa chỉ chi tiết</label>
-                <input
-                  class="form-control bg-white"
-                  v-model="diaChiGiaoHang.diaChiChiTiet"
-                  placeholder="VD: 444 Đội Cấn"
-                />
-              </div>
-            </div>
-          </div>
-
-          <!-- --- -->
-
-          <div class="mt-3">
-            <div class="d-flex align-items-center mb-2">
-              <label class="fw-bold me-2 mb-0">Đơn vị vận chuyển:</label>
-              <span class="me-3">Giao hàng nhanh</span>
-              <button @click="tinhPhi" class="btn btn-primary">
-                Tính phí giao hàng
-              </button>
-            </div>
-
-            <div class="d-flex align-items-center mb-2">
-              <strong class="me-2">Phí vận chuyển:</strong>
-              <input v-model="phivanchuyen" type="number"></input>đ 
-              <!-- Hiện nút "Sửa" nếu có thay đổi -->
-      
-              <button
-                v-if="daThayDoiPhiVanChuyen"
-                @click="suaPhi"
-                class="btn btn-warning btn-sm ms-2"
-              >
-              Sửa
-              </button>
-            </div>
-
-            <div class="d-flex align-items-center">
-              <strong class="me-2">Thời gian dự kiến:</strong>
-              <span>17/5/2025</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Nếu chọn TẠI QUẦY -->
-        <div v-else class="text-muted">Đơn hàng sẽ được xử lý tại quầy.</div>
-      </div>
-    </div>
-
-    <PopupChonKhachHang
-      v-if="hienThiPopupChonKhach"
-      :currentSelectedCustomer="khachHangDuocChon"
-      @customerSelected="chonKhachHang"
-      @close="hienThiPopupChonKhach = false"
-    />
-    <ChonDiaChiKhachHang
-      v-if="popupVisible"
-      :khachHangId="khachHangDuocChon.id"
-      @diaChiSelected="chonDiaChi"
-      @close="dongPopupDiaChi"
-    />
   </div>
 </template>

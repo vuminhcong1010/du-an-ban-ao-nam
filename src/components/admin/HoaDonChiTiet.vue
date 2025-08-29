@@ -47,9 +47,9 @@ const token = Cookies.get("token");
 //   return giaTri > tongTienDaThanhToanKhiNhanHang;
 // });
 const tongTienSanPhamBanDau = ref(0);
-const hienNut = computed(() => tongTienSanPham !== tongTienSanPhamBanDau);
+const hienNut = computed(() => tongTienSanPham.value !== tongTienSanPhamBanDau.value);
 
-const isPhuPhi = computed(() => tongTienSanPham > tongTienSanPhamBanDau);
+const isPhuPhi = computed(() => tongTienSanPham.value > tongTienSanPhamBanDau.value);
 
 const hoanPhi = ref(false);
 
@@ -167,7 +167,11 @@ const fetchTodos = async () => {
     );
     const json = await response.json();
     listHoaDonChiTiet.value = json;
-
+      // Gán tổng tiền sản phẩm ban đầu **chỉ 1 lần**
+    if (tongTienSanPhamBanDau.value === 0) {
+      tongTienSanPhamBanDau.value = tongTienSanPham.value;
+    }
+    console.log(tongTienSanPhamBanDau.value)
     // Cập nhật trangThai sau khi có dữ liệu
     trangThai.value = json[0]?.idHoaDon?.trangThai; // tìm chỉ số trong mảng steps
     trangThaiChinhSua.value = json[0]?.idHoaDon?.trangThaiChinhSua;
@@ -343,7 +347,6 @@ const tongTienSanPham = computed(() => {
     return sum + (item.thanhTien || 0);
   }, 0);
 });
-
 import axios from "axios";
 // import HoanPhuPhi from "./HoanPhuPhi.vue";
 // import HoanPhuPhi from "./HoanPhuPhi.vue";
@@ -526,14 +529,16 @@ function downloadPDF(maHoaDon) {
     });
 }
 
-console.log("Tổng tiền sản phảm" +tongTienSanPham.value);
-console.log("Tổng tiền san phẩm ban đàu "+tongTienSanPhamBanDau.value);
+
 console.log(trangThai);
 onMounted(() => {
   nextTick(() => {
     tongTienSanPhamBanDau.value = tongTienSanPham.value;
   });
 });
+const reloadTrang = () => {
+  window.location.reload();
+};
 </script>
 
 <template>
@@ -877,7 +882,8 @@ onMounted(() => {
               listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
               tongTienDaThanhToan -
               tongTienDaThanhToanKhiNhanHang
-              " :maHoaDon="maHoaDon" :loaiThanhToan="isPhuPhi ? 'phu-phi' : 'hoan-phi'" @close="hoanPhi = false" />
+              " :maHoaDon="maHoaDon" :loaiThanhToan="isPhuPhi ? 'phu-phi' : 'hoan-phi'" @close="hoanPhi = false"
+              @thanh-toan-thanh-cong="reloadTrang" />
           </div>
         </div>
 
@@ -885,6 +891,9 @@ onMounted(() => {
         <div class="d-flex justify-content-between">
           <label for="">Tổng tiền sản phẩm: </label>
           <span>{{ tongTienSanPham.toLocaleString("vi-VN") }}</span>
+          <!-- <label for="">Tổng tiền sản phẩm ban dau: </label>
+          <span>{{ tongTienSanPhamBanDau }}</span>
+          <span>{{ isPhuPhi }}</span> -->
         </div>
 
         <div class="d-flex justify-content-between">
