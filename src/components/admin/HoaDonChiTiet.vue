@@ -536,6 +536,9 @@ onMounted(() => {
     tongTienSanPhamBanDau.value = tongTienSanPham.value;
   });
 });
+const reloadTrang = () => {
+  window.location.reload();
+};
 </script>
 
 <template>
@@ -879,7 +882,8 @@ onMounted(() => {
               listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
               tongTienDaThanhToan -
               tongTienDaThanhToanKhiNhanHang
-              " :maHoaDon="maHoaDon" :loaiThanhToan="isPhuPhi ? 'phu-phi' : 'hoan-phi'" @close="hoanPhi = false" />
+              " :maHoaDon="maHoaDon" :loaiThanhToan="isPhuPhi ? 'phu-phi' : 'hoan-phi'" @close="hoanPhi = false"
+              @thanh-toan-thanh-cong="reloadTrang" />
           </div>
         </div>
 
