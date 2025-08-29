@@ -1,5 +1,5 @@
 <script setup>
-import { ref, provide, watch } from 'vue';
+import { ref, provide } from 'vue';
 import { useRoute } from 'vue-router';
 import Sidebar from './components/admin/Sidebar.vue';
 import Topbar from './components/admin/Topbar.vue';
@@ -9,7 +9,6 @@ import Chat from './components/admin/Chat.vue';
 const showSidebar = ref(false);
 const showTopbar = ref(false);
 
-// Toggle Sidebar
 function toggleSidebar() {
   showSidebar.value = !showSidebar.value;
 }
@@ -23,12 +22,10 @@ const toggleChat = () => {
   showChat.value = !showChat.value;
 };
 
-// Xử lý khi đóng chat từ component Chat
 const handleChatClose = () => {
-  showChat.value = false;
+  showChat.value = false; // Ẩn nhưng KHÔNG hủy Chat.vue
 };
 
-// Xử lý khi chọn phòng
 const handleRoomSelected = (roomId) => {
   console.log('Phòng đã chọn:', roomId);
 };
@@ -52,9 +49,15 @@ const handleRoomSelected = (roomId) => {
       </div>
     </div>
 
-    <!-- Chat Overlay -->
-    <div v-if="showChat" class="chat-overlay" @click.self="handleChatClose">
-      <div class="chat-container-wrapper">
+    <!-- Bong bóng chat -->
+    <!-- ❌ trước đây dùng v-if -->
+    <!-- ✅ giờ đổi thành v-show để component Chat.vue KHÔNG bị unmount -->
+    <div v-show="showChat" class="chat-bubble-wrapper">
+      <div class="chat-bubble-header">
+        <span>Hỗ trợ trực tuyến</span>
+        <button class="close-btn" @click="handleChatClose">✖</button>
+      </div>
+      <div class="chat-bubble-content">
         <Chat @room-selected="handleRoomSelected" @close="handleChatClose" />
       </div>
     </div>
@@ -65,29 +68,26 @@ const handleRoomSelected = (roomId) => {
 /* Reset và base styles */
 #app-wrapper {
   font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
   position: relative;
 }
 
-/* Main content - cho phép scroll tự nhiên */
 .main-content {
   width: 100%;
-  min-height: 100vh; /* Đảm bảo chiều cao tối thiểu */
+  min-height: 100vh;
 }
 
-/* Chat toggle button */
+/* Nút toggle */
 .chat-toggle {
   position: fixed;
-  bottom: 80px; /* Tăng khoảng cách từ bottom để tránh taskbar/dock */
-  right: 20px; /* Giảm khoảng cách từ right để gần nội dung hơn */
+  bottom: 20px;
+  right: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 45px; /* Giảm kích thước để ít chiếm chỗ hơn */
-  height: 45px;
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #007bff, #0056b3);
   border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
@@ -96,12 +96,12 @@ const handleRoomSelected = (roomId) => {
 }
 
 .chat-toggle:hover {
-  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+  background: linear-gradient(135deg, #0056b3, #004085);
   transform: scale(1.1);
 }
 
 .chat-icon {
-  font-size: 26px;
+  font-size: 24px;
   color: white;
 }
 
@@ -112,94 +112,64 @@ const handleRoomSelected = (roomId) => {
   background: #dc3545;
   color: white;
   border-radius: 50%;
-  min-width: 24px;
-  height: 24px;
+  min-width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
   border: 2px solid white;
 }
 
-/* Chat overlay */
-.chat-overlay {
+/* Bong bóng chat */
+.chat-bubble-wrapper {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-  padding: 20px;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.chat-container-wrapper {
-  width: 90%;
-  max-width: 1200px;
-  height: 85vh;
-  max-height: 900px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  bottom: 80px;
+  right: 20px;
+  width: 370px;
+  height: 500px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   background: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 2000;
   animation: slideUp 0.3s ease;
+}
+
+.chat-bubble-header {
+  background: #007bff;
+  color: white;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.chat-bubble-content {
+  flex: 1;
+  overflow-y: auto;
 }
 
 @keyframes slideUp {
   from {
-    transform: translateY(50px);
+    transform: translateY(40px);
     opacity: 0;
   }
   to {
     transform: translateY(0);
     opacity: 1;
-  }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .chat-toggle {
-    bottom: 20px;
-    right: 20px;
-    width: 56px;
-    height: 56px;
-  }
-
-  .chat-icon {
-    font-size: 24px;
-  }
-
-  .chat-container-wrapper {
-    width: 95%;
-    height: 90vh;
-    border-radius: 12px;
-  }
-}
-
-@media (max-width: 576px) {
-  .chat-overlay {
-    padding: 10px;
-  }
-
-  .chat-container-wrapper {
-    width: 100%;
-    height: 95vh;
-    border-radius: 8px;
   }
 }
 </style>

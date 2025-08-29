@@ -144,60 +144,87 @@
                         </a>
                     </div>
                 </div>
-                <!-- Đánh giá -->
-                <div class="row justify-content-center">
-                    <div class="col-lg-8 col-md-10">
-                        <div class="product-review-section mt-4">
-                            <h4 class="mb-3">Đánh giá ({{ totalReviews }})</h4>
-                            <div v-for="star in [5, 4, 3, 2, 1]" :key="star"
-                                class="rating-row d-flex align-items-center mb-2 position-relative">
-                                <div class="star-label">
-                                    {{ star }} <i class="bi bi-star text-warning"></i>
-                                </div>
-                                <div class="progress flex-grow-1 ms-2" style="height: 8px;">
-                                    <div class="progress-bar bg-warning" role="progressbar"
-                                        :style="{ width: totalReviews > 0 ? ((ratingCounts[star] / totalReviews) * 100) + '%' : '0%' }">
-                                    </div>
-                                </div>
-                                <!-- Tooltip nằm ngoài progress để không bị ẩn -->
-                                <div class="rating-tooltip" v-if="ratingCounts[star] > 0">
-                                    {{ ratingCounts[star] }}
+                <div class="product-tabs mt-4 product-tabs-compact">
+                    <ul class="nav nav-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link" :class="{ active: activeTab === 'description' }"
+                                @click="activeTab = 'description'">
+                                Miêu Tả Sản Phẩm
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" :class="{ active: activeTab === 'review' }"
+                                @click="activeTab = 'review'">
+                                Đánh giá ({{ totalReviews }})
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="tab-content p-4 bg-white rounded-bottom border border-top-0 text-start">
+                        <!-- Tab mô tả -->
+                        <div v-if="activeTab === 'description'" class="tab-pane fade show active">
+                            <div class="mb-2" v-if="typeof product?.description === 'string' && product.description">
+                                <div v-for="(desc, idx) in product.description.split('\n')" :key="idx">
+                                    <span v-if="desc.trim()">{{ desc }}</span>
                                 </div>
                             </div>
-                            <div class="mt-4">
-                                <h5>Chia sẻ suy nghĩ của bạn</h5>
-                                <p>Nếu bạn đã sử dụng sản phẩm này, chúng tôi rất muốn nghe chia sẻ về trải nghiệm của
-                                    bạn.</p>
-                                <button class="btn btn-outline-primary" @click="toggleReviewForm">
-                                    {{ showReviewForm ? 'Đóng' : 'Viết đánh giá' }}
-                                </button>
+                            <div class="mb-2" v-if="product && product.listChatLieu && product.listChatLieu.length">
+                                <strong>Chất liệu: </strong>
+                                <span>{{ [...new Set(product.listChatLieu)].join(', ') }}</span>
+                            </div>
+                            <div class="mb-2" v-if="product && product.listKieuAo && product.listKieuAo.length">
+                                <strong>Kiểu dáng: </strong>
+                                <span>{{ [...new Set(product.listKieuAo)].join(', ') }}</span>
                             </div>
                         </div>
-
-                        <div v-if="showReviewForm" class="review-form mt-3 p-3 bg-light rounded">
-                            <p><strong>Bạn đánh giá trải nghiệm của mình với sản phẩm này như thế nào?</strong> Chúng
-                                tôi luôn nỗ lực
-                                mang đến
-                                trải nghiệm 5 sao <span class="text-danger">*</span></p>
-
-                            <!-- Rating stars -->
-                            <!-- Rating stars -->
-                            <div class="d-flex mb-3">
-                                <span v-for="n in 5" :key="n" class="me-1" @mouseover="hoverRating = n"
-                                    @mouseleave="hoverRating = 0" @click="selectedRating = n" style="cursor: pointer;">
-                                    <i class="bi"
-                                        :class="[(hoverRating >= n || (!hoverRating && selectedRating >= n)) ? 'bi-star-fill text-warning' : 'bi-star']"
-                                        style="font-size: 24px;"></i>
-                                </span>
+                        <!-- Tab đánh giá -->
+                        <div v-else class="tab-pane fade show active">
+                            <h4 class="fw-bold mb-3">Đánh giá của khách hàng</h4>
+                            <div class="product-review-section mt-4">
+                                <div v-for="star in [5, 4, 3, 2, 1]" :key="star"
+                                    class="rating-row d-flex align-items-center mb-2 position-relative">
+                                    <div class="star-label">
+                                        {{ star }} <i class="bi bi-star text-warning"></i>
+                                    </div>
+                                    <div class="progress flex-grow-1 ms-2" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar"
+                                            :style="{ width: totalReviews > 0 ? ((ratingCounts[star] / totalReviews) * 100) + '%' : '0%' }">
+                                        </div>
+                                    </div>
+                                    <div class="rating-tooltip" v-if="ratingCounts[star] > 0">
+                                        {{ ratingCounts[star] }}
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <h5>Chia sẻ suy nghĩ của bạn</h5>
+                                    <p>Nếu bạn đã sử dụng sản phẩm này, chúng tôi rất muốn nghe chia sẻ về trải nghiệm của bạn.</p>
+                                    <button class="btn btn-outline-primary" @click="toggleReviewForm">
+                                        {{ showReviewForm ? 'Đóng' : 'Viết đánh giá' }}
+                                    </button>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Trải nghiệm của bạn thế nào? <span
-                                        class="text-danger">*</span></label>
-                                <textarea v-model="reviewContent" class="form-control" rows="3"
-                                    placeholder="Chất lượng tuyệt vời"></textarea>
+                            <div v-if="showReviewForm" class="review-form mt-3 p-3 bg-light rounded">
+                                <p><strong>Bạn đánh giá trải nghiệm của mình với sản phẩm này như thế nào?</strong> Chúng tôi luôn nỗ lực
+                                    mang đến trải nghiệm 5 sao <span class="text-danger">*</span></p>
+
+                                <!-- Rating stars -->
+                                <div class="d-flex mb-3">
+                                    <span v-for="n in 5" :key="n" class="me-1" @mouseover="hoverRating = n"
+                                        @mouseleave="hoverRating = 0" @click="selectedRating = n" style="cursor: pointer;">
+                                        <i class="bi"
+                                            :class="[(hoverRating >= n || (!hoverRating && selectedRating >= n)) ? 'bi-star-fill text-warning' : 'bi-star']"
+                                            style="font-size: 24px;"></i>
+                                    </span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Trải nghiệm của bạn thế nào? <span
+                                            class="text-danger">*</span></label>
+                                    <textarea v-model="reviewContent" class="form-control" rows="3"
+                                        placeholder="Chất lượng tuyệt vời"></textarea>
+                                </div>
+                                <button @click="submitReview" class="btn btn-warning">Nộp</button>
                             </div>
-                            <button @click="submitReview" class="btn btn-warning">Nộp</button>
                         </div>
                     </div>
                 </div>
@@ -210,6 +237,7 @@
             </div>
         </template>
     </div>
+
 </template>
 
 
@@ -651,6 +679,18 @@ const fetchProductDetail = async (productId) => {
         if (!res.ok) throw new Error("Sản phẩm không tìm thấy.");
         const singleProduct = await res.json();
 
+        // Lấy danh sách điểm đánh giá từ danhGiaList
+        const danhGiaList = singleProduct.danhGiaList || [];
+        const diemDanhGiaArray = danhGiaList
+            .map(dg => dg.diemDanhGia)
+            .filter(diem => typeof diem === 'number' && diem >= 0);
+
+        const totalReviews = diemDanhGiaArray.length;
+        const averageRating = totalReviews > 0
+            ? Math.round((diemDanhGiaArray.reduce((a, b) => a + b, 0) / totalReviews) * 10) / 10
+            : 0;
+
+        // Lấy thông tin giảm giá
         const dgRes = await fetch(`http://localhost:8080/client/giam-gia/${productId}`);
         let discountPercentage = 0;
         if (dgRes.ok) {
@@ -660,14 +700,13 @@ const fetchProductDetail = async (productId) => {
                 .map(d => Number(d))
                 .filter(p => !isNaN(p));
 
-
             if (discountList.length > 0) {
                 const sum = discountList.reduce((a, b) => a + b, 0);
                 discountPercentage = Math.round(sum / discountList.length);
             }
         }
 
-
+        // Tính giá
         const prices = singleProduct.giaTruocKhiGiam || [];
         const minOriginal = Math.min(...prices);
         const maxOriginal = Math.max(...prices);
@@ -679,30 +718,28 @@ const fetchProductDetail = async (productId) => {
             maxDiscount = Math.round(maxOriginal * (100 - discountPercentage) / 100);
         }
 
+        // Gán vào product.value, đảm bảo luôn là mảng
         product.value = {
             id: singleProduct.idSanPham,
             name: singleProduct.tenSanPham,
             images: singleProduct.listAnhSanPham || [],
             discount: discountPercentage,
-
-            // Gốc
             minOriginalPrice: minOriginal,
             maxOriginalPrice: maxOriginal,
-
-            // Sau giảm
             minPrice: minDiscount,
             maxPrice: maxDiscount,
-
-            rating: singleProduct.diemDanhGia,
-            reviews: singleProduct.soLuongDanhGia,
+            rating: averageRating,
+            reviews: totalReviews,
             category: singleProduct.tenDanhMuc,
             colors: singleProduct.listMauSac || [],
             sizes: singleProduct.listKichCo || [],
-            description: (singleProduct.listMoTa || []).join(' '),
+            description: Array.isArray(singleProduct.listMoTa) ? singleProduct.listMoTa.join('\n') : (singleProduct.listMoTa || ''),
             maSanPham: singleProduct.maSanPham,
-            quantity: singleProduct.soLuong
+            quantity: singleProduct.soLuong,
+            listChatLieu: Array.isArray(singleProduct.listChatLieu) ? singleProduct.listChatLieu : [],
+            listKieuAo: Array.isArray(singleProduct.listKieuAo) ? singleProduct.listKieuAo : [],
         };
-
+        console.log("Chi tiết sản phẩm:", product.value);
         selectedImage.value = product.value.images[0] || '';
         remainingQuantity.value = product.value.quantity > 0 ? product.value.quantity - 1 : 0;
         startSlideshow();
@@ -714,6 +751,7 @@ const fetchProductDetail = async (productId) => {
         loading.value = false;
     }
 };
+
 
 
 
@@ -762,6 +800,14 @@ function mapColorToCssClass(apiColor) {
 
 function goBack() {
     router.back();
+}
+
+const activeTab = ref('description')
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('vi-VN');
 }
 </script>
 
@@ -1239,4 +1285,78 @@ function goBack() {
 .rating-row:hover .rating-tooltip {
     display: block;
 }
+
+.product-tabs {
+    margin-top: 40px;
+}
+
+.product-tabs .nav-tabs {
+    border-bottom: 2px solid #eee;
+}
+
+.product-tabs .nav-link {
+    color: #000000;
+    font-weight: 500;
+    font-size: 1.1rem;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+}
+
+.product-tabs .nav-link.active {
+    color: #6f42c1;
+    border-bottom: 2px solid #6f42c1;
+    background: none;
+}
+
+.tab-content {
+    background: #fff;
+    border-radius: 0 0 10px 10px;
+    border: 1px solid #eee;
+    border-top: none;
+    margin-bottom: 40px;
+}
+
+/* Đảm bảo mọi thứ trong tab đánh giá đều căn trái */
+.product-review-section,
+.review-form,
+.tab-content,
+.tab-pane,
+.product-tabs,
+.mt-4,
+.text-start {
+    text-align: left !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+}
+
+/* Xóa căn giữa của form đánh giá */
+.product-review-section .row,
+.product-review-section .col-lg-8,
+.product-review-section .col-md-10 {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Form thêm đánh giá luôn sát trái */
+.review-form {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    text-align: left !important;
+    box-shadow: none !important;
+}
+
+/* Nếu có dùng .justify-content-center thì bỏ đi */
+.product-review-section .justify-content-center {
+    justify-content: flex-start !important;
+}
+
 </style>

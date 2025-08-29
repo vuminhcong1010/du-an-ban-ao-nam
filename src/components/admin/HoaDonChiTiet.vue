@@ -29,11 +29,29 @@ import {
   Dot,
   ArrowUpRight,
 } from "lucide-vue-next";
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch ,nextTick } from "vue";
 import ThemSanPhamHoaDon from "./ThemSanPhamHoaDon.vue";
-import 'vue-select/dist/vue-select.css';
-import Cookies from 'js-cookie'
-const token = Cookies.get('token')
+import ThemSanPhamHoaDonOnline from "./ThemSanPhamHoaDonOnline.vue";
+import HoanPhuPhi from "./HoanPhuPhi.vue";
+import "vue-select/dist/vue-select.css";
+import Cookies from "js-cookie";
+const token = Cookies.get("token");
+
+// const isPhuPhi = computed(() => {
+//   const giaTri =
+//     tongTienSanPham -
+//     listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
+//     listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
+//     tongTienDaThanhToan;
+
+//   return giaTri > tongTienDaThanhToanKhiNhanHang;
+// });
+const tongTienSanPhamBanDau = ref(0);
+const hienNut = computed(() => tongTienSanPham !== tongTienSanPhamBanDau);
+
+const isPhuPhi = computed(() => tongTienSanPham > tongTienSanPhamBanDau);
+
+const hoanPhi = ref(false);
 
 const buttons = ref([
   ["Hủy đơn hàng", "Xác nhận"],
@@ -44,6 +62,77 @@ const buttons = ref([
   ["", "haah"],
 ]);
 
+const listLichSuThayDoi = ref([]);
+
+const sendEmail = async () => {
+  try {
+    const to = listHoaDonChiTiet.value[0]?.idHoaDon?.gmail;
+    const subject = `Thông báo thay đổi thông tin hóa đơn ${maHoaDon}`;
+    const textArray = listLichSuThayDoi.value.map(
+      (item) =>
+        `- ${item.noiDung} (thời gian: ${new Date(
+          item.thoiGian
+        ).toLocaleString()})`
+    );
+
+    const response = await axios.post(
+      "http://localhost:8080/hoa-don-chi-tiet/send",
+      {
+        to: to,
+        subject: subject,
+        text: textArray,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    toast.success("Gửi email thành công!");
+  } catch (error) {
+    console.error("Lỗi khi gửi email:", error);
+    toast.error("Không thể gửi email.");
+  }
+};
+
+const xacNhanDonHang = async () => {
+  const result = listHoaDonChiTiet.value;
+  console.log("✅ Dữ liệu result gửi xuống:", result);
+
+  const bodyUpdateSoLuong = result.map((r) => ({
+    idSanPhamChiTiet: r.idSanPhamChiTiet.maChiTietSapPham,
+    soLuongMua: r.soLuong,
+  }));
+  // 👉 Kiểm tra body gửi xuống API update số lượng
+  console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
+
+  // 1. Cập nhật tồn kho
+  try {
+    await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(bodyUpdateSoLuong),
+    });
+  } catch (error) {
+    console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
+  }
+};
+const handleNextClick = () => {
+  const currentLabel = buttons.value[trangThai.value][1];
+
+  // Nếu là nút "Xác nhận" và trạng thái chỉnh sửa = 0 → gọi hàm xacNhanDonHang()
+  if (currentLabel === "Xác nhận" && trangThaiChinhSua.value === 0) {
+    xacNhanDonHang();
+    thayDoiTrangThai(1);
+  } else {
+    // Các trường hợp khác → giữ nguyên logic cũ
+    thayDoiTrangThai(trangThai.value + 1);
+  }
+};
 let trangThai = ref(0);
 
 const steps = [
@@ -54,6 +143,8 @@ const steps = [
   "Hoàn thành",
   "Đã hủy",
 ];
+
+const trangThaiChinhSua = ref(1);
 
 const reasons = ["Khách muốn huỷ đơn", "Khác"];
 const selectedReason = ref(reasons[0]);
@@ -67,17 +158,21 @@ const listHoaDonChiTiet = ref([]);
 const fetchTodos = async () => {
   try {
     const response = await fetch(
-      `http://localhost:8080/hoa-don-chi-tiet/${maHoaDon}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
+      `http://localhost:8080/hoa-don-chi-tiet/${maHoaDon}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    }
     );
     const json = await response.json();
     listHoaDonChiTiet.value = json;
 
     // Cập nhật trangThai sau khi có dữ liệu
     trangThai.value = json[0]?.idHoaDon?.trangThai; // tìm chỉ số trong mảng steps
+    trangThaiChinhSua.value = json[0]?.idHoaDon?.trangThaiChinhSua;
+    console.log("Trang thai chinh sua:", trangThaiChinhSua.value);
+    console.log(token);
   } catch (error) {
     console.error("Lỗi khi fetch dữ liệu:", error);
   }
@@ -89,11 +184,12 @@ const lichSu = ref([]);
 const fetchLichSuHoaDon = async () => {
   try {
     const response = await fetch(
-      `http://localhost:8080/lich-su-hoa-don/${maHoaDon}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
+      `http://localhost:8080/lich-su-hoa-don/${maHoaDon}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    }
     );
     const json = await response.json();
     lichSu.value = json;
@@ -105,9 +201,17 @@ const fetchLichSuHoaDon = async () => {
 
 // lich su thanh toan:
 
-const tongTienDaThanhToan = computed(() =>
-  lichSuThanhToan.value.reduce((sum, item) => sum + (item.idHinhThucThanhToan.soTien || 0), 0)
-);
+const tongTienDaThanhToan = computed(() => {
+  return lichSuThanhToan.value
+    .filter((item) => item.idHinhThucThanhToan.trangThai === 0)
+    .reduce((sum, item) => sum + (item.idHinhThucThanhToan.soTien || 0), 0);
+});
+
+const tongTienDaThanhToanKhiNhanHang = computed(() => {
+  return lichSuThanhToan.value
+    .filter((item) => item.idHinhThucThanhToan.trangThai === 1)
+    .reduce((sum, item) => sum + (item.idHinhThucThanhToan.soTien || 0), 0);
+});
 
 const tongTienDaThanhToanFormatted = computed(() =>
   new Intl.NumberFormat("vi-VN", {
@@ -122,11 +226,12 @@ const lichSuThanhToan = ref([]);
 const fetchLichSuThanhToan = async (moPopup = false) => {
   try {
     const response = await fetch(
-      `http://localhost:8080/lich-su-thanh-toan/${maHoaDon}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
+      `http://localhost:8080/lich-su-thanh-toan/${maHoaDon}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
-    }
     );
     const json = await response.json();
     lichSuThanhToan.value = json;
@@ -188,7 +293,7 @@ const luuThongTin = async () => {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(receiverInfo.value),
     });
@@ -207,7 +312,10 @@ const luuThongTin = async () => {
       nguoiThucHien: "admin",
       ghiChu: `admin đã thực hiện thay đổi thông tin người nhận`,
     });
-
+    listLichSuThayDoi.value.push(
+      `admin đã thực hiện thay đổi thông tin người nhận thành: ${receiverInfo.value.tenKhachHang}, ${receiverInfo.value.diaChi}, ${receiverInfo.value.sdt}`
+    );
+    console.log(listLichSuThayDoi.value);
     // 👉 Hiển thị hộp thoại xác nhận
     const xacNhan = window.confirm("Bạn có chắc chắn muốn lưu thay đổi không?");
     if (xacNhan) {
@@ -237,6 +345,8 @@ const tongTienSanPham = computed(() => {
 });
 
 import axios from "axios";
+// import HoanPhuPhi from "./HoanPhuPhi.vue";
+// import HoanPhuPhi from "./HoanPhuPhi.vue";
 
 // thay doi trang thai:
 const prevTrangThaiBeforeCancel = ref(null); // dùng để hiển thị bước trước hủy
@@ -257,8 +367,8 @@ const thayDoiTrangThai = async (moiTrangThai) => {
         ghiChu: note.value,
       },
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     // Lưu trạng thái trước khi huỷ/hoàn
@@ -278,15 +388,17 @@ const thayDoiTrangThai = async (moiTrangThai) => {
       nguoiThucHien: "admin",
       ghiChu: `admin đã thực hiện thay đổi trạng thái từ ${trangThai.value} sang ${moiTrangThai}. Ghi chú: ${note.value}`,
     });
-
+    listLichSuThayDoi.value.push(
+      `admin đã thực hiện thay đổi trạng thái từ ${trangThai.value} sang ${moiTrangThai}. Ghi chú: ${note.value}`
+    );
     trangThai.value = moiTrangThai;
+    sendEmail();
     toast.success("Đã cập nhật trạng thái!");
   } catch (error) {
     console.error("Lỗi cập nhật trạng thái:", error);
     toast.error("Lỗi khi cập nhật trạng thái!");
   }
 };
-
 
 const visibleSteps = computed(() => {
   if (trangThai.value === 5) {
@@ -303,24 +415,92 @@ const visibleSteps = computed(() => {
 });
 
 // xoa san pham:
-const xoaSanPham = async (id) => {
-  const confirm = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?");
-  if (!confirm) return;
+const xoaSanPham = async (id, ten, mau, size) => {
+  const confirmDelete = window.confirm(
+    "Bạn có chắc chắn muốn xóa sản phẩm này?"
+  );
+  if (!confirmDelete) return;
 
   try {
-    await axios.delete(`http://localhost:8080/hoa-don-chi-tiet/xoa/${id}`);
-    toast.success("Xóa sản phẩm thành công!");
-    await fetchTodos(); // reload
-    // Ghi lịch sử
-    await axios.post("http://localhost:8080/lich-su-hoa-don/them", {
-      idHoaDon: { maHoaDon: maHoaDon },
-      noiDungThayDoi: "Xóa sản phẩm",
-      nguoiThucHien: "admin",
-      ghiChu: `admin đã thực hiện xóa sản phẩm `,
+    // Xóa sản phẩm
+    await axios.delete(`http://localhost:8080/hoa-don-chi-tiet/xoa/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
+
+    toast.success("Xóa sản phẩm thành công!");
+    await fetchTodos(); // reload danh sách
+
+    // Ghi lịch sử
+    await axios.post(
+      "http://localhost:8080/lich-su-hoa-don/them",
+      {
+        idHoaDon: { maHoaDon: maHoaDon },
+        noiDungThayDoi: "Xóa sản phẩm",
+        nguoiThucHien: "admin",
+        ghiChu: `admin đã thực hiện xóa sản phẩm`,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    listLichSuThayDoi.value.push(
+      `admin đã thực hiện xóa sản phẩm ${ten} - ${mau} - ${size}`
+    );
+    console.log(listLichSuThayDoi.value);
   } catch (error) {
-    console.error(error);
-    // toast.error("Lỗi khi xóa sản phẩm!");
+    console.error("Lỗi khi xóa sản phẩm:", error);
+    toast.error("Có lỗi xảy ra khi xóa sản phẩm!");
+  }
+};
+const xoaSanPhamOnline = async (id) => {
+  const confirmDelete = window.confirm(
+    "Bạn có chắc chắn muốn xóa sản phẩm này?"
+  );
+  if (!confirmDelete) return;
+
+  try {
+    // Xóa sản phẩm
+    await axios.delete(
+      `http://localhost:8080/hoa-don-chi-tiet/xoa/online/${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    toast.success("Xóa sản phẩm thành công!");
+    await fetchTodos(); // reload danh sách
+
+    // Ghi lịch sử
+    await axios.post(
+      "http://localhost:8080/lich-su-hoa-don/them",
+      {
+        idHoaDon: { maHoaDon: maHoaDon },
+        noiDungThayDoi: "Xóa sản phẩm",
+        nguoiThucHien: "admin",
+        ghiChu: `admin đã thực hiện xóa sản phẩm`,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    listLichSuThayDoi.value.push(
+      `admin đã thực hiện xóa sản phẩm ${ten} - ${mau} - ${size}`
+    );
+  } catch (error) {
+    console.error("Lỗi khi xóa sản phẩm:", error);
+    toast.error("Có lỗi xảy ra khi xóa sản phẩm!");
   }
 };
 
@@ -346,7 +526,14 @@ function downloadPDF(maHoaDon) {
     });
 }
 
+console.log("Tổng tiền sản phảm" +tongTienSanPham.value);
+console.log("Tổng tiền san phẩm ban đàu "+tongTienSanPhamBanDau.value);
 console.log(trangThai);
+onMounted(() => {
+  nextTick(() => {
+    tongTienSanPhamBanDau.value = tongTienSanPham.value;
+  });
+});
 </script>
 
 <template>
@@ -423,8 +610,8 @@ console.log(trangThai);
           </button>
 
           <!-- Nút Tiếp tục -->
-          <button v-if="trangThai !== 4 && trangThai != 5" class="btn btn-primary"
-            @click="thayDoiTrangThai(trangThai + 1)" style="background-color: #0a2c57; color: white">
+          <button v-if="trangThai !== 4 && trangThai != 5" class="btn btn-primary" @click="handleNextClick"
+            style="background-color: #0a2c57; color: white">
             {{ buttons[trangThai][1] }}
           </button>
         </div>
@@ -443,9 +630,15 @@ console.log(trangThai);
               <Plus style="width: 16px; height: 16px" />
               Thêm sản phẩm
             </button>
+            <!-- Teleport modal -->
             <teleport to="body">
-              <ThemSanPhamHoaDon v-if="showThemSanPham" :key="showThemSanPham" @close="showThemSanPham = false"
-                @selected="nhanSanPhamTuThem" />
+              <!-- Nếu trạng thái chỉnh sửa = 0 -->
+              <ThemSanPhamHoaDonOnline v-if="showThemSanPham && trangThaiChinhSua === 0" key="online"
+                @close="showThemSanPham = false" @selected="nhanSanPhamTuThem" />
+
+              <!-- Nếu trạng thái chỉnh sửa = 1 -->
+              <ThemSanPhamHoaDon v-else-if="showThemSanPham && trangThaiChinhSua === 1" key="offline"
+                @close="showThemSanPham = false" @selected="nhanSanPhamTuThem" />
             </teleport>
           </div>
         </div>
@@ -505,7 +698,21 @@ console.log(trangThai);
                 <td class="text-center align-middle">
                   <button
                     class="btn p-1 border-0 bg-transparent d-flex align-items-center justify-content-center mx-auto"
-                    v-if="trangThai === 0" @click="xoaSanPham(item.id)">
+                    v-if="trangThai === 0" @click="
+                      trangThaiChinhSua === 0
+                        ? xoaSanPhamOnline(
+                          item.id,
+                          item.idSanPhamChiTiet.idSanPham.tenSanPham,
+                          item.idSanPhamChiTiet.idMau.ten,
+                          item.idSanPhamChiTiet.idSize.soCo
+                        )
+                        : xoaSanPham(
+                          item.id,
+                          item.idSanPhamChiTiet.idSanPham.tenSanPham,
+                          item.idSanPhamChiTiet.idMau.ten,
+                          item.idSanPhamChiTiet.idSize.soCo
+                        )
+                      ">
                     <i>
                       <Trash style="width: 16px; height: 16px; color: #0a2c57" />
                     </i>
@@ -543,7 +750,6 @@ console.log(trangThai);
               ? " Tại cửa hàng"
               : " Online"
           }}
-
         </div>
 
         <div class="mb-2">
@@ -554,14 +760,12 @@ console.log(trangThai);
               ? " Tại cửa hàng"
               : " Giao hàng"
           }}
-
         </div>
 
         <div class="mb-2">
           <label class="fw-bold">Trạng thái đơn hàng:</label>
           <Dot class="ms-2" style="width: 16px; height: 16px; color: #0a2c57" />
           {{ steps[trangThai] }}
-
         </div>
 
         <div>
@@ -591,7 +795,6 @@ console.log(trangThai);
                 : " Chưa thanh toán"
             }}
           </span>
-
         </div>
       </div>
 
@@ -662,9 +865,22 @@ console.log(trangThai);
 
       <!-- thông tin thanh toán -->
       <div class="bg-white p-3 rounded border mb-4">
-        <div class="justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">Thông tin thanh toán:</h5>
+          <div>
+            <button v-if="hienNut" :class="isPhuPhi ? 'btn btn-warning' : 'btn btn-danger'" @click="hoanPhi = true">
+              {{ isPhuPhi ? 'Phụ Phí' : 'Hoàn Phí' }}
+            </button>
+
+            <HoanPhuPhi :visible="hoanPhi" :tongTien="tongTienSanPham -
+              listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
+              listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
+              tongTienDaThanhToan -
+              tongTienDaThanhToanKhiNhanHang
+              " :maHoaDon="maHoaDon" :loaiThanhToan="isPhuPhi ? 'phu-phi' : 'hoan-phi'" @close="hoanPhi = false" />
+          </div>
         </div>
+
         <hr />
         <div class="d-flex justify-content-between">
           <label for="">Tổng tiền sản phẩm: </label>
@@ -710,6 +926,8 @@ console.log(trangThai);
 
         <div class="d-flex justify-content-between">
           <h6>Tổng thanh toán:</h6>
+
+          <!-- <button @click="xacNhanDonHang">TEST</button> -->
           <h5>
             <strong>
               {{

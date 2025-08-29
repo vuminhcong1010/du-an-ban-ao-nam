@@ -8,7 +8,7 @@ import { defineEmits } from "vue";
 
 const emit = defineEmits(["capNhatThongTinKhachHang"]);
 const props = defineProps({
-  order: Object
+  order: Object,
 });
 
 // 0 = tại quầy, 1 = giao hàng
@@ -34,6 +34,7 @@ const chonKhachHang = (khachHang) => {
   // Gán mặc định tên/sđt người nhận
   tenNguoiNhan.value = khachHang.tenKhachHang;
   sdtNguoiNhan.value = khachHang.soDienThoai;
+  emailNguoiNhan.value = khachHang.email;
 };
 
 // Bỏ chọn khách hàng
@@ -47,6 +48,7 @@ const boChonKhachHang = () => {
   };
   tenNguoiNhan.value = "";
   sdtNguoiNhan.value = "";
+  emailNguoiNhan.value = "";
   popupVisible.value = false;
 
   // 🔥 Xoá luôn mã giảm giá trong order
@@ -60,6 +62,7 @@ const boChonKhachHang = () => {
 
 const tenNguoiNhan = ref("");
 const sdtNguoiNhan = ref("");
+const emailNguoiNhan = ref("");
 //-------//
 
 // lấy địa chỉ:
@@ -70,10 +73,13 @@ const diaChiGiaoHang = ref({
   quanHuyen: "",
   tinhThanhPho: "",
 }); // Địa chỉ đã chọn
-watch(diaChiGiaoHang, (val) => {
-  localStorage.setItem("diaChiGiaoHang", JSON.stringify(val));
-}, { deep: true });
-
+watch(
+  diaChiGiaoHang,
+  (val) => {
+    localStorage.setItem("diaChiGiaoHang", JSON.stringify(val));
+  },
+  { deep: true }
+);
 
 const popupVisible = ref(false); // Hiển thị popup chọn địa chỉ
 const moPopupDiaChi = () => {
@@ -149,7 +155,6 @@ onMounted(async () => {
       }
     }
   }
-
 });
 
 const layQuanTheoTinh = async () => {
@@ -184,19 +189,28 @@ const layPhuongTheoQuan = async () => {
 
 const diaChiDayDu = computed(() => {
   const dc = diaChiGiaoHang.value;
-  if (!dc || !dc.diaChiChiTiet || !dc.xaPhuong || !dc.quanHuyen || !dc.tinhThanhPho) return "";
+  if (
+    !dc ||
+    !dc.diaChiChiTiet ||
+    !dc.xaPhuong ||
+    !dc.quanHuyen ||
+    !dc.tinhThanhPho
+  )
+    return "";
   return `${dc.diaChiChiTiet}, ${dc.xaPhuong}, ${dc.quanHuyen}, ${dc.tinhThanhPho}`;
 });
 
-// chuyển dữ liệu sang bán hàng: 
+// chuyển dữ liệu sang bán hàng:
 const capNhatOrderKhachHang = () => {
   emit("capNhatThongTinKhachHang", {
     idKhachHang: khachHangDuocChon.value?.id || null,
     tenKhachHang: khachHangDuocChon.value?.tenKhachHang || "Khách lẻ",
     tenNguoiNhan: tenNguoiNhan.value,
     sdt: sdtNguoiNhan.value,
+    gmail: emailNguoiNhan.value,
     diaChi: diaChiDayDu.value,
     hinhThucNhanHang: phuongThucVanChuyen.value,
+    phiVanChuyen: phivanchuyen.value,
   });
 };
 
@@ -204,7 +218,14 @@ const isUpdatingFromProps = ref(false);
 
 // Gọi khi chọn khách, chọn địa chỉ, hoặc thay đổi input
 watch(
-  [khachHangDuocChon, diaChiGiaoHang, tenNguoiNhan, sdtNguoiNhan, phuongThucVanChuyen],
+  [
+    khachHangDuocChon,
+    diaChiGiaoHang,
+    tenNguoiNhan,
+    sdtNguoiNhan,
+    emailNguoiNhan,
+    phuongThucVanChuyen,
+  ],
   () => {
     if (!isUpdatingFromProps.value) {
       capNhatOrderKhachHang();
@@ -212,7 +233,6 @@ watch(
   },
   { deep: true }
 );
-
 
 watch(
   () => props.order,
@@ -230,6 +250,7 @@ watch(
 
       tenNguoiNhan.value = newOrder.khachHang.tenNguoiNhan || "";
       sdtNguoiNhan.value = newOrder.khachHang.sdt || "";
+      emailNguoiNhan.value = newOrder.khachHang.gmail || "";
       phuongThucVanChuyen.value = newOrder.hinhThucNhanHang ?? 0;
 
       if (newOrder.khachHang.diaChi) {
@@ -252,17 +273,236 @@ watch(
 );
 
 // theo dõi địa chỉ:
-watch([
-  () => diaChiGiaoHang.value.diaChiChiTiet,
-  () => diaChiGiaoHang.value.xaPhuong,
-  () => diaChiGiaoHang.value.quanHuyen,
-  () => diaChiGiaoHang.value.tinhThanhPho,
-], () => {
-  if (!isUpdatingFromProps.value) {
-    // diaChiDayDu();
+watch(
+  [
+    () => diaChiGiaoHang.value.diaChiChiTiet,
+    () => diaChiGiaoHang.value.xaPhuong,
+    () => diaChiGiaoHang.value.quanHuyen,
+    () => diaChiGiaoHang.value.tinhThanhPho,
+  ],
+  () => {
+    if (!isUpdatingFromProps.value) {
+      // diaChiDayDu();
+      capNhatOrderKhachHang();
+    }
+  }
+);
+
+// --------------------------------------------------------------------------------------------------------------------------
+// tính phí giao hàng:
+
+const tokenGHN = "8e2a56e5-6a41-11f0-8120-026f4833faa3";
+
+// Hàm chuẩn hóa tiếng Việt
+function normalizeVN(str) {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+// Hàm lấy district_id và ward_code từ địa chỉ
+
+// =================== HÀM MỚI ĐỂ "DỌN DẸP" ĐỊA CHỈ ===================
+/**
+ * Loại bỏ các tiền tố như "Tỉnh", "Thành phố", "Quận", "Phường"... khỏi chuỗi.
+ * @param {string} str - Chuỗi địa chỉ cần làm sạch.
+ * @returns {string} - Chuỗi đã được làm sạch.
+ */
+function cleanAddressPart(str) {
+  if (!str) return "";
+  let cleanedStr = normalizeVN(str); // Chuẩn hóa (vd: "Thành Phố" -> "thanh pho")
+  const prefixes = [
+    "thanh pho",
+    "tinh",
+    "quan",
+    "huyen",
+    "phuong",
+    "xa",
+    "thi tran",
+  ];
+
+  for (const prefix of prefixes) {
+    if (cleanedStr.startsWith(prefix + " ")) {
+      cleanedStr = cleanedStr.substring(prefix.length + 1);
+    }
+  }
+  return cleanedStr.trim();
+}
+
+// =================== HÀM getDistrictAndWard ĐÃ ĐƯỢC NÂNG CẤP ===================
+async function getDistrictAndWard(address) {
+  console.log(`Bắt đầu phân tích địa chỉ: "${address}"`);
+  const addressParts = address.split(",").map((part) => part.trim());
+
+  if (addressParts.length < 4) {
+    console.error(
+      "Lỗi phân tích địa chỉ: Chuỗi địa chỉ không đủ 4 phần (Đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành)."
+    );
+    return null;
+  }
+
+  const [street, wardName, districtName, provinceName] = addressParts;
+
+  // Dọn dẹp trước các phần của địa chỉ người dùng nhập vào
+  const cleanInputProvince = cleanAddressPart(provinceName);
+  const cleanInputDistrict = cleanAddressPart(districtName);
+  const cleanInputWard = cleanAddressPart(wardName);
+
+  try {
+    // 1. Tìm Tỉnh/Thành phố
+    const provincesRes = await fetch(
+      "https://online-gateway.ghn.vn/shiip/public-api/master-data/province",
+      {
+        headers: { Token: tokenGHN },
+      }
+    );
+    const provinces = (await provincesRes.json()).data;
+    const province = provinces.find(
+      (p) => cleanAddressPart(p.ProvinceName) === cleanInputProvince
+    );
+    if (!province) {
+      console.error("Không tìm thấy Tỉnh/Thành phố:", provinceName);
+      return null;
+    }
+    console.log("Tìm thấy Province:", province);
+
+    // 2. Tìm Quận/Huyện
+    const districtsRes = await fetch(
+      "https://online-gateway.ghn.vn/shiip/public-api/master-data/district",
+      {
+        method: "POST",
+        headers: { Token: tokenGHN, "Content-Type": "application/json" },
+        body: JSON.stringify({ province_id: province.ProvinceID }),
+      }
+    );
+    const districts = (await districtsRes.json()).data;
+    const district = districts.find(
+      (d) => cleanAddressPart(d.DistrictName) === cleanInputDistrict
+    );
+    if (!district) {
+      console.error(
+        "Không tìm thấy Quận/Huyện:",
+        districtName,
+        "trong tỉnh",
+        provinceName
+      );
+      return null;
+    }
+    console.log("Tìm thấy District:", district);
+
+    // 3. Tìm Phường/Xã
+    const wardsRes = await fetch(
+      `https://online-gateway.ghn.vn/shiip/public-api/master-data/ward?district_id=${district.DistrictID}`,
+      {
+        headers: { Token: tokenGHN },
+      }
+    );
+    const wards = (await wardsRes.json()).data;
+    const ward = wards.find(
+      (w) => cleanAddressPart(w.WardName) === cleanInputWard
+    );
+    if (!ward) {
+      console.error(
+        "Không tìm thấy Phường/Xã:",
+        wardName,
+        "trong quận",
+        districtName
+      );
+      return null;
+    }
+    console.log("Tìm thấy Ward:", ward);
+
+    return {
+      district_id: district.DistrictID,
+      ward_code: ward.WardCode,
+    };
+  } catch (err) {
+    console.error("Lỗi nghiêm trọng khi gọi API GHN:", err.message);
+    return null;
+  }
+}
+
+// Hàm tính phí vận chuyển
+
+const myShopInfo = {
+  district_id: 1442, // Mã của Quận Cầu Giấy, Hà Nội
+  shop_id: "5913364", // ShopId của bạn
+};
+
+async function tinhPhiVanChuyen({
+  fromDistrictId,
+  toDistrictId,
+  toWardCode,
+  weight,
+  insuranceValue,
+}) {
+  try {
+    const response = await fetch(
+      "https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Token: tokenGHN,
+          ShopId: myShopInfo.shop_id, // ShopId vẫn có thể lấy từ cấu hình chung
+        },
+        body: JSON.stringify({
+          // SỬA Ở ĐÂY: Dùng tham số được truyền vào
+          from_district_id: fromDistrictId,
+          service_type_id: 2,
+          to_district_id: toDistrictId,
+          to_ward_code: toWardCode,
+          weight,
+          insurance_value: insuranceValue,
+        }),
+      }
+    );
+
+    const result = await response.json();
+    if (result.code !== 200) throw new Error(result.message);
+    return result.data.total;
+  } catch (err) {
+    console.error("Lỗi tính phí vận chuyển:", err.message);
+    return null;
+  }
+}
+const phivanchuyen = ref(0);
+const theoDoiPhiVanChuyen = ref(0);
+const daThayDoiPhiVanChuyen = computed(() => {
+  return Number(phivanchuyen.value) !== Number(theoDoiPhiVanChuyen.value);
+});
+const tinhPhi = async () => {
+  if (!diaChiDayDu.value) {
+    alert("Vui lòng nhập đầy đủ địa chỉ giao hàng.");
+    return;
+  }
+
+  const result = await getDistrictAndWard(diaChiDayDu.value);
+  if (!result) {
+    alert("Không thể xác định địa chỉ giao hàng.");
+    return;
+  }
+  console.log("da vao phan tinh phi");
+  const phi = await tinhPhiVanChuyen({
+    fromDistrictId: myShopInfo.district_id,
+    toDistrictId: result.district_id,
+    toWardCode: result.ward_code,
+    weight: 500, // Bạn có thể tuỳ chỉnh trọng lượng (gram)
+    insuranceValue: props.order?.tongTienHang || 0,
+  });
+  console.log(phi);
+
+  if (phi != null) {
+    phivanchuyen.value = phi;
+    theoDoiPhiVanChuyen.value = phi;
     capNhatOrderKhachHang();
   }
-});
+};
+const suaPhi = async () => {
+  capNhatOrderKhachHang();
+  theoDoiPhiVanChuyen.value = phivanchuyen.value
+}
 </script>
 
 <template>
@@ -272,12 +512,17 @@ watch([
       <div class="bg-white p-3 rounded mb-4 align-items-center border">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="mb-0">👤 Khách hàng</h5>
-          <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
+          <button
+            class="btn border rounded-circle d-flex align-items-center justify-content-center"
+            style="
               width: 36px;
               height: 36px;
               background-color: #0a2c57;
               color: white;
-            " title="Chọn khách hàng" @click="moPopupChonKhach">
+            "
+            title="Chọn khách hàng"
+            @click="moPopupChonKhach"
+          >
             <UserCog size="20" />
           </button>
         </div>
@@ -290,7 +535,8 @@ watch([
           <!-- Chỉ hiển thị các thông tin khác nếu KHÔNG phải khách lẻ -->
           <template v-if="khachHangDuocChon.id">
             <div class="mb-2">
-              <strong>Số điện thoại:</strong> {{ khachHangDuocChon.soDienThoai }}
+              <strong>Số điện thoại:</strong>
+              {{ khachHangDuocChon.soDienThoai }}
             </div>
             <div class="mb-2">
               <strong>Email:</strong>
@@ -300,13 +546,17 @@ watch([
               <strong>Giới tính:</strong>
               {{ khachHangDuocChon.gioiTinh ? "Nam" : "Nữ" }}
             </div>
-               <button class="btn btn-sm btn-outline-danger mt-2" @click="boChonKhachHang">
-            Bỏ chọn khách hàng
-          </button>
+            <button
+              class="btn btn-sm btn-outline-danger mt-2"
+              @click="boChonKhachHang"
+            >
+              Bỏ chọn khách hàng
+            </button>
           </template>
-       
         </div>
-        <div v-else class="text-muted"> <strong>Tên khách hàng:</strong> Khách lẻ.</div>
+        <div v-else class="text-muted">
+          <strong>Tên khách hàng:</strong> Khách lẻ.
+        </div>
       </div>
     </div>
 
@@ -321,16 +571,31 @@ watch([
           <label class="form-label">Phương thức vận chuyển:</label>
           <div>
             <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" id="shippingDirect" :value="0"
-                v-model="phuongThucVanChuyen" />
-              <label class="form-check-label" for="shippingDirect">Tại quầy</label>
+              <input
+                class="form-check-input"
+                type="radio"
+                id="shippingDirect"
+                :value="0"
+                v-model="phuongThucVanChuyen"
+              />
+              <label class="form-check-label" for="shippingDirect"
+                >Tại quầy</label
+              >
             </div>
             <div class="form-check form-check-inline">
-              <input class="form-check-input" type="radio" id="shippingDelivery" :value="1"
-                v-model="phuongThucVanChuyen" />
-              <label class="form-check-label" for="shippingDelivery">Giao hàng</label>
+              <input
+                class="form-check-input"
+                type="radio"
+                id="shippingDelivery"
+                :value="1"
+                v-model="phuongThucVanChuyen"
+              />
+              <label class="form-check-label" for="shippingDelivery"
+                >Giao hàng</label
+              >
             </div>
           </div>
+
         </div>
 
         <!-- Nếu chọn GIAO HÀNG -->
@@ -338,16 +603,43 @@ watch([
           <div class="row mb-3">
             <!-- Tên người nhận -->
             <div class="col-md-6">
-              <label for="tenNguoiNhan" class="form-label">Tên người nhận:</label>
-              <input type="text" id="tenNguoiNhan" class="form-control" placeholder="Nhập tên người nhận"
-                v-model="tenNguoiNhan" />
+              <label for="tenNguoiNhan" class="form-label"
+                >Tên người nhận:</label
+              >
+              <input
+                type="text"
+                id="tenNguoiNhan"
+                class="form-control"
+                placeholder="Nhập tên người nhận"
+                v-model="tenNguoiNhan"
+              />
             </div>
 
             <!-- Số điện thoại người nhận -->
             <div class="col-md-6">
-              <label for="soDienThoaiNguoiNhan" class="form-label">Số điện thoại người nhận:</label>
-              <input type="text" id="soDienThoaiNguoiNhan" class="form-control"
-                placeholder="Nhập số điện thoại người nhận" v-model="sdtNguoiNhan" />
+              <label for="soDienThoaiNguoiNhan" class="form-label"
+                >Số điện thoại người nhận:</label
+              >
+              <input
+                type="text"
+                id="soDienThoaiNguoiNhan"
+                class="form-control"
+                placeholder="Nhập số điện thoại người nhận"
+                v-model="sdtNguoiNhan"
+              />
+            </div>
+          </div>
+          <!-- Email người nhận (full width) -->
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <label for="emailNguoiNhan" class="form-label">Email người nhận:</label>
+              <input
+                type="email"
+                id="emailNguoiNhan"
+                class="form-control"
+                placeholder="Nhập email người nhận"
+                v-model="emailNguoiNhan"
+              />
             </div>
           </div>
 
@@ -357,12 +649,17 @@ watch([
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="mb-0">Địa chỉ giao hàng:</h5>
 
-              <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
+              <button
+                class="btn border rounded-circle d-flex align-items-center justify-content-center"
+                style="
                   width: 36px;
                   height: 36px;
                   background-color: #0a2c57;
                   color: white;
-                " title="Chọn địa chỉ" @click="moPopupDiaChi">
+                "
+                title="Chọn địa chỉ"
+                @click="moPopupDiaChi"
+              >
                 <UserCog size="20" />
               </button>
             </div>
@@ -372,9 +669,17 @@ watch([
               <!-- Tỉnh/Thành phố -->
               <div class="col-md-6">
                 <label>Tỉnh/Thành phố</label>
-                <select class="form-select bg-white" v-model="diaChiGiaoHang.tinhThanhPho" @change="layQuanTheoTinh">
+                <select
+                  class="form-select bg-white"
+                  v-model="diaChiGiaoHang.tinhThanhPho"
+                  @change="layQuanTheoTinh"
+                >
                   <option disabled value="">-- Chọn Tỉnh --</option>
-                  <option v-for="tinh in danhSachTinh" :key="tinh.code" :value="tinh.name">
+                  <option
+                    v-for="tinh in danhSachTinh"
+                    :key="tinh.code"
+                    :value="tinh.name"
+                  >
                     {{ tinh.name }}
                   </option>
                 </select>
@@ -383,10 +688,18 @@ watch([
               <!-- Quận/Huyện -->
               <div class="col-md-6">
                 <label>Quận/Huyện</label>
-                <select class="form-select bg-white" v-model="diaChiGiaoHang.quanHuyen" @change="layPhuongTheoQuan"
-                  :disabled="!diaChiGiaoHang.tinhThanhPho">
+                <select
+                  class="form-select bg-white"
+                  v-model="diaChiGiaoHang.quanHuyen"
+                  @change="layPhuongTheoQuan"
+                  :disabled="!diaChiGiaoHang.tinhThanhPho"
+                >
                   <option disabled value="">-- Chọn Quận --</option>
-                  <option v-for="quan in danhSachQuan" :key="quan.code" :value="quan.name">
+                  <option
+                    v-for="quan in danhSachQuan"
+                    :key="quan.code"
+                    :value="quan.name"
+                  >
                     {{ quan.name }}
                   </option>
                 </select>
@@ -395,10 +708,17 @@ watch([
               <!-- Phường/Xã -->
               <div class="col-md-6">
                 <label>Phường/Xã</label>
-                <select class="form-select bg-white" v-model="diaChiGiaoHang.xaPhuong"
-                  :disabled="!diaChiGiaoHang.quanHuyen">
+                <select
+                  class="form-select bg-white"
+                  v-model="diaChiGiaoHang.xaPhuong"
+                  :disabled="!diaChiGiaoHang.quanHuyen"
+                >
                   <option disabled value="">-- Chọn Phường --</option>
-                  <option v-for="phuong in danhSachPhuong" :key="phuong.code" :value="phuong.name">
+                  <option
+                    v-for="phuong in danhSachPhuong"
+                    :key="phuong.code"
+                    :value="phuong.name"
+                  >
                     {{ phuong.name }}
                   </option>
                 </select>
@@ -407,8 +727,11 @@ watch([
               <!-- Số nhà/Đường -->
               <div class="col-md-6">
                 <label>Địa chỉ chi tiết</label>
-                <input class="form-control bg-white" v-model="diaChiGiaoHang.diaChiChiTiet"
-                  placeholder="VD: 444 Đội Cấn" />
+                <input
+                  class="form-control bg-white"
+                  v-model="diaChiGiaoHang.diaChiChiTiet"
+                  placeholder="VD: 444 Đội Cấn"
+                />
               </div>
             </div>
           </div>
@@ -417,9 +740,27 @@ watch([
 
           <div class="mt-3">
             <div class="d-flex align-items-center mb-2">
-              <strong class="me-2">Đơn vị vận chuyển:</strong>
-              <span>Giao hàng nhanh</span>
+              <label class="fw-bold me-2 mb-0">Đơn vị vận chuyển:</label>
+              <span class="me-3">Giao hàng nhanh</span>
+              <button @click="tinhPhi" class="btn btn-primary">
+                Tính phí giao hàng
+              </button>
             </div>
+
+            <div class="d-flex align-items-center mb-2">
+              <strong class="me-2">Phí vận chuyển:</strong>
+              <input v-model="phivanchuyen" type="number"></input>đ 
+              <!-- Hiện nút "Sửa" nếu có thay đổi -->
+      
+              <button
+                v-if="daThayDoiPhiVanChuyen"
+                @click="suaPhi"
+                class="btn btn-warning btn-sm ms-2"
+              >
+              Sửa
+              </button>
+            </div>
+
             <div class="d-flex align-items-center">
               <strong class="me-2">Thời gian dự kiến:</strong>
               <span>17/5/2025</span>
@@ -432,9 +773,17 @@ watch([
       </div>
     </div>
 
-    <PopupChonKhachHang v-if="hienThiPopupChonKhach" :currentSelectedCustomer="khachHangDuocChon"
-      @customerSelected="chonKhachHang" @close="hienThiPopupChonKhach = false" />
-    <ChonDiaChiKhachHang v-if="popupVisible" :khachHangId="khachHangDuocChon.id" @diaChiSelected="chonDiaChi"
-      @close="dongPopupDiaChi" />
+    <PopupChonKhachHang
+      v-if="hienThiPopupChonKhach"
+      :currentSelectedCustomer="khachHangDuocChon"
+      @customerSelected="chonKhachHang"
+      @close="hienThiPopupChonKhach = false"
+    />
+    <ChonDiaChiKhachHang
+      v-if="popupVisible"
+      :khachHangId="khachHangDuocChon.id"
+      @diaChiSelected="chonDiaChi"
+      @close="dongPopupDiaChi"
+    />
   </div>
 </template>

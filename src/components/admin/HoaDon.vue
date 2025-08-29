@@ -71,8 +71,42 @@ const maxRevenue = computed(() =>
   todos.value.length ? Math.max(...todos.value.map((i) => i.tongTien)) : 100000
 );
 
+// const filteredTodos = computed(() => {
+//   return todos.value
+//     .filter((item) => {
+//       if (!startDate.value && !endDate.value) return true;
+//       const createdDate = new Date(item.ngayTao);
+//       const start = startDate.value
+//         ? new Date(startDate.value + "T00:00:00")
+//         : null;
+//       const end = endDate.value ? new Date(endDate.value + "T23:59:59") : null;
+
+//       if (start && createdDate < start) return false;
+//       if (end && createdDate > end) return false;
+//       return true;
+//     })
+//     .filter((item) => item.tongTien <= revenueFilter.value)
+//     .filter((item) => {
+//       if (!deliveryMethod.value) return true;
+//       return listTrangThai[item.trangThai] === deliveryMethod.value;
+//     })
+//     .filter((item) => {
+//       if (!orderCreationMethod.value) return true;
+//       return item.loaiDon === orderCreationMethod.value;
+//     })
+//     .filter((item) => {
+//       const query = searchQuery.value.toLowerCase();
+//       return (
+//         item.maHoaDon?.toLowerCase().includes(query) ||
+//         item.tenKhachHang?.toLowerCase().includes(query) ||
+//         item.sdt?.toLowerCase().includes(query)
+//       );
+//     });
+// });
 const filteredTodos = computed(() => {
   return todos.value
+    .slice() // tạo bản sao để không ảnh hưởng đến dữ liệu gốc
+    .sort((a, b) => new Date(a.ngayTao) - new Date(b.ngayTao)) // Sắp xếp từ cũ đến mới
     .filter((item) => {
       if (!startDate.value && !endDate.value) return true;
       const createdDate = new Date(item.ngayTao);
@@ -103,6 +137,7 @@ const filteredTodos = computed(() => {
       );
     });
 });
+
 
 function formatDate(dateString) {
   const date = new Date(dateString);

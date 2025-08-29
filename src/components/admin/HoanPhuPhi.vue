@@ -1,16 +1,26 @@
 <script setup>
 import { ref, reactive, watch } from "vue";
+import axios from "axios";
 
 const props = defineProps({
   tongTien: {
     type: Number,
     required: true,
   },
+  visible: {
+    type: Boolean,
+    default: false,
+  },
+  maHoaDon: {  // ✅ Thêm prop này
+    type: String,
+    required: true,
+  },
+  loaiThanhToan: String,
 });
 
 const emit = defineEmits(["close", "xac-nhan"]);
 
-const hinhThuc = ref("tien_mat"); // Giá trị mặc định
+const hinhThuc = ref("tien_mat");
 const maGiaoDichChinh = ref("");
 const soTienKhachTra = ref(props.tongTien);
 
@@ -18,7 +28,6 @@ const danhSachThanhToan = reactive([
   { tenPhuongThuc: "Tiền mặt", maGiaoDich: "", soTien: props.tongTien },
 ]);
 
-// Danh sách phương thức
 const PHUONG_THUC = [
   { label: "Tiền mặt", value: "tien_mat" },
   { label: "COD", value: "cod" },
@@ -29,7 +38,7 @@ const PHUONG_THUC = [
 
 const phuongThucChonNhieu = ref([]);
 
-// Khi thay đổi hình thức thanh toán
+// Cập nhật khi hinhThuc thay đổi
 watch(hinhThuc, (val) => {
   danhSachThanhToan.length = 0;
   if (val === "khac") {
@@ -44,7 +53,7 @@ watch(hinhThuc, (val) => {
   }
 });
 
-// Khi chọn nhiều phương thức (khi val === "khac")
+// Cập nhật khi chọn nhiều phương thức
 watch(phuongThucChonNhieu, (list) => {
   danhSachThanhToan.length = 0;
   if (list.length) {
@@ -52,13 +61,35 @@ watch(phuongThucChonNhieu, (list) => {
     list.forEach((val) => {
       const pt = PHUONG_THUC.find((p) => p.value === val);
       danhSachThanhToan.push({
-        tenPhuongThuc: pt ? pt.value : val,
+        tenPhuongThuc: pt ? pt.label : val,
         maGiaoDich: "",
         soTien: chiaTien,
       });
     });
   }
 });
+
+// ✅ Cập nhật khi tongTien thay đổi
+watch(
+  () => props.tongTien,
+  (newVal) => {
+    soTienKhachTra.value = newVal;
+    if (hinhThuc.value !== "khac") {
+      danhSachThanhToan.length = 0;
+      const phuongThuc = PHUONG_THUC.find((p) => p.value === hinhThuc.value);
+      danhSachThanhToan.push({
+        tenPhuongThuc: phuongThuc ? phuongThuc.label : "Không xác định",
+        maGiaoDich: "",
+        soTien: newVal,
+      });
+    } else {
+      if (phuongThucChonNhieu.value.length) {
+        const chiaTien = newVal / phuongThucChonNhieu.value.length;
+        danhSachThanhToan.forEach((pt) => (pt.soTien = chiaTien));
+      }
+    }
+  }
+);
 
 const themDong = () => {
   danhSachThanhToan.push({
@@ -72,8 +103,10 @@ const formatCurrency = (val) => {
   return val?.toLocaleString("vi-VN") + " ₫";
 };
 
-const xacNhanThanhToan = () => {
-  const data = {};
+const xacNhanThanhToan = async () => {
+  const data = {
+    maHoaDon: props.maHoaDon, // phải truyền prop này từ cha vào
+  };
 
   if (hinhThuc.value === "khac") {
     const tongNhap = danhSachThanhToan.reduce(
@@ -91,9 +124,62 @@ const xacNhanThanhToan = () => {
     data.soTienKhachTra = soTienKhachTra.value;
   }
 
-  emit("xac-nhan", data);
+  await thanhToanDonHang(data);
 };
+
+
+const thanhToanDonHang = async (data) => {
+  const danhSachThanhToan = [];
+
+  if (Array.isArray(data.thanhToan)) {
+    data.thanhToan.forEach((pt) => {
+      danhSachThanhToan.push({
+        maHinhThuc: pt.maGiaoDich || "",
+        phuongThucThanhToan: pt.tenPhuongThuc,
+        soTien: pt.soTien,
+        moTa: "",
+        ghiChu: "",
+        trangThaiThanhToan: 1,
+      });
+    });
+  } else {
+    danhSachThanhToan.push({
+      maHinhThuc: data.maGiaoDich || "",
+      phuongThucThanhToan: data.hinhThuc,
+      soTien: data.soTienKhachTra,
+      moTa: "",
+      ghiChu: "",
+      trangThaiThanhToan: 1,
+    });
+  }
+
+  const payload = {
+    hoaDonId: data.maHoaDon,
+    danhSachThanhToan,
+  };
+
+  console.log("Gửi thanh toán với payload:", payload);
+
+  // ✅ Chọn API theo loaiThanhToan
+  const apiUrl =
+    props.loaiThanhToan === "phu-phi"
+      ? "http://localhost:8080/thanh-toan/phu-phi"
+      : "http://localhost:8080/thanh-toan/hoan-phi";
+
+  try {
+    const res = await axios.post(apiUrl, payload);
+    console.log("✅ Thanh toán thành công:", res.data);
+    alert("Thanh toán thành công!");
+  } catch (err) {
+    console.error("❌ Lỗi khi thanh toán:", err);
+    alert("Thanh toán thất bại!");
+  }
+};
+
+
 </script>
+
+
 
 <style scoped>
 .modal {
@@ -102,7 +188,7 @@ const xacNhanThanhToan = () => {
 </style>
 
 <template>
-  <div class="modal show d-block" tabindex="-1">
+  <div v-if="visible" class=" , modal show d-block" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">

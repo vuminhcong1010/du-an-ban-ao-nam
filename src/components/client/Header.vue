@@ -11,19 +11,23 @@
       <nav class="main-navigation">
         <ul>
           <li>
-            <a href="/coolmen" :class="{ active: route.path === '/coolmen' }">Trang chủ</a>
+            <router-link to="/coolmen" :class="{ active: route.path === '/coolmen' }">Trang chủ</router-link>
           </li>
           <li>
-            <a href="/coolmen/client-san-pham" :class="{ active: route.path === '/coolmen/client-san-pham' }">Sản phẩm</a>
+            <router-link to="/coolmen/client-san-pham"
+              :class="{ active: route.path === '/coolmen/client-san-pham' }">Sản phẩm</router-link>
           </li>
           <li>
-            <a href="/coolmen/danh-muc" :class="{ active: route.path === '/coolmen/danh-muc' }">Danh mục</a>
+            <router-link to="/coolmen/danh-muc-list" :class="{ active: route.path === '/coolmen/danh-muc-List' }">Danh
+              mục</router-link>
           </li>
           <li>
-            <a href="/coolmen/giam-gia" :class="{ active: route.path === '/coolmen/giam-gia' }">Giảm giá</a>
+            <router-link to="/coolmen/giam-gia" :class="{ active: route.path === '/coolmen/giam-gia' }">Giảm
+              giá</router-link>
           </li>
           <li>
-            <a href="/coolmen/lien-he" :class="{ active: route.path === '/coolmen/lien-he' }">Liên hệ</a>
+            <router-link to="/coolmen/lien-he" :class="{ active: route.path === '/coolmen/lien-he' }">Liên
+              hệ</router-link>
           </li>
         </ul>
       </nav>
@@ -144,6 +148,7 @@ onMounted(() => {
   border-bottom: 2px solid #007bff;
   padding-bottom: 2px;
 }
+
 .badge {
   background: purple;
   color: white;

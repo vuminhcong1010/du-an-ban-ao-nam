@@ -14,9 +14,11 @@
       <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h4 class="fw-bold">Mua sắm theo danh mục</h4>
-          <a href="#" class="text-decoration-none text-primary">Xem tất cả</a>
+          <a href="#" class="text-decoration-none text-primary" @click.prevent="goToCategories">
+            Xem tất cả
+          </a>
         </div>
-        <div class="row g-3 justify-content-center">
+        <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
           <!-- Danh mục -->
           <div v-for="item in categories" :key="item.title" class="col-6 col-sm-4 col-md-2">
             <div class="category-card" @click="goToCategory(item.id)" style="cursor: pointer">
@@ -26,7 +28,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </transition-group>
       </div>
     </section>
 
@@ -34,7 +36,7 @@
     <section class="py-5">
       <div class="container">
         <h4 class="fw-bold mb-4 text-center">Sản phẩm bán chạy</h4>
-        <div class="row g-3 justify-content-center">
+        <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
           <div class="col-6 col-sm-4 col-md-3 col-lg-2" v-for="product in bestSellers" :key="product.id">
             <div class="card-product position-relative">
               <!-- HOT Badge -->
@@ -49,7 +51,7 @@
               <div class="image-wrapper">
                 <img :src="product.image" alt="product" class="img-fluid" />
                 <div class="overlay">
-                  <button class="btn-buy">Mua ngay</button>
+                  <button class="btn-buy" @click="goToProductDetail(product.id)">Mua ngay</button>
                 </div>
               </div>
 
@@ -94,7 +96,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </transition-group>
       </div>
     </section>
 
@@ -106,6 +108,120 @@
       </div>
     </section>
 
+    <!-- Sản phẩm nổi bật -->
+    <section class="py-5 bg-light">
+      <div class="container">
+        <h4 class="fw-bold mb-4 text-center">Sản phẩm nổi bật</h4>
+        <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
+          <div class="col-6 col-sm-4 col-md-3 col-lg-2" v-for="product in highlightProducts" :key="product.id">
+            <div class="card-product position-relative text-center">
+
+              <!-- Giảm giá -->
+              <span v-if="product.discount > 0"
+                class="badge bg-danger discount-badge position-absolute top-0 end-0 m-2">
+                -{{ product.discount }}%
+              </span>
+
+              <!-- Ảnh sản phẩm -->
+              <div class="image-wrapper">
+                <img :src="product.image" alt="product" class="img-fluid" />
+                <div class="overlay">
+                  <button class="btn-buy" @click="goToProductDetail(product.id)">Mua ngay</button>
+                </div>
+              </div>
+
+              <!-- Tên sản phẩm -->
+              <div class="product-name mt-2 fw-semibold">
+                {{ product.name }}
+              </div>
+
+              <!-- ⭐ Điểm đánh giá -->
+              <div class="rating-section mt-1">
+                <span v-for="star in 5" :key="star" class="star">
+                  <i v-if="star <= product.rating" class="bi bi-star-fill text-warning"></i>
+                  <i v-else class="bi bi-star text-muted"></i>
+                </span>
+                <span class="ms-1 text-muted">({{ product.reviews }})</span>
+              </div>
+
+              <!-- Giá sản phẩm -->
+              <div class="price-display mt-1">
+                <template v-if="product.discount > 0">
+                  <span class="text-muted text-decoration-line-through me-1">
+                    {{ formatPrice(product.originalPriceRange.min) }}
+                    <template v-if="product.originalPriceRange.min !== product.originalPriceRange.max">
+                      - {{ formatPrice(product.originalPriceRange.max) }}
+                    </template>
+                  </span>
+                </template>
+                <span class="text-dark fw-bold">
+                  {{ formatPrice(product.priceRange.min) }}
+                  <template v-if="product.priceRange.min !== product.priceRange.max">
+                    - {{ formatPrice(product.priceRange.max) }}
+                  </template>
+                </span>
+              </div>
+
+            </div>
+          </div>
+        </transition-group>
+      </div>
+    </section>
+
+    <section class="py-5 bg-light">
+      <div class="container">
+        <h4 class="fw-bold mb-4 text-center">Sản phẩm mới</h4>
+        <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
+          <div class="col-6 col-sm-4 col-md-3 col-lg-2" v-for="product in newProducts" :key="product.id">
+            <div class="card-product position-relative">
+
+              <!-- Badge NEW -->
+              <span class="badge-new">New</span>
+              <!-- Ảnh -->
+              <div class="image-wrapper">
+                <img :src="product.image" alt="product" class="img-fluid" />
+                <div class="overlay">
+                  <button class="btn-buy" @click="goToProductDetail(product.id)">Mua ngay</button>
+                </div>
+              </div>
+
+              <!-- ⭐ Đánh giá -->
+              <div class="rating-section text-center mt-2">
+                <span v-for="star in 5" :key="star" class="star">
+                  <i v-if="star <= product.rating" class="bi bi-star-fill text-warning"></i>
+                  <i v-else class="bi bi-star text-muted"></i>
+                </span>
+                <span class="ms-1 text-muted">({{ product.reviews }})</span>
+              </div>
+
+              <!-- Tên sản phẩm -->
+              <div class="product-name text-center fw-semibold mt-1">
+                {{ product.name }}
+              </div>
+
+              <!-- Giá -->
+              <div class="text-center mt-1">
+                <template v-if="product.discount > 0">
+                  <div class="text-muted text-decoration-line-through small">
+                    {{ formatPrice(product.originalPriceRange.min) }}
+                    <template v-if="product.originalPriceRange.min !== product.originalPriceRange.max">
+                      - {{ formatPrice(product.originalPriceRange.max) }}
+                    </template>
+                  </div>
+                </template>
+                <div class="fw-bold text-dark">
+                  {{ formatPrice(product.priceRange.min) }}
+                  <template v-if="product.priceRange.min !== product.priceRange.max">
+                    - {{ formatPrice(product.priceRange.max) }}
+                  </template>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </transition-group>
+      </div>
+    </section>
 
     <!-- Why Us -->
     <section class="py-5">
@@ -127,12 +243,14 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
-
+import Cookies from 'js-cookie'
 
 const categories = ref([])
 const bestSellers = ref([])
 const router = useRouter()
 
+
+console.log(Cookies.get("email"));
 const imageList = [
   '/src/assets/DanhMuc1.webp',
   '/src/assets/DanhMuc2.webp',
@@ -232,7 +350,144 @@ onMounted(async () => {
   } catch (error) {
     console.error('Lỗi khi tải dữ liệu:', error)
   }
+  await fetchHighlightProducts()
+  await fetchNewProducts()
 })
+function goToCategories() {
+  router.push('/coolmen/danh-muc-List')
+
+}
+// 🆕 Sản phẩm mới
+const newProducts = ref([])
+
+const fetchNewProducts = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/home/danh-sach')
+    const data = res.data.data || []
+
+    // Sắp xếp theo ngày tạo giảm dần (mới nhất trước)
+    const sorted = data.slice().sort((a, b) => {
+      const dateA = new Date(a.sanPham.ngayTao)
+      const dateB = new Date(b.sanPham.ngayTao)
+      return dateB - dateA
+    }).slice(0, 6)
+
+    newProducts.value = await Promise.all(sorted.map(async (item) => {
+      const ctspList = item.chiTietSanPham?.filter(ct => ct.trangThai === 1) || []
+      const prices = ctspList.map(ct => ct.gia ?? ct.giaBan).filter(p => typeof p === 'number' && p > 0)
+      const originalPrices = ctspList.map(ct => ct.giaGoc ?? ct.gia).filter(p => typeof p === 'number' && p > 0)
+
+      let discount = 0
+      try {
+        const discountRes = await axios.get(`http://localhost:8080/client/giam-gia/${item.sanPham.id}`)
+        if (discountRes.status === 200 && Array.isArray(discountRes.data.data)) {
+          const discounts = discountRes.data.data.map(Number).filter(p => !isNaN(p))
+          if (discounts.length > 0) {
+            discount = Math.round(discounts.reduce((a, b) => a + b, 0) / discounts.length)
+          }
+        }
+      } catch (e) { }
+
+      const danhGiaList = item.danhGiaList || []
+      const totalRating = danhGiaList.reduce((sum, dg) => sum + dg.diemDanhGia, 0)
+      const avgRating = danhGiaList.length > 0 ? totalRating / danhGiaList.length : 0
+
+      let priceRange = null, originalPriceRange = null
+      if (prices.length > 0) {
+        const min = Math.min(...originalPrices)
+        const max = Math.max(...originalPrices)
+        originalPriceRange = { min, max }
+
+        priceRange = discount > 0
+          ? { min: Math.round(min * (1 - discount / 100)), max: Math.round(max * (1 - discount / 100)) }
+          : { min, max }
+      }
+
+      return {
+        id: item.sanPham.id,
+        name: item.sanPham.tenSanPham,
+        image: item.anhSanPham?.[0] || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png',
+        priceRange,
+        originalPriceRange: discount > 0 ? originalPriceRange : null,
+        discount,
+        rating: Math.round(avgRating),
+        reviews: danhGiaList.length
+      }
+    }))
+  } catch (err) {
+    console.error('Lỗi khi lấy sản phẩm mới:', err)
+  }
+}
+const goToProductDetail = (productId) => {
+  router.push({ name: 'client-san-pham-detail', params: { id: productId } })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+
+const highlightProducts = ref([])
+
+const fetchHighlightProducts = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/home/danh-sach') // reuse same API
+    const data = res.data.data
+
+    // Tính điểm trung bình đánh giá và sắp xếp
+    const processed = await Promise.all(data.map(async item => {
+      const ctspList = item.chiTietSanPham?.filter(ct => ct.trangThai === 1) || []
+      const prices = ctspList.map(ct => ct.gia ?? ct.giaBan).filter(p => typeof p === 'number' && p > 0)
+      const originalPrices = ctspList.map(ct => ct.giaGoc ?? ct.gia).filter(p => typeof p === 'number' && p > 0)
+
+      let discount = 0
+      try {
+        const discountRes = await axios.get(`http://localhost:8080/client/giam-gia/${item.sanPham.id}`)
+        if (discountRes.status === 200 && Array.isArray(discountRes.data.data)) {
+          const discounts = discountRes.data.data.map(Number).filter(p => !isNaN(p))
+          if (discounts.length > 0) {
+            discount = Math.round(discounts.reduce((a, b) => a + b, 0) / discounts.length)
+          }
+        }
+      } catch (e) { }
+
+      const danhGiaList = item.danhGiaList || []
+      const totalRating = danhGiaList.reduce((sum, dg) => sum + dg.diemDanhGia, 0)
+      const avgRating = danhGiaList.length > 0 ? totalRating / danhGiaList.length : 0
+
+      let priceRange = null, originalPriceRange = null
+      if (prices.length > 0) {
+        const min = Math.min(...originalPrices)
+        const max = Math.max(...originalPrices)
+        originalPriceRange = { min, max }
+
+        priceRange = discount > 0
+          ? { min: Math.round(min * (1 - discount / 100)), max: Math.round(max * (1 - discount / 100)) }
+          : { min, max }
+      }
+
+      return {
+        id: item.sanPham.id,
+        name: item.sanPham.tenSanPham,
+        image: item.anhSanPham?.[0] || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png',
+        priceRange,
+        originalPriceRange,
+        discount,
+        rating: Math.round(avgRating),
+        reviews: danhGiaList.length
+      }
+    }))
+
+    // Lấy 6 sản phẩm có giảm giá cao nhất và đánh giá cao nhất
+    highlightProducts.value = processed
+      .sort((a, b) => {
+        const scoreA = a.discount * 2 + a.rating
+        const scoreB = b.discount * 2 + b.rating
+        return scoreB - scoreA
+      })
+      .slice(0, 6)
+
+  } catch (err) {
+    console.error('Lỗi khi lấy sản phẩm nổi bật:', err)
+  }
+}
 
 
 const reasons = [
@@ -442,7 +697,39 @@ const reasons = [
   display: block;
 }
 
+.badge-new {
+  background-color: #ffc107;
+  /* màu vàng */
+  color: #ffffff;
+  font-weight: bold;
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
 
 
 /*  */
+/* Transition-group animations for slide-up effect */
+.grid-enter-from,
+.grid-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.grid-enter-active {
+  transition: all 250ms ease;
+}
+
+.grid-leave-active {
+  transition: all 220ms ease;
+  position: relative;
+}
+
+.grid-move {
+  transition: transform 300ms ease;
+}
 </style>

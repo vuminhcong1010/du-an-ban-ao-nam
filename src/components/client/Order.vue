@@ -995,7 +995,6 @@ function apDungTuDongPhieuTotNhat(danhSachPhieu) {
         maGiamGia.value = phieuTotNhat.maPhieuGiamGia;
 
         if (!daHienThongBaoThanhCong.value) {
-            toast.success(`Tự động áp dụng mã giảm ${phieuTotNhat.soTienGiam ? 'tiền mặt' : 'phần trăm'} tốt nhất!`);
             daHienThongBaoThanhCong.value = true;
         }
 
@@ -1325,7 +1324,6 @@ async function thanhToan() {
     isLoading.value = true;
 
     try {
-        // 👉 Khởi tạo dữ liệu trước
         const provinceName = provinces.value.find(p => p.ProvinceID == selectedProvince.value)?.ProvinceName || '';
         const districtName = districts.value.find(d => d.DistrictID == selectedDistrict.value)?.DistrictName || '';
         const wardName = wards.value.find(w => w.WardCode == selectedWard.value)?.WardName || '';
@@ -1362,101 +1360,86 @@ async function thanhToan() {
             }))
         };
 
-        // 👉 Nếu chọn VNPay
-        if (form.value.paymentMethod === 'card') {
-            sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
+        const paymentMethod = form.value.paymentMethod;
 
-            const vnpayRequest = {
+        // 👉 Trường hợp thanh toán COD: Gọi cập nhật hóa đơn ngay
+        if (paymentMethod === 'cod') {
+            await axios.put(`http://localhost:8080/client/capNhatHoaDon/${route.params.hoaDonId}`, data, {
+                withCredentials: true
+            });
+
+            sessionStorage.removeItem("gioHang");
+            localStorage.removeItem("gioHang");
+            window.dispatchEvent(new Event("cap-nhat-gio"));
+
+            router.push({ name: "client-san-pham" }).then(() => {
+                toast.success("✅ Thanh toán thành công bằng COD!");
+            });
+            return;
+        }
+
+        // 👉 Các phương thức cần redirect: VNPay, MoMo, QR Code
+        sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
+
+        if (paymentMethod === 'card') {
+            const response = await axios.post(`http://localhost:8080/vnpay`, {
                 amount: Math.round(tongCong.value),
                 hoaDonId: route.params.hoaDonId
-            };
-
-            const response = await axios.post(`http://localhost:8080/vnpay`, vnpayRequest);
+            });
             const vnpayUrl = response.data;
-
             window.location.href = vnpayUrl;
-            sessionStorage.removeItem("gioHang");
-            localStorage.removeItem("gioHang");
-            window.dispatchEvent(new Event("cap-nhat-gio"));
-            return;
-        }
-        if (form.value.paymentMethod === 'momo') {
-            sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
-
-            const vnpayRequest = {
+        } else if (paymentMethod === 'momo') {
+            const response = await axios.post(`http://localhost:8080/momo`, {
                 amount: Math.round(tongCong.value),
                 hoaDonId: route.params.hoaDonId
-            };
-
-            const response = await axios.post(`http://localhost:8080/momo`, vnpayRequest);
-            const vnpayUrl = response.data.shortLink;
-
-            window.location.href = vnpayUrl;
-            sessionStorage.removeItem("gioHang");
-            localStorage.removeItem("gioHang");
-            window.dispatchEvent(new Event("cap-nhat-gio"));
-            return;
-        }
-        if (form.value.paymentMethod === 'qrcode') {
-            sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
+            });
+            const momoUrl = response.data.shortLink;
+            window.location.href = momoUrl;
+        } else if (paymentMethod === 'qrcode') {
             const randomNumber = Math.floor(Math.random() * 1000) + 1;
-            const cancelPage = "http://localhost:5173/return"
-            const successPage = "https://www.google.com/success"
+            const cancelPage = "http://localhost:5173/return";
+            const successPage = "https://www.google.com/success";
             const convertData = {
                 data: "{'amount':" + Math.round(tongCong.value) + ",'cancelUrl':'" + cancelPage + "','description':'" + data.ghiChu + "','orderCode':" + randomNumber + ",'returnUrl':'" + successPage + "'}"
             };
-
-            let signature = ""
+            
+            let signature = "";
             await axios.post("http://localhost:8080/convert", convertData).then(res => {
-
-                signature = res.data
-                console.log(signature);
-
-            })
-            let ttkh = ref({
+                signature = res.data;
+            });
+            const ttkh = {
                 orderCode: randomNumber,
                 amount: Math.round(tongCong.value),
                 description: data.ghiChu,
-
                 buyerName: data.hoTen,
                 buyerPhone: data.sdt,
                 buyerAddress: data.diaChi,
                 cancelUrl: cancelPage,
                 returnUrl: successPage,
                 signature: signature
-            })
+            };
+            console.log("Dữ liệu thanh toán QR Code:", ttkh);
 
-            await axios.post("https://api-merchant.payos.vn/v2/payment-requests", ttkh.value, {
+            await axios.post("https://api-merchant.payos.vn/v2/payment-requests", ttkh, {
                 headers: {
                     "Content-Type": "application/json",
                     "x-client-id": "0e92cf06-3fe2-4e62-b56c-691c19251a35",
                     "x-api-key": "2dcc721a-fa13-4ff6-80ca-7b6b89a81749"
                 }
-            }).then(Response => {
-                localStorage.setItem("ttkh", JSON.stringify(ttkh.value))
-                console.log(JSON.parse(localStorage.getItem("ttkh")));
-                window.location.href = "http://localhost:5173/return"
+            }).then((Res) => {
+                localStorage.setItem("ttkh", JSON.stringify(ttkh));
+                console.log(Res.data);
+                
+                window.location.href = Res.data.data.checkoutUrl;
             }).catch(() => {
-                window.location.href = "/error"
-            })
-
-            sessionStorage.removeItem("gioHang");
-            localStorage.removeItem("gioHang");
-            window.dispatchEvent(new Event("cap-nhat-gio"));
-            return;
+                // window.location.href = "/error";
+            });
         }
-        // 👉 Nếu không chọn VNPay thì cập nhật hóa đơn ngay
-        await axios.put(`http://localhost:8080/client/capNhatHoaDon/${route.params.hoaDonId}`, data, {
-            withCredentials: true
-        });
 
+        // Xóa giỏ hàng sau redirect (dùng chung)
         sessionStorage.removeItem("gioHang");
         localStorage.removeItem("gioHang");
         window.dispatchEvent(new Event("cap-nhat-gio"));
-
-        router.push({ name: "client-san-pham" }).then(() => {
-            toast.success("✅ Thanh toán thành công!");
-        });
 
     } catch (e) {
         console.error("Lỗi thanh toán:", e);
@@ -1465,10 +1448,6 @@ async function thanhToan() {
         isLoading.value = false;
     }
 }
-
-
-
-
 
 
 onMounted(async () => {

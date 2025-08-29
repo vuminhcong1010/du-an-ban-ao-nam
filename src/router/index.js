@@ -38,6 +38,7 @@ import Oder from "@/components/client/Order.vue";
 import ClientSanPhamDetail from "@/components/client/ProductDetail.vue";
 import LichSuDatHang from "@/components/client/OrderHistory.vue";
 import Return from "@/components/client/ReturnCard.vue";
+import DanhMucList from "@/components/client/Category.vue";
 import ProductCategory from "@/components/client/ProductCategory.vue";
 import MyAccount from "@/components/client/MyAccount.vue"; // Make sure this file exists
 import OrderDetail from "@/components/client/OrderDetail.vue"; // Make sure this file exists
@@ -57,6 +58,7 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     // --- CLIENT ROUTES ---
+    
     {
       path: "/coolmen", // Root path for client-facing pages
       component: ClientLayout, // Renders ClientLayout and its RouterView
@@ -71,6 +73,12 @@ const router = createRouter({
           name: "client-san-pham",
           component: ClientSanPham,
         },
+        {
+          path: "danh-muc-List",
+          name: "danh-muc-List",
+          component: DanhMucList,
+        },
+
         {
           path: "client-san-pham-detail/:id",
           name: "client-san-pham-detail",
@@ -130,6 +138,7 @@ const router = createRouter({
           component: XacNhanThongTinCustomer,
         },
       ],
+
     },
     {
       path: "/coolmen/dang-nhap-khach-hang",

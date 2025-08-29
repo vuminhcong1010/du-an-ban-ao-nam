@@ -112,7 +112,6 @@ const nhanSanPhamDaChon = async (danhSachSanPham) => {
   }
 };
 
-
 const xoaSanPhamKhoiDonHang = (index) => {
   props.order.listSanPham.splice(index, 1);
 };
@@ -210,7 +209,18 @@ onMounted(async () => {
         <tbody>
           <tr v-for="(item, index) in order.listSanPham" :key="index">
             <td>{{ index + 1 }}</td>
-            <td></td>
+            <td>
+              <img
+                src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
+                style="
+                  width: 80px;
+                  height: 100px;
+                  object-fit: cover;
+                  margin-right: 10px;
+                "
+                alt="Sản phẩm"
+              />
+            </td>
             <td>{{ item.idSanPham.tenSanPham }}</td>
             <td>
               <span>Size: {{ item.idSize.soCo }}</span> <br />

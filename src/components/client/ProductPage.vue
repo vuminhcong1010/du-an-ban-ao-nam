@@ -32,7 +32,7 @@
                         <div class="filter-header" @click="toggleSection('category')">
                             <h5>Thể loại</h5>
                             <span class="filter-count" v-if="categoryCounts.total > 0">({{ categoryCounts.total
-                            }})</span>
+                                }})</span>
                             <i :class="expandedSections.category ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
                         </div>
                         <div v-show="expandedSections.category" class="filter-content">
@@ -42,7 +42,7 @@
                                 <label class="form-check-label" :for="cat">
                                     {{ cat }}
                                     <span class="filter-item-count" v-if="categoryCounts[cat]">({{ categoryCounts[cat]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -86,7 +86,7 @@
                                 <label class="form-check-label" :for="color + '-checkbox'" @click="toggleColor(color)">
                                     {{ color }}
                                     <span class="filter-item-count" v-if="colorCounts[color]">({{ colorCounts[color]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -120,7 +120,7 @@
                                 <label class="form-check-label" :for="`rating-${star}`">
                                     <span class="stars">{{ '★'.repeat(star) }}</span> & hướng lên
                                     <span class="filter-item-count" v-if="ratingCounts[star]">({{ ratingCounts[star]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -149,7 +149,7 @@
                             <div class="dropdown">
                                 <div class="d-flex align-items-center gap-2">
                                     <button class="btn btn-outline-secondary px-2" @click="toggleSortDirection">
-                                        <i :class="sortDirection === 'asc' ? 'bi bi-sort-down-alt' : 'bi bi-sort-up-alt'"
+                                        <i :class="sortDirection === 'desc' ? 'bi bi-sort-down-alt' : 'bi bi-sort-up-alt'"
                                             style="font-size: 1rem;"></i>
                                     </button>
                                     <div style="min-width: 170px;">
@@ -179,9 +179,12 @@
                                         <h6 class="card-title">{{ allProducts.name }}</h6>
                                         <div class="rating-section">
                                             <span v-for="star in 5" :key="star" class="star">
-                                                <i v-if="star <= allProducts.rating" class="bi bi-star-fill"></i>
-                                                <i v-else class="bi bi-star"></i>
+                                                <i :class="[
+                                                    'bi',
+                                                    star <= Math.round(allProducts.rating) ? 'bi-star-fill text-warning' : 'bi-star'
+                                                ]"></i>
                                             </span>
+
                                             <small
                                                 v-if="allProducts.reviews !== undefined && allProducts.reviews > 0">({{
                                                     allProducts.reviews }})</small>
@@ -269,8 +272,8 @@ const maxPrice = ref(0);
 const priceRange = ref([0, 0])
 const selectedCategories = ref([])
 const selectedSizes = ref([])
-const sortOrder = ref('latest')
-const sortDirection = ref('asc')
+const sortOrder = ref('latest') 
+const sortDirection = ref('desc') 
 const selectedColors = ref([])
 const discountOnly = ref(false)
 const selectedRating = ref(0)
@@ -487,11 +490,14 @@ function toggleSortDirection() {
 
 const filteredProducts = computed(() => {
     return allProducts.value.filter((p) => {
-        const productMinPrice = p.priceRange?.min || 0;
-        const productMaxOriginalPrice = (p.originalPriceRange?.max ?? p.priceRange?.max) || 0;
+        // Tính giá trung bình
+        const avgPrice =
+            p.priceRange && p.priceRange.min !== undefined && p.priceRange.max !== undefined
+                ? Math.round((p.priceRange.min + p.priceRange.max) / 2)
+                : 0;
         const inPriceRange =
-            productMinPrice >= priceRange.value[0] &&
-            productMaxOriginalPrice <= priceRange.value[1];
+            avgPrice >= priceRange.value[0] &&
+            avgPrice <= priceRange.value[1];
 
         const inCategory = selectedCategories.value.length === 0 || (p.category && selectedCategories.value.includes(p.category));
         const inSize = selectedSizes.value.length === 0 || (p.sizes && p.sizes.some((s) => selectedSizes.value.includes(s)));
@@ -504,15 +510,19 @@ const filteredProducts = computed(() => {
 
 
 const sortedProducts = computed(() => {
-    const sorted = filteredProducts.value.slice(); // bản sao an toàn, không gây thay đổi dữ liệu gốc
-
+    const sorted = filteredProducts.value.slice();
     const dir = sortDirection.value === 'asc' ? 1 : -1;
     switch (sortOrder.value) {
         case 'alphabet':
             sorted.sort((a, b) => (a.name || '').localeCompare(b.name || '') * dir);
             break;
         case 'price':
-            sorted.sort((a, b) => ((a.price || 0) - (b.price || 0)) * dir);
+            // Sắp xếp theo giá trung bình
+            sorted.sort((a, b) => {
+                const avgA = a.priceRange ? ((a.priceRange.min + a.priceRange.max) / 2) : 0;
+                const avgB = b.priceRange ? ((b.priceRange.min + b.priceRange.max) / 2) : 0;
+                return (avgA - avgB) * dir;
+            });
             break;
         case 'rating':
             sorted.sort((a, b) => ((b.rating || 0) - (a.rating || 0)) * dir);
@@ -524,11 +534,10 @@ const sortedProducts = computed(() => {
             sorted.sort((a, b) => {
                 const dateA = new Date(a.createdAt).getTime();
                 const dateB = new Date(b.createdAt).getTime();
-                return (dateA - dateB) * dir;
+                return (dateB - dateA); // Mới nhất lên đầu
             });
             break;
     }
-
     return sorted;
 });
 

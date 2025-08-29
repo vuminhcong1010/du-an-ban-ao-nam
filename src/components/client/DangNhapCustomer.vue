@@ -138,6 +138,7 @@ watch(() => login.value.password, (val) => {
   }
 });
 
+console.log(Cookies.get("email"));
 
 const dangNhap = async () => {
   // Clear all previous errors before a new login attempt
