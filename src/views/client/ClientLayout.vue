@@ -39,6 +39,7 @@ export default {
 
 .client-main-content {
   flex-grow: 1;
+  background-color: #F3F4F6;
   /* Cho phép phần nội dung chính chiếm hết không gian còn lại */
   /*
     LƯU Ý QUAN TRỌNG VỀ PADDING VÀ MAX-WIDTH:

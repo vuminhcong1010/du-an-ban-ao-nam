@@ -56,11 +56,11 @@ function formatDatetime(dateStr) {
                   <td>{{ formatCurrency(item.idHinhThucThanhToan.soTien) }}</td>
                   <td>{{ formatDatetime(item.idHinhThucThanhToan.ngayTao) }}</td>
                   <td>{{ item.idHinhThucThanhToan.phuongThucThanhToan }}</td>
-                  <td>{{ item.idHinhThucThanhToan.moTa || "—" }}</td>
-                  <td>{{ item.idHoaDon.tenNhanVien || "—" }}</td>
+                  <td>{{ item.ghiChu || "Khong co ghi chu" }}</td>
+                  <td>{{ item.idHoaDon.idNhanVien.tenNhanVien || "Ko có NNhanVieen " }}</td>
                   <td>
                     {{
-                      item.trangThaiThanhToan === 1
+                      item.idHinhThucThanhToan.trangThai === 0
                         ? "Đã thanh toán"
                         : "Chưa thanh toán"
                     }}

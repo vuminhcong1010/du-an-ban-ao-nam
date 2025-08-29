@@ -25,189 +25,173 @@
   </div>
 </template>
 <script>
+import Cookies from 'js-cookie'; // <-- Import Cookies
+import { useToast } from "vue-toastification"; 
 import KhachHangTable from '../components/admin/KhachHangTable.vue';
 import SearchAndFilterKhachHang from '@/components/admin/SearchAndFilterKhachHang.vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios'; // <-- Import axios
-import { useToast } from "vue-toastification"; // <-- Import useToast
-
-
-
-
+import axios from 'axios'; 
 
 export default {
-  name: 'CustomerManagement',
-  components: {
-    KhachHangTable,
-    SearchAndFilterKhachHang,
-  },
-  setup() {
-    const router = useRouter(); // Khởi tạo router instance trong setup
-    const navigateToAddCustomer = () => {
-      router.push({ name: 'AddKhachHang' }); // Chuyển hướng đến route 'AddCustomer'
-    };
-    // exportToExcel không nên nằm ở đây nếu bạn muốn dùng Options API methods
-    // Nếu bạn muốn tất cả trong setup, xem Cách 2
-    return { navigateToAddCustomer }; // Vẫn trả về navigateToAddCustomer từ setup
-  },
-  data() {
-    return {
-      reloadTable: false,
-      searchQuery: '',
-      filterData: {},
-    };
-  },
-  methods: {
-    handleAdded() {
-      this.reloadTable = true;
-      setTimeout(() => {
-        this.reloadTable = false;
-      }, 100);
+    name: 'CustomerManagement',
+    components: {
+        KhachHangTable,
+        SearchAndFilterKhachHang,
     },
-    handleSearch(query) {
-      this.searchQuery = query;
+    setup() {
+        const router = useRouter(); 
+        const navigateToAddCustomer = () => {
+            router.push({ name: 'AddKhachHang' }); 
+        };
+        return { navigateToAddCustomer }; 
     },
-    handleFilter(filter) {
-      this.filterData = filter;
+    data() {
+        return {
+            reloadTable: false,
+            searchQuery: '',
+            filterData: {},
+        };
     },
-    // Hàm hiển thị SweetAlert2 confirm cho việc xóa
-    async confirmDeleteCustomer(customerId) {
-      const toast = useToast();
-
-
-
-
-      const result = await this.$swal.fire({
-        title: 'Xác nhận xóa?',
-        text: "Bạn có chắc chắn muốn xóa khách hàng này không? Hành động này không thể hoàn tác!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Có, xóa ngay!',
-        cancelButtonText: 'Hủy bỏ',
-        reverseButtons: true,
-        customClass: {
-          container: 'my-swal-container',
-          popup: 'my-swal-popup',
-          title: 'my-swal-title',
-          content: 'my-swal-content',
-          confirmButton: 'my-swal-delete-button',
-          cancelButton: 'my-swal-cancel-button',
+    methods: {
+        handleAdded() {
+            this.reloadTable = true;
+            setTimeout(() => {
+                this.reloadTable = false;
+            }, 100);
         },
-      });
+        handleSearch(query) {
+            this.searchQuery = query;
+        },
+        handleFilter(filter) {
+            this.filterData = filter;
+        },
+        // Hàm hiển thị SweetAlert2 confirm cho việc xóa
+        async confirmDeleteCustomer(customerId) {
+            const toast = useToast();
+            const result = await this.$swal.fire({
+                title: 'Xác nhận xóa?',
+                text: "Bạn có chắc chắn muốn xóa khách hàng này không? Hành động này không thể hoàn tác!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Có, xóa ngay!',
+                cancelButtonText: 'Hủy bỏ',
+                reverseButtons: true,
+                customClass: {
+                    container: 'my-swal-container',
+                    popup: 'my-swal-popup',
+                    title: 'my-swal-title',
+                    content: 'my-swal-content',
+                    confirmButton: 'my-swal-delete-button',
+                    cancelButton: 'my-swal-cancel-button',
+                },
+            });
+            if (result.isConfirmed) {
+                try {
+                    // Lấy token từ cookie
+                    const token = Cookies.get('token');
 
+                    // Kiểm tra xem token có tồn tại không
+                    if (!token) {
+                        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                        console.error('Authentication token not found.');
+                        return; // Ngừng thực hiện hàm nếu không có token
+                    }
+                    
+                    // Thêm token vào header Authorization
+                    await axios.delete(`/api/khach-hang/${customerId}`, {
+                        headers: {
+Authorization: `Bearer ${token}`
+                        }
+                    }); 
 
+                    toast.success("Xóa khách hàng thành công!");
+                    this.reloadTableData(); // Kích hoạt reload bảng sau khi xóa thành công
+                } catch (error) {
+                    console.error('Lỗi khi xóa khách hàng:', error);
+                    if (error.response && error.response.data && error.response.data.message) {
+                        toast.error("Lỗi khi xóa khách hàng: " + error.response.data.message);
+                    } else {
+                        toast.error("Lỗi khi xóa khách hàng. Vui lòng thử lại.");
+                    }
+                }
+            } else if (result.dismiss === this.$swal.DismissReason.cancel) {
+                toast.info("Đã hủy thao tác xóa khách hàng.");
+            }
+        },
+        // ... (các methods khác)
+        reloadTableData() {
+            this.reloadTable = true;
+            setTimeout(() => {
+                this.reloadTable = false;
+            }, 100);
+        },
+        async showConfirmExport() {
+            // ... (phần code này giữ nguyên)
+            const result = await this.$swal.fire({
+                title: 'Xác nhận xuất Excel?',
+                text: "Bạn có chắc chắn muốn xuất danh sách khách hàng ra Excel không?",
+                icon: 'warning', 
+                showCancelButton: true, 
+                confirmButtonColor: '#0a2c57', 
+                cancelButtonColor: '#d33', 
+                confirmButtonText: 'Có, xuất ngay!', 
+                cancelButtonText: 'Hủy bỏ', 
+                reverseButtons: true, 
+                customClass: {
+                    container: 'my-swal-container', 
+                    popup: 'my-swal-popup', 
+                    title: 'my-swal-title',
+                    content: 'my-swal-content',
+                    confirmButton: 'my-swal-confirm-button',
+                    cancelButton: 'my-swal-cancel-button',
+                },
+            });
+            if (result.isConfirmed) {
+                this.exportToExcel();
+            } else if (result.dismiss === this.$swal.DismissReason.cancel) {
+                this.toast.info("Đã hủy thao tác xuất Excel.");
+            }
+        },
+        async exportToExcel() {
+            const toast = useToast(); 
+            try {
+                // Lấy token từ cookie
+                const token = Cookies.get('token');
+                
+                // Kiểm tra xem token có tồn tại không
+                if (!token) {
+                    toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                    console.error('Authentication token not found.');
+                    return; // Ngừng thực hiện hàm nếu không có token
+                }
 
+                const response = await axios.get('/api/khach-hang/export-excel', {
+responseType: 'blob', 
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
+                
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', 'DanhSachKhachHang.xlsx'); 
+                document.body.appendChild(link);
+                link.click(); 
+                link.remove(); 
+                window.URL.revokeObjectURL(url); 
 
-      if (result.isConfirmed) {
-        try {
-          await axios.delete(`/api/khach-hang/${customerId}`); // Gọi API xóa khách hàng
-
-
-
-
-          toast.success("Xóa khách hàng thành công!");
-          this.reloadTableData(); // Kích hoạt reload bảng sau khi xóa thành công
-        } catch (error) {
-          console.error('Lỗi khi xóa khách hàng:', error);
-          if (error.response && error.response.data && error.response.data.message) {
-            toast.error("Lỗi khi xóa khách hàng: " + error.response.data.message);
-          } else {
-            toast.error("Lỗi khi xóa khách hàng. Vui lòng thử lại.");
-          }
+                setTimeout(() => {
+                    toast.success("Yêu cầu xuất Excel đã được gửi. Vui lòng kiểm tra mục tải xuống của trình duyệt!");
+                }, 1500);
+            } catch (error) {
+                console.error('Lỗi khi xuất Excel:', error);
+                toast.error("Lỗi khi xuất Excel. Vui lòng thử lại.");
+            }
         }
-      } else if (result.dismiss === this.$swal.DismissReason.cancel) {
-        toast.info("Đã hủy thao tác xóa khách hàng.");
-      }
     },
-    // Hàm để kích hoạt reload bảng
-    reloadTableData() {
-      this.reloadTable = true;
-      // Đặt lại reloadTable về false sau một khoảng thời gian ngắn
-      // để có thể kích hoạt reload lần nữa trong tương lai
-      setTimeout(() => {
-        this.reloadTable = false;
-      }, 100);
-    },
-    // Hàm mới để hiển thị SweetAlert2 confirm
-    async showConfirmExport() {
-      const result = await this.$swal.fire({
-        title: 'Xác nhận xuất Excel?',
-        text: "Bạn có chắc chắn muốn xuất danh sách khách hàng ra Excel không?",
-        icon: 'warning', // Biểu tượng cảnh báo
-        showCancelButton: true, // Hiển thị nút "Hủy"
-        confirmButtonColor: '#0a2c57', // Màu nút xác nhận
-        cancelButtonColor: '#d33', // Màu nút hủy
-        confirmButtonText: 'Có, xuất ngay!', // Chữ trên nút xác nhận
-        cancelButtonText: 'Hủy bỏ', // Chữ trên nút hủy
-        reverseButtons: true, // Đảo ngược thứ tự nút (Cancel bên trái, Confirm bên phải)
-        customClass: {
-          container: 'my-swal-container', // Class tùy chỉnh cho container
-          popup: 'my-swal-popup', // Class tùy chỉnh cho popup
-          title: 'my-swal-title',
-          content: 'my-swal-content',
-          confirmButton: 'my-swal-confirm-button',
-          cancelButton: 'my-swal-cancel-button',
-        },
-        // Để căn giữa, SweetAlert2 đã tự làm. Bạn không cần CSS đặc biệt cho việc này.
-        // Tuy nhiên, bạn có thể điều chỉnh theme hoặc khoảng cách nếu muốn.
-      });
-
-
-
-
-      if (result.isConfirmed) {
-        // Người dùng đã nhấn nút "Có, xuất ngay!"
-        this.exportToExcel();
-      } else if (result.dismiss === this.$swal.DismissReason.cancel) {
-        // Người dùng đã nhấn nút "Hủy bỏ"
-        this.toast.info("Đã hủy thao tác xuất Excel.");
-      }
-    },
-    // Đặt exportToExcel VÀO TRONG PHẦN METHODS
-    async exportToExcel() {
-      const toast = useToast(); // Khởi tạo toast instance trong methods
-
-
-
-
-      try {
-        const response = await axios.get('/api/khach-hang/export-excel', {
-          responseType: 'blob' // Rất quan trọng: Báo cho Axios biết đây là dữ liệu binary (blob)
-        });
-
-
-
-
-        // Tạo một URL tạm thời cho blob dữ liệu
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-
-
-
-
-        // Tạo một thẻ <a> ẩn để tải file
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'DanhSachKhachHang.xlsx'); // Tên file khi tải về
-        document.body.appendChild(link);
-        link.click(); // Kích hoạt sự kiện click để tải file
-        link.remove(); // Xóa thẻ <a> sau khi tải xong
-        window.URL.revokeObjectURL(url); // Giải phóng URL tạm thời
-
-
-
-
-        //toast.success("Xuất Excel thành công!");
-        setTimeout(() => {
-          toast.success("Yêu cầu xuất Excel đã được gửi. Vui lòng kiểm tra mục tải xuống của trình duyệt!");
-        }, 1500);
-      } catch (error) {
-        console.error('Lỗi khi xuất Excel:', error);
-        toast.error("Lỗi khi xuất Excel. Vui lòng thử lại.");
-      }
-    }
-  },
 };
 </script>
 

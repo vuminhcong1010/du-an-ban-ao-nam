@@ -10,117 +10,145 @@
 
       <nav class="main-navigation">
         <ul>
-          <li><a href="#">Trang chủ</a></li>
-          <li><a href="/coolmen/client-san-pham">Sản phẩm</a></li>
-          <li><a href="#">Danh mục</a></li>
-          <li><a href="#">Giảm giá</a></li>
-          <li><a href="#">Liên hệ</a></li>
+          <li>
+            <router-link to="/coolmen" :class="{ active: route.path === '/coolmen' }">Trang chủ</router-link>
+          </li>
+          <li>
+            <router-link to="/coolmen/client-san-pham"
+              :class="{ active: route.path === '/coolmen/client-san-pham' }">Sản phẩm</router-link>
+          </li>
+          <li>
+            <router-link to="/coolmen/danh-muc-list" :class="{ active: route.path === '/coolmen/danh-muc-List' }">Danh
+              mục</router-link>
+          </li>
+          <li>
+            <router-link to="/coolmen/giam-gia" :class="{ active: route.path === '/coolmen/giam-gia' }">Giảm
+              giá</router-link>
+          </li>
+          <li>
+            <router-link to="/coolmen/lien-he" :class="{ active: route.path === '/coolmen/lien-he' }">Liên
+              hệ</router-link>
+          </li>
         </ul>
       </nav>
 
       <div class="header-actions">
-        <!-- Tìm kiếm -->
-        <div class="search-box">
-          <input type="text" placeholder="Tìm kiếm sản phẩm..." v-model="searchQuery">
-          <button @click="performSearch"><i class="fas fa-search"></i></button>
-        </div>
-
         <!-- User -->
-        <div class="user-icon">
+        <div class="user-icon" ref="userIcon" @click="toggleUserDropdown">
           <a href="#"><i class="fas fa-user"></i></a>
+          <div v-if="showUserDropdown" class="user-dropdown">
+            <ul>
+              <li v-if="isLoggedIn">
+                <a href="/coolmen/tai-khoan">Thông tin cá nhân</a>
+              </li>
+              <li v-if="isLoggedIn">
+                <a href="/coolmen/lich-su-dat-hang">Lịch sử đặt hàng</a>
+              </li>
+              <li v-if="isLoggedIn">
+                <a href="#" @click.prevent="logout">Đăng xuất</a>
+              </li>
+              <li v-else>
+                <a href="/coolmen/dang-nhap-khach-hang">Đăng nhập</a>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <!-- Giỏ hàng -->
-        <div class="cart-icon" @click="toggleGioHang">
-          <a href="#"><i class="fas fa-shopping-cart"></i></a>
-          <span v-if="soLuongGio > 0" class="badge">{{ soLuongGio }}</span>
-
-          <CartDetail v-if="hienChiTiet" :danhSachGio="danhSachGio" @close="hienChiTiet = false"
-            @removeItem="xoaSanPham" @update:danhSachGio="capNhatGioHangLocal" @capNhatGio="capNhatGioHang" />
-
+        <div class="cart-icon">
+          <router-link to="/gio-hang">
+            <i class="fas fa-shopping-cart"></i>
+            <span v-if="soLuongGio > 0" class="badge">{{ soLuongGio }}</span>
+          </router-link>
         </div>
       </div>
     </div>
   </header>
 </template>
 
-<script>
+
+
+<script setup>
+import { onMounted, ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
-import CartDetail from './CartDetail.vue'  // sửa đường dẫn nếu cần
+import Cookies from 'js-cookie'
 
-export default {
-  name: 'AppHeader',
-  components: { CartDetail },
-  data() {
-    return {
-      searchQuery: '',
-      soLuongGio: 0,
-      hienChiTiet: false,
-      danhSachGio: []
-    }
-  },
-  mounted() {
-    this.capNhatGioHang();
-    window.addEventListener("cap-nhat-gio", () => {
-      this.capNhatGioHang();
-    });
-  }
-  ,
-  unmounted() {
-    window.removeEventListener("cap-nhat-gio", this.capNhatGioHang)
-  },
-  methods: {
-    performSearch() {
-      console.log('Đang tìm kiếm:', this.searchQuery);
-    },
-    async capNhatGioHang() {
-      try {
-        const res = await axios.get('http://localhost:8080/client/LoadSanPham', {
-          withCredentials: true
-        });
+const route = useRoute()
 
-        const data = Array.isArray(res.data) ? res.data : [];
+const searchQuery = ref('')
+const soLuongGio = ref(0)
+const hienChiTiet = ref(false)
+const danhSachGio = ref([])
+const showUserDropdown = ref(false)
 
-        data.forEach(sp => {
-          if (!sp.tongTien || sp.tongTien === 0) {
-            sp.tongTien = sp.soLuong * sp.gia;
-          }
-          if (!sp.anhSanPham) {
-            sp.anhSanPham = '/placeholder.png';
-          }
-        });
+const userIcon = ref(null)
 
-        this.danhSachGio = data;
-        this.soLuongGio = data.reduce((tong, sp) => tong + sp.soLuong, 0);
-      } catch (error) {
-        this.danhSachGio = [];
-        this.soLuongGio = 0;
-        console.error('Lỗi khi lấy giỏ hàng:', error);
+const isLoggedIn = computed(() => {
+  const token = localStorage.getItem('clientAuthToken')
+  const user = localStorage.getItem('loggedInUser')
+  return !!token || !!user
+})
+
+const capNhatGioHang = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/client/LoadSanPham', {
+      withCredentials: true
+    })
+    const data = Array.isArray(res.data) ? res.data : []
+    data.forEach(sp => {
+      if (!sp.tongTien || sp.tongTien === 0) {
+        sp.tongTien = sp.soLuong * sp.gia
       }
-    },
-    toggleGioHang() {
-      this.hienChiTiet = !this.hienChiTiet;
-    },
-    capNhatGioHangLocal(newDanhSach) {
-      this.danhSachGio = newDanhSach;
-      this.soLuongGio = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0);
-      sessionStorage.removeItem("gioHang");  // nếu có
-      localStorage.removeItem("gioHang");    // nếu có
-    },
-    xoaSanPham(idSanPhamChiTiet) {
-      this.danhSachGio = this.danhSachGio.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet);
-      this.soLuongGio = this.danhSachGio.reduce((tong, sp) => tong + sp.soLuong, 0);
-    }
+      if (!sp.anhSanPham) {
+        sp.anhSanPham = '/placeholder.png'
+      }
+    })
 
-
+    danhSachGio.value = data
+    soLuongGio.value = data.length
+  } catch (error) {
+    danhSachGio.value = []
+    soLuongGio.value = 0
+    console.error('Lỗi khi lấy giỏ hàng:', error)
   }
-
-
 }
 
+const handleClickOutside = (event) => {
+  if (userIcon.value && !userIcon.value.contains(event.target)) {
+    showUserDropdown.value = false
+  }
+}
+
+const toggleUserDropdown = () => {
+  showUserDropdown.value = !showUserDropdown.value
+}
+
+const logout = () => {
+  localStorage.removeItem('clientAuthToken')
+  localStorage.removeItem('loggedInUser')
+  Cookies.remove('thongTinKhachHang')
+  showUserDropdown.value = false
+  window.location.href = '/coolmen/dang-nhap-khach-hang'
+}
+
+onMounted(() => {
+  capNhatGioHang()
+  window.addEventListener('cap-nhat-gio', capNhatGioHang)
+  document.addEventListener('click', handleClickOutside)
+})
 </script>
 
+
+
 <style scoped>
+.main-navigation a.active {
+  color: #007bff;
+  font-weight: bold;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 2px;
+}
+
 .badge {
   background: purple;
   color: white;
@@ -167,23 +195,19 @@ export default {
 /* CSS cho Header (Chỉ ảnh hưởng đến component này nhờ 'scoped') */
 .main-header {
   background-color: #f8f8f8;
-  padding: 20px 0;
-  border-bottom: 1px solid #eee;
+  padding: 10px 0;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
-  width: 100%;
 }
 
 .container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  padding: 0 20px;
   box-sizing: border-box;
 }
 
@@ -216,26 +240,30 @@ export default {
 }
 
 .main-navigation ul {
+  display: flex;
+  gap: 24px;
+  /* khoảng cách giữa các mục */
   list-style: none;
   padding: 0;
   margin: 0;
-  display: flex;
+  align-items: center;
 }
 
-.main-navigation li {
-  margin-left: 25px;
-}
-
-.main-navigation a {
+.main-navigation ul li a {
   text-decoration: none;
-  color: #555;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  /* gần với màu xám nhạt như trong ảnh */
+  font-family: 'Inter', sans-serif;
   transition: color 0.3s ease;
 }
 
-.main-navigation a:hover {
-  color: #007bff;
+.main-navigation ul li a:hover {
+  color: #111827;
+  /* màu đậm hơn khi hover */
 }
+
 
 .header-actions {
   display: flex;
@@ -359,5 +387,56 @@ export default {
   .search-box input {
     width: auto;
   }
+}
+
+.user-icon {
+  position: relative;
+  cursor: pointer;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 180px;
+  z-index: 1001;
+  padding: 5px 0;
+}
+
+.user-dropdown ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.user-dropdown li {
+  padding: 0;
+  margin: 0;
+}
+
+.user-dropdown a {
+  display: block;
+  padding: 10px 15px;
+  text-decoration: none;
+  color: #333;
+  font-weight: normal;
+  transition: background-color 0.2s ease;
+}
+
+.user-dropdown a:hover {
+  background-color: #f0f0f0;
+  color: #007bff;
+}
+
+.user-icon .user-dropdown a {
+  /* Thêm .user-icon vào selector */
+  font-size: 14px;
+  /* Hoặc 0.9em */
+  padding: 8px 15px;
+  /* Điều chỉnh lại padding nếu cần để phù hợp với font nhỏ hơn */
 }
 </style>

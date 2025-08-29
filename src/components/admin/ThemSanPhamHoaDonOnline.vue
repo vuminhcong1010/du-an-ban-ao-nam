@@ -111,18 +111,18 @@ const apply = async () => {
   console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
 
   // 1. Cập nhật tồn kho
-    try {
-      await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(bodyUpdateSoLuong),
-      });
-    } catch (error) {
-      console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
-    }
+    // try {
+    //   await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
+    //     method: "POST",
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify(bodyUpdateSoLuong),
+    //   });
+    // } catch (error) {
+    //   console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
+    // }
 
   // 2. Lưu chi tiết hóa đơn
   try {
@@ -158,6 +158,7 @@ const apply = async () => {
   emit("selected", selectedItems.value);
   emit("close");
 };
+
 </script>
 
 <template>
@@ -169,7 +170,7 @@ const apply = async () => {
     <div class="modal-dialog custom-modal modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Chọn nhiều sản phẩm</h5>
+          <h5 class="modal-title">Chọn nhiều sản phẩm online</h5>
           <button
             type="button"
             class="btn-close"

@@ -8,7 +8,7 @@ let listSanPham = ref([]);
 
 // Phân trang
 const currentPage = ref(0);
-const pageSize = ref(5);
+const pageSize = ref(5);3
 const totalPages = ref(0);
 
 // Props
@@ -85,14 +85,13 @@ const apply = () => {
       thanhTien: item.gia,
       idHoaDon: maHoaDon,
       baoGiaThayDoi: false,
-      giaMoi:"",
+      giaMoi: "",
     };
   });
 
   emit("selected", result);
   emit("close");
 };
-
 </script>
 
 <template>
@@ -113,6 +112,79 @@ const apply = () => {
         </div>
 
         <div class="modal-body">
+          <!-- bo loc -->
+          <div class="">
+            <div class="row g-3">
+              <div class="col-md-12">
+                <label class="form-label fw-bold">Bộ lọc</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Tìm theo mã, tên sản phẩm"
+                    v-model="timKiem"
+                  />
+                  <button
+                    type="button"
+                    class="btn"
+                    style="
+                      background-color: #0a2c57;
+                      color: white;
+                      white-space: nowrap;
+                    "
+                    @click="locSanPham"
+                  >
+                    Tìm kiếm
+                  </button>
+                </div>
+              </div>
+
+              <!-- Trạng thái -->
+              <div class="col-md-5 ms-2">
+                <label class="form-label fw-bold">Trạng thái</label>
+                <div class="d-flex gap-3">
+                  <input type="radio" /> Đang bán <input type="radio" /> Ngừng
+                  bán
+                </div>
+              </div>
+
+              <!-- Danh mục -->
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Danh mục</label>
+                <select
+                  class="form-select"
+                  v-model="selectedDanhMucId"
+                  @change="locSanPham"
+                >
+                  <option :value="null">Tất cả danh mục</option>
+                  <option v-for="dm in danhMuc" :key="dm.id" :value="dm.id">
+                    {{ dm.tenDanhMuc }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Chất liệu -->
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Chất liệu</label>
+                <select
+                  class="form-select"
+                  v-model="selectedChatLieuId"
+                  @change="locSanPham"
+                >
+                  <option :value="null">Tất cả chất liệu</option>
+                  <option
+                    v-for="cl in danhSachChatLieu"
+                    :key="cl.id"
+                    :value="cl.id"
+                  >
+                    {{ cl.tenChatLieu }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <!-- --------------- -->
+
           <!-- Table sản phẩm -->
           <div class="table-responsive">
             <table class="table align-middle">
@@ -127,7 +199,7 @@ const apply = () => {
                   <th>Chất liệu</th>
                   <th>Giá</th>
                   <th>Kho</th>
-               
+
                   <th>Chọn</th>
                 </tr>
               </thead>
@@ -147,11 +219,15 @@ const apply = () => {
                   <td>{{ item.idSanPham.idChatLieu.tenChatLieu }}</td>
                   <td>{{ item.gia.toLocaleString() }}đ</td>
                   <td>{{ item.soLuong }}</td>
-                  
+
                   <td>
                     <input
                       type="checkbox"
-                      :checked="selectedItems.some(i => i.maChiTietSapPham === item.maChiTietSapPham)"
+                      :checked="
+                        selectedItems.some(
+                          (i) => i.maChiTietSapPham === item.maChiTietSapPham
+                        )
+                      "
                       @change="toggleSelection(item)"
                     />
                   </td>

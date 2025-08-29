@@ -22,7 +22,7 @@ const toast = useToast();
 
 const token = Cookies.get("token");
 // Tách phần payload (phần giữa)
-const payloadBase64 = token.split('.')[1];
+const payloadBase64 = token.split(".")[1];
 
 // Giải mã từ Base64 sang JSON
 const payloadJson = atob(payloadBase64);
@@ -67,7 +67,6 @@ async function createNewOrder() {
       body: JSON.stringify({
         idNhanVien: idNv,
       }),
-
     });
     const maHoaDon = await response.text();
 
@@ -78,7 +77,7 @@ async function createNewOrder() {
 
       tongTienSanPham: 0,
       phiVanChuyen: 0,
-      
+
       maHoaDon: maHoaDon,
       khachHang: {
         idKhachHang: "",
@@ -86,6 +85,7 @@ async function createNewOrder() {
         tenNguoiNhan: "",
         diaChi: "",
         sdt: "",
+        gmail:"",
       },
       giamGia: null,
       hinhThucNhanHang: "0",
@@ -168,11 +168,15 @@ async function closeOrder(id) {
   try {
     // Hoàn lại số lượng phiếu giảm giá trước nếu có
     if (order.giamGia && order.giamGia.id) {
-      await axios.put(`http://localhost:8080/ban_hang/phieuGG/increase/${order.giamGia.id}`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.put(
+        `http://localhost:8080/ban_hang/phieuGG/increase/${order.giamGia.id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       console.log(`Hoàn lại số lượng phiếu giảm giá ID: ${order.giamGia.id}`);
     }
 
@@ -184,12 +188,19 @@ async function closeOrder(id) {
     });
 
     console.log("✅ Đã xoá hóa đơn:", order.maHoaDon);
+    // ✅ Xoá khỏi localStorage
     localStorage.removeItem(`order_${id}`);
   } catch (err) {
     console.error("❌ Lỗi xoá hóa đơn:", err);
     alert("Xóa hóa đơn thất bại! Vui lòng thử lại.");
+    return;
   }
-  // ✅ Xoá khỏi localStorage
+
+  // xoa tab sau khi xoa thanh cong
+  orders.value = orders.value.filter((o) => o.id !== id);
+  if (activeTab.value === id) {
+    activeTab.value = orders.value.length > 0 ? orders.value[0].id : null;
+  }
 }
 
 // đóng đơn hàng tự động:
@@ -217,6 +228,10 @@ async function closeOrderTuDong(id) {
 
   // ✅ Xoá khỏi localStorage
   localStorage.removeItem(`order_${id}`);
+  orders.value = orders.value.filter((o) => o.id !== id);
+  if (activeTab.value === id) {
+    activeTab.value = orders.value.length > 0 ? orders.value[0].id : null;
+  }
 }
 
 // thanh toan:
@@ -272,7 +287,7 @@ const tinhTongTien = (order) => {
     }
   }
 
-  const phiVanChuyen = order.phiVanChuyen || 0;
+  const phiVanChuyen = order.khachHang.phiVanChuyen || 0;
   const tongTien = tongTienSanPham + phiVanChuyen - soTienGiam;
 
   // Ghi ngược lại vào order để lưu
@@ -309,39 +324,6 @@ watch(
   },
   { deep: true }
 );
-
-// tính phí vận chuyển: 
-watch(
-  () => orders.value.find(o => o.id === activeTab.value),
-  (currentOrder) => {
-    // Nếu không có đơn hàng nào đang active, hoặc đơn hàng không có, thì không làm gì
-    if (!currentOrder) return;
-    
-    // Xóa bộ đếm debounce cũ để bắt đầu một yêu cầu mới
-    // clearTimeout(shippingFeeDebounceTimer);
-
-    // Nếu hình thức là "Tại quầy", reset phí ship về 0 và dừng lại
-    if (currentOrder.hinhThucNhanHang !== '1') {
-      currentOrder.phiVanChuyen = 0;
-      return;
-    }
-
-    // Nếu là "Giao hàng" nhưng chưa có địa chỉ, cũng reset phí ship và dừng
-    if (!currentOrder.khachHang.diaChi) {
-      currentOrder.phiVanChuyen = 0;
-      return;
-    }
-
-    // Sử dụng debounce để chờ 1 giây sau khi người dùng ngừng nhập địa chỉ
-    // hoặc thay đổi sản phẩm rồi mới gọi API. Tránh gọi liên tục.
-    shippingFeeDebounceTimer = setTimeout(() => {
-      console.log("Địa chỉ hoặc sản phẩm đã thay đổi, bắt đầu tính lại phí ship...");
-      calculateAndUpdateShippingFee(currentOrder);
-    }, 1000); // Chờ 1 giây
-  },
-  { deep: true } // deep: true để theo dõi cả các thay đổi sâu bên trong object (địa chỉ, sản phẩm)
-);
-
 
 // ham thanh toan:
 const thanhToanDonHang = async (order) => {
@@ -441,11 +423,13 @@ const hoanThanhDonHang = async (order) => {
       tenNguoiNhan: order.khachHang?.tenNguoiNhan || "",
       diaChi: order.khachHang?.diaChi || "",
       sdt: order.khachHang?.sdt || "",
+      gmail: order.khachHang?.gmail || "",
       tongTienSanPham: order.tongTienSanPham,
       phiVanChuyen: order.phiVanChuyen || 0,
       tongTien: order.tongTien,
       giamGia: giamGiaHoaDon,
       loaiDon: 0,
+      phiVanChuyen: order.khachHang.phiVanChuyen,
       hinhThucNhanHang: order.hinhThucNhanHang,
       // thanhToan: order.thanhToan.map((pt) => ({
       //   phuongThuc: pt.tenPhuongThuc,
@@ -456,11 +440,15 @@ const hoanThanhDonHang = async (order) => {
     await axios.post("http://localhost:8080/ban_hang/hoan-thanh", payload);
     // ✅ Giảm số lượng phiếu giảm giá nếu có
     if (order.giamGia && order.giamGia.id) {
-      await axios.put(`http://localhost:8080/ban_hang/phieuGG/decrease/${order.giamGia.id}`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.put(
+        `http://localhost:8080/ban_hang/phieuGG/decrease/${order.giamGia.id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       console.log(`Giảm số lượng phiếu giảm giá ID: ${order.giamGia.id}`);
     }
 
@@ -489,194 +477,22 @@ function xoaToanBoLocal() {
   orders.value = [];
   activeTab.value = null;
 }
-
-
-
-// tính phí giao hàng: 
-
-const tokenGHN = "8e2a56e5-6a41-11f0-8120-026f4833faa3";
-
-// Hàm chuẩn hóa tiếng Việt
-function normalizeVN(str) {
-  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
-
-// Hàm lấy district_id và ward_code từ địa chỉ
-
-// =================== HÀM MỚI ĐỂ "DỌN DẸP" ĐỊA CHỈ ===================
-/**
- * Loại bỏ các tiền tố như "Tỉnh", "Thành phố", "Quận", "Phường"... khỏi chuỗi.
- * @param {string} str - Chuỗi địa chỉ cần làm sạch.
- * @returns {string} - Chuỗi đã được làm sạch.
- */
-function cleanAddressPart(str) {
-  if (!str) return "";
-  let cleanedStr = normalizeVN(str); // Chuẩn hóa (vd: "Thành Phố" -> "thanh pho")
-  const prefixes = ['thanh pho', 'tinh', 'quan', 'huyen', 'phuong', 'xa', 'thi tran'];
-  
-  for (const prefix of prefixes) {
-    if (cleanedStr.startsWith(prefix + ' ')) {
-      cleanedStr = cleanedStr.substring(prefix.length + 1);
-    }
-  }
-  return cleanedStr.trim();
-}
-
-
-// =================== HÀM getDistrictAndWard ĐÃ ĐƯỢC NÂNG CẤP ===================
-async function getDistrictAndWard(address) {
-  console.log(`Bắt đầu phân tích địa chỉ: "${address}"`);
-  const addressParts = address.split(",").map(part => part.trim());
-
-  if (addressParts.length < 4) {
-    console.error("Lỗi phân tích địa chỉ: Chuỗi địa chỉ không đủ 4 phần (Đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành).");
-    return null;
-  }
-
-  const [street, wardName, districtName, provinceName] = addressParts;
-  
-  // Dọn dẹp trước các phần của địa chỉ người dùng nhập vào
-  const cleanInputProvince = cleanAddressPart(provinceName);
-  const cleanInputDistrict = cleanAddressPart(districtName);
-  const cleanInputWard = cleanAddressPart(wardName);
-
-  try {
-    // 1. Tìm Tỉnh/Thành phố
-    const provincesRes = await fetch("https://online-gateway.ghn.vn/shiip/public-api/master-data/province", {
-      headers: { Token: tokenGHN },
-    });
-    const provinces = (await provincesRes.json()).data;
-    const province = provinces.find(p => 
-      cleanAddressPart(p.ProvinceName) === cleanInputProvince
-    );
-    if (!province) {
-      console.error("Không tìm thấy Tỉnh/Thành phố:", provinceName);
-      return null;
-    }
-    console.log("Tìm thấy Province:", province);
-
-    // 2. Tìm Quận/Huyện
-    const districtsRes = await fetch("https://online-gateway.ghn.vn/shiip/public-api/master-data/district", {
-      method: "POST",
-      headers: { Token: tokenGHN, "Content-Type": "application/json" },
-      body: JSON.stringify({ province_id: province.ProvinceID })
-    });
-    const districts = (await districtsRes.json()).data;
-    const district = districts.find(d => 
-      cleanAddressPart(d.DistrictName) === cleanInputDistrict
-    );
-    if (!district) {
-      console.error("Không tìm thấy Quận/Huyện:", districtName, "trong tỉnh", provinceName);
-      return null;
-    }
-    console.log("Tìm thấy District:", district);
-
-    // 3. Tìm Phường/Xã
-    const wardsRes = await fetch(`https://online-gateway.ghn.vn/shiip/public-api/master-data/ward?district_id=${district.DistrictID}`, {
-      headers: { Token: tokenGHN },
-    });
-    const wards = (await wardsRes.json()).data;
-    const ward = wards.find(w => 
-      cleanAddressPart(w.WardName) === cleanInputWard
-    );
-    if (!ward) {
-      console.error("Không tìm thấy Phường/Xã:", wardName, "trong quận", districtName);
-      return null;
-    }
-    console.log("Tìm thấy Ward:", ward);
-
-    return {
-      district_id: district.DistrictID,
-      ward_code: ward.WardCode,
-    };
-  } catch (err) {
-    console.error("Lỗi nghiêm trọng khi gọi API GHN:", err.message);
-    return null;
-  }
-}
-
-// Hàm tính phí vận chuyển
-
-const myShopInfo = {
-  district_id: 1442, // Mã của Quận Cầu Giấy, Hà Nội
-  shop_id: "5913364"   // ShopId của bạn
-};
-
-async function tinhPhiVanChuyen({ fromDistrictId, toDistrictId, toWardCode, weight, insuranceValue }) {
-  try {
-    const response = await fetch("https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Token: tokenGHN,
-        ShopId: myShopInfo.shop_id, // ShopId vẫn có thể lấy từ cấu hình chung
-      },
-      body: JSON.stringify({
-        // SỬA Ở ĐÂY: Dùng tham số được truyền vào
-        from_district_id: fromDistrictId, 
-        service_type_id: 2,
-        to_district_id: toDistrictId,
-        to_ward_code: toWardCode,
-        weight,
-        insurance_value: insuranceValue,
-      }),
-    });
-
-    const result = await response.json();
-    if (result.code !== 200) throw new Error(result.message);
-    return result.data.total;
-  } catch (err) {
-    console.error("Lỗi tính phí vận chuyển:", err.message);
-    return null;
-  }
-}
-
-// Sửa lại hàm này để truyền đúng tham số
-async function calculateAndUpdateShippingFee(order) {
-  if (!order.khachHang.diaChi || order.listSanPham.length === 0) {
-    order.phiVanChuyen = 0;
-    return;
-  }
-  try {
-    console.log("Đang tính phí vận chuyển cho đơn hàng...");
-    const locationData = await getDistrictAndWard(order.khachHang.diaChi);
-    if (locationData) {
-      const totalWeight = order.listSanPham.reduce((acc, item) => acc + (item.khoiLuong || 400), 0);
-      const insuranceValue = order.tongTienSanPham;
-
-      const shippingFee = await tinhPhiVanChuyen({
-        // SỬA Ở ĐÂY: Truyền mã quận của cửa hàng vào
-        fromDistrictId: myShopInfo.district_id, 
-        toDistrictId: locationData.district_id,
-        toWardCode: locationData.ward_code,
-        weight: totalWeight,
-        insuranceValue: insuranceValue,
-      });
-
-      if (shippingFee !== null) {
-        order.phiVanChuyen = shippingFee;
-        console.log(`Phí vận chuyển đơn hàng được cập nhật: ${shippingFee.toLocaleString()}đ`);
-      } else {
-        order.phiVanChuyen = 0;
-      }
-    } else {
-      order.phiVanChuyen = 0;
-    }
-  } catch (error) {
-    console.error("Lỗi trong quá trình tính phí vận chuyển:", error);
-    order.phiVanChuyen = 0;
-    // toast.error("Đã xảy ra lỗi khi tính phí vận chuyển.");
-  }
-}
-
-
-
+const currentOrder = computed(() =>
+  orders.value.find((o) => o.id === activeTab.value)
+);
 </script>
 
 <template>
-  <div class="bg-white p-3 rounded mb-4 d-flex align-items-center justify-content-between border" style="height: 60px">
+  <div
+    class="bg-white p-3 rounded mb-4 d-flex align-items-center justify-content-between border"
+    style="height: 60px"
+  >
     <h5 class="fw-bold mb-0">Bán hàng tại quầy</h5>
-    <button class="btn success" style="background-color: #0a2c57; color: white" @click="createNewOrder">
+    <button
+      class="btn success"
+      style="background-color: #0a2c57; color: white"
+      @click="createNewOrder"
+    >
       <Plus class="me-1" size="16" /> Tạo đơn mới
     </button>
     <button class="btn btn-danger" @click="xoaToanBoLocal" v-if="false">
@@ -686,7 +502,12 @@ async function calculateAndUpdateShippingFee(order) {
 
   <ul class="nav nav-tabs">
     <li class="nav-item" v-for="order in orders" :key="order.id">
-      <a class="nav-link" :class="{ active: order.id === activeTab }" href="#" @click.prevent="activeTab = order.id">
+      <a
+        class="nav-link"
+        :class="{ active: order.id === activeTab }"
+        href="#"
+        @click.prevent="activeTab = order.id"
+      >
         {{ order.maHoaDon }}
         <!-- 🔽 Nếu có sản phẩm thì hiển thị số lượng -->
         <span v-if="order.listSanPham.length > 0" class="badge bg-danger ms-1">
@@ -700,20 +521,33 @@ async function calculateAndUpdateShippingFee(order) {
   </ul>
 
   <div v-if="orders.length === 0" class="text-center mt-5">
-    <img src="https://web.nvnstatic.net/tp/T0213/img/tmp/cart-empty.png?v=9" alt="No orders" width="170" />
+    <img
+      src="https://web.nvnstatic.net/tp/T0213/img/tmp/cart-empty.png?v=9"
+      alt="No orders"
+      width="170"
+    />
     <p class="mt-2">Không có bất kỳ đơn hàng nào !!!</p>
   </div>
 
-  <div v-if="activeTab !== null" class="bg-white p-3 rounded mb-4 align-items-center border">
-    <div v-for="order in orders" :key="order.id" v-show="order.id === activeTab">
+  <div
+    v-if="activeTab !== null"
+    class="bg-white p-3 rounded mb-4 align-items-center border"
+  >
+    <div
+      v-for="order in orders"
+      :key="order.id"
+      v-show="order.id === activeTab"
+    >
       <h6>Chi tiết hóa đơn {{ order.maHoaDon }}</h6>
-      
 
       <!-- Giỏ hàng -->
       <GioHang :order="order" :activeTab="activeTab" :orders="orders" />
 
       <!-- Khách hàng -->
-      <KhachHang :order="order" @capNhatThongTinKhachHang="capNhatThongTinKhachHang" />
+      <KhachHang
+        :order="order"
+        @capNhatThongTinKhachHang="capNhatThongTinKhachHang"
+      />
 
       <!-- Phiếu giảm giá -->
       <GiamGia :order="order" :activeTab="activeTab" :orders="orders" />
@@ -723,9 +557,10 @@ async function calculateAndUpdateShippingFee(order) {
         {{ (order.tongTienSanPham || 0).toLocaleString() }}đ
       </div>
 
-      <div class="mb-2">
-        <strong>Phí vận chuyển:</strong>
-        {{ (order.phiVanChuyen || 0).toLocaleString() }}đ
+      <!-- Phí vận chuyển -->
+      <div class="mb-2" v-if="order.hinhThucNhanHang == 1">
+        <label class="form-label fw-bold">Phí vận chuyển:</label>
+        <span>{{ (order.khachHang.phiVanChuyen || 0).toLocaleString() }}</span>
       </div>
 
       <div class="mb-2">
@@ -736,12 +571,17 @@ async function calculateAndUpdateShippingFee(order) {
       <!-- Phương thức thanh toán -->
       <div class="d-flex align-items-center gap-3 mb-3">
         <label class="fw-bold mb-0">Phương thức thanh toán:</label>
-        <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
+        <button
+          class="btn border rounded-circle d-flex align-items-center justify-content-center"
+          style="
             width: 36px;
             height: 36px;
             background-color: #0a2c57;
             color: white;
-          " title="Chuyển khoản" @click="showThanhToan = true">
+          "
+          title="Chuyển khoản"
+          @click="showThanhToan = true"
+        >
           <CreditCard size="18" />
         </button>
         <ThanhToan
@@ -754,10 +594,10 @@ async function calculateAndUpdateShippingFee(order) {
           Array.isArray(order.thanhToan)
             ? order.thanhToan.map((pt) => pt.tenPhuongThuc).join(" + ")
             : order.thanhToan?.hinhThuc === "tien_mat"
-              ? "Tiền mặt"
-              : order.thanhToan?.hinhThuc === "chuyen_khoan"
-                ? "Chuyển khoản"
-                : "Thanh toán + Chuyển khoản"
+            ? "Tiền mặt"
+            : order.thanhToan?.hinhThuc === "chuyen_khoan"
+            ? "Chuyển khoản"
+            : "Thanh toán + Chuyển khoản"
         }}</span>
       </div>
 
@@ -772,12 +612,16 @@ async function calculateAndUpdateShippingFee(order) {
 
       <!-- Nút hoàn tất -->
       <div class="text-end">
-        <button class="btn" style="
+        <button
+          class="btn"
+          style="
             background-color: #0a2c57;
             color: white;
             min-width: 200px;
             font-weight: bold;
-          " @click="hoanThanhDonHang(order)">
+          "
+          @click="hoanThanhDonHang(order)"
+        >
           Hoàn thành đơn hàng
         </button>
       </div>

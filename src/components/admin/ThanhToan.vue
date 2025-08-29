@@ -8,7 +8,9 @@ const props = defineProps({
   },
 });
 
-const hinhThuc = ref("tien_mat");
+const emit = defineEmits(["close", "xac-nhan"]);
+
+const hinhThuc = ref("tien_mat"); // Giá trị mặc định
 const maGiaoDichChinh = ref("");
 const soTienKhachTra = ref(props.tongTien);
 
@@ -16,31 +18,51 @@ const danhSachThanhToan = reactive([
   { tenPhuongThuc: "Tiền mặt", maGiaoDich: "", soTien: props.tongTien },
 ]);
 
-// Khi thay đổi hình thức thì reset danh sách
+// Danh sách phương thức
+const PHUONG_THUC = [
+  { label: "Tiền mặt", value: "tien_mat" },
+  { label: "COD", value: "cod" },
+  { label: "VNPay", value: "vnpay" },
+  { label: "Momo", value: "momo" },
+  { label: "QR code", value: "qrcode" },
+];
+
+const phuongThucChonNhieu = ref([]);
+
+// Khi thay đổi hình thức thanh toán
 watch(hinhThuc, (val) => {
-  if (val === "ca_hai") {
-    danhSachThanhToan.length = 0;
-    danhSachThanhToan.push(
-      { tenPhuongThuc: "Tiền mặt", maGiaoDich: "", soTien: props.tongTien / 2 },
-      {
-        tenPhuongThuc: "Chuyển khoản",
-        maGiaoDich: "",
-        soTien: props.tongTien / 2,
-      }
-    );
+  danhSachThanhToan.length = 0;
+  if (val === "khac") {
+    phuongThucChonNhieu.value = [];
   } else {
-    danhSachThanhToan.length = 0;
+    const phuongThuc = PHUONG_THUC.find((p) => p.value === val);
     danhSachThanhToan.push({
-      tenPhuongThuc: val === "tien_mat" ? "Tiền mặt" : "Chuyển khoản",
+      tenPhuongThuc: phuongThuc ? phuongThuc.label : "Không xác định",
       maGiaoDich: "",
       soTien: props.tongTien,
     });
   }
 });
 
+// Khi chọn nhiều phương thức (khi val === "khac")
+watch(phuongThucChonNhieu, (list) => {
+  danhSachThanhToan.length = 0;
+  if (list.length) {
+    const chiaTien = props.tongTien / list.length;
+    list.forEach((val) => {
+      const pt = PHUONG_THUC.find((p) => p.value === val);
+      danhSachThanhToan.push({
+        tenPhuongThuc: pt ? pt.value : val,
+        maGiaoDich: "",
+        soTien: chiaTien,
+      });
+    });
+  }
+});
+
 const themDong = () => {
   danhSachThanhToan.push({
-    tenPhuongThuc: "Chuyển khoản",
+    tenPhuongThuc: "Tiền mặt",
     maGiaoDich: "",
     soTien: 0,
   });
@@ -53,7 +75,7 @@ const formatCurrency = (val) => {
 const xacNhanThanhToan = () => {
   const data = {};
 
-  if (hinhThuc.value === "ca_hai") {
+  if (hinhThuc.value === "khac") {
     const tongNhap = danhSachThanhToan.reduce(
       (acc, pt) => acc + (pt.soTien || 0),
       0
@@ -62,7 +84,6 @@ const xacNhanThanhToan = () => {
       alert("Tổng số tiền các phương thức không khớp với tổng cần thanh toán.");
       return;
     }
-
     data.thanhToan = JSON.parse(JSON.stringify(danhSachThanhToan));
   } else {
     data.hinhThuc = hinhThuc.value;
@@ -72,9 +93,6 @@ const xacNhanThanhToan = () => {
 
   emit("xac-nhan", data);
 };
-
-
-const emit = defineEmits(["close", "xac-nhan"]);
 </script>
 
 <style scoped>
@@ -89,11 +107,7 @@ const emit = defineEmits(["close", "xac-nhan"]);
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Thanh toán</h5>
-          <button
-            type="button"
-            class="btn-close"
-            @click="emit('close')"
-          ></button>
+          <button type="button" class="btn-close" @click="emit('close')"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
@@ -107,13 +121,31 @@ const emit = defineEmits(["close", "xac-nhan"]);
             <label class="fw-bold">Hình thức thanh toán</label>
             <select v-model="hinhThuc" class="form-select">
               <option value="tien_mat">Tiền mặt</option>
-              <option value="chuyen_khoan">Chuyển khoản</option>
-              <option value="ca_hai">Cả hai</option>
+              <option value="cod">COD</option>
+              <option value="vnpay">VNPay</option>
+              <option value="momo">Momo</option>
+              <option value="qrcode">QR code</option>
+              <option value="khac">Khác (chọn nhiều)</option>
             </select>
           </div>
 
-          <!-- Table khi chọn "cả hai" -->
-          <div v-if="hinhThuc === 'ca_hai'" class="table-responsive">
+          <!-- Nếu chọn "khác" thì hiển thị multi-select -->
+          <div v-if="hinhThuc === 'khac'" class="mb-3">
+            <label class="fw-bold">Chọn các phương thức:</label>
+            <select
+              v-model="phuongThucChonNhieu"
+              class="form-select"
+              multiple
+              size="5"
+            >
+              <option v-for="pt in PHUONG_THUC" :key="pt.value" :value="pt.value">
+                {{ pt.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Table khi chọn "khác" -->
+          <div v-if="hinhThuc === 'khac'" class="table-responsive">
             <table class="table table-bordered text-center">
               <thead>
                 <tr>
@@ -126,12 +158,7 @@ const emit = defineEmits(["close", "xac-nhan"]);
               <tbody>
                 <tr v-for="(pt, index) in danhSachThanhToan" :key="index">
                   <td>{{ index + 1 }}</td>
-                  <td>
-                    <select v-model="pt.tenPhuongThuc" class="form-select">
-                      <option value="Tiền mặt">Tiền mặt</option>
-                      <option value="Chuyển khoản">Chuyển khoản</option>
-                    </select>
-                  </td>
+                  <td>{{ pt.tenPhuongThuc }}</td>
                   <td>
                     <input
                       v-model="pt.maGiaoDich"
@@ -153,7 +180,9 @@ const emit = defineEmits(["close", "xac-nhan"]);
               + Thêm dòng
             </button>
           </div>
-          <div class="row mb-3" v-if="hinhThuc !== 'ca_hai'">
+
+          <!-- Form đơn khi KHÔNG chọn "khác" -->
+          <div class="row mb-3" v-if="hinhThuc !== 'khac'">
             <div class="col-md-6">
               <label class="fw-bold">Mã giao dịch:</label>
               <input
@@ -174,9 +203,7 @@ const emit = defineEmits(["close", "xac-nhan"]);
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="emit('close')">
-            Hủy bỏ
-          </button>
+          <button class="btn btn-secondary" @click="emit('close')">Hủy bỏ</button>
           <button class="btn btn-primary" @click="xacNhanThanhToan">
             Xác nhận
           </button>

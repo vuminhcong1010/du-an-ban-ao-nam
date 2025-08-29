@@ -149,7 +149,7 @@
                             <div class="dropdown">
                                 <div class="d-flex align-items-center gap-2">
                                     <button class="btn btn-outline-secondary px-2" @click="toggleSortDirection">
-                                        <i :class="sortDirection === 'desc' ? 'bi bi-sort-down-alt' : 'bi bi-sort-up-alt'"
+                                        <i :class="sortDirection === 'asc' ? 'bi bi-sort-down-alt' : 'bi bi-sort-up-alt'"
                                             style="font-size: 1rem;"></i>
                                     </button>
                                     <div style="min-width: 170px;">
@@ -179,12 +179,9 @@
                                         <h6 class="card-title">{{ allProducts.name }}</h6>
                                         <div class="rating-section">
                                             <span v-for="star in 5" :key="star" class="star">
-                                                <i :class="[
-                                                    'bi',
-                                                    star <= Math.round(allProducts.rating) ? 'bi-star-fill text-warning' : 'bi-star'
-                                                ]"></i>
+                                                <i v-if="star <= allProducts.rating" class="bi bi-star-fill"></i>
+                                                <i v-else class="bi bi-star"></i>
                                             </span>
-
                                             <small
                                                 v-if="allProducts.reviews !== undefined && allProducts.reviews > 0">({{
                                                     allProducts.reviews }})</small>
@@ -258,22 +255,22 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import '@vueform/slider/themes/default.css'
 import Slider from '@vueform/slider'
-import { useRouter } from 'vue-router'
+import { useRouter ,useRoute  } from 'vue-router'
 import { useToast } from 'vue-toastification'
 const toast = useToast();
 
 const router = useRouter()
 const allProducts = ref([]);
 const loading = ref(true);
-
+const route = useRoute()
 const minPrice = ref(0);
 const maxPrice = ref(0);
 
 const priceRange = ref([0, 0])
 const selectedCategories = ref([])
 const selectedSizes = ref([])
-const sortOrder = ref('latest') 
-const sortDirection = ref('desc') 
+const sortOrder = ref('latest')
+const sortDirection = ref('asc')
 const selectedColors = ref([])
 const discountOnly = ref(false)
 const selectedRating = ref(0)
@@ -490,14 +487,11 @@ function toggleSortDirection() {
 
 const filteredProducts = computed(() => {
     return allProducts.value.filter((p) => {
-        // Tính giá trung bình
-        const avgPrice =
-            p.priceRange && p.priceRange.min !== undefined && p.priceRange.max !== undefined
-                ? Math.round((p.priceRange.min + p.priceRange.max) / 2)
-                : 0;
+        const productMinPrice = p.priceRange?.min || 0;
+        const productMaxOriginalPrice = (p.originalPriceRange?.max ?? p.priceRange?.max) || 0;
         const inPriceRange =
-            avgPrice >= priceRange.value[0] &&
-            avgPrice <= priceRange.value[1];
+            productMinPrice >= priceRange.value[0] &&
+            productMaxOriginalPrice <= priceRange.value[1];
 
         const inCategory = selectedCategories.value.length === 0 || (p.category && selectedCategories.value.includes(p.category));
         const inSize = selectedSizes.value.length === 0 || (p.sizes && p.sizes.some((s) => selectedSizes.value.includes(s)));
@@ -510,19 +504,15 @@ const filteredProducts = computed(() => {
 
 
 const sortedProducts = computed(() => {
-    const sorted = filteredProducts.value.slice();
+    const sorted = filteredProducts.value.slice(); // bản sao an toàn, không gây thay đổi dữ liệu gốc
+
     const dir = sortDirection.value === 'asc' ? 1 : -1;
     switch (sortOrder.value) {
         case 'alphabet':
             sorted.sort((a, b) => (a.name || '').localeCompare(b.name || '') * dir);
             break;
         case 'price':
-            // Sắp xếp theo giá trung bình
-            sorted.sort((a, b) => {
-                const avgA = a.priceRange ? ((a.priceRange.min + a.priceRange.max) / 2) : 0;
-                const avgB = b.priceRange ? ((b.priceRange.min + b.priceRange.max) / 2) : 0;
-                return (avgA - avgB) * dir;
-            });
+            sorted.sort((a, b) => ((a.price || 0) - (b.price || 0)) * dir);
             break;
         case 'rating':
             sorted.sort((a, b) => ((b.rating || 0) - (a.rating || 0)) * dir);
@@ -534,10 +524,11 @@ const sortedProducts = computed(() => {
             sorted.sort((a, b) => {
                 const dateA = new Date(a.createdAt).getTime();
                 const dateB = new Date(b.createdAt).getTime();
-                return (dateB - dateA); // Mới nhất lên đầu
+                return (dateA - dateB) * dir;
             });
             break;
     }
+
     return sorted;
 });
 
@@ -578,123 +569,126 @@ function mapColorToCssClass(apiColor) {
 }
 
 const fetchProducts = async () => {
-    loading.value = true;
-    try {
-        const response = await fetch('http://localhost:8080/client/danh-sach');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
+  loading.value = true;
+  try {
+    // Lấy idDanhMuc từ route params
+    const idDanhMuc = route.params.idDanhMuc
+    console.log('Fetching products for category ID:', idDanhMuc)
 
-        console.log("Raw data from API:", data);
-        const products = data.data || [];
-        if (Array.isArray(products) && products.length > 0) {
-            const filteredData = products.filter(item =>
-                Array.isArray(item.chiTietSanPham) &&
-                item.chiTietSanPham.some(ct => ct.trangThai === 1)
-            );
-
-            console.log("Filtered (trangThai == 1):", filteredData);
-
-            const mapped = await Promise.all(filteredData.map(async (item) => {
-                const firstDanhMuc = item.danhMucList?.[0] || {};
-                const danhGiaList = item.danhGiaList || [];
-                const ctspList = item.chiTietSanPham || [];
-
-                const giaList = ctspList
-                    .filter(ct => ct.trangThai === 1 && typeof ct.gia === 'number')
-                    .map(ct => ct.gia);
-
-                let originalPriceRange = { min: Math.min(...giaList), max: Math.max(...giaList) };
-                let discountPercentage = 0;
-
-                try {
-                    const discountResponse = await fetch(`http://localhost:8080/client/giam-gia/${item.sanPham.id}`);
-                    if (discountResponse.ok) {
-                        const discountData = await discountResponse.json();
-                        const discountList = Array.isArray(discountData.data) ? discountData.data : [];
-
-                        const percents = discountList
-                            .map(d => Number(d))
-                            .filter(p => !isNaN(p));
-
-                        if (percents.length > 0) {
-                            const sum = percents.reduce((a, b) => a + b, 0);
-                            discountPercentage = Math.round(sum / percents.length);
-                        }
-                    }
-                } catch (err) {
-                    console.error("Lỗi khi fetch phần trăm giảm giá:", err);
-                }
-
-                let priceRange = { ...originalPriceRange };
-                if (discountPercentage > 0) {
-                    priceRange = {
-                        min: Math.round(originalPriceRange.min * (1 - discountPercentage / 100)),
-                        max: Math.round(originalPriceRange.max * (1 - discountPercentage / 100)),
-                    };
-                }
-
-                // ✅ Tính điểm đánh giá trung bình
-                const validDanhGia = danhGiaList.filter(dg =>
-                    dg && typeof dg.diemDanhGia === 'number' && dg.diemDanhGia >= 0
-                );
-
-                const totalScore = validDanhGia.reduce((sum, dg) => sum + dg.diemDanhGia, 0);
-                const rating = validDanhGia.length > 0 ? totalScore / validDanhGia.length : 0;
-
-                return {
-                    id: item.sanPham.id,
-                    name: item.sanPham.tenSanPham,
-                    image: item.anhSanPham?.[0] || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png',
-
-                    discount: discountPercentage,
-                    priceRange,
-                    originalPriceRange: discountPercentage > 0 ? originalPriceRange : null,
-
-                    rating: Math.round(rating * 10) / 10,
-                    reviews: validDanhGia.length,
-
-                    category: firstDanhMuc.tenDanhMuc || '',
-
-                    sizes: [...new Set(ctspList.map(ct => ct.idSize?.soCo).filter(Boolean))],
-                    colors: [...new Set(ctspList.map(ct => ct.idMau?.ten).filter(Boolean))],
-
-                    createdAt: ctspList[0]?.ngayTao || null,
-                    quantity: ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0)
-                };
-            }));
-
-
-            allProducts.value = mapped;
-            const allMinDiscountedPrices = allProducts.value.map(p => p.priceRange?.min || 0);
-            const allMaxOriginalPrices = allProducts.value.map(p =>
-                (p.originalPriceRange?.max ?? p.priceRange?.max) || 0
-            );
-
-            minPrice.value = Math.min(...allMinDiscountedPrices);
-            maxPrice.value = Math.max(...allMaxOriginalPrices);
-
-            priceRange.value = [minPrice.value, maxPrice.value];
-
-
-            priceRange.value = [minPrice.value, maxPrice.value];
-
-        } else {
-            minPrice.value = 0;
-            maxPrice.value = 0;
-            priceRange.value = [0, 0];
-        }
-
-    } catch (error) {
-        console.error("Lỗi khi fetch sản phẩm:", error);
-        minPrice.value = 0;
-        maxPrice.value = 0;
-        priceRange.value = [0, 0];
-    } finally {
-        loading.value = false;
+    // Gọi API lấy sản phẩm theo idDanhMuc
+    const response = await fetch(`http://localhost:8080/home/sanPhamCategoryList?idDanhMuc=${idDanhMuc}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-};
+
+    const data = await response.json();
+
+    console.log("Raw data from API:", data);
+    const products = data.data || [];
+    if (Array.isArray(products) && products.length > 0) {
+      const filteredData = products.filter(item =>
+        Array.isArray(item.chiTietSanPham) &&
+        item.chiTietSanPham.some(ct => ct.trangThai === 1)
+      );
+
+      console.log("Filtered (trangThai == 1):", filteredData);
+
+      const mapped = await Promise.all(filteredData.map(async (item) => {
+        const firstDanhMuc = item.danhMucList?.[0] || {};
+        const danhGiaList = item.danhGiaList || [];
+        const ctspList = item.chiTietSanPham || [];
+
+        // Lấy tất cả giá chi tiết sản phẩm
+        const giaList = ctspList
+          .filter(ct => ct.trangThai === 1 && typeof ct.gia === 'number')
+          .map(ct => ct.gia);
+
+        let originalPriceRange = { min: Math.min(...giaList), max: Math.max(...giaList) };
+        let discountPercentage = 0;
+
+        // Fetch giảm giá
+        try {
+          const discountResponse = await fetch(`http://localhost:8080/client/giam-gia/${item.sanPham.id}`);
+
+          if (discountResponse.ok) {
+            const discountData = await discountResponse.json();
+            const discountList = Array.isArray(discountData.data) ? discountData.data : [];
+            if (discountList.length > 0) {
+              const percents = discountList
+                .map(d => Number(d))
+                .filter(p => !isNaN(p));
+
+              if (percents.length > 0) {
+                const sum = percents.reduce((a, b) => a + b, 0);
+                discountPercentage = Math.round(sum / percents.length);
+              }
+
+            }
+          }
+        } catch (err) {
+          console.error("Lỗi khi fetch phần trăm giảm giá:", err);
+        }
+
+        let priceRangeLocal = { ...originalPriceRange };
+
+        if (discountPercentage > 0) {
+          priceRangeLocal = {
+            min: Math.round(originalPriceRange.min * (1 - discountPercentage / 100)),
+            max: Math.round(originalPriceRange.max * (1 - discountPercentage / 100)),
+          };
+        }
+
+        return {
+          id: item.sanPham.id,
+          name: item.sanPham.tenSanPham,
+          image: item.anhSanPham?.[0] || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png',
+
+          discount: discountPercentage,
+          priceRange: priceRangeLocal,
+          originalPriceRange: discountPercentage > 0 ? originalPriceRange : null,
+
+          rating: danhGiaList.length > 0
+            ? (danhGiaList.reduce((sum, dg) => sum + dg.diemDanhGia, 0) / danhGiaList.length)
+            : 0,
+          reviews: danhGiaList.length,
+
+          category: firstDanhMuc.tenDanhMuc || '',
+
+          sizes: [...new Set(ctspList.map(ct => ct.idSize?.soCo).filter(Boolean))],
+          colors: [...new Set(ctspList.map(ct => ct.idMau?.ten).filter(Boolean))],
+
+          createdAt: ctspList[0]?.ngayTao || null,
+          quantity: ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0)
+        };
+      }));
+
+      allProducts.value = mapped;
+      const allMinDiscountedPrices = allProducts.value.map(p => p.priceRange?.min || 0);
+      const allMaxOriginalPrices = allProducts.value.map(p =>
+        (p.originalPriceRange?.max ?? p.priceRange?.max) || 0
+      );
+
+      minPrice.value = Math.min(...allMinDiscountedPrices);
+      maxPrice.value = Math.max(...allMaxOriginalPrices);
+
+      priceRange.value = [minPrice.value, maxPrice.value];
+
+    } else {
+      minPrice.value = 0;
+      maxPrice.value = 0;
+      priceRange.value = [0, 0];
+    }
+
+  } catch (error) {
+    console.error("Lỗi khi fetch sản phẩm:", error);
+    minPrice.value = 0;
+    maxPrice.value = 0;
+    priceRange.value = [0, 0];
+  } finally {
+    loading.value = false;
+  }
+}
+
 onMounted(fetchProducts);
 
 
@@ -912,15 +906,11 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     border-radius: 6px;
     font-size: 15px;
 }
-
 /* Bọc ngoài product-grid */
 .product-page-content {
-    max-width: 1200px;
-    /* hoặc 1280px tùy ý */
-    margin: 0 auto;
-    /* căn giữa */
-    padding: 0 20px;
-    /* thêm khoảng cách lề */
+    max-width: 1200px; /* hoặc 1280px tùy ý */
+    margin: 0 auto; /* căn giữa */
+    padding: 0 20px; /* thêm khoảng cách lề */
 }
 
 /* Product Grid giống ảnh 2 */
@@ -932,21 +922,17 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
 }
 
 /* Transition-group animations for filtering */
-.grid-enter-from,
-.grid-leave-to {
+.grid-enter-from, .grid-leave-to {
     opacity: 0;
     transform: translateY(12px);
 }
-
 .grid-enter-active {
     transition: all 250ms ease;
 }
-
 .grid-leave-active {
     transition: all 220ms ease;
     position: relative;
 }
-
 .grid-move {
     transition: transform 300ms ease;
 }
@@ -963,12 +949,9 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
 
 /* Hiệu ứng hover */
 .product-card .card:hover {
-    transform: translateY(-5px);
-    /* Nổi lên nhẹ */
-    border: 2px solid #0088ff;
-    /* Viền màu xanh */
-    box-shadow: 0 4px 12px rgba(0, 136, 255, 0.3);
-    /* Đổ bóng nhẹ */
+    transform: translateY(-5px); /* Nổi lên nhẹ */
+    border: 2px solid #0088ff;  /* Viền màu xanh */
+    box-shadow: 0 4px 12px rgba(0, 136, 255, 0.3); /* Đổ bóng nhẹ */
 }
 
 
