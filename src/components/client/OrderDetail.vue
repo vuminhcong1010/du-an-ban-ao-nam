@@ -1,525 +1,602 @@
 <template>
-  <div class="order-detail-container">
-    <div class="back-button-container">
-      <button @click="$router.go(-1)" class="btn-back">
-        <i class="fas fa-arrow-left"></i>  Đơn mua / Chi tiết đơn mua {{ order.maHoaDon }}
-      </button>
-    </div>
-
-    <div class="order-status-bar">
-      <span :class="{ active: order.trangThai === 0 }">Chờ xác nhận</span>
-      <span :class="{ active: order.trangThai === 1 || order.trangThai > 1 }">Chờ giao hàng</span>
-      <span :class="{ active: order.trangThai === 2 || order.trangThai > 2 }">Đang vận chuyển</span>
-      <span :class="{ active: order.trangThai === 3 || order.trangThai > 3 }">Đã giao hàng</span>
-      <span :class="{ active: order.trangThai === 4 }">Hoàn thành</span>
-      <span :class="{ active: order.trangThai === 5 }">Đã hủy</span>
-    </div>
-
-    <div class="order-info-grid">
-      <div class="invoice-info">
-        <h3>Thông tin hóa đơn {{ order.maHoaDon }}</h3>
-        <p><strong>Ngày đặt:</strong> {{ formatDate(order.ngayDat) }}</p>
-        <p><strong>Trạng thái:</strong> <span :class="getStatusClass(order.trangThai)">{{ getStatusText(order.trangThai) }}</span></p>
-        <p><strong>Loại hóa đơn:</strong> {{ order.loaiHoaDon || 'Online' }}</p>
-        <p><strong>Ghi chú:</strong> {{ order.ghiChu || 'Không có' }}</p>
+  <header class="main-header modern-header">
+    <div class="container">
+      <div class="logo">
+        <a href="/coolmen">
+          <img src="/src/assets/logo_icon-removebg-preview.png" alt="CoolMen Icon" class="coolmen-logo-icon">
+          CoolMen
+        </a>
       </div>
 
-      <div class="shipping-info">
-        <h3>Thông tin nhận hàng <span class="change-address-link">THAY ĐỔI ĐỊA CHỈ</span></h3>
-        <p><strong>Tên người nhận:</strong> {{ order.tenNguoiNhan || 'N/A' }}</p>
-        <p><strong>SĐT người nhận:</strong> {{ order.sdtNguoiNhan || 'N/A' }}</p>
-        <p><strong>Email người nhận:</strong> {{ order.email || 'N/A' }}</p>
-        <p><strong>Địa chỉ người nhận:</strong> {{ order.diaChiNguoiNhan || 'N/A' }}</p>
-      </div>
-    </div>
 
-    <div class="customer-info-block">
-      <h3>Thông tin khách hàng</h3>
-      <p>{{ order.maKhachHang || 'N/A' }} - {{ order.tenKhachHang || 'N/A' }} - {{ order.soDienThoai || 'N/A' }}</p>
-    </div>
-
-    <div class="product-list-detail">
-        <h3>Sản phẩm</h3>
-        <ul v-if="order.danhSachSanPham && order.danhSachSanPham.length > 0" class="order-items-list-detail">
-            <li v-for="item in order.danhSachSanPham" :key="item.idHoaDonChiTiet">
-                <div class="item-info-detail">
-                    <img :src="item.duongDanAnh" alt="Product Image" class="product-thumbnail">
-                    <div class="product-details">
-                        <span>{{ item.tenSanPham }} ({{ item.tenKichCo }} / {{ item.tenMau }})</span>
-                        <span>Số lượng: {{ item.soLuong }}</span>
-                        <span>Giá: {{ formatCurrency(item.giaBanTaiThoiDiem) }}</span>
-                        <span>Thành tiền: {{ formatCurrency(item.thanhTien) }}</span>
-                    </div>
-                </div>
-                <div class="item-actions-detail">
-                    <button
-                        v-if="order.trangThai === 0"
-                        @click="confirmUpdateOrderItem(order.id, item.idHoaDonChiTiet, item.soLuong)"
-                        class="btn btn-sm btn-edit">Cập nhật SL
-                    </button>
-                    <button
-                        v-if="order.trangThai === 0"
-                        @click="confirmDeleteOrderItem(order.id, item.idHoaDonChiTiet)"
-                        class="btn btn-sm btn-delete">Xóa
-                    </button>
-                </div>
-            </li>
+      <nav class="main-navigation">
+        <ul>
+          <li><a href="/coolmen">Trang chủ</a></li>
+          <li><a href="/coolmen/client-san-pham">Sản phẩm</a></li>
+          <li><a href="#">Danh mục</a></li>
+          <li><a href="#">Giảm giá</a></li>
+          <li><a href="#">Liên hệ</a></li>
+          <li><a href="/coolmen/tra-cuu-don-hang">Tra cứu đơn hàng</a></li>
         </ul>
-        <p v-else class="no-items-message">Không có sản phẩm nào trong đơn hàng này.</p>
-    </div>
+      </nav>
 
-    <div class="payment-history-block">
-        <h3>Lịch sử thanh toán</h3>
-        <p>Hiện tại không có thông tin lịch sử thanh toán.</p>
-    </div>
 
-  </div>
+      <div class="header-actions">
+        <div class="user-icon" ref="userIcon">
+          <router-link v-if="isLoggedIn" to="/coolmen/thong-tin-user" class="user-display-link">
+            <img :src="userAvatar" :alt="userName" class="user-avatar" />
+          </router-link>
+          <router-link v-else to="/coolmen/dang-nhap-khach-hang">
+            <i class="fas fa-user"></i>
+          </router-link>
+        </div>
+        <div class="cart-icon" @click="toggleGioHang">
+          <a href="#">
+            <i class="fas fa-shopping-cart"></i>
+          </a>
+          <span v-if="soLuongGio > 0" class="badge">{{ soLuongGio }}</span>
+
+
+          <CartDetail v-if="hienChiTiet" :danhSachGio="danhSachGio" @close="hienChiTiet = false"
+            @removeItem="xoaSanPham" @update:danhSachGio="capNhatGioHangLocal" @capNhatGio="capNhatGioHang" />
+        </div>
+      </div>
+    </div>
+  </header>
 </template>
 
+
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
-import { useRoute, useRouter } from 'vue-router';
-
-const route = useRoute();
+import Cookies from 'js-cookie';
+import { useRouter } from 'vue-router'; // Import useRouter
+import CartDetail from './CartDetail.vue';
+import { useAuthStore } from '@/stores/auth';
+// Khai báo router
 const router = useRouter();
-const order = ref({});
+const authStore = useAuthStore();
 
 
+// Dữ liệu reactive
+const searchQuery = ref('');
+const soLuongGio = ref(0);
+const hienChiTiet = ref(false);
+const danhSachGio = ref([]);
+const loggedInUserData = ref(null);
 
-// --- Helper Functions (Duplicated from OrderHistory for self-containment) ---
-const getUserId = () => {
-  let userId = null;
-  const userIdFromStorage = localStorage.getItem('userId');
-  if (userIdFromStorage) {
-    userId = parseInt(userIdFromStorage);
-  } else {
-    try {
-      const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
-      userId = loggedInUser ? loggedInUser.id : null;
-    } catch (e) {
-      console.error('Lỗi khi parse loggedInUser từ localStorage:', e);
-    }
-  }
-  console.log('User ID đã lấy từ localStorage (OrderDetail):', userId);
-  return userId;
-};
 
-const formatDate = (dateString) => {
-  if (!dateString) return 'N/A';
-  try {
-    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-    return new Date(dateString).toLocaleDateString('vi-VN', options);
-  } catch (e) {
-    return dateString;
-  }
-};
-
-const formatCurrency = (value) => {
-  if (value === null || value === undefined) return '0 VND';
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-};
-
-const getStatusText = (status) => {
-  switch (status) {
-    case 0: return 'Chờ xác nhận';
-    case 1: return 'Chờ giao hàng';
-    case 2: return 'Đang vận chuyển';
-    case 3: return 'Đã giao hàng';
-    case 4: return 'Hoàn thành';
-    case 5: return 'Đã hủy';
-    default: return 'Không xác định';
-  }
-};
-
-const getStatusClass = (status) => {
-  switch (status) {
-    case 0: return 'status-pending';
-    case 1: return 'status-confirmed';
-    case 2: return 'status-shipping';
-    case 3: return 'status-delivered';
-    case 4: return 'status-completed';
-    case 5: return 'status-cancelled';
-    default: return '';
-  }
-};
-// --- End Helper Functions ---
-
-const apiClient = axios.create({
-  baseURL: 'http://localhost:8080/client/orders',
-  headers: {
-    'Content-Type': 'application/json'
-  }
+// Computed properties
+const isLoggedIn = computed(() => {
+  return authStore.isLoggedInClient;
 });
 
-const fetchOrderDetail = async () => {
-  const id = route.params.id;
-  const userId = getUserId();
 
-  if (userId === null) {
-    alert("Bạn chưa đăng nhập. Vui lòng đăng nhập để xem chi tiết đơn hàng.");
-    router.push('/login');
-    return;
-  }
+const userName = computed(() => {
+  return loggedInUserData.value ? loggedInUserData.value.tenKhachHang : '';
+});
 
-  try {
-    const res = await apiClient.get(`/${id}`, {
-      headers: { 'X-User-ID': userId }
-    });
-    if (res.data && res.data.data) {
-      order.value = res.data.data;
-      console.log('Order Detail Data:', order.value);
-    } else {
-      alert(res.data.message || 'Không tìm thấy chi tiết đơn hàng.');
-      router.go(-1);
-    }
-  } catch (error) {
-    console.error('Lỗi khi tải chi tiết đơn hàng:', error);
-    alert(error.response?.data?.message || 'Không thể tải chi tiết đơn hàng. Vui lòng thử lại sau.');
-    router.go(-1);
-  }
-};
 
-// Condition changed to order.trangThai === 0
-const confirmUpdateOrderItem = async (orderId, hoaDonChiTietId, currentQuantity) => {
-  if (order.value.trangThai !== 0) {
-    alert("Chỉ có thể cập nhật số lượng khi đơn hàng ở trạng thái 'Chờ xác nhận'.");
-    return;
-  }
+const userAvatar = computed(() => {
+  return loggedInUserData.value && loggedInUserData.value.hinhAnh
+    ? loggedInUserData.value.hinhAnh
+    : '/src/assets/logo_icon-removebg-preview.png';
+});
 
-  const newQuantityStr = prompt(`Nhập số lượng mới cho sản phẩm (hiện tại: ${currentQuantity}):`, currentQuantity);
-  if (newQuantityStr === null || newQuantityStr.trim() === '') {
-    return;
-  }
 
-  const newQuantity = parseInt(newQuantityStr);
-  if (isNaN(newQuantity) || newQuantity <= 0) {
-    alert("Số lượng không hợp lệ. Vui lòng nhập một số nguyên dương.");
-    return;
-  }
-
-  const userId = getUserId();
-  if (userId === null) {
-    alert("Bạn chưa đăng nhập.");
-    return;
-  }
-
-  try {
-    const requestBody = {
-      idHoaDon: orderId,
-      chiTietHoaDonId: hoaDonChiTietId,
-      soLuong: newQuantity
-    };
-    const response = await apiClient.put('/update-item-quantity', requestBody, {
-      headers: { 'X-User-ID': userId }
-    });
-    alert(response.data.message);
-    await fetchOrderDetail();
-  } catch (err) {
-    console.error('Lỗi khi cập nhật số lượng sản phẩm:', err);
-    alert(err.response?.data?.message || 'Không thể cập nhật số lượng sản phẩm. Vui lòng thử lại sau.');
-  }
-};
-
-// Condition changed to order.trangThai === 0
-const confirmDeleteOrderItem = async (orderId, hoaDonChiTietId) => {
-  if (order.value.trangThai !== 0) {
-    alert("Chỉ có thể xóa sản phẩm khi đơn hàng ở trạng thái 'Chờ xác nhận'.");
-    return;
-  }
-  if (confirm(`Bạn có chắc chắn muốn xóa sản phẩm này khỏi đơn hàng không?`)) {
-    const userId = getUserId();
-    if (userId === null) {
-      alert("Bạn chưa đăng nhập.");
-      return;
-    }
+// Hàm
+const loadUserData = () => {
+  const user = localStorage.getItem('loggedInUser');
+  if (user) {
     try {
-      const response = await apiClient.delete(`/delete-item/${hoaDonChiTietId}`, {
-        headers: { 'X-User-ID': userId }
-      });
-      alert(response.data.message);
-      await fetchOrderDetail();
-    } catch (err) {
-      console.error('Lỗi khi xóa sản phẩm khỏi đơn hàng:', err);
-      alert(err.response?.data?.message || 'Không thể xóa sản phẩm khỏi đơn hàng. Vui lòng thử lại sau.');
+      loggedInUserData.value = JSON.parse(user);
+    } catch (e) {
+      console.error('Lỗi khi parse thông tin người dùng:', e);
+      loggedInUserData.value = null;
     }
   }
 };
 
+
+const performSearch = () => {
+  console.log('Đang tìm kiếm:', searchQuery.value);
+};
+
+
+const capNhatGioHang = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/client/LoadSanPham', {
+      withCredentials: true
+    });
+    const data = Array.isArray(res.data) ? res.data : [];
+    data.forEach(sp => {
+      if (!sp.tongTien || sp.tongTien === 0) {
+        sp.tongTien = sp.soLuong * sp.gia;
+      }
+      if (!sp.anhSanPham) {
+        sp.anhSanPham = '/placeholder.png';
+      }
+    });
+    danhSachGio.value = data;
+    soLuongGio.value = data.reduce((tong, sp) => tong + sp.soLuong, 0);
+  } catch (error) {
+    danhSachGio.value = [];
+    soLuongGio.value = 0;
+    console.error('Lỗi khi lấy giỏ hàng:', error);
+  }
+};
+
+
+const capNhatGioHangLocal = (newDanhSach) => {
+  danhSachGio.value = newDanhSach;
+  soLuongGio.value = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0);
+  sessionStorage.removeItem("gioHang");
+  localStorage.removeItem("gioHang");
+};
+
+
+const xoaSanPham = (idSanPhamChiTiet) => {
+  danhSachGio.value = danhSachGio.value.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet);
+  soLuongGio.value = danhSachGio.value.reduce((tong, sp) => tong + sp.soLuong, 0);
+};
+
+
+const toggleGioHang = () => {
+  hienChiTiet.value = !hienChiTiet.value;
+};
+
+
+// Hàm logout đã được sửa đổi
+const logout = () => {
+  authStore.logoutClient();
+  router.push('/coolmen/dang-nhap-khach-hang');
+};
+
+
+// Lifecycle hooks
 onMounted(() => {
-  fetchOrderDetail();
+  loadUserData();
+  capNhatGioHang();
+  window.addEventListener("cap-nhat-gio", capNhatGioHang);
+});
+
+
+onUnmounted(() => {
+  window.removeEventListener("cap-nhat-gio", capNhatGioHang);
 });
 </script>
 
+
 <style scoped>
-/* Keep existing styles */
-.order-detail-container {
-  width: 100%;
-  margin: 0 auto;
-  padding: 25px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f0f2f5;
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  margin-top: 80px; /* Adjusted for header overlap */
-}
+/* Giữ nguyên phần CSS */
+</style>
 
-.back-button-container {
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-}
 
-.btn-back {
-    background: none;
-    border: none;
-    font-size: 1.1em;
-    color: #3498db;
-    cursor: pointer;
-    padding: 5px 10px;
-    border-radius: 5px;
-    transition: background-color 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
-}
 
-.btn-back:hover {
-    background-color: #eaf6ff;
-    color: #2980b9;
-}
 
-.btn-back i {
-    font-size: 1em;
-}
-
-/* Order Status Bar */
-.order-status-bar {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 20px 0;
-  background-color: #ffffff;
-  padding: 15px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-  overflow-x: auto;
-  white-space: nowrap;
-  border: 1px solid #e1e4e8;
-}
-
-.order-status-bar span {
-  flex: 1;
-  text-align: center;
-  padding: 10px 15px;
-  border-radius: 25px;
-  background: #f8f9fa;
-  color: #777;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  font-size: 0.9em;
-  position: relative;
-}
-
-.order-status-bar span.active {
-  background: #3498db;
+<style scoped>
+.badge {
+  background: purple;
   color: white;
-  box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 50%;
+  position: absolute;
+  top: -5px;
+  right: -10px;
 }
 
-.order-info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 30px;
-  margin-top: 25px;
+
+.cart-dropdown {
+  position: absolute;
+  right: 0;
+  top: 35px;
+  background-color: white;
+  border: 1px solid #ccc;
+  width: 250px;
+  padding: 10px;
+  z-index: 999;
 }
 
-.invoice-info,
-.shipping-info,
-.customer-info-block,
-.product-list-detail,
-.payment-history-block {
-  background: #fff;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
-  border: 1px solid #e1e4e8;
+
+.cart-icon {
+  position: relative;
+  /* Bố cục gốc để badge định vị */
+  display: inline-block;
 }
 
-.invoice-info h3,
-.shipping-info h3,
-.customer-info-block h3,
-.product-list-detail h3,
-.payment-history-block h3 {
-  color: #34495e;
-  font-size: 1.4em;
-  margin-bottom: 15px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+
+.cart-icon .badge {
+  position: absolute;
+  top: -8px;
+  /* Dịch lên trên icon */
+  right: -8px;
+  /* Dịch sang phải icon */
+  background-color: purple;
+  /* Màu badge */
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+
+/* CSS cho Header (Chỉ ảnh hưởng đến component này nhờ 'scoped') */
+.main-header {
+  background-color: #f8f8f8;
+  padding: 10px 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+
+.container {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-sizing: border-box;
 }
 
-.customer-info-block {
-  background: #fff;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
-  border: 1px solid #e1e4e8;
-  margin-top: 25px; /* <-- THÊM DÒNG NÀY ĐỂ TẠO KHOẢNG CÁCH ĐỀU */
+
+/* 1. Đẩy icon và chữ logo sát gần bên trái hơn */
+.logo {
+  /* margin-right: auto; để logo đẩy các phần tử khác ra xa nhất có thể bên phải */
+  /* Hoặc sử dụng flex-grow để nó không co lại */
+  flex-shrink: 0;
+  /* Đảm bảo logo không bị co lại khi không gian hẹp */
+  /* padding-left: 0; */
+  /* Đảm bảo không có padding thừa từ style khác */
 }
 
-.payment-history-block {
-  background: #fff;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
-  border: 1px solid #e1e4e8;
-  margin-top: 25px; /* <-- THÊM DÒNG NÀY ĐỂ TẠO KHOẢNG CÁCH ĐỀU */
+
+.logo a {
+  font-size: 28px;
+  font-weight: bold;
+  color: #0a2c57;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
 }
 
-.invoice-info p,
-.shipping-info p,
-.customer-info-block p,
-.payment-history-block p {
-  margin-bottom: 8px;
+
+.coolmen-logo-icon {
+  width: 48px;
+  height: 48px;
+  vertical-align: middle;
+  margin-right: 8px;
+  /* Khoảng cách giữa icon và chữ "CoolMen" */
+  object-fit: contain;
+}
+
+
+.main-navigation ul {
+  display: flex;
+  gap: 24px;
+  /* khoảng cách giữa các mục */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  align-items: center;
+}
+
+
+.main-navigation ul li a {
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  /* gần với màu xám nhạt như trong ảnh */
+  font-family: 'Inter', sans-serif;
+  transition: color 0.3s ease;
+}
+
+
+.main-navigation ul li a:hover {
+  color: #111827;
+  /* màu đậm hơn khi hover */
+}
+
+
+
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  /* Sử dụng gap để tạo khoảng cách giữa các phần tử bên trong */
+  gap: 15px;
+  /* Khoảng cách giữa search-box, user-icon, cart-icon */
+  /* Đảm bảo header-actions không bị co lại */
+  flex-shrink: 0;
+}
+
+
+.search-box {
+  display: flex;
+  /* CHỈNH SỬA: Đảm bảo search-box có thể mở rộng */
+  flex-grow: 1;
+  /* Cho phép search-box mở rộng nếu có không gian */
+}
+
+
+.search-box input {
+  padding: 10px 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px 0 0 5px;
+  outline: none;
+  font-size: 15px;
+  /* CHỈNH SỬA TẠI ĐÂY: Kéo dài thanh search */
+  width: 300px;
+  /* Tăng chiều rộng cố định */
+  min-width: 150px;
+  /* Đảm bảo nó không quá nhỏ */
+  max-width: 100%;
+  /* Đảm bảo nó không vượt quá kích thước cha */
+  flex-grow: 1;
+  /* Cho phép nó mở rộng nếu cần thiết */
+}
+
+
+.search-box button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 0 5px 5px 0;
+  cursor: pointer;
+  outline: none;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+}
+
+
+.search-box button:hover {
+  background-color: #0056b3;
+}
+
+
+/* Loại bỏ margin-left trên user-icon và cart-icon để gap của header-actions hoạt động */
+.user-icon,
+.cart-icon {
+  /* margin-left đã bị loại bỏ */
+}
+
+
+.user-icon a,
+.cart-icon a {
   color: #555;
-  font-size: 1em;
+  font-size: 22px;
+  text-decoration: none;
+  transition: color 0.3s ease;
 }
 
-.invoice-info p strong,
-.shipping-info p strong,
-.customer-info-block p strong,
-.payment-history-block p strong {
-  color: #2c3e50;
+
+.user-icon a:hover,
+.cart-icon a:hover {
+  color: #007bff;
 }
 
-.change-address-link {
-    font-size: 0.8em;
-    color: #3498db;
-    cursor: pointer;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    transition: color 0.2s ease;
-}
-
-.change-address-link:hover {
-    color: #2980b9;
-    text-decoration: underline;
-}
-
-/* Product List in Detail */
-.product-list-detail {
-    margin-top: 30px;
-}
-
-.order-items-list-detail {
-    list-style: none;
-    padding: 0;
-}
-
-.order-items-list-detail li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 15px;
-    padding: 15px 0;
-    border-bottom: 1px dashed #eee;
-}
-
-.order-items-list-detail li:last-child {
-    border-bottom: none;
-}
-
-.item-info-detail {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-grow: 1;
-}
-
-.product-thumbnail {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
-}
-
-.product-details {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-}
-
-.product-details span {
-    margin-bottom: 4px;
-    color: #333;
-    font-size: 0.95em;
-}
-
-.product-details span:first-child {
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-.item-actions-detail {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-/* Small buttons for update/delete */
-.btn-sm {
-    padding: 6px 12px;
-    font-size: 0.8em;
-    font-weight: 500;
-    border-radius: 4px;
-}
-
-.btn-edit {
-    background-color: #f1c40f;
-    color: #333;
-}
-.btn-edit:hover {
-    background-color: #f39c12;
-}
-
-.btn-delete {
-    background-color: #e74c3c;
-    color: white;
-}
-.btn-delete:hover {
-    background-color: #c0392b;
-}
-
-/* Status styling */
-.status-pending { color: #f39c12; font-weight: bold; }
-.status-confirmed { color: #2980b9; font-weight: bold; }
-.status-shipping { color: #8e44ad; font-weight: bold; }
-.status-delivered { color: #27ae60; font-weight: bold; }
-.status-cancelled { color: #e74c3c; font-weight: bold; }
-.status-completed { color: #16a085; font-weight: bold; }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .order-info-grid {
-    grid-template-columns: 1fr;
+  .container {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    padding: 0 10px;
   }
-  .order-status-bar {
-    justify-content: flex-start;
+
+
+  .logo {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 10px;
   }
-  .order-items-list-detail li {
-      flex-direction: column;
-      align-items: flex-start;
+
+
+  .main-navigation ul {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    margin-top: 15px;
   }
-  .item-actions-detail {
-      width: 100%;
-      justify-content: flex-end;
-      margin-top: 10px;
+
+
+  .main-navigation li {
+    margin: 0 10px 10px;
+  }
+
+
+  .header-actions {
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+  }
+
+
+  .search-box {
+    flex-grow: 1;
+    max-width: 300px;
+  }
+
+
+  .search-box input {
+    width: auto;
   }
 }
+
+
+@media (max-width: 480px) {
+  .logo a {
+    font-size: 24px;
+  }
+
+
+  .search-box input {
+    width: auto;
+  }
+}
+
+
+.user-icon {
+  position: relative;
+  cursor: pointer;
+}
+
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 180px;
+  z-index: 1001;
+  padding: 5px 0;
+}
+
+
+.user-dropdown ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+
+.user-dropdown li {
+  padding: 0;
+  margin: 0;
+}
+
+
+.user-dropdown a {
+  display: block;
+  padding: 10px 15px;
+  text-decoration: none;
+  color: #333;
+  font-weight: normal;
+  transition: background-color 0.2s ease;
+}
+
+
+.user-dropdown a:hover {
+  background-color: #f0f0f0;
+  color: #007bff;
+}
+
+
+.user-icon .user-dropdown a {
+  /* Thêm .user-icon vào selector */
+  font-size: 14px;
+  /* Hoặc 0.9em */
+  padding: 8px 15px;
+  /* Điều chỉnh lại padding nếu cần để phù hợp với font nhỏ hơn */
+}
+
+
+.user-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Khoảng cách giữa avatar và tên */
+}
+
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ddd;
+}
+
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  /* Ngăn tên bị xuống dòng */
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Thêm dấu ba chấm nếu tên quá dài */
+}
+
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  /* Điều chỉnh khoảng cách để giỏ hàng và user cách nhau một khoảng */
+  gap: 24px;
+  /* Đảm bảo giỏ hàng và user không bị co lại */
+  flex-shrink: 0;
+}
+
+
+/* Thêm kiểu dáng mới cho phần hiển thị người dùng sau khi bạn đã chỉnh sửa HTML */
+.user-display-link {
+  text-decoration: none;
+  color: #333;
+}
+
+
+.user-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+
+.user-display:hover {
+  background-color: #f0f0f0;
+  border-color: #ddd;
+}
+
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ddd;
+}
+
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.cart-icon, .user-icon {
+  position: relative;
+  z-index: 10; /* Đảm bảo phần tử này luôn hiển thị trên các phần tử khác */
+}
+
+
+.cart-dropdown, .user-dropdown {
+  z-index: 9999; /* Đặt z-index cao hơn để dropdown không bị che khuất */
+}
 </style>
+
+
+

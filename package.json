@@ -25,6 +25,7 @@
     "js-cookie": "^3.0.5",
     "jspdf": "^3.0.1",
     "lucide-vue-next": "^0.511.0",
+    "pinia": "^3.0.3",
     "qrcode": "^1.5.4",
     "select": "^1.1.2",
     "sockjs-client": "^1.6.1",

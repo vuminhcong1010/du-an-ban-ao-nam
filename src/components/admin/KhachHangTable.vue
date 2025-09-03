@@ -3,6 +3,7 @@
     <thead class="table-light">
       <tr>
         <th>STT</th>
+        <th>Ảnh</th>
         <th>Mã khách hàng</th>
         <th>Họ tên</th>
         <th>Giới tính</th>
@@ -17,7 +18,13 @@
     </thead>
     <tbody>
       <tr v-for="(kh, index) in khachHangs" :key="index">
-        <td>{{ index + 1 + page * size }}</td>
+        <td>{{ page * size + index + 1 }}</td>
+        <td>
+          <div class="avatar-container">
+            <!-- Kiểm tra xem kh.hinhAnh có giá trị, nếu có sẽ hiển thị ảnh của khách hàng, nếu không sẽ hiển thị ảnh mặc định -->
+            <img :src="kh.hinhAnh ? kh.hinhAnh : '../images/logo.png'" alt="Avatar" class="customer-avatar" />
+          </div>
+        </td>
         <td>{{ kh.maKhachHang }}</td>
         <td>{{ kh.tenKhachHang }}</td>
         <td>{{ kh.gioiTinh === null ? '' : (kh.gioiTinh ? 'Nam' : 'Nữ') }}</td>
@@ -44,6 +51,8 @@
   </table>
 
 
+
+
   <div class="mt-4 d-flex align-items-center justify-content-center gap-2">
     <button class="btn btn-secondary" @click="prevPage" :disabled="page === 0">Trước</button>
     <input v-model.number="inputPage" @keyup.enter="goToPage" type="number" min="1" :max="totalPages"
@@ -53,7 +62,11 @@
   </div>
 
 
+
+
 </template>
+
+
 
 
 <script>
@@ -64,7 +77,9 @@ import { useRouter } from 'vue-router';
 import { useToast } from "vue-toastification"; // Import useToast
 import Cookies from 'js-cookie'
 
+
 const token = Cookies.get('token')
+
 
 export default {
   name: "KhachHangTable",
@@ -88,9 +103,13 @@ export default {
     const toast = useToast(); // Khởi tạo toast
 
 
+
+
     const navigateToEditCustomer = (customerId) => {
       router.push({ name: 'EditKhachHang', params: { id: customerId } });
     };
+
+
 
 
     // Hàm showToastMessage mới dùng useToast (như trong AddKhachHang)
@@ -105,6 +124,8 @@ export default {
         toast.warning(message);
       }
     };
+
+
 
 
     return { navigateToEditCustomer, showToastMessage }; // Trả về showToastMessage
@@ -170,12 +191,15 @@ export default {
       };
 
 
+
+
       axios.get('/api/khach-hang/search-and-filter', {
-      params ,
-      headers: {
-      Authorization: `Bearer ${token}`
-    }
-  
+        params,
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+
+
       })
         .then(response => {
           console.log(response.data);
@@ -213,12 +237,16 @@ export default {
     // openAddressModal, closeAddressModal, loadTinhThanh, loadQuanHuyen, loadXaPhuong
 
 
+
+
     formatCurrency(val) {
       return new Intl.NumberFormat("vi-VN").format(val);
     },
   }
 };
 </script>
+
+
 
 
 <style scoped>
@@ -230,12 +258,15 @@ export default {
 }
 
 
+
+
 .table th,
 .table td {
   padding: 0.75rem;
   vertical-align: top;
   border-top: 1px solid #dee2e6;
 }
+
 
 .status-badge {
   padding: 4px 8px;
@@ -245,15 +276,18 @@ export default {
   white-space: nowrap;
 }
 
+
 .status-badge.active {
   background-color: #e6f4ea;
   color: #1e7e34;
 }
 
+
 .status-badge.inactive {
   background-color: #fbe9e7;
   color: #d32f2f;
 }
+
 
 .table th {
   text-align: left;
@@ -262,14 +296,20 @@ export default {
 }
 
 
+
+
 .table-hover tbody tr:hover {
   background-color: #f5f5f5;
 }
 
 
+
+
 .table-light thead {
   background-color: #f8f9fa;
 }
+
+
 
 
 .badge {
@@ -286,14 +326,20 @@ export default {
 }
 
 
+
+
 .badge-success {
   background-color: #28a745 !important;
 }
 
 
+
+
 .badge-danger {
   background-color: #dc3545 !important;
 }
+
+
 
 
 .btn-view-update {
@@ -305,9 +351,13 @@ export default {
 }
 
 
+
+
 .btn-view-update:hover {
   opacity: 0.8;
 }
+
+
 
 
 .pagination-controls {
@@ -317,6 +367,8 @@ export default {
   gap: 1rem;
   margin-top: 1.5rem;
 }
+
+
 
 
 .btn-secondary {
@@ -329,10 +381,14 @@ export default {
 }
 
 
+
+
 .btn-secondary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+
 
 
 .form-control.w-auto {
@@ -340,6 +396,8 @@ export default {
   max-width: 80px;
   text-align: center;
 }
+
+
 
 
 .btn {
@@ -352,16 +410,48 @@ export default {
 }
 
 
+
+
 /* Các style cho badge (giữ lại vì đang dùng trong bảng) */
 .badge-success {
   background-color: #28a745 !important;
 }
 
 
+
+
 .badge-danger {
   background-color: #dc3545 !important;
 }
+
+
+/* THÊM KIỂU MỚI CHO ẢNH ĐẠI DIỆN */
+.avatar-container {
+  width: 50px;
+  /* Kích thước container */
+  height: 50px;
+  overflow: hidden;
+  /* Cắt bỏ phần thừa */
+  border-radius: 50%;
+  /* Bo tròn container */
+  display: flex;
+  /* Căn giữa ảnh */
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #eee;
+  /* Đường viền nhẹ */
+}
+
+
+.customer-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Đảm bảo ảnh đầy đủ trong container mà không bị méo */
+}
 </style>
+
+
 
 
 

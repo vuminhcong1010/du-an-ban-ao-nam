@@ -294,26 +294,31 @@ const filteredNhanVien = computed(() => {
 // Thêm hàm searchNhanVien
 const searchNhanVien = async (keyword) => {
   try {
-    if (!keyword) {
-      await getData(); // Nếu không có từ khóa thì load lại toàn bộ
+    const trimmedKeyword = keyword?.trim();
+
+    if (!trimmedKeyword) {
+      await getData();
       return;
     }
-    const response = await axios.get(`http://localhost:8080/api/elastichNhanVien?keyword=${encodeURIComponent(keyword)}`, {
+
+    const response = await axios.get(`http://localhost:8080/api/search?keyword=${encodeURIComponent(trimmedKeyword)}`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
-        const filtered = (Array.isArray(response.data) ? response.data : []).filter(
+
+    const filtered = (Array.isArray(response.data) ? response.data : []).filter(
       nv => String(nv.trangThai) === String(filterState.value.trangThai)
     );
-    listNhanVien.value = Array.isArray(response.data) ? response.data : [];
-    // console.log("Dữ liệu từ BE:", response.data);
-    // console.log("Gán vào listNhanVien:", listNhanVien.value);
+
+    listNhanVien.value = filtered;
+
   } catch (error) {
     console.log('Lỗi tìm kiếm:', error);
     listNhanVien.value = [];
   }
 };
+
 
 // Theo dõi filterState.search, debounce 300ms
 let searchTimeout = null;

@@ -7,6 +7,8 @@
     </div>
 
 
+
+
     <div class="auth-right">
       <div class="form-card" role="main" aria-labelledby="login-title">
         <div class="logo">
@@ -14,8 +16,12 @@
         </div>
 
 
+
+
         <h1 id="login-title">Đăng nhập</h1>
         <p class="subtitle">Đăng nhập để truy cập các tính năng của CoolMen</p>
+
+
 
 
         <form @submit.prevent="dangNhap" novalidate>
@@ -32,6 +38,8 @@
             />
             <div class="invalid-feedback" v-if="usernameError">{{ usernameError }}</div>
           </div>
+
+
 
 
           <div class="form-group">
@@ -51,9 +59,13 @@
           </div>
 
 
+
+
           <div class="form-extra">
             <router-link to="/quen-mat-khau" class="forgot">Quên mật khẩu?</router-link>
           </div>
+
+
 
 
           <button
@@ -67,10 +79,14 @@
           </button>
 
 
+
+
           <a href="http://localhost:8080/auth/authorize/google" class="btn-google">
             <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" />
             <span>Đăng nhập bằng Google</span>
           </a>
+
+
 
 
           <p class="signup-line">
@@ -84,45 +100,41 @@
 </template>
 
 
+
+
 <script setup>
 import { ref, computed, watch } from 'vue';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
+import { useAuthStore } from '@/stores/auth'; // Import Pinia store
 
 
 const toast = useToast();
 const router = useRouter();
+const authStore = useAuthStore(); // Khởi tạo store
 
 
 const login = ref({ username: '', password: '' });
 const usernameError = ref('');
 const passwordError = ref('');
-const remember = ref(false); // Can be linked to a "Remember me" checkbox
+const remember = ref(false);
 
 
 const showPassword = ref(false);
 const loading = ref(false);
 
 
-// Validation criteria: username > 8 chars, password >= 6 chars
 const isValidUsername = computed(() => login.value.username.trim().length > 8);
 const isValidPassword = computed(() => login.value.password.length >= 6);
-
-
 const canSubmit = computed(() => isValidUsername.value && isValidPassword.value);
 
 
-// Watchers for real-time client-side validation feedback
 watch(() => login.value.username, (val) => {
   if (val.trim().length > 0 && val.trim().length <= 8) {
     usernameError.value = 'Tên đăng nhập phải dài hơn 8 ký tự';
-  } else {
-    // Clear client-side validation error if criteria met, but keep server-side errors
-    if (usernameError.value === 'Tên đăng nhập phải dài hơn 8 ký tự') {
-      usernameError.value = '';
-    }
+  } else if (usernameError.value === 'Tên đăng nhập phải dài hơn 8 ký tự') {
+    usernameError.value = '';
   }
 });
 
@@ -130,29 +142,15 @@ watch(() => login.value.username, (val) => {
 watch(() => login.value.password, (val) => {
   if (val.length > 0 && val.length < 6) {
     passwordError.value = 'Mật khẩu phải dài hơn 5 ký tự';
-  } else {
-    // Clear client-side validation error if criteria met, but keep server-side errors
-    if (passwordError.value === 'Mật khẩu phải dài hơn 5 ký tự') {
-      passwordError.value = '';
-    }
+  } else if (passwordError.value === 'Mật khẩu phải dài hơn 5 ký tự') {
+    passwordError.value = '';
   }
 });
 
-console.log(Cookies.get("email"));
 
 const dangNhap = async () => {
-  // Clear all previous errors before a new login attempt
   usernameError.value = '';
   passwordError.value = '';
-
-
-  // Perform initial client-side validation
-  if (!isValidUsername.value) {
-    usernameError.value = 'Tên đăng nhập phải dài hơn 8 ký tự';
-  }
-  if (!isValidPassword.value) {
-    passwordError.value = 'Mật khẩu phải dài hơn 5 ký tự';
-  }
 
 
   if (!canSubmit.value) {
@@ -165,7 +163,6 @@ const dangNhap = async () => {
 
 
   try {
-    // *** IMPORTANT: Target the /login-customer endpoint for customer login ***
     const response = await axios.post(
       'http://localhost:8080/login-customer',
       login.value,
@@ -173,68 +170,53 @@ const dangNhap = async () => {
     );
 
 
-    // Assuming your backend's Response<Object> structure,
-    // where `data` is the actual payload and `message` is for errors/info
     if (response.data && response.data.data) {
-      // Successful login
       const userData = response.data.data;
+     
+      // *** ĐIỂM SỬA CHỮA QUAN TRỌNG NHẤT ***
+      // Gọi action từ Pinia store để lưu trạng thái
+      // Giả sử API trả về token trong `userData.token`
+      // Nếu API không trả về token, bạn có thể tạo một giá trị duy nhất
+      // Ví dụ: `const token = 'your-unique-token';` hoặc `userData.token`
+      const token = 'fake_token_' + userData.id; // Nếu backend không trả về token
+     
+      authStore.setLoginData(userData, token);
+
+
       console.log('Đăng nhập thành công:', userData);
-
-
-      // Save user info. localStorage is often preferred for user details/tokens.
-      // Cookies can be used for session IDs or smaller, non-sensitive data.
-      localStorage.setItem("loggedInUser", JSON.stringify(userData));
-
-
-      // Use 'remember' state to set cookie expiry if you add a checkbox
-      Cookies.set('thongTinKhachHang', JSON.stringify(userData), {
-          expires: remember.value ? 7 : 0.3 // 7 days if "remember me", else ~7 hours
-      });
-
-
       toast.success('Đăng nhập thành công!');
 
 
-      // Redirect after a short delay to allow toast notification to be seen
       setTimeout(() => {
-        router.push('/coolmen'); // Redirect to your desired customer home page
+        router.push('/coolmen');
       }, 500);
 
 
     } else if (response.data && response.data.message) {
-      // Login failed with a specific message from the backend
       const msg = response.data.message;
-      console.error("Đăng nhập thất bại:", msg);
-      // Attempt to categorize the error and assign to relevant field
-      if (msg.toLowerCase().includes('tài khoản') || msg.toLowerCase().includes('username') || msg.toLowerCase().includes('không tồn tại')) {
+      if (msg.toLowerCase().includes('tài khoản') || msg.toLowerCase().includes('username')) {
         usernameError.value = msg;
-      } else if (msg.toLowerCase().includes('mật khẩu') || msg.toLowerCase().includes('password') || msg.toLowerCase().includes('sai mật khẩu')) {
+      } else if (msg.toLowerCase().includes('mật khẩu') || msg.toLowerCase().includes('password')) {
         passwordError.value = msg;
       } else {
-        // Generic error, assign to username field for visibility
         usernameError.value = msg;
       }
       toast.error(msg);
     } else {
-      // Unexpected or empty response from backend
       usernameError.value = 'Đăng nhập thất bại: Phản hồi không hợp lệ từ máy chủ.';
       toast.error('Đăng nhập thất bại: Phản hồi không hợp lệ từ máy chủ.');
     }
   } catch (err) {
     console.error('Lỗi khi gửi yêu cầu đăng nhập:', err);
     if (err.response) {
-      // Server responded with an error status (e.g., 401 Unauthorized, 404 Not Found, 500 Internal Server Error)
-      const status = err.response.status;
       const message = err.response.data?.message || 'Đã xảy ra lỗi khi đăng nhập.';
-
-
-      if (status === 401 || status === 403) { // Unauthorized or Forbidden
+      if (err.response.status === 401 || err.response.status === 403) {
         usernameError.value = message;
         toast.error('Sai tên đăng nhập hoặc mật khẩu, hoặc bạn không có quyền truy cập.');
-      } else if (status === 404) { // Not Found (e.g., endpoint not found or user not found)
+      } else if (err.response.status === 404) {
         usernameError.value = message;
         toast.error('Tài khoản không tồn tại hoặc dịch vụ không khả dụng.');
-      } else if (status === 400) { // Bad Request (e.g., backend validation failed)
+      } else if (err.response.status === 400) {
         usernameError.value = message;
         toast.error('Dữ liệu gửi lên không hợp lệ. Vui lòng kiểm tra lại.');
       } else {
@@ -242,11 +224,9 @@ const dangNhap = async () => {
         toast.error('Lỗi máy chủ: Vui lòng thử lại sau!');
       }
     } else if (err.request) {
-      // Request was made but no response received (network issue, server down, CORS problem)
       usernameError.value = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.';
       toast.error('Lỗi kết nối mạng: Vui lòng kiểm tra lại!');
     } else {
-      // Any other error during request setup
       usernameError.value = 'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.';
       toast.error('Đã xảy ra lỗi không mong muốn.');
     }
@@ -255,6 +235,8 @@ const dangNhap = async () => {
   }
 };
 </script>
+
+
 
 
 <style scoped>
@@ -277,10 +259,14 @@ const dangNhap = async () => {
 }
 
 
+
+
 .btn-google img {
   width: 20px;
   height: 20px;
 }
+
+
 
 
 .btn-google:hover {
@@ -293,6 +279,8 @@ const dangNhap = async () => {
   min-height: 100vh;
   font-family: 'Inter', 'Arial', sans-serif;
 }
+
+
 
 
 /* LEFT: visual lớn */
@@ -308,6 +296,8 @@ const dangNhap = async () => {
 }
 
 
+
+
 /* overlay để có thể thay bằng ảnh thật: */
 .left-overlay {
   width: 100%;
@@ -318,6 +308,8 @@ const dangNhap = async () => {
   background-position: center;
   background-repeat: no-repeat;
 }
+
+
 
 
 /* quả cầu mềm mại (nếu không có ảnh) */
@@ -336,6 +328,8 @@ const dangNhap = async () => {
 }
 
 
+
+
 /* RIGHT: form trắng */
 .auth-right {
   flex: 0 0 40%;
@@ -347,6 +341,8 @@ const dangNhap = async () => {
 }
 
 
+
+
 .form-card {
   width: 100%;
   max-width: 380px;
@@ -354,11 +350,15 @@ const dangNhap = async () => {
 }
 
 
+
+
 .logo {
   text-align: center;
   margin-bottom: 12px;
 }
 .logo img { max-width: 100px; display: inline-block; }
+
+
 
 
 /* typography */
@@ -375,6 +375,8 @@ h1 {
   margin-bottom: 22px;
   text-align: center;
 }
+
+
 
 
 /* form elements */
@@ -399,6 +401,8 @@ h1 {
 }
 
 
+
+
 /* lỗi */
 .is-invalid {
   border-color: #e74c3c !important;
@@ -410,10 +414,14 @@ h1 {
 }
 
 
+
+
 /* password field */
 .password-field {
   position: relative;
 }
+
+
 
 
 /* extras */
@@ -426,6 +434,8 @@ h1 {
 }
 .forgot { color:#0a2c57; text-decoration:none; font-weight:600 }
 .forgot:hover { text-decoration: underline; }
+
+
 
 
 /* submit */
@@ -454,6 +464,8 @@ h1 {
 }
 
 
+
+
 /* bottom line */
 .signup-line {
   margin-top: 14px;
@@ -465,6 +477,8 @@ h1 {
 .signup-line a:hover { text-decoration: underline; }
 
 
+
+
 /* responsive */
 @media (max-width: 900px) {
   .auth-wrapper { flex-direction: column; }
@@ -473,6 +487,14 @@ h1 {
   .orb { left: 50%; transform: translate(-50%,-50%); width: 420px; height:420px; }
 }
 </style>
+
+
+
+
+
+
+
+
 
 
 

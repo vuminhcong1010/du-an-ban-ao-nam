@@ -1,5 +1,5 @@
 <template>
-  <header class="main-header">
+  <header class="main-header modern-header">
     <div class="container">
       <div class="logo">
         <a href="/coolmen">
@@ -8,53 +8,28 @@
         </a>
       </div>
 
+
       <nav class="main-navigation">
         <ul>
-          <li>
-            <router-link to="/coolmen" :class="{ active: route.path === '/coolmen' }">Trang chủ</router-link>
-          </li>
-          <li>
-            <router-link to="/coolmen/client-san-pham"
-              :class="{ active: route.path === '/coolmen/client-san-pham' }">Sản phẩm</router-link>
-          </li>
-          <li>
-            <router-link to="/coolmen/danh-muc-list" :class="{ active: route.path === '/coolmen/danh-muc-List' }">Danh
-              mục</router-link>
-          </li>
-          <li>
-            <router-link to="/coolmen/giam-gia" :class="{ active: route.path === '/coolmen/giam-gia' }">Giảm
-              giá</router-link>
-          </li>
-          <li>
-            <router-link to="/coolmen/lien-he" :class="{ active: route.path === '/coolmen/lien-he' }">Liên
-              hệ</router-link>
-          </li>
+          <li><a href="/coolmen">Trang chủ</a></li>
+          <li><a href="/coolmen/client-san-pham">Sản phẩm</a></li>
+          <li><a href="/coolmen/danh-muc-List">Danh mục</a></li>
+          <li><a href="#">Giảm giá</a></li>
+          <li><a href="#">Liên hệ</a></li>
+          <li><a href="/coolmen/tra-cuu-don-hang">Tra cứu đơn hàng</a></li>
         </ul>
       </nav>
 
-      <div class="header-actions">
-        <!-- User -->
-        <div class="user-icon" ref="userIcon" @click="toggleUserDropdown">
-          <a href="#"><i class="fas fa-user"></i></a>
-          <div v-if="showUserDropdown" class="user-dropdown">
-            <ul>
-              <li v-if="isLoggedIn">
-                <a href="/coolmen/tai-khoan">Thông tin cá nhân</a>
-              </li>
-              <li v-if="isLoggedIn">
-                <a href="/coolmen/lich-su-dat-hang">Lịch sử đặt hàng</a>
-              </li>
-              <li v-if="isLoggedIn">
-                <a href="#" @click.prevent="logout">Đăng xuất</a>
-              </li>
-              <li v-else>
-                <a href="/coolmen/dang-nhap-khach-hang">Đăng nhập</a>
-              </li>
-            </ul>
-          </div>
-        </div>
 
-        <!-- Giỏ hàng -->
+      <div class="header-actions">
+        <div class="user-icon" ref="userIcon">
+          <router-link v-if="isLoggedIn" to="/coolmen/thong-tin-user" class="user-display-link">
+            <img :src="userAvatar" :alt="userName" class="user-avatar" />
+          </router-link>
+          <router-link v-else to="/coolmen/dang-nhap-khach-hang">
+            <i class="fas fa-user"></i>
+          </router-link>
+        </div>
         <div class="cart-icon">
           <router-link to="/gio-hang">
             <i class="fas fa-shopping-cart"></i>
@@ -67,88 +42,135 @@
 </template>
 
 
-
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import axios from 'axios'
-import Cookies from 'js-cookie'
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import { useRouter } from 'vue-router'; // Import useRouter
+import CartDetail from './CartDetail.vue';
+import { useAuthStore } from '@/stores/auth';
+// Khai báo router
+const router = useRouter();
+const authStore = useAuthStore();
 
-const route = useRoute()
 
-const searchQuery = ref('')
-const soLuongGio = ref(0)
-const hienChiTiet = ref(false)
-const danhSachGio = ref([])
-const showUserDropdown = ref(false)
+// Dữ liệu reactive
+const searchQuery = ref('');
+const soLuongGio = ref(0);
+const hienChiTiet = ref(false);
+const danhSachGio = ref([]);
+const loggedInUserData = ref(null);
 
-const userIcon = ref(null)
 
+// Computed properties
 const isLoggedIn = computed(() => {
-  const token = localStorage.getItem('clientAuthToken')
-  const user = localStorage.getItem('loggedInUser')
-  return !!token || !!user
-})
+  return authStore.isLoggedInClient;
+});
+
+
+const userName = computed(() => {
+  return loggedInUserData.value ? loggedInUserData.value.tenKhachHang : '';
+});
+
+
+const userAvatar = computed(() => {
+  return loggedInUserData.value && loggedInUserData.value.hinhAnh
+    ? loggedInUserData.value.hinhAnh
+    : '/src/assets/logo_icon-removebg-preview.png';
+});
+
+
+// Hàm
+const loadUserData = () => {
+  const user = localStorage.getItem('loggedInUser');
+  if (user) {
+    try {
+      loggedInUserData.value = JSON.parse(user);
+    } catch (e) {
+      console.error('Lỗi khi parse thông tin người dùng:', e);
+      loggedInUserData.value = null;
+    }
+  }
+};
+
+
+const performSearch = () => {
+  console.log('Đang tìm kiếm:', searchQuery.value);
+};
+
 
 const capNhatGioHang = async () => {
   try {
     const res = await axios.get('http://localhost:8080/client/LoadSanPham', {
       withCredentials: true
-    })
-    const data = Array.isArray(res.data) ? res.data : []
+    });
+    const data = Array.isArray(res.data) ? res.data : [];
     data.forEach(sp => {
       if (!sp.tongTien || sp.tongTien === 0) {
-        sp.tongTien = sp.soLuong * sp.gia
+        sp.tongTien = sp.soLuong * sp.gia;
       }
       if (!sp.anhSanPham) {
-        sp.anhSanPham = '/placeholder.png'
+        sp.anhSanPham = '/placeholder.png';
       }
-    })
-
-    danhSachGio.value = data
-    soLuongGio.value = data.length
+    });
+    danhSachGio.value = data;
+    soLuongGio.value = data.reduce((tong, sp) => tong + sp.soLuong, 0);
   } catch (error) {
-    danhSachGio.value = []
-    soLuongGio.value = 0
-    console.error('Lỗi khi lấy giỏ hàng:', error)
+    danhSachGio.value = [];
+    soLuongGio.value = 0;
+    console.error('Lỗi khi lấy giỏ hàng:', error);
   }
-}
+};
 
-const handleClickOutside = (event) => {
-  if (userIcon.value && !userIcon.value.contains(event.target)) {
-    showUserDropdown.value = false
-  }
-}
 
-const toggleUserDropdown = () => {
-  showUserDropdown.value = !showUserDropdown.value
-}
+const capNhatGioHangLocal = (newDanhSach) => {
+  danhSachGio.value = newDanhSach;
+  soLuongGio.value = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0);
+  sessionStorage.removeItem("gioHang");
+  localStorage.removeItem("gioHang");
+};
 
+
+const xoaSanPham = (idSanPhamChiTiet) => {
+  danhSachGio.value = danhSachGio.value.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet);
+  soLuongGio.value = danhSachGio.value.reduce((tong, sp) => tong + sp.soLuong, 0);
+};
+
+
+const toggleGioHang = () => {
+  hienChiTiet.value = !hienChiTiet.value;
+};
+
+
+// Hàm logout đã được sửa đổi
 const logout = () => {
-  localStorage.removeItem('clientAuthToken')
-  localStorage.removeItem('loggedInUser')
-  Cookies.remove('thongTinKhachHang')
-  showUserDropdown.value = false
-  window.location.href = '/coolmen/dang-nhap-khach-hang'
-}
+  authStore.logoutClient();
+  router.push('/coolmen/dang-nhap-khach-hang');
+};
 
+
+// Lifecycle hooks
 onMounted(() => {
-  capNhatGioHang()
-  window.addEventListener('cap-nhat-gio', capNhatGioHang)
-  document.addEventListener('click', handleClickOutside)
-})
+  loadUserData();
+  capNhatGioHang();
+  window.addEventListener("cap-nhat-gio", capNhatGioHang);
+});
+
+
+onUnmounted(() => {
+  window.removeEventListener("cap-nhat-gio", capNhatGioHang);
+});
 </script>
+
+
+<style scoped>
+/* Giữ nguyên phần CSS */
+</style>
+
 
 
 
 <style scoped>
-.main-navigation a.active {
-  color: #007bff;
-  font-weight: bold;
-  border-bottom: 2px solid #007bff;
-  padding-bottom: 2px;
-}
-
 .badge {
   background: purple;
   color: white;
@@ -159,6 +181,7 @@ onMounted(() => {
   top: -5px;
   right: -10px;
 }
+
 
 .cart-dropdown {
   position: absolute;
@@ -171,11 +194,13 @@ onMounted(() => {
   z-index: 999;
 }
 
+
 .cart-icon {
   position: relative;
   /* Bố cục gốc để badge định vị */
   display: inline-block;
 }
+
 
 .cart-icon .badge {
   position: absolute;
@@ -192,6 +217,7 @@ onMounted(() => {
   line-height: 1;
 }
 
+
 /* CSS cho Header (Chỉ ảnh hưởng đến component này nhờ 'scoped') */
 .main-header {
   background-color: #f8f8f8;
@@ -204,12 +230,14 @@ onMounted(() => {
   z-index: 1000;
 }
 
+
 .container {
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-sizing: border-box;
 }
+
 
 /* 1. Đẩy icon và chữ logo sát gần bên trái hơn */
 .logo {
@@ -221,6 +249,7 @@ onMounted(() => {
   /* Đảm bảo không có padding thừa từ style khác */
 }
 
+
 .logo a {
   font-size: 28px;
   font-weight: bold;
@@ -230,6 +259,7 @@ onMounted(() => {
   align-items: center;
 }
 
+
 .coolmen-logo-icon {
   width: 48px;
   height: 48px;
@@ -238,6 +268,7 @@ onMounted(() => {
   /* Khoảng cách giữa icon và chữ "CoolMen" */
   object-fit: contain;
 }
+
 
 .main-navigation ul {
   display: flex;
@@ -249,6 +280,7 @@ onMounted(() => {
   align-items: center;
 }
 
+
 .main-navigation ul li a {
   text-decoration: none;
   font-size: 14px;
@@ -259,10 +291,13 @@ onMounted(() => {
   transition: color 0.3s ease;
 }
 
+
 .main-navigation ul li a:hover {
   color: #111827;
   /* màu đậm hơn khi hover */
 }
+
+
 
 
 .header-actions {
@@ -275,12 +310,14 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
+
 .search-box {
   display: flex;
   /* CHỈNH SỬA: Đảm bảo search-box có thể mở rộng */
   flex-grow: 1;
   /* Cho phép search-box mở rộng nếu có không gian */
 }
+
 
 .search-box input {
   padding: 10px 15px;
@@ -299,6 +336,7 @@ onMounted(() => {
   /* Cho phép nó mở rộng nếu cần thiết */
 }
 
+
 .search-box button {
   background-color: #007bff;
   color: white;
@@ -314,15 +352,18 @@ onMounted(() => {
   transition: background-color 0.3s ease;
 }
 
+
 .search-box button:hover {
   background-color: #0056b3;
 }
+
 
 /* Loại bỏ margin-left trên user-icon và cart-icon để gap của header-actions hoạt động */
 .user-icon,
 .cart-icon {
   /* margin-left đã bị loại bỏ */
 }
+
 
 .user-icon a,
 .cart-icon a {
@@ -332,10 +373,12 @@ onMounted(() => {
   transition: color 0.3s ease;
 }
 
+
 .user-icon a:hover,
 .cart-icon a:hover {
   color: #007bff;
 }
+
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -346,11 +389,13 @@ onMounted(() => {
     padding: 0 10px;
   }
 
+
   .logo {
     width: 100%;
     text-align: center;
     margin-bottom: 10px;
   }
+
 
   .main-navigation ul {
     flex-wrap: wrap;
@@ -359,9 +404,11 @@ onMounted(() => {
     margin-top: 15px;
   }
 
+
   .main-navigation li {
     margin: 0 10px 10px;
   }
+
 
   .header-actions {
     width: 100%;
@@ -369,30 +416,36 @@ onMounted(() => {
     margin-top: 10px;
   }
 
+
   .search-box {
     flex-grow: 1;
     max-width: 300px;
   }
 
+
   .search-box input {
     width: auto;
   }
 }
+
 
 @media (max-width: 480px) {
   .logo a {
     font-size: 24px;
   }
 
+
   .search-box input {
     width: auto;
   }
 }
 
+
 .user-icon {
   position: relative;
   cursor: pointer;
 }
+
 
 .user-dropdown {
   position: absolute;
@@ -407,16 +460,19 @@ onMounted(() => {
   padding: 5px 0;
 }
 
+
 .user-dropdown ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
+
 .user-dropdown li {
   padding: 0;
   margin: 0;
 }
+
 
 .user-dropdown a {
   display: block;
@@ -427,10 +483,12 @@ onMounted(() => {
   transition: background-color 0.2s ease;
 }
 
+
 .user-dropdown a:hover {
   background-color: #f0f0f0;
   color: #007bff;
 }
+
 
 .user-icon .user-dropdown a {
   /* Thêm .user-icon vào selector */
@@ -438,5 +496,104 @@ onMounted(() => {
   /* Hoặc 0.9em */
   padding: 8px 15px;
   /* Điều chỉnh lại padding nếu cần để phù hợp với font nhỏ hơn */
+}
+
+
+.user-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Khoảng cách giữa avatar và tên */
+}
+
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ddd;
+}
+
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  /* Ngăn tên bị xuống dòng */
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Thêm dấu ba chấm nếu tên quá dài */
+}
+
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  /* Điều chỉnh khoảng cách để giỏ hàng và user cách nhau một khoảng */
+  gap: 24px;
+  /* Đảm bảo giỏ hàng và user không bị co lại */
+  flex-shrink: 0;
+}
+
+
+/* Thêm kiểu dáng mới cho phần hiển thị người dùng sau khi bạn đã chỉnh sửa HTML */
+.user-display-link {
+  text-decoration: none;
+  color: #333;
+}
+
+
+.user-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+
+.user-display:hover {
+  background-color: #f0f0f0;
+  border-color: #ddd;
+}
+
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ddd;
+}
+
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.cart-icon,
+.user-icon {
+  position: relative;
+  z-index: 10;
+  /* Đảm bảo phần tử này luôn hiển thị trên các phần tử khác */
+}
+
+
+.cart-dropdown,
+.user-dropdown {
+  z-index: 9999;
+  /* Đặt z-index cao hơn để dropdown không bị che khuất */
 }
 </style>

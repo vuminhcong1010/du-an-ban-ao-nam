@@ -25,29 +25,24 @@ const pageSize = 5;
 
 const fetchTodos = async () => {
   try {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-    const todayStr = `${yyyy}-${mm}-${dd}`;
-    startDate.value = todayStr;
-    endDate.value = todayStr;
+    const response = await fetch(`http://localhost:8080/hoa-don/phan-trang?page=${currentPage.value}&size=${pageSize}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
 
-    const response = await fetch(
-      `http://localhost:8080/hoa-don/phan-trang?page=${currentPage.value}&size=${pageSize}`, {
-  headers: {
-    Authorization: `Bearer ${token}` 
-  }
-});
-    const json = await response.json();
+    const text = await response.text();
+    console.log("Raw JSON text:", text); // 👈 Xem JSON gốc
+
+    const json = JSON.parse(text); // chỉ parse khi thấy text hợp lệ
     todos.value = json.content;
     totalPages.value = json.totalPages;
-
     revenueFilter.value = Math.max(...json.content.map((i) => i.tongTien));
   } catch (error) {
     console.error("Lỗi khi fetch dữ liệu:", error);
   }
 };
+
 
 onMounted(() => {
   fetchTodos();

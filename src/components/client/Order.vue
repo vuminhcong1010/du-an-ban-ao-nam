@@ -1204,7 +1204,7 @@ const calculateShipFee = async () => {
         // console.log("Missing parameters for fee calculation:", { serviceId: serviceId.value, selectedWard: selectedWard.value, selectedDistrict: selectedDistrict.value });
         return;
     }
-
+    console.log("Calculating fee with:", { serviceId: serviceId.value, selectedWard: selectedWard.value, selectedDistrict: selectedDistrict.value });
     try {
         const { data } = await axios.post(
             'https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee',
