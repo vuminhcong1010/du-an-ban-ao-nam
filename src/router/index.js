@@ -424,7 +424,35 @@ router.beforeEach((to, from, next) => {
     return next("/");
   }
 
-  // Nếu người dùng đã đăng nhập mà cố gắng truy cập trang đăng nhập, chuyển hướng về trang chủ
+  // Admin role check
+  if (isLoggedInAdmin) {
+    try {
+      const payload = JSON.parse(atob(adminToken.split(".")[1]));
+      const vaiTro = payload.scope || payload.vaiTro || "";
+
+      // If STAFF tries to access /nhan-vien (employee management)
+      if (vaiTro === "STAFF" && to.path.startsWith("/nhan-vien")) {
+        console.log(
+          "Admin: Staff role cannot access employee management, redirecting to products."
+        );
+        return next("/san-pham");
+      }
+    } catch (err) {
+      console.error("Admin: Invalid token:", err);
+      Cookies.remove("token"); // Remove invalid token
+      console.log("Admin: Invalid token, redirecting to admin login.");
+      return next("/dang-nhap");
+    }
+  }
+
+  // --- Client Authentication Logic ---
+  // If client requires authentication (meta.requiresAuthClient is true) and not logged in as client
+  if (to.meta.requiresAuthClient && !isLoggedInClient) {
+    console.log("Client: Not authenticated, redirecting to client login.");
+    return next("/coolmen/dang-nhap-khach-hang");
+  }
+
+  // If client is already logged in and trying to access client login/register pages
   if (
     isLoggedInClient &&
     (to.path === "/coolmen/dang-nhap-khach-hang" ||
