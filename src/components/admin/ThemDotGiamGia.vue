@@ -577,7 +577,7 @@ export default {
                     break;
                 case 'tenDotGiamGia':
                     const trimmedTenDotGiamGia = this.form.tenDotGiamGia ? this.form.tenDotGiamGia.trim() : '';
-                    if (!trimmedTenDotGiamGia) {
+                    if (!trimmedTenDotGiamGia ) {
                         this.errors.tenDotGiamGia = 'Vui lòng nhập tên đợt giảm giá';
                     } else if (trimmedTenDotGiamGia.length > 255) {
                         this.errors.tenDotGiamGia = 'Tên không được vượt quá 255 ký tự';

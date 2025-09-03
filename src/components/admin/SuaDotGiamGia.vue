@@ -730,7 +730,7 @@ export default {
             this.validateDiscountValue();
         },
         validateTenDotGiamGia() {
-            if (!this.dotGiamGia.tenDotGiamGia) {
+            if (!this.dotGiamGia.tenDotGiamGia ||this.dotGiamGia.tenDotGiamGia.trim() === '') {
                 this.errors.tenDotGiamGia = 'Tên đợt giảm giá là bắt buộc';
             } else if (this.dotGiamGia.tenDotGiamGia.length > 255) {
                 this.errors.tenDotGiamGia = 'Tên đợt giảm giá không được vượt quá 255 ký tự';
