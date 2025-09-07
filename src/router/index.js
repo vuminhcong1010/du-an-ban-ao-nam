@@ -435,7 +435,13 @@ router.beforeEach((to, from, next) => {
         console.log(
           "Admin: Staff role cannot access employee management, redirecting to products."
         );
-        return next("/san-pham");
+        return next("/");
+      }
+      if (vaiTro === "STAFF" && to.path.startsWith("/san-pham")) {
+        console.log(
+          "Admin: Staff role cannot access employee management, redirecting to products."
+        );
+        return next("/");
       }
     } catch (err) {
       console.error("Admin: Invalid token:", err);

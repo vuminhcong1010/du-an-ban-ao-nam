@@ -179,18 +179,21 @@
 
   <!-- Modal cập nhật -->
   <div class="modal fade" id="exampleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h1 class="modal-title fs-5">Thông tin sản phẩm</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" />
-        </div>
-        <div class="modal-body">
-          <component :is="UpdateSanPham" :idChiTietSanPham="send" @close-modal="dongModal1" />
-        </div>
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5">Thông tin sản phẩm</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" @click="handleModalClose" />
       </div>
+      <component
+        :is="UpdateSanPham"
+        :idChiTietSanPham="send"
+        :key="`modal-${send}-${componentKey}`"
+        @close-modal="dongModal1"
+      />
     </div>
   </div>
+</div>
 
   <!-- Modal thêm -->
   <div class="modal fade" id="exampleModal1" tabindex="-1" aria-hidden="true">
@@ -235,7 +238,7 @@ const idChiTietSanPham = Number(route.params.id1)
 // ============================
 const allData = ref([])
 const res = ref([])
-const send = ref(null)
+
 const mau = ref([])
 const size = ref([])
 // const thongTin = ref(false)
@@ -288,6 +291,37 @@ const goToPage = (page) => {
 //       console.error("Lỗi gọi API:", error)
 //     })
 // }
+
+// Data
+
+const send = ref(null)
+const componentKey = ref(0)
+
+// Hàm đóng modal từ component con
+const dongModal1 = () => {
+  componentKey.value = Date.now() // Reset component
+  const modalElement = document.getElementById('exampleModal')
+  const modal = Modal.getInstance(modalElement)
+  if (modal) {
+    modal.hide()
+  }
+  ham()
+}
+
+// Hàm xử lý khi click nút X
+const handleModalClose = () => {
+  componentKey.value = Date.now() // Reset component khi đóng bằng nút X
+}
+
+// Listen event đóng modal của Bootstrap (để xử lý click outside, ESC, etc.)
+onMounted(() => {
+  const modalElement = document.getElementById('exampleModal')
+  if (modalElement) {
+    modalElement.addEventListener('hidden.bs.modal', () => {
+      componentKey.value = Date.now() // Reset component khi modal đóng
+    })
+  }
+})
 function ham() {
   const token = Cookies.get('token') // Lấy token từ cookie
 
@@ -381,14 +415,6 @@ function dongModal() {
   setTimeout(() => ham(), 1000)
 }
 
-function dongModal1() {
-  const modalEl = document.getElementById('exampleModal')
-  if (modalEl) {
-    const modalInstance = Modal.getInstance(modalEl) || new Modal(modalEl)
-    modalInstance.hide()
-  }
-  setTimeout(() => ham(), 1000)
-}
 
 // ============================
 // Xoá
