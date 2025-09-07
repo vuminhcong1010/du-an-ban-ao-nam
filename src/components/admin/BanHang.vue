@@ -85,7 +85,7 @@ async function createNewOrder() {
         tenNguoiNhan: "",
         diaChi: "",
         sdt: "",
-        gmail:"",
+        gmail: "",
       },
       giamGia: null,
       hinhThucNhanHang: "0",
@@ -186,7 +186,7 @@ async function closeOrder(id) {
         Authorization: `Bearer ${token}`,
       },
     });
-
+    toast.success("Xoa don hang thanh cong");
     console.log("✅ Đã xoá hóa đơn:", order.maHoaDon);
     // ✅ Xoá khỏi localStorage
     localStorage.removeItem(`order_${id}`);
@@ -327,6 +327,18 @@ watch(
 
 // ham thanh toan:
 const thanhToanDonHang = async (order) => {
+  // ✅ Kiểm tra có hình thức thanh toán không
+  if (
+    !order.thanhToan ||
+    (Array.isArray(order.thanhToan?.thanhToan) &&
+      order.thanhToan.thanhToan.length === 0)
+  ) {
+    alert(
+      "❌ Vui lòng chọn phương thức thanh toán trước khi hoàn tất đơn hàng."
+    ); // giống validate sản phẩm
+    return false; // ⛔ Trả về false để dừng tiến trình
+  }
+
   const danhSachThanhToan = [];
 
   if (Array.isArray(order.thanhToan?.thanhToan)) {
@@ -355,18 +367,47 @@ const thanhToanDonHang = async (order) => {
     hoaDonId: order.maHoaDon,
     danhSachThanhToan,
   };
-  console.log("Gửi thanh toán với payload:", payload);
+
   try {
-    const res = await axios.post("http://localhost:8080/thanh-toan", payload);
+    const res = await axios.post("http://localhost:8080/thanh-toan", payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     console.log("✅ Thanh toán thành công:", res.data);
+    return true; // ✅ Trả về true khi thành công
   } catch (err) {
     console.error("❌ Lỗi khi thanh toán:", err);
+    alert("❌ Có lỗi xảy ra khi thanh toán. Vui lòng thử lại.");
+    return false;
   }
 };
 
 // hoàn thành đơn hàng:
 const hoanThanhDonHang = async (order) => {
   try {
+    // ✅ Kiểm tra thanh toán có tồn tại không
+    if (
+      !order.listSanPham ||
+      (Array.isArray(order.listSanPham) && order.listSanPham.length === 0)
+    ) {
+      alert("❌ Vui lòng sản phẩm trước khi hoàn tất đơn hàng.");
+      return;
+    }
+    // ✅ 2. Kiểm tra thanh toán (validate thôi, chưa gọi API)
+    if (
+      !order.thanhToan ||
+      (Array.isArray(order.thanhToan) && order.thanhToan.length === 0)
+    ) {
+      alert(
+        "❌ Vui lòng chọn phương thức thanh toán trước khi hoàn tất đơn hàng."
+      );
+      return;
+    }
+    const confirmAction = window.confirm(
+      "Bạn có chắc chắn muốn hoàn tất đơn hàng này không?"
+    );
+    if (!confirmAction) {
+      return;
+    }
     const maHoaDon = order.maHoaDon;
     const selectedItems = order.listSanPham;
     const giamGiaHoaDon = order.soTienGiam || 0;
@@ -394,14 +435,23 @@ const hoanThanhDonHang = async (order) => {
     }));
 
     // ✅ Gọi API cập nhật tồn kho
-    await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(bodyUpdateSoLuong),
-    });
+    const updateSoLuongRes = await fetch(
+      "http://localhost:8080/chi-tiet-san-pham/update-so-luong",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(bodyUpdateSoLuong),
+      }
+    );
+
+    if (!updateSoLuongRes.ok) {
+      const errorMsg = await updateSoLuongRes.text();
+      alert(`❌ Không thể cập nhật số lượng tồn kho: ${errorMsg}`);
+      return; // ⛔ Dừng tiến trình hoàn tất đơn hàng nếu lỗi tồn kho
+    }
 
     // ✅ Gọi API lưu chi tiết hóa đơn
     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
@@ -413,7 +463,13 @@ const hoanThanhDonHang = async (order) => {
       body: JSON.stringify(result),
     });
     // goi ham thanh toan don hang:
-    await thanhToanDonHang(order);
+    // await thanhToanDonHang(order);
+    // ✅ Gọi hàm thanh toán trước khi làm các bước khác
+    const thanhToanOk = await thanhToanDonHang(order);
+    if (!thanhToanOk) {
+      toast.warning("❌ Thanh toán không hợp lệ, dừng hoàn tất đơn hàng.");
+      return;
+    }
 
     // ✅ Gọi API hoàn tất hóa đơn
     const payload = {
@@ -459,6 +515,7 @@ const hoanThanhDonHang = async (order) => {
     if (activeTab.value === order.id) {
       activeTab.value = orders.value.length > 0 ? orders.value[0].id : null;
     }
+    toast.success("Lưu đơn hàng thành công");
   } catch (err) {
     console.error("❌ Lỗi hoàn thành đơn hàng:", err);
     alert("Không thể hoàn tất đơn hàng. Vui lòng thử lại.");
@@ -495,7 +552,7 @@ const currentOrder = computed(() =>
     >
       <Plus class="me-1" size="16" /> Tạo đơn mới
     </button>
-    <button class="btn btn-danger" @click="xoaToanBoLocal" v-if="false">
+    <button class="btn btn-danger" @click="xoaToanBoLocal" v-if="true">
       <Trash class="me-1" size="16" /> Xóa tất cả đơn hàng
     </button>
   </div>

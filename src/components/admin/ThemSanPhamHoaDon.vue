@@ -1,9 +1,9 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import Cookies from 'js-cookie'
+import Cookies from "js-cookie";
 
-const token = Cookies.get('token')
+const token = Cookies.get("token");
 const search = ref("");
 const selected = ref({});
 const quantities = ref({});
@@ -15,11 +15,12 @@ const totalPages = ref(0);
 const fetchSanPhamPaginated = async () => {
   try {
     const response = await fetch(
-      `http://localhost:8080/chi-tiet-san-pham/phan-trang?page=${currentPage.value}&size=${pageSize.value}`, {
-  headers: {
-    Authorization: `Bearer ${token}` 
-  }
-}
+      `http://localhost:8080/chi-tiet-san-pham/phan-trang?page=${currentPage.value}&size=${pageSize.value}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
     const data = await response.json();
     listSanPham.value = data.content; // Spring Data trả về `content`, `totalPages`, ...
@@ -111,25 +112,25 @@ const apply = async () => {
   console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
 
   // 1. Cập nhật tồn kho
-    try {
-      await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(bodyUpdateSoLuong),
-      });
-    } catch (error) {
-      console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
-    }
+  try {
+    await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(bodyUpdateSoLuong),
+    });
+  } catch (error) {
+    console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
+  }
 
   // 2. Lưu chi tiết hóa đơn
   try {
     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}` ,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(result),
@@ -140,7 +141,7 @@ const apply = async () => {
       await fetch("http://localhost:8080/lich-su-hoa-don/them", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}` ,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -157,6 +158,26 @@ const apply = async () => {
   }
   emit("selected", selectedItems.value);
   emit("close");
+};
+
+// them anh san pham:
+
+const layDuongDanAnh = async (idChiTietSanPham) => {
+  try {
+    const response = await fetch(
+      `http://localhost:8080/chi-tiet-san-pham/lay-anh/${idChiTietSanPham}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    const data = await response.json();
+    listSanPham.value = data.content; // Spring Data trả về `content`, `totalPages`, ...
+    totalPages.value = data.totalPages;
+  } catch (error) {
+    console.error("Lỗi khi lay duong dan anh san pham:", error);
+  }
 };
 </script>
 
