@@ -66,7 +66,7 @@
                         </span>
 
                         <span class="ms-2 product-quantity-display">
-                            Còn lại: {{ remainingQuantity > 0 ? remainingQuantity : 0 }} sản phẩm
+                          Có Sẵn : {{ product.quantity > 0 ? product.quantity : 0 }} sản phẩm
                         </span>
                     </div>
 
@@ -410,7 +410,7 @@ function getDiscountPercentage(discounts) {
     return Math.round(sum / discounts.length);
 }
 
-async function toggleSize(size) {
+const toggleSize = async (size) => {
     if (!selectedColors.value.length) {
         toast.warning("Vui lòng chọn màu sắc trước.");
         return;
@@ -445,19 +445,17 @@ async function toggleSize(size) {
 
         const originalPrice = chiTiet.gia;
 
-        // Gọi API giảm giá theo ID chi tiết sản phẩm
+        // Gọi API giảm giá
         const resDisc = await axios.get(`http://localhost:8080/client/giam-gia-chi-tiet/${chiTiet.id}`);
         const discounts = resDisc.data?.data || [];
 
         const discountPerc = getDiscountPercentage(discounts);
         const discountedPrice = Math.round(originalPrice * (100 - discountPerc) / 100);
 
-        // Cập nhật product
+        // ✅ Cập nhật thông tin sản phẩm
         product.value.discount = discountPerc;
-
         product.value.minOriginalPrice = originalPrice;
         product.value.maxOriginalPrice = originalPrice;
-
         product.value.minPrice = discountedPrice;
         product.value.maxPrice = discountedPrice;
 
@@ -465,18 +463,23 @@ async function toggleSize(size) {
         selectedImage.value = product.value.images[0] || '';
 
         product.value.quantity = chiTiet.soLuong || 0;
+        product.value.trongLuong = chiTiet.trongLuong || 0; // ✅ Thêm trọng lượng
         remainingQuantity.value = product.value.quantity - quantity.value;
 
-        // Cập nhật các thông tin bổ sung nếu cần
         product.value.maSanPham = chiTiet.idSanPham.maSanPham || "";
         product.value.description = chiTiet.moTa || "";
-        product.value.category = detail.tenDanhMuc?.[0] || "Không rõ"; // Lấy danh mục đầu tiên
+        product.value.category = detail.tenDanhMuc?.[0] || "Không rõ";
+
+        // ✅ In trọng lượng sản phẩm
+        // console.log("📦 Trọng lượng sản phẩm (KG):", product.value.trongLuong);
+        // console.log("📦 Trọng lượng tổng cộng (gram):", product.value.trongLuong * 1000 * quantity.value);
 
     } catch (err) {
         console.error("Lỗi khi fetch chi tiết sản phẩm:", err);
         toast.error("Không thể cập nhật sản phẩm chi tiết.");
     }
-}
+};
+
 
 
 
@@ -538,25 +541,21 @@ const colorMap = {
 const muaNgay = async () => {
     if (!product.value) return;
 
-    // Kiểm tra màu sắc
     if (selectedColors.value.length === 0) {
         toast.error("❌ Vui lòng chọn ít nhất một màu sắc");
         return;
     }
 
-    // Kiểm tra kích cỡ
     if (selectedSizes.value.length === 0) {
         toast.error("❌ Vui lòng chọn ít nhất một kích cỡ.");
         return;
     }
 
-    // Kiểm tra số lượng
     if (quantity.value <= 0 || quantity.value > product.value.quantity) {
         toast.error(`❌ Số lượng không hợp lệ.`);
         return;
     }
 
-    // Chuẩn bị dữ liệu gửi BE
     const selectedColor = selectedColors.value[0];
     const selectedSizeObj = selectedSizes.value[0];
     const kichCo = selectedSizeObj.soCo;
@@ -568,8 +567,11 @@ const muaNgay = async () => {
         kichCoList: [kichCo]
     };
 
+    // ✅ Log trọng lượng trước khi gọi API
+    const totalWeightGrams = (product.value.trongLuong || 0) * 1000 * quantity.value;
+    console.log("📦 Mua ngay - Tổng trọng lượng đơn hàng (gram):", totalWeightGrams);
+
     try {
-        // ✅ Gọi trực tiếp API Mua Ngay
         const res = await axios.post("http://localhost:8080/client/MuaNgay", payload, {
             withCredentials: true
         });
@@ -586,7 +588,7 @@ const muaNgay = async () => {
             position: "top-right"
         });
         window.dispatchEvent(new Event("cap-nhat-gio"));
-        // ✅ Điều hướng đến trang hóa đơn
+
         router.push({
             name: "client-Oder",
             params: { hoaDonId }
@@ -604,26 +606,17 @@ const themVaoGioHang = async () => {
     if (!product.value) return;
 
     if (selectedColors.value.length === 0) {
-        toast.error("❌ Vui lòng chọn ít nhất một màu sắc", {
-            timeout: 4000,
-            position: "top-right"
-        });
+        toast.error("❌ Vui lòng chọn ít nhất một màu sắc");
         return;
     }
 
     if (selectedSizes.value.length === 0) {
-        toast.error("❌ Vui lòng chọn ít nhất một kích cỡ.", {
-            timeout: 4000,
-            position: "top-right"
-        });
+        toast.error("❌ Vui lòng chọn ít nhất một kích cỡ.");
         return;
     }
 
     if (quantity.value <= 0) {
-        toast.error("❌ Vui lòng chọn số lượng hợp lệ.", {
-            timeout: 4000,
-            position: "top-right"
-        });
+        toast.error("❌ Vui lòng chọn số lượng hợp lệ.");
         return;
     }
 
@@ -636,14 +629,17 @@ const themVaoGioHang = async () => {
     const selectedSizeObj = selectedSizes.value[0];
     const kichCo = selectedSizeObj.soCo;
 
-    try {
-        const payload = {
-            idSanPham: product.value.id,
-            soLuong: quantity.value,
-            mauSacList: [selectedColor],
-            kichCoList: [kichCo]
-        };
+    const payload = {
+        idSanPham: product.value.id,
+        soLuong: quantity.value,
+        mauSacList: [selectedColor],
+        kichCoList: [kichCo]
+    };
 
+    const totalWeight = (product.value.trongLuong || 0) * 1000 * quantity.value;
+    console.log("🛒 Thêm vào giỏ - Tổng trọng lượng (gram):", totalWeight);
+
+    try {
         const res = await axios.post("http://localhost:8080/client/ThemSanPham", payload, {
             withCredentials: true
         });
@@ -653,17 +649,11 @@ const themVaoGioHang = async () => {
             position: "top-right"
         });
 
-        // ✅ Sau khi thêm thành công, tải lại chi tiết sản phẩm để cập nhật tồn kho
-
-        // Gửi sự kiện cập nhật giỏ hàng
         window.dispatchEvent(new Event("cap-nhat-gio"));
 
     } catch (err) {
         console.error("❌ Lỗi khi thêm sản phẩm vào giỏ hàng:", err);
-        toast.error("❌ Thêm sản phẩm thất bại. Vui lòng thử lại!", {
-            timeout: 4000,
-            position: "top-right"
-        });
+        toast.error("❌ Thêm sản phẩm thất bại. Vui lòng thử lại!");
     }
 };
 
@@ -766,12 +756,6 @@ watch(() => route.params.id, (newId) => {
     fetchProductDetail(newId);
 });
 
-watch(quantity, (newQuantity) => {
-    if (product.value) {
-        const goc = product.value.quantity;
-        remainingQuantity.value = goc - newQuantity;
-    }
-});
 
 watch(quantity, (val) => {
     if (val > product.value.quantity) {

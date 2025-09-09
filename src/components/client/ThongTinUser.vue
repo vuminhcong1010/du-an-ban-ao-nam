@@ -32,7 +32,7 @@ import MyAccount from './MyAccount.vue';
 import OrderHistory from './OrderHistory.vue';
 import { useAuthStore } from '@/stores/auth';
 import Cookies from 'js-cookie';
-
+import axios from 'axios';
 
 
 
@@ -41,7 +41,7 @@ export default {
     setup() {
         const router = useRouter();
         const authStore = useAuthStore();
-       
+
         const currentView = ref('details');
 
 
@@ -84,10 +84,26 @@ export default {
         };
 
 
-        const logout = () => {
+        const logout = async () => {
+            try {
+                await axios.delete('http://localhost:8080/client/XoaGioHang', { withCredentials: true });
+            } catch (error) {
+                console.error('Xóa giỏ hàng thất bại:', error);
+            }
+
+            sessionStorage.removeItem("gioHang");
+            localStorage.removeItem("gioHang");
+            sessionStorage.removeItem("dataHoaDon");  // Nếu lưu dữ liệu hóa đơn đang tạo
+            localStorage.removeItem("ttkh");          // Nếu lưu dữ liệu thanh toán QR Code
+
+            // Thông báo cập nhật giỏ hàng nếu cần
+            window.dispatchEvent(new Event("cap-nhat-gio"));
+
             authStore.logoutClient();
+
             router.push('/coolmen/dang-nhap-khach-hang');
         };
+
 
 
         return {
@@ -234,6 +250,3 @@ export default {
     }
 }
 </style>
-
-
-

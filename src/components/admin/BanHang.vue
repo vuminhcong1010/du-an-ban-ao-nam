@@ -495,7 +495,7 @@ const currentOrder = computed(() =>
     >
       <Plus class="me-1" size="16" /> Tạo đơn mới
     </button>
-    <button class="btn btn-danger" @click="xoaToanBoLocal" v-if="true">
+    <button class="btn btn-danger" @click="xoaToanBoLocal" v-if="false">
       <Trash class="me-1" size="16" /> Xóa tất cả đơn hàng
     </button>
   </div>

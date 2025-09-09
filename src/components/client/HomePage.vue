@@ -1,8 +1,20 @@
 <template>
   <div>
     <!-- Hero Section -->
-    <section class="hero d-flex align-items-center text-white">
-      <div class="container text-center">
+    <section class="hero-slideshow position-relative d-flex align-items-center text-white">
+      <div class="hero-slides-wrapper">
+        <transition-group name="slide-right" tag="div">
+          <img
+            v-for="(img, idx) in [heroImages[activeHeroIndex]]"
+            :key="img"
+            :src="img"
+            class="hero-slide-img"
+            alt="hero"
+          />
+        </transition-group>
+        <div class="hero-overlay"></div>
+      </div>
+      <div class="container text-center hero-content">
         <h1 class="display-4 fw-bold">Chào mừng đến với CoolMen</h1>
         <p class="lead">Phong cách đỉnh cao, chất lượng hàng đầu</p>
         <a href="/coolmen/client-san-pham" class="btn btn-light btn-lg mt-3">Khám phá ngay</a>
@@ -64,8 +76,8 @@
               <div class="price-quantity-section mt-2">
                 <!-- Giá sản phẩm -->
                 <div class="price-display">
-                  <!-- Nếu có giảm giá -->
-                  <template v-if="product.discount > 0 && product.originalPriceRange">
+                  <!-- Nếu có giảm giá và có originalPriceRange -->
+                  <template v-if="product.discount > 0 && product.originalPriceRange && product.priceRange">
                     <div class="original-price text-muted text-decoration-line-through">
                       {{ formatPrice(product.originalPriceRange.min) }}
                       <template v-if="product.originalPriceRange.min !== product.originalPriceRange.max">
@@ -79,8 +91,9 @@
                       </template>
                     </div>
                   </template>
-                  <!-- Không giảm giá -->
-                  <template v-else>
+
+                  <!-- Không giảm giá nhưng có priceRange -->
+                  <template v-else-if="product.priceRange">
                     <div class="current-price text-dark fw-bold">
                       {{ formatPrice(product.priceRange.min) }}
                       <template v-if="product.priceRange.min !== product.priceRange.max">
@@ -88,12 +101,21 @@
                       </template>
                     </div>
                   </template>
+
+                  <!-- Không có giá -->
+                  <template v-else>
+                    <div class="current-price text-dark fw-bold">
+                      Liên hệ
+                    </div>
+                  </template>
                 </div>
+
                 <!-- Số lượng đã bán -->
                 <div class="sold-quantity">
                   Đã bán {{ product.tongSoLuongBan || 0 }}
                 </div>
               </div>
+
             </div>
           </div>
         </transition-group>
@@ -145,23 +167,41 @@
               </div>
 
               <!-- Giá sản phẩm -->
-              <div class="price-display mt-1">
-                <template v-if="product.discount > 0">
-                  <span class="text-muted text-decoration-line-through me-1">
+              <!-- Giá -->
+              <div class="text-center mt-1">
+                <!-- Nếu có giảm giá và có originalPriceRange -->
+                <template v-if="product.discount > 0 && product.originalPriceRange && product.priceRange">
+                  <div class="text-muted text-decoration-line-through small">
                     {{ formatPrice(product.originalPriceRange.min) }}
                     <template v-if="product.originalPriceRange.min !== product.originalPriceRange.max">
                       - {{ formatPrice(product.originalPriceRange.max) }}
                     </template>
-                  </span>
+                  </div>
+                  <div class="fw-bold text-dark">
+                    {{ formatPrice(product.priceRange.min) }}
+                    <template v-if="product.priceRange.min !== product.priceRange.max">
+                      - {{ formatPrice(product.priceRange.max) }}
+                    </template>
+                  </div>
                 </template>
-                <span class="text-dark fw-bold">
-                  {{ formatPrice(product.priceRange.min) }}
-                  <template v-if="product.priceRange.min !== product.priceRange.max">
-                    - {{ formatPrice(product.priceRange.max) }}
-                  </template>
-                </span>
-              </div>
 
+                <!-- Không giảm giá nhưng có priceRange -->
+                <template v-else-if="product.priceRange">
+                  <div class="fw-bold text-dark">
+                    {{ formatPrice(product.priceRange.min) }}
+                    <template v-if="product.priceRange.min !== product.priceRange.max">
+                      - {{ formatPrice(product.priceRange.max) }}
+                    </template>
+                  </div>
+                </template>
+
+                <!-- Không có giá -->
+                <template v-else>
+                  <div class="fw-bold text-dark">
+                    Liên hệ
+                  </div>
+                </template>
+              </div>
             </div>
           </div>
         </transition-group>
@@ -240,7 +280,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import Cookies from 'js-cookie'
@@ -278,17 +318,21 @@ onMounted(async () => {
       title: item.tenDanhMuc,
       image: imageList[index] || '/src/assets/default.jpg'
     }))
-
+    console.log(categories.value)
     // Bán chạy
     const resBestsellers = await axios.get('http://localhost:8080/home/danh-sach')
     const rawProducts = resBestsellers.data.data
-      .filter(p => p.tongSoLuongBan > 0)
+      // Chỉ lấy sản phẩm có chi tiết trạng thái 1 và tổng số lượng > 0
+      .filter(item => {
+        const ctspList = item.chiTietSanPham?.filter(ct => ct.trangThai === 1) || [];
+        const totalQuantity = ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0);
+        return ctspList.length > 0 && totalQuantity > 0;
+      })
       .sort((a, b) => b.tongSoLuongBan - a.tongSoLuongBan)
-      .slice(0, 6)
+      .slice(0, 6);
 
-    // Ánh xạ sản phẩm với thông tin giá và giảm giá
     bestSellers.value = await Promise.all(rawProducts.map(async (item) => {
-      const ctspList = item.chiTietSanPham?.filter(ct => ct.trangThai === 1) || []
+      const ctspList = item.chiTietSanPham?.filter(ct => ct.trangThai === 1) || [];
 
       // Lấy giá từ BE, không fix cứng
       const prices = ctspList.map(ct => ct.gia ?? ct.giaBan).filter(p => typeof p === 'number' && !isNaN(p) && p > 0)
@@ -365,12 +409,19 @@ const fetchNewProducts = async () => {
     const res = await axios.get('http://localhost:8080/home/danh-sach')
     const data = res.data.data || []
 
+    // Chỉ lấy sản phẩm có chi tiết trạng thái 1 và tổng số lượng > 0
+    const filtered = data.filter(item => {
+      const ctspList = item.chiTietSanPham?.filter(ct => ct.trangThai === 1) || [];
+      const totalQuantity = ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0);
+      return ctspList.length > 0 && totalQuantity > 0;
+    });
+
     // Sắp xếp theo ngày tạo giảm dần (mới nhất trước)
-    const sorted = data.slice().sort((a, b) => {
+    const sorted = filtered.slice().sort((a, b) => {
       const dateA = new Date(a.sanPham.ngayTao)
       const dateB = new Date(b.sanPham.ngayTao)
       return dateB - dateA
-    }).slice(0, 6)
+    }).slice(0, 6);
 
     newProducts.value = await Promise.all(sorted.map(async (item) => {
       const ctspList = item.chiTietSanPham?.filter(ct => ct.trangThai === 1) || []
@@ -414,6 +465,7 @@ const fetchNewProducts = async () => {
         reviews: danhGiaList.length
       }
     }))
+    console.log(newProducts.value)
   } catch (err) {
     console.error('Lỗi khi lấy sản phẩm mới:', err)
   }
@@ -428,11 +480,17 @@ const highlightProducts = ref([])
 
 const fetchHighlightProducts = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/home/danh-sach') // reuse same API
+    const res = await axios.get('http://localhost:8080/home/danh-sach')
     const data = res.data.data
 
-    // Tính điểm trung bình đánh giá và sắp xếp
-    const processed = await Promise.all(data.map(async item => {
+    // Chỉ lấy sản phẩm có chi tiết trạng thái 1 và tổng số lượng > 0
+    const filtered = data.filter(item => {
+      const ctspList = item.chiTietSanPham?.filter(ct => ct.trangThai === 1) || [];
+      const totalQuantity = ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0);
+      return ctspList.length > 0 && totalQuantity > 0;
+    });
+
+    const processed = await Promise.all(filtered.map(async item => {
       const ctspList = item.chiTietSanPham?.filter(ct => ct.trangThai === 1) || []
       const prices = ctspList.map(ct => ct.gia ?? ct.giaBan).filter(p => typeof p === 'number' && p > 0)
       const originalPrices = ctspList.map(ct => ct.giaGoc ?? ct.gia).filter(p => typeof p === 'number' && p > 0)
@@ -474,7 +532,7 @@ const fetchHighlightProducts = async () => {
         reviews: danhGiaList.length
       }
     }))
-
+    console.log(processed)
     // Lấy 6 sản phẩm có giảm giá cao nhất và đánh giá cao nhất
     highlightProducts.value = processed
       .sort((a, b) => {
@@ -507,14 +565,89 @@ const reasons = [
     desc: 'Đổi trả trong 7 ngày nếu không hài lòng.',
   },
 ]
+
+const heroImages = [
+  '/src/assets/banner-thoi-trang-nam-5.jpg',
+  '/src/assets/images1.jpeg',
+  '/src/assets/images.jpeg',
+  '/src/assets/Paner1.png',
+  '/src/assets/trang-tri-shop-quan-ao-1.jpg',
+];
+
+const activeHeroIndex = ref(0)
+let heroInterval = null
+
+onMounted(() => {
+  heroInterval = setInterval(() => {
+    activeHeroIndex.value = (activeHeroIndex.value + 1) % heroImages.length
+  },3000)
+})
+
+onUnmounted(() => {
+  if (heroInterval) clearInterval(heroInterval)
+})
 </script>
 
 <style scoped>
-.hero {
-  background: url('/src/assets/trang-tri-shop-quan-ao-1.jpg') center center/cover no-repeat;
+.hero-slideshow {
   height: 80vh;
+  overflow: hidden;
+  position: relative;
 }
 
+.hero-slides-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.hero-slide-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.8s;
+  border-radius: 0;
+  z-index: 2;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+}
+
+.slide-right-enter-active, .slide-right-leave-active {
+  transition: all 0.8s cubic-bezier(.77,0,.18,1);
+}
+.slide-right-enter-from {
+  opacity: 0;
+  transform: translateX(100%);
+}
+.slide-right-enter-to {
+  opacity: 1;
+  transform: translateX(0);
+}
+.slide-right-leave-from {
+  opacity: 1;
+  transform: translateX(0);
+}
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(-100%);
+}
+
+/* Danh mục */
 .category-card {
   width: 100%;
   /* chiếm hết col */
@@ -731,5 +864,21 @@ const reasons = [
 
 .grid-move {
   transition: transform 300ms ease;
+}
+
+/* Animation cho slideshow hero */
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform 0.5s ease, opacity 0.5s ease;
+}
+
+.slide-right-enter {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.slide-right-leave {
+  transform: translateX(-100%);
+  opacity: 0;
 }
 </style>
