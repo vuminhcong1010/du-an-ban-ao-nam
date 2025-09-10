@@ -17,9 +17,6 @@
           <label class="form-label fw-bold">Bộ lọc</label>
           <div class="d-flex align-items-center gap-2">
             <input type="text" class="form-control" placeholder="Tìm theo mã, tên sản phẩm" v-model="timKiem" />
-            <button type="button" class="btn" style="background-color: #0a2c57; color: white;  white-space: nowrap;" @click="locSanPham">
-              Tìm kiếm
-            </button>
           </div>
         </div>
 
@@ -34,7 +31,6 @@
                 :id="value"
                 :value="value"
                 v-model="selectedTrangThai"
-                @change="locSanPham"
               />
               <label class="form-check-label" :for="value">{{ label }}</label>
             </div>
@@ -44,7 +40,7 @@
         <!-- Danh mục -->
         <div class="col-md-3">
           <label class="form-label fw-bold">Danh mục</label>
-          <select class="form-select" v-model="selectedDanhMucId" @change="locSanPham">
+          <select class="form-select" v-model="selectedDanhMucId">
             <option :value="null">Tất cả danh mục</option>
             <option v-for="dm in danhMuc" :key="dm.id" :value="dm.id">{{ dm.tenDanhMuc }}</option>
           </select>
@@ -53,7 +49,7 @@
         <!-- Chất liệu -->
         <div class="col-md-3">
           <label class="form-label fw-bold">Chất liệu</label>
-          <select class="form-select" v-model="selectedChatLieuId" @change="locSanPham">
+          <select class="form-select" v-model="selectedChatLieuId">
             <option :value="null">Tất cả chất liệu</option>
             <option v-for="cl in danhSachChatLieu" :key="cl.id" :value="cl.id">{{ cl.tenChatLieu }}</option>
           </select>
@@ -83,7 +79,7 @@
             <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
             <td>{{ sp.maSanPham }}</td>
             <td>{{ sp.tenSanPham }}</td>
-            <!-- <td>{{ sp.soLuong }}</td> -->
+            <!-- <th>Số lượng</th> -->
             <td>{{ sp.idChatLieu?.tenChatLieu }}</td>
             <td>
               <span v-for="dm in sp.dsDanhMuc" :key="dm.id" class="badge bg-secondary me-1">
@@ -123,7 +119,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue"
+import { ref, computed, onMounted, watch } from "vue"
 import axios from "axios"
 import { Eye, Trash } from "lucide-vue-next"
 import Cookies from 'js-cookie'
@@ -178,14 +174,19 @@ const locSanPham = () => {
   if (timKiem.value.trim()) {
     const keyword = timKiem.value.toLowerCase()
     ketQua = ketQua.filter(sp =>
-      sp.maSanPham.toLowerCase().includes(keyword) ||
-      sp.tenSanPham.toLowerCase().includes(keyword)
+      (sp.maSanPham || "").toLowerCase().includes(keyword) ||
+      (sp.tenSanPham || "").toLowerCase().includes(keyword)
     )
   }
 
   filteredData.value = ketQua
   currentPage.value = 1
 }
+
+// Theo dõi các thay đổi để lọc thời gian thực
+watch([timKiem, selectedDanhMucId, selectedChatLieuId, selectedTrangThai], () => {
+  locSanPham();
+});
 
 // Phân trang khi click
 const chuyenTrangSo = (soTrang) => {
@@ -196,36 +197,36 @@ const chuyenTrangSo = (soTrang) => {
 
 // Xoá sản phẩm
 const remove = async (id) => {
-  await axios.get(`http://localhost:8080/san-pham/delete/${id}`,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
-  await fetchData()
+  try {
+    await axios.get(`http://localhost:8080/san-pham/delete/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    await fetchData();
+    toast.success("Xóa sản phẩm thành công!");
+  } catch (err) {
+    console.error("Lỗi khi xóa sản phẩm:", err);
+    toast.error("Lỗi khi xóa sản phẩm!");
+  }
 }
 
 // Xem chi tiết
 const chuyenTrang = (id) => {
   window.location.href = `/san-pham/chi-tiet-san-pham/${id}`
 }
+
+// Tải dữ liệu
 const fetchData = async () => {
   try {
     const [spRes, dctRes, dmRes] = await Promise.all([
-      axios.get("http://localhost:8080/san-pham/get-all",{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  }),
-      axios.get("http://localhost:8080/test",{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  }),
-      axios.get("http://localhost:8080/test1",{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
+      axios.get("http://localhost:8080/san-pham/get-all", {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      axios.get("http://localhost:8080/test", {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      axios.get("http://localhost:8080/test1", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
     ])
 
     const allSanPhams = spRes.data.data
@@ -258,10 +259,9 @@ const fetchData = async () => {
 
   } catch (e) {
     console.error("Lỗi tải dữ liệu:", e)
+    toast.error("Lỗi khi tải dữ liệu sản phẩm!");
   }
 }
-
-
 
 onMounted(fetchData)
 </script>
