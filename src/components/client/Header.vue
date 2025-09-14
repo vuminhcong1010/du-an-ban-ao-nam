@@ -3,22 +3,33 @@
     <div class="container">
       <div class="logo">
         <a href="/coolmen">
-          <img src="/src/assets/logo_icon-removebg-preview.png" alt="CoolMen Icon" class="coolmen-logo-icon">
+          <img src="/src/assets/logo.png" alt="CoolMen Icon" class="coolmen-logo-icon">
           CoolMen
         </a>
       </div>
 
 
-      <nav class="main-navigation">
-        <ul>
-          <li><a href="/coolmen">Trang chủ</a></li>
-          <li><a href="/coolmen/client-san-pham">Sản phẩm</a></li>
-          <li><a href="/coolmen/danh-muc-List">Danh mục</a></li>
-          <li><a href="#">Giảm giá</a></li>
-          <li><a href="#">Liên hệ</a></li>
-          <li><a href="/coolmen/tra-cuu-don-hang">Tra cứu đơn hàng</a></li>
-        </ul>
-      </nav>
+<nav class="main-navigation">
+  <ul>
+    <li><a href="/coolmen">Trang chủ</a></li>
+    
+    <!-- Dropdown cho Sản phẩm -->
+    <li class="has-submenu">
+      <a href="/coolmen/client-san-pham">Sản phẩm</a>
+      <ul class="submenu">
+        <li><a href="/coolmen/client-san-pham">Tất cả sản phẩm</a></li>
+        <li><a href="/coolmen/ao-vest">Áo vest</a></li>
+        <li><a href="/coolmen/ao-phong">Áo phông</a></li>
+        <li><a href="/coolmen/ao-so-mi">Áo sơ mi</a></li>
+      </ul>
+    </li>
+
+    <li><a href="/coolmen/danh-muc-List">Danh mục</a></li>
+    <li><a href="#">Giảm giá</a></li>
+    <li><a href="#">Liên hệ</a></li>
+    <li><a href="/coolmen/tra-cuu-don-hang">Tra cứu đơn hàng</a></li>
+  </ul>
+</nav>
 
 
       <div class="header-actions">
@@ -41,136 +52,82 @@
   </header>
 </template>
 
-
-<script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import axios from 'axios';
-import Cookies from 'js-cookie';
-import { useRouter } from 'vue-router'; // Import useRouter
-import CartDetail from './CartDetail.vue';
-import { useAuthStore } from '@/stores/auth';
-// Khai báo router
-const router = useRouter();
-const authStore = useAuthStore();
-
-
-// Dữ liệu reactive
-const searchQuery = ref('');
-const soLuongGio = ref(0);
-const hienChiTiet = ref(false);
-const danhSachGio = ref([]);
-const loggedInUserData = ref(null);
-
-
-// Computed properties
-const isLoggedIn = computed(() => {
-  return authStore.isLoggedInClient;
-});
-
-
-const userName = computed(() => {
-  return loggedInUserData.value ? loggedInUserData.value.tenKhachHang : '';
-});
-
-
-const userAvatar = computed(() => {
-  return loggedInUserData.value && loggedInUserData.value.hinhAnh
-    ? loggedInUserData.value.hinhAnh
-    : '/src/assets/logo_icon-removebg-preview.png';
-});
-
-
-// Hàm
-const loadUserData = () => {
-  const user = localStorage.getItem('loggedInUser');
-  if (user) {
-    try {
-      loggedInUserData.value = JSON.parse(user);
-    } catch (e) {
-      console.error('Lỗi khi parse thông tin người dùng:', e);
-      loggedInUserData.value = null;
-    }
-  }
-};
-
-
-const performSearch = () => {
-  console.log('Đang tìm kiếm:', searchQuery.value);
-};
-
-
-const capNhatGioHang = async () => {
-  try {
-    const res = await axios.get('http://localhost:8080/client/LoadSanPham', {
-      withCredentials: true
-    });
-    const data = Array.isArray(res.data) ? res.data : [];
-    data.forEach(sp => {
-      if (!sp.tongTien || sp.tongTien === 0) {
-        sp.tongTien = sp.soLuong * sp.gia;
-      }
-      if (!sp.anhSanPham) {
-        sp.anhSanPham = '/placeholder.png';
-      }
-    });
-    danhSachGio.value = data;
-    soLuongGio.value = data.reduce((tong, sp) => tong + sp.soLuong, 0);
-  } catch (error) {
-    danhSachGio.value = [];
-    soLuongGio.value = 0;
-    console.error('Lỗi khi lấy giỏ hàng:', error);
-  }
-};
-
-
-const capNhatGioHangLocal = (newDanhSach) => {
-  danhSachGio.value = newDanhSach;
-  soLuongGio.value = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0);
-  sessionStorage.removeItem("gioHang");
-  localStorage.removeItem("gioHang");
-};
-
-
-const xoaSanPham = (idSanPhamChiTiet) => {
-  danhSachGio.value = danhSachGio.value.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet);
-  soLuongGio.value = danhSachGio.value.reduce((tong, sp) => tong + sp.soLuong, 0);
-};
-
-
-const toggleGioHang = () => {
-  hienChiTiet.value = !hienChiTiet.value;
-};
-
-
-// Hàm logout đã được sửa đổi
-const logout = () => {
-  authStore.logoutClient();
-  router.push('/coolmen/dang-nhap-khach-hang');
-};
-
-
-// Lifecycle hooks
-onMounted(() => {
-  loadUserData();
-  capNhatGioHang();
-  window.addEventListener("cap-nhat-gio", capNhatGioHang);
-});
-
-
-onUnmounted(() => {
-  window.removeEventListener("cap-nhat-gio", capNhatGioHang);
-});
-</script>
-
-
 <style scoped>
-/* Giữ nguyên phần CSS */
-</style>
+.main-navigation ul li {
+  position: relative;
+}
 
+.main-navigation ul li a {
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  display: inline-block; /* tránh ảnh hưởng đến sub-menu */
+  transition: color 0.3s ease;
+}
 
+.submenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #fff;
+  list-style: none;
+  padding: 10px 0;
+  margin: 0;
+  width: 180px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  display: none;
+  z-index: 1000;
+}
+.submenu li a {
+  display: block;
+  padding: 8px 15px;
+  color: #333;
+  font-size: 14px;
+  font-weight: normal;
+  width: 100%;
+}
 
+/* Gạch chân ảo */
+.main-navigation ul li a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px; /* không ảnh hưởng chiều cao thật */
+  width: 0;
+  height: 2px;
+  background-color: #0a2c57;
+  transition: width 0.3s ease;
+}
 
-<style scoped>
+/* Hover */
+.main-navigation ul li a:hover {
+  color: #0a2c57;
+}
+.main-navigation ul li a:hover::after {
+  width: 100%;
+}
+
+/* Submenu */
+.main-navigation ul li ul {
+  position: absolute;
+  top: 100%; /* submenu nằm ngay dưới cha */
+  left: 0;
+  display: none;
+  background: #fff;
+  padding: 10px 0;
+  list-style: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 99;
+}
+
+/* Hover cha thì hiện submenu */
+.main-navigation ul li:hover ul {
+  display: block;
+}
+ 
 .badge {
   background: purple;
   color: white;
@@ -596,4 +553,129 @@ onUnmounted(() => {
   z-index: 9999;
   /* Đặt z-index cao hơn để dropdown không bị che khuất */
 }
+</style>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import { useRouter } from 'vue-router'; // Import useRouter
+import CartDetail from './CartDetail.vue';
+import { useAuthStore } from '@/stores/auth';
+// Khai báo router
+const router = useRouter();
+const authStore = useAuthStore();
+
+
+// Dữ liệu reactive
+const searchQuery = ref('');
+const soLuongGio = ref(0);
+const hienChiTiet = ref(false);
+const danhSachGio = ref([]);
+const loggedInUserData = ref(null);
+
+
+// Computed properties
+const isLoggedIn = computed(() => {
+  return authStore.isLoggedInClient;
+});
+
+
+const userName = computed(() => {
+  return loggedInUserData.value ? loggedInUserData.value.tenKhachHang : '';
+});
+
+
+const userAvatar = computed(() => {
+  return loggedInUserData.value && loggedInUserData.value.hinhAnh
+    ? loggedInUserData.value.hinhAnh
+    : '/src/assets/logo_icon-removebg-preview.png';
+});
+
+
+// Hàm
+const loadUserData = () => {
+  const user = localStorage.getItem('loggedInUser');
+  if (user) {
+    try {
+      loggedInUserData.value = JSON.parse(user);
+    } catch (e) {
+      console.error('Lỗi khi parse thông tin người dùng:', e);
+      loggedInUserData.value = null;
+    }
+  }
+};
+
+
+const performSearch = () => {
+  console.log('Đang tìm kiếm:', searchQuery.value);
+};
+
+
+const capNhatGioHang = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/client/LoadSanPham', {
+      withCredentials: true
+    });
+    const data = Array.isArray(res.data) ? res.data : [];
+    data.forEach(sp => {
+      if (!sp.tongTien || sp.tongTien === 0) {
+        sp.tongTien = sp.soLuong * sp.gia;
+      }
+      if (!sp.anhSanPham) {
+        sp.anhSanPham = '/placeholder.png';
+      }
+    });
+    danhSachGio.value = data;
+    soLuongGio.value = data.reduce((tong, sp) => tong + sp.soLuong, 0);
+  } catch (error) {
+    danhSachGio.value = [];
+    soLuongGio.value = 0;
+    console.error('Lỗi khi lấy giỏ hàng:', error);
+  }
+};
+
+
+const capNhatGioHangLocal = (newDanhSach) => {
+  danhSachGio.value = newDanhSach;
+  soLuongGio.value = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0);
+  sessionStorage.removeItem("gioHang");
+  localStorage.removeItem("gioHang");
+};
+
+
+const xoaSanPham = (idSanPhamChiTiet) => {
+  danhSachGio.value = danhSachGio.value.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet);
+  soLuongGio.value = danhSachGio.value.reduce((tong, sp) => tong + sp.soLuong, 0);
+};
+
+
+const toggleGioHang = () => {
+  hienChiTiet.value = !hienChiTiet.value;
+};
+
+
+// Hàm logout đã được sửa đổi
+const logout = () => {
+  authStore.logoutClient();
+  router.push('/coolmen/dang-nhap-khach-hang');
+};
+
+
+// Lifecycle hooks
+onMounted(() => {
+  loadUserData();
+  capNhatGioHang();
+  window.addEventListener("cap-nhat-gio", capNhatGioHang);
+});
+
+
+onUnmounted(() => {
+  window.removeEventListener("cap-nhat-gio", capNhatGioHang);
+});
+</script>
+
+
+<style scoped>
+/* Giữ nguyên phần CSS */
 </style>
