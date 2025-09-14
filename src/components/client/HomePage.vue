@@ -1,153 +1,122 @@
 <template>
-  <div>
-    <!-- Hero Section -->
-    <section class="hero d-flex align-items-center text-white">
-      <div class="container text-center">
-        <h1 class="display-4 fw-bold">Chào mừng đến với CoolMen</h1>
-        <p class="lead">Phong cách đỉnh cao, chất lượng hàng đầu</p>
-        <a href="/coolmen/client-san-pham" class="btn btn-light btn-lg mt-3">Khám phá ngay</a>
-      </div>
-    </section>
-
-    <!-- Danh Mục -->
-    <section class="py-5 bg-light">
-      <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h4 class="fw-bold">Mua sắm theo danh mục</h4>
-          <a href="#" class="text-decoration-none text-primary" @click.prevent="goToCategories">
-            Xem tất cả
-          </a>
-        </div>
-        <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
-          <!-- Danh mục -->
-          <div v-for="item in categories" :key="item.title" class="col-6 col-sm-4 col-md-2">
-            <div class="category-card" @click="goToCategory(item.id)" style="cursor: pointer">
-              <img :src="item.image" alt="category" />
-              <div class="overlay-text">
-                <span>{{ item.title }}</span>
+  <div class="wrapper">
+    <!-- Phần Giới Thiệu (Slideshow) -->
+    <section class="hero animate-on-scroll" >
+      <div class="swiper">
+        <div class="swiper-wrapper">
+          <!-- Slide 1 -->
+          <div class="swiper-slide">
+            <a href="/coolmen/client-san-pham">
+              <div class="hero-slide" style="background: url('/src/assets/banner_client.png') center/cover no-repeat;">
+                <div class="container text-center"></div>
               </div>
-            </div>
+            </a>
           </div>
-        </transition-group>
+          <!-- Slide 2 -->
+          <div class="swiper-slide">
+            <a href="/coolmen/client-san-pham">
+              <div class="hero-slide" style="background: url('/src/assets/banner_client1.png') center/cover no-repeat;">
+                <div class="container text-center"></div>
+              </div>
+            </a>
+          </div>
+          <!-- Slide 3 -->
+          <div class="swiper-slide">
+            <a href="/coolmen/client-san-pham">
+              <div class="hero-slide" style="background: url('/src/assets/banner_client2.png') center/cover no-repeat;">
+                <div class="container text-center"></div>
+              </div>
+            </a>
+          </div>
+        </div>
+        <!-- Swiper Pagination -->
+        <div class="swiper-pagination"></div>
+        <!-- Swiper Navigation -->
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-button-next"></div>
       </div>
     </section>
 
-    <!-- Sản phẩm bán chạy -->
-    <section class="py-5">
+    <!-- Bộ Sưu Tập Hình Ảnh -->
+<section class="py-4 bg-light animate-on-scroll" >
+  <div class="container">
+    <!-- Tiêu đề và link -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="fw-bold">Mua sắm theo danh mục</h4>
+      <a href="#" class="text-decoration-none text-primary"  @click.prevent="goToCategories">
+        Xem tất cả
+      </a>
+    </div>
+
+    <!-- Danh mục -->
+    <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
+      <div v-for="item in categories" :key="item.id" class="col-6 col-sm-4 col-md-2">
+        <div class="category-card text-center h-100"
+             @click="goToCategory(item.id)" style="cursor: pointer">
+          
+          <!-- Ảnh -->
+          <div class="category-image d-flex align-items-center justify-content-center">
+            <img :src="item.image" alt="category" />
+          </div>
+
+          <!-- Tên + số sản phẩm -->
+          <div class="category-info mt-3">
+            <h6 class="fw-bold mb-1 category-title">
+              <span class="title-text">{{ item.title }}</span>
+              <span class="detail-text" style="margin-top: 5px;text-decoration: dashed" >Xem chi tiết</span>
+            </h6>
+          </div>
+        </div>
+      </div>
+    </transition-group>
+  </div>
+</section>
+
+
+    <!-- Banner Quảng Cáo -->
+    <section class="py-4 animate-on-scroll" >
+      <div class="container">
+        <div class="banner-large">
+           <a href="/coolmen/client-san-pham">
+            <img src="/src/assets/banner2.png" alt="Banner" class="animate__animated" />
+          </a>
+          
+        </div>
+      </div>
+    </section>
+
+    <!-- Sản Phẩm Bán Chạy -->
+    <section class="py-4 bg-light animate-on-scroll" >
       <div class="container">
         <h4 class="fw-bold mb-4 text-center">Sản phẩm bán chạy</h4>
         <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
           <div class="col-6 col-sm-4 col-md-3 col-lg-2" v-for="product in bestSellers" :key="product.id">
-            <div class="card-product position-relative">
+            <div class="card-product position-relative text-center shadow-sm rounded-3 overflow-hidden">
               <!-- HOT Badge -->
-              <span class="badge bg-danger badge-label">Hot</span>
+              <span class="badge bg-danger position-absolute top-0 start-0 m-2">Hot</span>
 
               <!-- Giảm giá -->
-              <span v-if="product.discount > 0" class="badge bg-danger discount-badge">
-                -{{ product.discount }}%
-              </span>
-
-              <!-- Ảnh + overlay -->
-              <div class="image-wrapper">
-                <img :src="product.image" alt="product" class="img-fluid" />
-                <div class="overlay">
-                  <button class="btn-buy" @click="goToProductDetail(product.id)">Mua ngay</button>
-                </div>
-              </div>
-
-              <!-- Tên sản phẩm -->
-              <div class="product-name text-center mt-2 fw-semibold">
-                {{ product.name }}
-              </div>
-
-              <!-- Giá sản phẩm và số lượng đã bán -->
-              <div class="price-quantity-section mt-2">
-                <!-- Giá sản phẩm -->
-                <div class="price-display">
-                  <!-- Nếu có giảm giá -->
-                  <template v-if="product.discount > 0 && product.originalPriceRange">
-                    <div class="original-price text-muted text-decoration-line-through">
-                      {{ formatPrice(product.originalPriceRange.min) }}
-                      <template v-if="product.originalPriceRange.min !== product.originalPriceRange.max">
-                        - {{ formatPrice(product.originalPriceRange.max) }}
-                      </template>
-                    </div>
-                    <div class="current-price text-dark fw-bold">
-                      {{ formatPrice(product.priceRange.min) }}
-                      <template v-if="product.priceRange.min !== product.priceRange.max">
-                        - {{ formatPrice(product.priceRange.max) }}
-                      </template>
-                    </div>
-                  </template>
-                  <!-- Không giảm giá -->
-                  <template v-else>
-                    <div class="current-price text-dark fw-bold">
-                      {{ formatPrice(product.priceRange.min) }}
-                      <template v-if="product.priceRange.min !== product.priceRange.max">
-                        - {{ formatPrice(product.priceRange.max) }}
-                      </template>
-                    </div>
-                  </template>
-                </div>
-                <!-- Số lượng đã bán -->
-                <div class="sold-quantity">
-                  Đã bán {{ product.tongSoLuongBan || 0 }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </transition-group>
-      </div>
-    </section>
-
-
-    <!-- Panner -->
-    <section class="py-3">
-      <div class="container">
-        <img src="/src/assets/Paner2.jpg" alt="Banner" class="banner-image" />
-      </div>
-    </section>
-
-    <!-- Sản phẩm nổi bật -->
-    <section class="py-5 bg-light">
-      <div class="container">
-        <h4 class="fw-bold mb-4 text-center">Sản phẩm nổi bật</h4>
-        <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
-          <div class="col-6 col-sm-4 col-md-3 col-lg-2" v-for="product in highlightProducts" :key="product.id">
-            <div class="card-product position-relative text-center">
-
-              <!-- Giảm giá -->
-              <span v-if="product.discount > 0"
-                class="badge bg-danger discount-badge position-absolute top-0 end-0 m-2">
+              <span v-if="product.discount > 0" class="badge bg-danger discount-badge position-absolute top-0 end-0 m-2">
                 -{{ product.discount }}%
               </span>
 
               <!-- Ảnh sản phẩm -->
-              <div class="image-wrapper">
-                <img :src="product.image" alt="product" class="img-fluid" />
-                <div class="overlay">
-                  <button class="btn-buy" @click="goToProductDetail(product.id)">Mua ngay</button>
+              <router-link :to="`/product/${product.id}`" class="image-wrapper d-block position-relative">
+                <img :src="product.image" alt="product" class="img-fluid rounded-top" />
+                <div class="overlay d-flex align-items-center justify-content-center">
+                  <button class="btn-buy" @click.stop="goToProductDetail(product.id)">Mua ngay</button>
                 </div>
-              </div>
+              </router-link>
 
               <!-- Tên sản phẩm -->
-              <div class="product-name mt-2 fw-semibold">
+              <router-link :to="`/product/${product.id}`" class="product-name mt-2 fw-semibold text-dark d-block text-truncate px-2">
                 {{ product.name }}
-              </div>
-
-              <!-- ⭐ Điểm đánh giá -->
-              <div class="rating-section mt-1">
-                <span v-for="star in 5" :key="star" class="star">
-                  <i v-if="star <= product.rating" class="bi bi-star-fill text-warning"></i>
-                  <i v-else class="bi bi-star text-muted"></i>
-                </span>
-                <span class="ms-1 text-muted">({{ product.reviews }})</span>
-              </div>
+              </router-link>
 
               <!-- Giá sản phẩm -->
               <div class="price-display mt-1">
-                <template v-if="product.discount > 0">
-                  <span class="text-muted text-decoration-line-through me-1">
+                <template v-if="product.discount > 0 && product.originalPriceRange">
+                  <span class="text-muted text-decoration-line-through me-1 small">
                     {{ formatPrice(product.originalPriceRange.min) }}
                     <template v-if="product.originalPriceRange.min !== product.originalPriceRange.max">
                       - {{ formatPrice(product.originalPriceRange.max) }}
@@ -162,31 +131,90 @@
                 </span>
               </div>
 
+              <!-- Số lượng đã bán -->
+              <div class="sold-quantity mt-1 mb-2 text-muted small">
+                Đã bán {{ product.tongSoLuongBan || 0 }}
+              </div>
             </div>
           </div>
         </transition-group>
       </div>
     </section>
 
-    <section class="py-5 bg-light">
+    <!-- Sản Phẩm Nổi Bật & Thời Trang Denim -->
+    <section class="py-4 animate-on-scroll" >
       <div class="container">
-        <h4 class="fw-bold mb-4 text-center">Sản phẩm mới</h4>
-        <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
-          <div class="col-6 col-sm-4 col-md-3 col-lg-2" v-for="product in newProducts" :key="product.id">
-            <div class="card-product position-relative">
+        <div class="row g-4">
+          <!-- Box lớn bên trái -->
+          <div class="col-md-6">
+            <div class="promo-box animate__animated" style="height: 427px;">
+              <img src="/src/assets/banner3.jpg" alt="New Arrivals" class="img-fluid object-fit-cover" />
+              <div class="promo-overlay d-flex align-items-end p-3">
+                <h3 class="text-white fw-bold">Sản phẩm mới nhất</h3>
+              </div>
+            </div>
+          </div>
 
-              <!-- Badge NEW -->
-              <span class="badge-new">New</span>
-              <!-- Ảnh -->
-              <div class="image-wrapper">
-                <img :src="product.image" alt="product" class="img-fluid" />
-                <div class="overlay">
-                  <button class="btn-buy" @click="goToProductDetail(product.id)">Mua ngay</button>
+          <!-- 3 box nhỏ bên phải -->
+          <div class="col-md-6">
+            <div class="row g-4">
+              <div class="col-12">
+                <div class="promo-box animate__animated">
+                  <img src="/src/assets/banner4.jpg" alt="Now Trending" class="img-fluid w-100 object-fit-cover" />
+                  <div class="promo-overlay d-flex align-items-end p-3">
+                    <h4 class="text-white fw-bold">Bộ sưu tập mới</h4>
+                  </div>
                 </div>
               </div>
+              <div class="col-6">
+                <div class="promo-box animate__animated">
+                  <img src="/src/assets/banner5.jpg" alt="Campaigns" class="img-fluid w-100 object-fit-cover" />
+                  <div class="promo-overlay d-flex align-items-end p-3">
+                    <h4 class="text-white fw-bold">Thời trang cao cấp</h4>
+                  </div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="promo-box animate__animated">
+                  <img src="/src/assets/banner6.jpg" alt="Lookbook" class="img-fluid w-100 object-fit-cover" />
+                  <div class="promo-overlay d-flex align-items-end p-3">
+                    <h4 class="text-white fw-bold">Phụ kiện</h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-              <!-- ⭐ Đánh giá -->
-              <div class="rating-section text-center mt-2">
+    <!-- Sản Phẩm Tiêu Biểu -->
+    <section class="py-4 bg-light animate-on-scroll" >
+      <div class="container">
+        <h4 class="fw-bold mb-4 text-center">Sản phẩm nổi bật</h4>
+        <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
+          <div class="col-6 col-sm-4 col-md-3 col-lg-2" v-for="product in highlightProducts" :key="product.id">
+            <div class="card-product position-relative text-center shadow-sm rounded-3 overflow-hidden">
+              <!-- Giảm giá -->
+              <span v-if="product.discount > 0" class="badge bg-danger discount-badge position-absolute top-0 end-0 m-2">
+                -{{ product.discount }}%
+              </span>
+
+              <!-- Ảnh sản phẩm -->
+              <router-link :to="`/coolmen/client-san-pham-detail/${product.id}`" class="image-wrapper d-block position-relative">
+                <img :src="product.image" alt="product" class="img-fluid rounded-top" />
+                <div class="overlay d-flex align-items-center justify-content-center">
+                  <button class="btn-buy" @click.stop="goToProductDetail(product.id)">Mua ngay</button>
+                </div>
+              </router-link>
+
+              <!-- Tên sản phẩm -->
+              <router-link :to="`/product/${product.id}`" class="product-name mt-2 fw-semibold text-dark d-block text-truncate px-2">
+                {{ product.name }}
+              </router-link>
+
+              <!-- ⭐ Điểm đánh giá -->
+              <div class="rating-section mt-1 small">
                 <span v-for="star in 5" :key="star" class="star">
                   <i v-if="star <= product.rating" class="bi bi-star-fill text-warning"></i>
                   <i v-else class="bi bi-star text-muted"></i>
@@ -194,50 +222,454 @@
                 <span class="ms-1 text-muted">({{ product.reviews }})</span>
               </div>
 
-              <!-- Tên sản phẩm -->
-              <div class="product-name text-center fw-semibold mt-1">
-                {{ product.name }}
-              </div>
-
-              <!-- Giá -->
-              <div class="text-center mt-1">
+              <!-- Giá sản phẩm -->
+              <div class="price-display mt-1 mb-2">
                 <template v-if="product.discount > 0">
-                  <div class="text-muted text-decoration-line-through small">
+                  <span class="text-muted text-decoration-line-through me-1 small">
                     {{ formatPrice(product.originalPriceRange.min) }}
                     <template v-if="product.originalPriceRange.min !== product.originalPriceRange.max">
                       - {{ formatPrice(product.originalPriceRange.max) }}
                     </template>
-                  </div>
+                  </span>
                 </template>
-                <div class="fw-bold text-dark">
+                <span class="text-dark fw-bold">
                   {{ formatPrice(product.priceRange.min) }}
                   <template v-if="product.priceRange.min !== product.priceRange.max">
                     - {{ formatPrice(product.priceRange.max) }}
                   </template>
-                </div>
+                </span>
               </div>
-
             </div>
           </div>
         </transition-group>
       </div>
     </section>
 
-    <!-- Why Us -->
-    <section class="py-5">
+<section class="text-center py-5">
+  <div class="container">
+    <h2 class="fw-bold mb-3">KHÁCH HÀNG NÓI VỀ CHÚNG TÔI</h2>
+    <p class="text-muted">
+      Hơn +50,000 khách hàng đang sử dụng cảm nhận như thế nào về CoolMen - Thời trang nam
+    </p>
+  </div>
+</section>
+
+
+    <!-- Testimonials Section -->
+    <section class="py-5 bg-light">
       <div class="container">
-        <h2 class="text-center mb-4">Vì sao chọn CoolMen?</h2>
-        <div class="row text-center">
-          <div class="col-md-4" v-for="(reason, index) in reasons" :key="index">
-            <i :class="reason.icon" style="font-size: 2rem; color: #0d6efd;"></i>
-            <h5 class="mt-3">{{ reason.title }}</h5>
-            <p>{{ reason.desc }}</p>
+        <div class="row g-4">
+          <div class="col-md-4" v-for="(item, index) in testimonials" :key="index">
+            <div class="testimonial-card shadow bg-white p-4 h-100 position-relative rounded">
+              <div class="d-flex align-items-center mb-3">
+                <img
+                  :src="item.img"
+                  alt="avatar"
+                  class="rounded-circle me-3"
+                  width="70"
+                  height="70"
+                />
+                <div>
+                  <h6 class="fw-bold mb-0">{{ item.name }}</h6>
+                  <small class="text-muted">{{ item.role }}</small>
+                </div>
+              </div>
+              <p class="fst-italic">"{{ item.message }}"</p>
+              <span class="quote-icon">❞</span>
+            </div>
           </div>
         </div>
       </div>
     </section>
+
+
   </div>
 </template>
+
+<script>
+import Swiper from 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.mjs';
+
+export default {
+  mounted() {
+    // Khởi tạo Swiper
+    new Swiper('.swiper', {
+      loop: true,
+      autoplay: {
+        delay: 5000,
+        disableOnInteraction: false,
+      },
+      pagination: {
+        el: '.swiper-pagination',
+        clickable: true,
+      },
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+      },
+      effect: 'fade',
+      fadeEffect: {
+        crossFade: true,
+      },
+    });
+
+    // Intersection Observer để kích hoạt animation khi cuộn
+    const sections = document.querySelectorAll('.animate-on-scroll');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const animation = entry.target.getAttribute('data-animation');
+          entry.target.classList.add('animate__animated', `animate__${animation}`);
+          entry.target.querySelectorAll('.animate__animated').forEach(child => {
+            child.classList.add(`animate__${animation}`);
+          });
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.2
+    });
+
+    sections.forEach(section => {
+      observer.observe(section);
+    });
+  }
+};
+</script>
+
+<style scoped>
+/* Import animate.css */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css');
+/* Import Swiper CSS */
+@import url('https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css');
+.wrapper{
+  margin-top: 70px;
+}
+/* Ẩn section trước khi animation được kích hoạt */
+.animate-on-scroll {
+  opacity: 0;
+}
+.animate-on-scroll.animate__animated {
+  opacity: 1;
+}
+
+/* Category Card Styling */
+.category-card {
+  border: 1px solid #eee;
+}
+.category-card:hover .overlay-text {
+  background: rgba(0, 0, 0, 0.8);
+}
+.category-card:hover img {
+  transform: scale(1.05);
+}
+.overlay-text {
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+.category-card img {
+  transition: transform 0.3s ease;
+}
+
+/* Card Product Styling */
+.card-product {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card-product:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+}
+.image-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+.image-wrapper img {
+  transition: transform 0.3s ease;
+}
+.image-wrapper:hover img {
+  transform: scale(1.05);
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.image-wrapper:hover .overlay {
+  opacity: 1;
+}
+.btn-buy {
+  background: #fff;
+  border: none;
+  padding: 6px 14px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-buy:hover {
+  background: #000;
+  color: #fff;
+}
+
+/* Hero Slideshow */
+.hero {
+  height: 100vh; /* Giảm từ 110vh xuống 100vh */
+  overflow: hidden;
+}
+.swiper {
+  width: 100%;
+  height: 100%;
+}
+.hero-slide {
+  height: 100vh; /* Đồng bộ với .hero */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #111;
+  background-size: cover !important;
+  background-position: center !important;
+}
+.hero-title {
+  font-size: 3rem;
+  font-weight: 600;
+}
+.hero-subtitle {
+  font-size: 1.1rem;
+  color: #444;
+  margin: 10px 0 20px;
+}
+.btn-hero {
+  border: 1px solid #111;
+  color: #111;
+  background: transparent;
+  padding: 10px 28px;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+.btn-hero:hover {
+  background: #111;
+  color: #fff;
+  animation: btnPulse 0.5s;
+}
+@keyframes btnPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.swiper-pagination-bullet {
+  background: #fff;
+  opacity: 0.8;
+}
+.swiper-pagination-bullet-active {
+  background: #111;
+}
+.swiper-button-prev,
+.swiper-button-next {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.swiper-button-prev:after,
+.swiper-button-next:after {
+  font-size: 20px;
+}
+
+/* Tiêu đề phần */
+.section-title {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  position: relative;
+}
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 2px;
+  background: #111;
+  animation: underlineGrow 0.5s ease-in-out;
+}
+@keyframes underlineGrow {
+  0% { width: 0; }
+  100% { width: 50px; }
+}
+
+/* Banner */
+.banner-large {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.banner-large img {
+  width: 100%;
+  height: 340px;
+  object-fit: cover;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+}
+.btn-banner {
+  border: 1px solid #fff;
+  color: #fff;
+  background: transparent;
+  padding: 6px 18px;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+.btn-banner:hover {
+  background: #fff;
+  color: #111;
+  animation: btnPulse 0.5s;
+}
+
+/* Khuyến mãi */
+.promo-box {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 200px; /* Điều chỉnh từ 49% thành 200px */
+}
+.promo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.promo-box img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.promo-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.55), transparent 60%);
+  display: flex;
+  align-items: flex-end;
+  padding: 12px 16px;
+  color: #fff;
+}
+.promo-overlay h3,
+.promo-overlay h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.3;
+}
+.btn-promo {
+  border: 1px solid #fff;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  color: #fff;
+  text-decoration: none;
+  margin-top: 6px;
+  border-radius: 20px;
+}
+.btn-promo:hover {
+  background: #fff;
+  color: #111;
+  animation: btnPulse 0.4s;
+}
+
+/* Hình ảnh trong Độc Quyền Cho Bạn và Mua Sắm Qua Instagram */
+.img-fluid.rounded {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.img-fluid.rounded:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+.category-card {
+  background: #fafafa;
+  padding: 20px 10px;
+  clip-path: polygon(0 0, 95% 0, 100% 100%, 5% 100%);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.category-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.category-image {
+  height: 130px;
+}
+.category-image img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+}
+.category-card:hover .category-image img {
+  transform: scale(1.05);
+}
+
+.category-info {
+  min-height: 50px;
+}
+
+/* Chữ đổi khi hover */
+.category-title {
+  position: relative;
+  height: 22px;
+  overflow: hidden;
+}
+.category-title .title-text,
+.category-title .detail-text {
+  display: block;
+  transition: transform 0.3s ease;
+  
+}
+.category-title .detail-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  transform: translateY(100%);
+  text-decoration: dashed;
+}
+.category-card:hover .category-title .title-text {
+  transform: translateY(-100%);
+}
+.category-card:hover .category-title .detail-text {
+  transform: translateY(0);
+}
+
+.testimonial-card {
+  border-left: 5px solid #0a2c57; /* màu xanh nhấn */
+  position: relative;
+}
+
+.quote-icon {
+  position: absolute;
+  bottom: 10px;
+  right: 15px;
+  font-size: 2rem;
+  color: #ccc;
+}
+</style>
 
 <script setup>
 import { ref, onMounted } from 'vue'
@@ -250,6 +682,29 @@ const bestSellers = ref([])
 const router = useRouter()
 
 
+const testimonials = [
+  {
+    name: "Anh Minh Nhật",
+    role: "Developer",
+    message:
+      "Tôi thấy CoolMen có chất lượng sản phẩm rất tốt, mẫu mã cũng khiến tôi rất vừa ý tạo cho tôi cảm giác rất thoải mái khi mặc",
+    img: "https://picsum.photos/200/200?random=1"
+  },
+  {
+    name: "Anh Huỳnh Tuyến",
+    role: "Customer Service",
+    message:
+      "Rất thích đồ của CoolMen, chuẩn mẫu mã, ship nhanh và chất lượng bền tốt. Tôi sẽ quay lại mua nữa.",
+    img: "https://picsum.photos/200/200?random=2"
+  },
+  {
+    name: "Chị Hồng Liêm",
+    role: "Marketing Manager",
+    message:
+       "Tôi đã lựa chọn CoolMen để dành tặng cho người yêu của mình những món quà thật ý nghĩa. Tôi rất hài lòng với dịch vụ chuyên nghiệp, chất lượng sản phẩm cũng như sự tận tình.",
+    img: "https://picsum.photos/200/200?random=3"
+  }
+];
 console.log(Cookies.get("email"));
 const imageList = [
   '/src/assets/DanhMuc1.webp',
@@ -508,228 +963,3 @@ const reasons = [
   },
 ]
 </script>
-
-<style scoped>
-.hero {
-  background: url('/src/assets/trang-tri-shop-quan-ao-1.jpg') center center/cover no-repeat;
-  height: 80vh;
-}
-
-.category-card {
-  width: 100%;
-  /* chiếm hết col */
-  aspect-ratio: 3/4;
-  /* giữ tỉ lệ khung hình ổn định */
-  overflow: hidden;
-  border-radius: 12px;
-  position: relative;
-  flex-shrink: 0;
-  cursor: pointer;
-  transition: transform 0.3s ease;
-}
-
-.category-card:hover {
-  transform: scale(1.05);
-}
-
-.category-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 12px;
-}
-
-.overlay-text {
-  position: absolute;
-  bottom: 10px;
-  left: 12px;
-  color: white;
-  font-weight: 600;
-  text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
-  font-size: 0.95rem;
-}
-
-/* sản phẩm  */
-.card-product {
-  background-color: #fff;
-  padding: 10px;
-  border-radius: 8px;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.image-wrapper {
-  position: relative;
-  overflow: hidden;
-}
-
-.card-product img {
-  width: 100%;
-  height: auto;
-  display: block;
-  transition: transform 0.3s ease;
-}
-
-.image-wrapper:hover img {
-  transform: scale(1.05);
-}
-
-.overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.image-wrapper:hover .overlay {
-  opacity: 1;
-}
-
-.btn-buy {
-  background-color: #f44336;
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 4px;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.badge-label {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 12px;
-  padding: 5px 10px;
-  border-radius: 50px;
-  z-index: 2;
-}
-
-.discount-badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 12px;
-  padding: 5px 10px;
-  border-radius: 50px;
-  z-index: 2;
-}
-
-.product-name {
-  font-size: 14px;
-  color: #333;
-}
-
-.price-section {
-  font-size: 14px;
-}
-
-.original-price {
-  font-size: 13px;
-}
-
-.current-price {
-  font-size: 14px;
-}
-
-.price-quantity-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
-  min-height: 40px;
-  /* Tăng chiều cao để chứa khoảng giá */
-}
-
-.price-display {
-  flex: 1;
-  min-width: 0;
-}
-
-.price-display .current-price,
-.price-display .original-price {
-  width: 100%;
-  text-align: left;
-  line-height: 1.2;
-  margin-bottom: 2px;
-}
-
-.price-display .original-price {
-  font-size: 12px;
-  margin-bottom: 1px;
-}
-
-.price-display .current-price {
-  font-size: 14px;
-  font-weight: bold;
-}
-
-.sold-quantity {
-  font-size: 13px;
-  color: #666;
-  white-space: nowrap;
-  flex-shrink: 0;
-  text-align: right;
-  min-width: fit-content;
-}
-
-
-/*  */
-.banner-image {
-  width: 100%;
-  /* Chiếm hết chiều ngang trong .container */
-  height: auto;
-  max-height: 200px;
-  /* Tuỳ chỉnh chiều cao tối đa */
-  object-fit: cover;
-  /* Giữ hình không méo, crop nếu cần */
-  border-radius: 8px;
-  /* Tuỳ chọn: bo góc nhẹ */
-  display: block;
-}
-
-.badge-new {
-  background-color: #ffc107;
-  /* màu vàng */
-  color: #ffffff;
-  font-weight: bold;
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 10;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-}
-
-
-/*  */
-/* Transition-group animations for slide-up effect */
-.grid-enter-from,
-.grid-leave-to {
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.grid-enter-active {
-  transition: all 250ms ease;
-}
-
-.grid-leave-active {
-  transition: all 220ms ease;
-  position: relative;
-}
-
-.grid-move {
-  transition: transform 300ms ease;
-}
-</style>

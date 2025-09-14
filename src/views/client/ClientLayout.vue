@@ -4,24 +4,21 @@
     <main class="client-main-content">
       <router-view></router-view>
     </main>
+    <ClientFooter />
   </div>
 </template>
 
 <script>
-// Import component Header từ thư mục components/client
-// Đảm bảo đường dẫn này đúng với vị trí file Header.vue của bạn
-import ClientHeader from '@/components/client/Header.vue';
-
-// Nếu bạn có một component Footer, hãy import nó vào đây
-// import ClientFooter from '@/components/client/Footer.vue';
+import ClientHeader from '@/components/client/Header.vue'
+import ClientFooter from '@/components/client/Footer.vue'
 
 export default {
-  name: 'ClientLayout', // Tên của component layout này
+  name: 'ClientLayout',
   components: {
-    ClientHeader, // Đăng ký ClientHeader để có thể sử dụng trong template
-    // ClientFooter, // Đăng ký ClientFooter nếu có
-  },
-};
+    ClientHeader,
+    ClientFooter
+  }
+}
 </script>
 
 <style scoped>
