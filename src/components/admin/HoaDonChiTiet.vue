@@ -46,6 +46,21 @@ const token = Cookies.get("token");
 
 //   return giaTri > tongTienDaThanhToanKhiNhanHang;
 // });
+
+
+// Tách phần payload (phần giữa)
+const payloadBase64 = token.split(".")[1];
+
+// Giải mã từ Base64 sang JSON
+const payloadJson = atob(payloadBase64);
+
+// Chuyển chuỗi JSON thành object
+const payload = JSON.parse(payloadJson);
+
+// Truy cập idNv
+const idNv = payload.idNv;
+console.log("idNv:", idNv);
+
 const tongTienSanPhamBanDau = ref(0);
 const giamGia = ref(0);
 const phiVanChuyen = ref(0);
@@ -155,7 +170,7 @@ const steps = [
   "Đã hủy",
 ];
 
-const trangThaiChinhSua = ref(1);
+const trangThaiChinhSua = ref(0);
 
 const reasons = ["Khách muốn huỷ đơn", "Khác"];
 const selectedReason = ref(reasons[0]);
@@ -178,10 +193,15 @@ const fetchTodos = async () => {
     );
     const json = await response.json();
     listHoaDonChiTiet.value = json;
+
+    // lấy ảnh:
+    listHoaDonChiTiet.value.forEach((hdct) => {
+      fetchAnhSanPham(hdct.idSanPhamChiTiet.id);
+    });
     // Gán tổng tiền sản phẩm ban đầu **chỉ 1 lần**
-    if (tongTienSanPhamBanDau.value === 0) {
-      tongTienSanPhamBanDau.value = tongTienSanPham.value;
-    }
+    // if (tongTienSanPhamBanDau.value === 0) {
+    //   tongTienSanPhamBanDau.value = tongTienSanPham.value;
+    // }
 
     console.log(tongTienSanPhamBanDau.value);
     // Cập nhật trangThai sau khi có dữ liệu
@@ -391,6 +411,7 @@ const thayDoiTrangThai = async (moiTrangThai) => {
       },
       data: {
         ghiChu: note.value,
+        idNv: idNv,
       },
       headers: {
         Authorization: `Bearer ${token}`,
@@ -561,13 +582,33 @@ onMounted(() => {
 const reloadTrang = () => {
   window.location.reload();
 };
+
+const anhMap = ref({}); // Lưu ảnh theo id sản phẩm
+// lay ảnh sản phẩm
+const fetchAnhSanPham = async (id) => {
+  console.log(id);
+  try {
+    const response = await fetch(
+      `http://localhost:8080/chi-tiet-san-pham/lay-anh/${id}`
+    );
+    if (response.ok) {
+      const url = await response.text();
+      console.log(url);
+      anhMap.value[id] = url; // Gán đường dẫn ảnh vào map
+    } else {
+      anhMap.value[id] = "https://via.placeholder.com/50"; // Ảnh mặc định khi không có ảnh
+    }
+  } catch (error) {
+    anhMap.value[id] = "https://via.placeholder.com/50"; // Ảnh mặc định khi lỗi
+  }
+};
 </script>
 
 <template>
-  <div class="d-flex justify-content-between">
+  <div class="d-flex justify-content-between row g-4">
     <!-- Cột trái -->
-    <div class="d-flex flex-column" style="flex: 1">
-      <div class="container-fixed bg-white p-3 rounded border mb-4">
+    <div class="col-12 col-lg-8" style="flex: 1"> 
+      <div class="bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">
             <RouterLink to="/hoa-don">
@@ -678,7 +719,7 @@ const reloadTrang = () => {
         </div>
       </div>
 
-      <div class="container-fixed bg-white p-3 rounded border mb-4">
+      <div class="bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">Sản phẩm:</h5>
 
@@ -738,7 +779,7 @@ const reloadTrang = () => {
                   <div class="d-flex align-items-start">
                     <!-- Hình ảnh sản phẩm -->
                     <img
-                      src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
+                      :src="anhMap[item.idSanPhamChiTiet.id] || 'https://via.placeholder.com/50'"
                       style="
                         width: 80px;
                         height: 100px;
@@ -812,7 +853,7 @@ const reloadTrang = () => {
     </div>
 
     <!-- Cột phải -->
-    <div class="d-flex flex-column ms-3" style="width: 400px">
+    <div class="col-12 col-lg-4" style="width: 400px">
       <div class="bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">

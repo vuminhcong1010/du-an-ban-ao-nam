@@ -383,6 +383,25 @@ const thanhToanDonHang = async (order) => {
 
 // hoàn thành đơn hàng:
 const hoanThanhDonHang = async (order) => {
+   // 1. Chuẩn bị dữ liệu sản phẩm chi tiết
+   const maHoaDon = order.maHoaDon;
+    const selectedItems = order.listSanPham;
+    const giamGiaHoaDon = order.soTienGiam || 0;
+    const result = selectedItems.map((sp) => {
+      const soLuongMua = sp.soLuong || 1;
+      const giaGoc = sp.gia || 0;
+      const thanhTien = giaGoc * soLuongMua;
+
+      return {
+        idSanPhamChiTiet: sp.maChiTietSapPham,
+        gia: giaGoc,
+        soLuong: soLuongMua,
+        thanhTien: thanhTien,
+        idHoaDon: maHoaDon,
+        trangThai: 0,
+      };
+    });
+    console.log("gia tri truoc khi goi backend:", result)
   try {
     // ✅ Kiểm tra thanh toán có tồn tại không
     if (
@@ -427,7 +446,7 @@ const hoanThanhDonHang = async (order) => {
         trangThai: 0,
       };
     });
-
+    console.log(result.value)
     // 2. Chuẩn bị body cập nhật tồn kho
     const bodyUpdateSoLuong = result.map((r) => ({
       idSanPhamChiTiet: r.idSanPhamChiTiet,
