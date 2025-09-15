@@ -14,7 +14,7 @@ const toggleSidebar = inject('toggleSidebar')
 const isExporting = ref(false);
 const isImporting = ref(false);
 
-const listNhanVien = ref([]); 
+const listNhanVien = ref([]);
 
 const getData = async () => {
   try {
@@ -23,7 +23,7 @@ const getData = async () => {
         Authorization: `Bearer ${token}`
       }
     })
-   listNhanVien.value = Array.isArray(response.data) ? response.data : [];
+    listNhanVien.value = Array.isArray(response.data) ? response.data : [];
     // console.log('NhanVien:', listNhanVien.value);
   } catch (error) {
     console.log(error);
@@ -143,7 +143,7 @@ function openDeleteModal(nhanVien) {
   }).then(async (result) => {
     if (result.isConfirmed) {
       try {
-        await axios.delete(`http://localhost:8080/api/delete/${nhanVien.id}`,{
+        await axios.delete(`http://localhost:8080/api/delete/${nhanVien.id}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -590,7 +590,7 @@ async function handleToggleVaiTro(nhanVien, event) {
     <div class="nhanvien-header bg-white p-3 rounded shadow mb-4"
       style="display: flex; align-items: center; justify-content: flex-start; box-shadow: 0 5px 10px #d1cac0; border-radius: 12px; padding: 6px 16px !important; position: relative; gap: 16px;">
       <div>
-        <h2 style="margin: 0; font-size: 18px !important;">Quản Lý nhân viên</h2>
+        <h2 style="margin: 0; font-size: 20px !important; font-weight: bold;">Quản Lý nhân viên</h2>
       </div>
       <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
         <router-link to="/nhan-vien/them" class="nv-btn" title="Thêm nhân viên mới"><span
@@ -610,7 +610,8 @@ async function handleToggleVaiTro(nhanVien, event) {
       </div>
     </div>
     <div class="filter-bar bg-white p-3 rounded shadow mb-4">
-      <div class="filter-title">
+      <!-- Title -->
+      <div class="filter-title mb-3">
         <span class="filter-icon">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round" class="feather feather-filter">
@@ -619,7 +620,9 @@ async function handleToggleVaiTro(nhanVien, event) {
         </span>
         <span class="filter-label">Bộ lọc</span>
       </div>
-      <div class="filter-fields filter-fields-row">
+
+      <!-- Row 1: Tìm kiếm -->
+      <div class="filter-fields filter-fields-row mb-3">
         <div class="filter-item">
           <label>Tìm kiếm</label>
           <div class="filter-search-wrapper">
@@ -628,6 +631,11 @@ async function handleToggleVaiTro(nhanVien, event) {
               v-model="filterState.search" title="Tìm kiếm theo mã, tên nhân viên" />
           </div>
         </div>
+      </div>
+
+      <!-- Row 2: Trạng thái, Vai trò, Tỉnh/Thành -->
+      <div class="filter-fields filter-fields-row">
+        <!-- Trạng thái -->
         <div class="filter-item">
           <label>Trạng thái</label>
           <div class="radio-group">
@@ -641,6 +649,8 @@ async function handleToggleVaiTro(nhanVien, event) {
             </label>
           </div>
         </div>
+
+        <!-- Vai trò -->
         <div class="filter-item">
           <label>Vai trò</label>
           <select v-model="filterState.vaiTro" title="Lọc theo vai trò">
@@ -649,6 +659,8 @@ async function handleToggleVaiTro(nhanVien, event) {
             <option value="STAFF">Nhân viên</option>
           </select>
         </div>
+
+        <!-- Tỉnh/Thành -->
         <div class="filter-item">
           <label>Tỉnh/Thành</label>
           <select v-model="filterState.tinhThanh" title="Lọc theo tỉnh/thành">
@@ -660,6 +672,7 @@ async function handleToggleVaiTro(nhanVien, event) {
         </div>
       </div>
     </div>
+
     <div class="table-wrapper bg-white p-3 rounded shadow mb-4">
       <div style="margin-bottom: 10px; display: flex; align-items: center;">
         <button class="column-toggle-btn column-toggle-align" @click="showColumnBox = !showColumnBox"
@@ -912,7 +925,7 @@ async function handleToggleVaiTro(nhanVien, event) {
 
 .table-container {
   overflow-x: auto;
-   min-height: 300px;  
+  min-height: 300px;
   max-height: 440px;
 }
 

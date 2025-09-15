@@ -2,21 +2,20 @@
   <header class="main-header modern-header">
     <div class="container">
       <div class="logo">
-        <a href="/coolmen">
+        <router-link to="/coolmen">
           <img src="/src/assets/logo_icon-removebg-preview.png" alt="CoolMen Icon" class="coolmen-logo-icon">
           CoolMen
-        </a>
+        </router-link>
       </div>
 
 
       <nav class="main-navigation">
         <ul>
-          <li><a href="/coolmen">Trang chủ</a></li>
-          <li><a href="/coolmen/client-san-pham">Sản phẩm</a></li>
-          <li><a href="/coolmen/danh-muc-List">Danh mục</a></li>
-          <li><a href="#">Giảm giá</a></li>
-          <li><a href="#">Liên hệ</a></li>
-          <li><a href="/coolmen/tra-cuu-don-hang">Tra cứu đơn hàng</a></li>
+          <li><router-link to="/coolmen">Trang chủ</router-link></li>
+          <li><router-link to="/coolmen/client-san-pham">Sản phẩm</router-link></li>
+          <li><router-link to="/coolmen/danh-muc-List">Danh mục</router-link></li>
+          <li><router-link to="/coolmen/lien-he">Liên hệ</router-link></li>
+          <li><router-link to="/coolmen/tra-cuu-don-hang">Tra cứu đơn hàng</router-link></li>
         </ul>
       </nav>
 
@@ -250,7 +249,7 @@ onUnmounted(() => {
 }
 
 
-.logo a {
+.logo a, .logo router-link {
   font-size: 28px;
   font-weight: bold;
   color: #0a2c57;
@@ -281,7 +280,9 @@ onUnmounted(() => {
 }
 
 
-.main-navigation ul li a {
+.main-navigation ul li a,
+.main-navigation ul li .router-link-active,
+.main-navigation ul li .router-link {
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -292,7 +293,9 @@ onUnmounted(() => {
 }
 
 
-.main-navigation ul li a:hover {
+.main-navigation ul li a:hover,
+.main-navigation ul li .router-link:hover,
+.main-navigation ul li .router-link-active:hover {
   color: #111827;
   /* màu đậm hơn khi hover */
 }

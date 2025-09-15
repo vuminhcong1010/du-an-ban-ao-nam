@@ -571,6 +571,7 @@ const heroImages = [
   '/src/assets/images1.jpeg',
   '/src/assets/images.jpeg',
   '/src/assets/Paner1.png',
+  '/src/assets/11-1628570889-953-width660height367.jpg',
   '/src/assets/trang-tri-shop-quan-ao-1.jpg',
 ];
 

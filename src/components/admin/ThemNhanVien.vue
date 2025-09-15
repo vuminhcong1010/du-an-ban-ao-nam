@@ -621,19 +621,19 @@ function handleQRScanned(data) {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border: 1.5px solid #ddd;
+  border: 1.5px solid #0A2A5B;
   border-radius: 8px;
-  background: #fff;
+  background: #0A2A5B;
   cursor: pointer;
   font-weight: 500;
-  color: #222;
+  color: #ffffff;
   transition: all 0.18s;
 }
 
 .back-btn:hover {
-  background: #f5faff;
-  border-color: #339cf1;
-  color: #339cf1;
+  background: #0a2a5bae;
+  border-color: #0A2A5B;
+  color: #ffffff;
 }
 
 .form-container {
@@ -694,16 +694,16 @@ function handleQRScanned(data) {
 .btn-upload {
   padding: 8px 18px;
   border-radius: 6px;
-  border: 1.5px solid #339cf1;
-  background: #fff;
-  color: #339cf1;
+  border: 1.5px solid #0A2A5B;
+  background: #0A2A5B;
+  color: #ffffff;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.18s;
 }
 
 .btn-upload:hover {
-  background: #e3eafc;
+  background: #0a2a5bb0;
 }
 
 .form-fields {
@@ -763,7 +763,7 @@ function handleQRScanned(data) {
 
 .submit-btn {
   padding: 10px 24px;
-  background: #339cf1;
+  background: #0A2A5B;
   color: white;
   border: none;
   border-radius: 8px;
@@ -775,7 +775,7 @@ function handleQRScanned(data) {
 }
 
 .submit-btn:hover {
-  background: #1a8de8;
+  background: #0a2a5bac;
   box-shadow: 0 2px 8px #339cf133;
 }
 

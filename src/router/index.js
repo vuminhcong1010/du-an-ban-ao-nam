@@ -46,6 +46,7 @@ import XacNhanThongTinCustomer from "@/components/client/XacNhanThongTinCustomer
 import OrderLookup from "@/components/client/OrderLookup.vue";
 import DanhMucList from "@/components/client/Category.vue";
 import ProductCategory from "@/components/client/ProductCategory.vue";
+import LienHe from "@/components/client/LienHe.vue";
 import ThongTinUser from "@/components/client/ThongTinUser.vue"; // User Info Component
 import gioHang from "@/components/client/GioHangPage.vue"; // User Info Component
 
@@ -95,6 +96,11 @@ const router = createRouter({
           path: "danh-muc-List",
           name: "danh-muc-List",
           component: DanhMucList,
+        },
+        {
+          path: "lien-he",
+          name: "lien-he",
+          component: LienHe,
         },
         {
           path: "/product-category/:idDanhMuc",
