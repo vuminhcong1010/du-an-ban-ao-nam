@@ -78,11 +78,13 @@ const fetchTodos = async () => {
       
     // Đảm bảo sắp xếp hóa đơn theo thứ tự ngày tạo mới nhất ở frontend (nếu cần)
     todos.value.sort((a, b) => new Date(b.ngayTao) - new Date(a.ngayTao)); 
+
   } catch (error) {
     console.error("Lỗi khi fetch dữ liệu:", error.message);
     toast.error("Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại.");
   }
 };
+
 
 onMounted(() => {
   const today = new Date().toISOString().split('T')[0]; // Lấy ngày hôm nay theo định dạng YYYY-MM-DD

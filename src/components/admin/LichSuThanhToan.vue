@@ -57,7 +57,7 @@ function formatDatetime(dateStr) {
                   <td>{{ formatDatetime(item.idHinhThucThanhToan.ngayTao) }}</td>
                   <td>{{ item.idHinhThucThanhToan.phuongThucThanhToan }}</td>
                   <td>{{ item.ghiChu || "Khong co ghi chu" }}</td>
-                  <td>{{ item.idHoaDon.idNhanVien.tenNhanVien || "Ko có NNhanVieen " }}</td>
+                  <!-- <td>{{ item.idHoaDon.idNhanVien.tenNhanVien || "Ko có NNhanVieen " }}</td> -->
                   <td>
                     {{
                       item.idHinhThucThanhToan.trangThai === 0

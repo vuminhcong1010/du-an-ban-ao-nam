@@ -1486,6 +1486,7 @@ async function thanhToan() {
             const randomNumber = Math.floor(Math.random() * 1000) + 1;
             const cancelPage = "http://localhost:5173/vnpay-return";
             const successPage = "http://localhost:5173/coolmen";
+
             const convertData = {
                 data: "{'amount':" + Math.round(tongCong.value) + ",'cancelUrl':'" + cancelPage + "','description':'" + data.ghiChu + "','orderCode':" + randomNumber + ",'returnUrl':'" + successPage + "'}"
             };

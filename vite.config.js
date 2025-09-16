@@ -4,6 +4,7 @@ import vue from "@vitejs/plugin-vue";
 import vueDevTools from "vite-plugin-vue-devtools";
 import path from "path";
 
+
 export default defineConfig({
   plugins: [vue(), vueDevTools()],
   resolve: {
@@ -15,6 +16,7 @@ export default defineConfig({
     global: "window", // 🛠 Thêm dòng này để fix lỗi "global is not defined"
   },
 
+
   server: {
     proxy: {
       "/api": {
@@ -23,10 +25,20 @@ export default defineConfig({
       },
       "/ws": {
         target: "http://localhost:8080",
-        ws: true, 
+        ws: true,
         changeOrigin: true,
         secure: false,
+      },
+       '/api-provinces': {
+        target: 'https://provinces.open-api.vn',
+        changeOrigin: true, // Thay đổi origin host thành target URL
+        rewrite: (path) => path.replace(/^\/api-provinces/, ''), // Xóa '/api-provinces' khỏi URL
       },
     },
   },
 });
+
+
+
+
+

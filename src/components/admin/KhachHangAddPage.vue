@@ -8,6 +8,8 @@
     </div>
 
 
+
+
     <form @submit.prevent="handleSubmit" class="customer-form">
       <div class="form-grid-container">
         <div class="personal-info-column">
@@ -18,11 +20,15 @@
           </div>
 
 
+
+
           <div class="input-group"> <label>Email <span class="required-star">*</span></label>
             <input v-model="form.email" type="email" class="form-input"
               :class="{ 'input-error': showError && errors.email }" />
             <span v-if="showError && errors.email" class="error-message">Email không hợp lệ.</span>
           </div>
+
+
 
 
           <div class="input-group"> <label>Số điện thoại <span class="required-star">*</span></label>
@@ -32,11 +38,15 @@
           </div>
 
 
+
+
           <div class="input-group"> <label>Ngày sinh</label>
             <input v-model="form.ngaySinh" type="date" class="form-input"
               :class="{ 'input-error': showError && errors.ngaySinh }" />
             <span v-if="showError && errors.ngaySinh" class="error-message">Khách hàng phải từ 16 tuổi trở lên.</span>
           </div>
+
+
 
 
           <div class="input-group gender-selection"> <label>Giới tính</label>
@@ -52,8 +62,12 @@
         </div>
 
 
+
+
         <div class="address-column">
           <h3 class="address-section-title">Địa chỉ</h3>
+
+
 
 
           <div class="input-group"> <label>Tỉnh/Thành Phố</label>
@@ -66,6 +80,8 @@
           </div>
 
 
+
+
           <div class="input-group"> <label>Quận/Huyện</label>
             <select :disabled="!selectedProvinceCode" v-model="selectedDistrictCode" @change="onQuanHuyenChange"
               class="form-input" :class="{ 'input-error': showError && errors.diaChiQuan }">
@@ -74,6 +90,8 @@
             </select>
             <span v-if="showError && errors.diaChiQuan" class="error-message">Vui lòng chọn Quận/Huyện.</span>
           </div>
+
+
 
 
           <div class="input-group"> <label>Xã/Phường</label>
@@ -86,20 +104,30 @@
           </div>
 
 
+
+
           <div class="input-group"> <label>Địa chỉ chi tiết</label>
-            <input v-model="form.diaChi.diaChiChiTiet" type="text" class="form-input"
-              :disabled="!selectedWardCode" :class="{ 'input-error': showError && errors.diaChiChiTiet }" />
-            <span v-if="showError && errors.diaChiChiTiet" class="error-message">Vui lòng nhập địa chỉ chi tiết (số nhà, tên đường...).</span>
+            <input v-model="form.diaChi.diaChiChiTiet" type="text" class="form-input" :disabled="!selectedWardCode"
+              :class="{ 'input-error': showError && errors.diaChiChiTiet }" />
+            <span v-if="showError && errors.diaChiChiTiet" class="error-message">Vui lòng nhập địa chỉ chi tiết (số nhà,
+              tên đường...).</span>
           </div>
         </div>
       </div>
 
 
+
+
       <div class="form-actions-footer">
         <button type="button" @click="goBack" class="button-action button-secondary">Huỷ</button>
-        <button type="submit" class="button-action button-primary">Lưu</button>
+        <button type="submit" class="button-action button-primary" :disabled="isSubmitting">
+          <span v-if="!isSubmitting">Lưu</span>
+          <span v-else>Đang lưu...</span>
+        </button>
       </div>
     </form>
+
+
 
 
   </div>
@@ -109,11 +137,12 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios'; // Use axios for external API calls
+import axios from 'axios';
 import { useToast } from "vue-toastification";
 import Cookies from 'js-cookie'
 
-const token = Cookies.get('token')
+
+const token = Cookies.get('token');
 const router = useRouter();
 const toast = useToast();
 
@@ -131,6 +160,9 @@ const errors = ref({
 });
 
 
+const isSubmitting = ref(false);
+
+
 const form = ref({
   tenKhachHang: '',
   email: '',
@@ -138,53 +170,45 @@ const form = ref({
   gioiTinh: null,
   ngaySinh: null,
   diaChi: {
-    // These will temporarily hold the selected names, updated from selected codes
     tinhThanhPho: null,
     quanHuyen: null,
     xaPhuong: null,
     diaChiChiTiet: '',
     isMacDinh: true,
   },
-  hinhAnhFile: null, // Unused in this form, keep if needed elsewhere
 });
 
 
-// Refs to store the SELECTED CODES from the dropdowns
 const selectedProvinceCode = ref(null);
 const selectedDistrictCode = ref(null);
 const selectedWardCode = ref(null);
 
 
-// Refs to store the LISTS of geographical objects (from external API)
-// These objects have 'code' and 'name' properties
 const tinhThanhPhos = ref([]);
 const quanHuyens = ref([]);
 const xaPhuongs = ref([]);
 
 
-// External API Base URL
 const API_EXTERNAL_GEO = 'http://provinces.open-api.vn/api';
 
 
 // --- Life Cycle Hooks ---
 onMounted(async () => {
-  await loadTinhThanh(); // Load provinces for the customer form
+  await loadTinhThanh();
 });
 
 
-// --- Watchers for Address Dropdowns (Form Khách Hàng) ---
-// Watch selectedProvinceCode to fetch districts
+// --- Watchers for Address Dropdowns ---
 watch(selectedProvinceCode, async (newCode) => {
-  selectedDistrictCode.value = null; // Reset district selection
-  selectedWardCode.value = null;     // Reset ward selection
-  form.value.diaChi.diaChiChiTiet = ''; // Clear detail address
-  quanHuyens.value = [];             // Clear district list
-  xaPhuongs.value = [];              // Clear ward list
+  selectedDistrictCode.value = null;
+  selectedWardCode.value = null;
+  form.value.diaChi.diaChiChiTiet = '';
+  quanHuyens.value = [];
+  xaPhuongs.value = [];
 
 
   if (newCode) {
     await fetchQuanHuyen(newCode);
-    // Find the selected province name and assign to form.diaChi.tinhThanhPho
     const selectedProvince = tinhThanhPhos.value.find(p => p.code === newCode);
     form.value.diaChi.tinhThanhPho = selectedProvince ? selectedProvince.name : null;
   } else {
@@ -193,16 +217,14 @@ watch(selectedProvinceCode, async (newCode) => {
 });
 
 
-// Watch selectedDistrictCode to fetch wards
 watch(selectedDistrictCode, async (newCode) => {
-  selectedWardCode.value = null;      // Reset ward selection
-  form.value.diaChi.diaChiChiTiet = ''; // Clear detail address
-  xaPhuongs.value = [];               // Clear ward list
+  selectedWardCode.value = null;
+  form.value.diaChi.diaChiChiTiet = '';
+  xaPhuongs.value = [];
 
 
   if (newCode) {
     await fetchXaPhuong(newCode);
-    // Find the selected district name and assign to form.diaChi.quanHuyen
     const selectedDistrict = quanHuyens.value.find(d => d.code === newCode);
     form.value.diaChi.quanHuyen = selectedDistrict ? selectedDistrict.name : null;
   } else {
@@ -211,7 +233,6 @@ watch(selectedDistrictCode, async (newCode) => {
 });
 
 
-// Watch selectedWardCode to update the form.diaChi.xaPhuong name
 watch(selectedWardCode, (newCode) => {
   if (newCode) {
     const selectedWard = xaPhuongs.value.find(w => w.code === newCode);
@@ -222,13 +243,11 @@ watch(selectedWardCode, (newCode) => {
 });
 
 
-
-
-// --- Data Fetching Methods (Using External API) ---
+// --- Data Fetching Methods ---
 const loadTinhThanh = async () => {
   try {
     const response = await axios.get(`${API_EXTERNAL_GEO}/p/`);
-    tinhThanhPhos.value = response.data; // API returns objects with 'code' and 'name'
+    tinhThanhPhos.value = response.data;
   } catch (err) {
     console.error("Lỗi khi lấy danh sách Tỉnh/Thành Phố:", err);
     toast.error("Lỗi khi tải Tỉnh/Thành Phố.");
@@ -239,7 +258,7 @@ const loadTinhThanh = async () => {
 const fetchQuanHuyen = async (provinceCode) => {
   try {
     const response = await axios.get(`${API_EXTERNAL_GEO}/p/${provinceCode}?depth=2`);
-    quanHuyens.value = response.data.districts; // API returns an object with 'districts' array
+    quanHuyens.value = response.data.districts;
   } catch (err) {
     console.error("Lỗi khi lấy danh sách Quận/Huyện:", err);
     toast.error("Lỗi khi tải Quận/Huyện.");
@@ -250,7 +269,7 @@ const fetchQuanHuyen = async (provinceCode) => {
 const fetchXaPhuong = async (districtCode) => {
   try {
     const response = await axios.get(`${API_EXTERNAL_GEO}/d/${districtCode}?depth=2`);
-    xaPhuongs.value = response.data.wards; // API returns an object with 'wards' array
+    xaPhuongs.value = response.data.wards;
   } catch (err) {
     console.error("Lỗi khi lấy danh sách Xã/Phường:", err);
     toast.error("Lỗi khi tải Xã/Phường.");
@@ -265,14 +284,10 @@ const validateEmail = (email) => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(email);
 };
-
-
 const isFullName = (name) => {
   const regex = /^[a-zA-Z\u00C0-\u1EF9\s'-]+$/;
   return name && name.trim().length > 0 && regex.test(name);
 };
-
-
 const isAdult = (birthDateString) => {
   if (!birthDateString) return true;
   const birthDate = new Date(birthDateString);
@@ -286,55 +301,56 @@ const isAdult = (birthDateString) => {
 };
 
 
-// --- Form Handlers ---
+// --- Navigation ---
 const goBack = () => {
   router.push('/khach-hang');
 };
 
 
+// --- Submit Form ---
 const handleSubmit = async () => {
   showError.value = true;
 
-  // RESET ALL ERROR FLAGS BEFORE RE-VALIDATING
-  errors.value.tenKhachHang = false;
-  errors.value.email = false;
-  errors.value.soDienThoai = false;
-  errors.value.ngaySinh = false;
-  errors.value.diaChiTinh = false;
-  errors.value.diaChiQuan = false;
-  errors.value.diaChiXa = false;
-  errors.value.diaChiChiTiet = false; // Đảm bảo reset cờ lỗi này
+
+  // Reset error flags
+  Object.keys(errors.value).forEach(key => errors.value[key] = false);
+
 
   let formIsValid = true;
 
-  // VALIDATION FOR PERSONAL INFO (Giữ nguyên)
+
   if (!form.value.tenKhachHang || !isFullName(form.value.tenKhachHang)) {
     errors.value.tenKhachHang = true;
     formIsValid = false;
   }
+
 
   if (!form.value.email || !validateEmail(form.value.email)) {
     errors.value.email = true;
     formIsValid = false;
   }
 
+
   if (!form.value.soDienThoai || !validatePhone(form.value.soDienThoai)) {
     errors.value.soDienThoai = true;
     formIsValid = false;
   }
+
 
   if (form.value.ngaySinh && !isAdult(form.value.ngaySinh)) {
     errors.value.ngaySinh = true;
     formIsValid = false;
   }
 
-  // VALIDATION FOR ADDRESS (Đã sửa đổi)
+
   const hasSelectedProvince = selectedProvinceCode.value !== null;
   const hasSelectedDistrict = selectedDistrictCode.value !== null;
   const hasSelectedWard = selectedWardCode.value !== null;
   const hasDetailAddressText = form.value.diaChi.diaChiChiTiet.trim() !== '';
 
+
   const isAddressAttempted = hasSelectedProvince || hasSelectedDistrict || hasSelectedWard || hasDetailAddressText;
+
 
   if (isAddressAttempted) {
     if (!hasSelectedProvince) {
@@ -355,21 +371,35 @@ const handleSubmit = async () => {
     }
   }
 
+
   if (!formIsValid) {
     toast.error("Thêm khách hàng không thành công! Vui lòng kiểm tra lại thông tin.");
     return;
   }
+
+
+  isSubmitting.value = true;
+
+
+  // Hiện toast loading màu xanh lam
+  const loadingToastId = toast.info("Đang xử lý, vui lòng đợi...", {
+    timeout: false,
+    closeOnClick: false,
+    draggable: false
+  });
+
 
   try {
     const payload = {
       tenKhachHang: form.value.tenKhachHang,
       email: form.value.email,
       soDienThoai: form.value.soDienThoai,
-      gioiTinh: form.value.gioiTinh ,
+      gioiTinh: form.value.gioiTinh,
       ngaySinh: form.value.ngaySinh,
     };
 
-    if (isAddressAttempted && !errors.value.diaChiTinh && !errors.value.diaChiQuan && !errors.value.diaChiXa && !errors.value.diaChiChiTiet) {
+
+    if (isAddressAttempted) {
       payload.diaChi = {
         tinhThanhPho: form.value.diaChi.tinhThanhPho,
         quanHuyen: form.value.diaChi.quanHuyen,
@@ -377,35 +407,57 @@ const handleSubmit = async () => {
         diaChiChiTiet: form.value.diaChi.diaChiChiTiet.trim(),
         isMacDinh: true,
       };
-    } else {
-      payload.diaChi = null;
     }
 
-    console.log("Payload JSON cuối cùng gửi đi:", JSON.stringify(payload, null, 2));
 
-    await axios.post('/api/khach-hang', payload,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(payload));
 
 
-    toast.success("Thêm khách hàng thành công!");
-    router.go(-1); // Quay lại trang trước
+    await axios.post('/api/khach-hang', formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+
+
+    // Ẩn loading toast
+    toast.dismiss(loadingToastId);
+
+
+    // Hiện toast thành công xanh lá và tự tắt
+    toast.success("Thêm khách hàng thành công!", {
+      timeout: 1500
+    });
+
+
+    // Quay lại sau khi toast đóng
+    setTimeout(() => {
+      router.go(-1);
+    }, 1500);
+
 
   } catch (err) {
     console.error('Lỗi khi thêm khách hàng:', err.response?.data || err.message);
 
-    // Kiểm tra xem có thông báo lỗi từ backend không và hiển thị thông báo lỗi chi tiết
+
+    // Ẩn toast loading nếu lỗi
+    toast.dismiss(loadingToastId);
+
+
     if (err.response && err.response.data) {
       toast.error(`Thêm khách hàng không thành công! ${err.response.data}`);
     } else {
       toast.error("Thêm khách hàng không thành công! Đã có lỗi xảy ra từ máy chủ.");
     }
+  } finally {
+    isSubmitting.value = false;
   }
 };
-
 </script>
+
+
 
 
 <style scoped>
@@ -420,10 +472,14 @@ body {
 }
 
 
+
+
 .p-4 {
   padding: 2rem;
   /* Tăng padding tổng thể của trang */
 }
+
+
 
 
 /* Header Section (Quay lại và Tiêu đề) */
@@ -436,6 +492,8 @@ body {
   gap: 2rem;
   /* Khoảng cách lớn hơn giữa nút và tiêu đề */
 }
+
+
 
 
 .back-button {
@@ -458,10 +516,14 @@ body {
 }
 
 
+
+
 .back-button:hover {
   background-color: #dee2e6;
   color: #343a40;
 }
+
+
 
 
 .page-title-aligned {
@@ -476,6 +538,10 @@ body {
   line-height: 1;
   /* Căn chỉnh dòng */
 }
+
+
+
+
 
 
 
@@ -500,6 +566,8 @@ body {
 }
 
 
+
+
 /* Container cho 2 cột mới (đã loại bỏ cột ảnh) */
 .form-grid-container {
   display: grid;
@@ -512,6 +580,8 @@ body {
   align-items: start;
   /* Căn chỉnh các cột lên đầu */
 }
+
+
 
 
 /* Các cột Thông tin cá nhân và Địa chỉ */
@@ -527,6 +597,8 @@ body {
 }
 
 
+
+
 /* Các Label */
 label {
   display: block;
@@ -539,12 +611,16 @@ label {
 }
 
 
+
+
 .required-star {
   color: #dc3545;
   /* Màu đỏ cho dấu sao bắt buộc */
   margin-left: 0.25rem;
   font-size: 0.9em;
 }
+
+
 
 
 /* Các trường Input và Select */
@@ -564,6 +640,8 @@ label {
 }
 
 
+
+
 .form-input:focus {
   border-color: #0a2c57;
   /* Màu xanh đậm khi focus */
@@ -573,10 +651,14 @@ label {
 }
 
 
+
+
 .input-error {
   border-color: #dc3545 !important;
   /* Màu đỏ cho lỗi */
 }
+
+
 
 
 /* Giới tính Radio Buttons */
@@ -589,11 +671,15 @@ label {
 }
 
 
+
+
 .gender-options {
   display: flex;
   gap: 2rem;
   /* Khoảng cách giữa "Nam" và "Nữ" */
 }
+
+
 
 
 .radio-label {
@@ -606,6 +692,8 @@ label {
   cursor: pointer;
   font-size: 1rem;
 }
+
+
 
 
 .radio-input {
@@ -623,10 +711,14 @@ label {
 }
 
 
+
+
 .radio-input:checked {
   border-color: #0a2c57;
   /* Màu xanh đậm khi chọn */
 }
+
+
 
 
 .radio-input:checked::before {
@@ -644,6 +736,8 @@ label {
 }
 
 
+
+
 /* Tiêu đề Địa chỉ */
 .address-section-title {
   font-size: 1.8rem;
@@ -655,6 +749,8 @@ label {
   padding-bottom: 0.85rem;
   border-bottom: 1px solid #e9ecef;
 }
+
+
 
 
 /* Footer với các nút actions */
@@ -673,6 +769,8 @@ label {
 }
 
 
+
+
 .button-action {
   /* Class chung cho các nút */
   padding: 0.85rem 1.8rem;
@@ -687,6 +785,8 @@ label {
 }
 
 
+
+
 .button-secondary {
   background-color: #6c757d;
   /* Giữ màu xám cho nút Hủy */
@@ -694,10 +794,14 @@ label {
 }
 
 
+
+
 .button-secondary:hover {
   background-color: #5c636a;
   transform: translateY(-1px);
 }
+
+
 
 
 .button-primary {
@@ -707,6 +811,8 @@ label {
 }
 
 
+
+
 .button-primary:hover {
   background-color: #071f3e;
   /* Màu đậm hơn khi hover */
@@ -714,8 +820,12 @@ label {
 }
 
 
+
+
 /* Responsive adjustments */
 @media (max-width: 992px) {
+
+
 
 
   /* Chuyển sang 2 cột trên tablet */
@@ -726,11 +836,17 @@ label {
   }
 
 
+
+
   /* Không cần image-column nữa */
 }
 
 
+
+
 @media (max-width: 768px) {
+
+
 
 
   /* Chuyển sang 1 cột trên điện thoại */
@@ -741,9 +857,13 @@ label {
   }
 
 
+
+
   .page-title-aligned {
     font-size: 1.8rem;
   }
+
+
 
 
   .form-grid-container {
@@ -753,6 +873,8 @@ label {
   }
 
 
+
+
   .personal-info-column,
   .address-column {
     padding: 0;
@@ -760,11 +882,15 @@ label {
   }
 
 
+
+
   .customer-form {
     padding: 2rem;
     /* Giảm padding tổng thể của form trên mobile */
   }
 }
+
+
 
 
 .input-group {
@@ -775,6 +901,8 @@ label {
 }
 
 
+
+
 /* Điều chỉnh khoảng cách của label và input trong input-group */
 .input-group label {
   margin-bottom: 0.35rem;
@@ -782,11 +910,15 @@ label {
 }
 
 
+
+
 /* Bỏ margin-bottom mặc định của form-input nếu nó nằm trong input-group */
 .input-group .form-input {
   margin-bottom: 0;
   /* Quan trọng: loại bỏ margin-bottom mặc định để error-message nằm sát */
 }
+
+
 
 
 .error-message {
@@ -801,8 +933,12 @@ label {
 }
 
 
+
+
 /* Đã xóa .qr-scan-button-container và .button-qr-scan CSS */
 </style>
+
+
 
 
 

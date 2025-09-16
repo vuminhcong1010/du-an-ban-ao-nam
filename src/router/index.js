@@ -27,6 +27,7 @@ import ThemDotGiamGia from "@/components/admin/ThemDotGiamGia.vue";
 import DotGiamGia from "@/components/admin/DotGiamGia.vue";
 import DangNhap from "@/components/admin/DangNhap.vue"; // Admin Login
 import Cookies from "js-cookie";
+import { useAuthStore } from "@/stores/auth";
 
 // --- CLIENT COMPONENTS ---
 import ClientLayout from "@/views/client/ClientLayout.vue";
@@ -48,9 +49,13 @@ import DanhMucList from "@/components/client/Category.vue";
 import ProductCategory from "@/components/client/ProductCategory.vue";
 import MyAccount from "@/components/client/MyAccount.vue"; // Make sure this file exists
 import OrderDetail from "@/components/client/OrderDetail.vue"; // Make sure this file exists
-import gioHang from "@/components/client/GioHangPage.vue"; // Make sure this file exists
 import LoginGG from "@/components/client/LoginGG.vue"; // Google Login Page
 import XacNhanThongTinCustomer from "@/components/client/XacNhanThongTinCustomer.vue"; // Component for confirming customer info (path inconsistency, consider moving)
+import OrderLookup from "@/components/client/OrderLookup.vue";
+import DanhMucList from "@/components/client/Category.vue";
+import ProductCategory from "@/components/client/ProductCategory.vue";
+import ThongTinUser from "@/components/client/ThongTinUser.vue"; // User Info Component
+import gioHang from "@/components/client/GioHangPage.vue"; // User Info Component
 
 // --- ADMIN COMPONENTS ---
 import AdminLayout from "@/views/admin/AdminLayout.vue";
@@ -64,7 +69,6 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     // --- CLIENT ROUTES ---
-    
     {
       path: "/coolmen", // Root path for client-facing pages
       component: ClientLayout, // Renders ClientLayout and its RouterView
@@ -80,25 +84,14 @@ const router = createRouter({
           component: ClientSanPham,
         },
         {
-          path: "danh-muc-List",
-          name: "danh-muc-List",
-          component: DanhMucList,
-        },
-
-        {
           path: "client-san-pham-detail/:id",
           name: "client-san-pham-detail",
           component: ClientSanPhamDetail,
         },
         {
-          path: "/product-category/:idDanhMuc",
-          name: "product-category",
-          component: ProductCategory,
-        },
-        {
-          path: "/return",
-          name: "return",
-          component: Return,
+          path: "/vnpay-return",
+          name: "vnpay-return",
+          component: VnpayReturn,
         },
         {
           path: "client-oder/:hoaDonId",
@@ -106,13 +99,27 @@ const router = createRouter({
           component: Oder,
           props: (route) => ({ hoaDonId: Number(route.params.hoaDonId) }),
         },
-
         {
-          path: "tai-khoan",
-          name: "client-my-account",
-          component: MyAccount,
-          meta: { requiresAuthClient: true }, // Add this meta field for client auth
+          path: "danh-muc-List",
+          name: "danh-muc-List",
+          component: DanhMucList,
         },
+        {
+          path: "/product-category/:idDanhMuc",
+          name: "product-category",
+          component: ProductCategory,
+        },
+        {
+          path: "/gio-hang",
+          name: "client-gio-hang",
+          component: gioHang,
+        },
+        // {
+        //   path: "tai-khoan",
+        //   name: "client-my-account",
+        //   component: MyAccount,
+        //   meta: { requiresAuthClient: true }, // Add this meta field for client auth
+        // },
         {
           path: "lich-su-dat-hang",
           name: "client-order-history",
@@ -120,17 +127,11 @@ const router = createRouter({
           meta: { requiresAuthClient: true }, // Add this meta field for client auth
         },
         {
-          path: "/gio-hang",
-          name: "client-gio-hang",
-          component: gioHang,
-        },
-
-        {
           path: "order/:id",
           name: "OrderDetail",
           component: OrderDetail,
-          props: true, // Assuming OrderDetail uses props
-          meta: { requiresAuthClient: true }, // Order details usually require login
+          //props: true, // Assuming OrderDetail uses props
+          // meta: { requiresAuthClient: true }, // Order details usually require login
         },
         // Direct routes that don't need ClientLayout but are client-related
         {
@@ -159,7 +160,6 @@ const router = createRouter({
           component: LienHe,
         },
       ],
-
     },
     {
       path: "/coolmen/dang-nhap-khach-hang",
@@ -406,33 +406,26 @@ const router = createRouter({
 
 // --- Navigation Guard ---
 router.beforeEach((to, from, next) => {
-  const adminToken = Cookies.get("token"); // Admin token
-  const clientAuthToken = localStorage.getItem("clientAuthToken"); // Client token from localStorage
-  let clientInfo = null;
-  try {
-    const clientInfoCookie = Cookies.get("thongTinKhachHang");
-    if (clientInfoCookie) {
-      clientInfo = JSON.parse(clientInfoCookie);
-    }
-  } catch (e) {
-    console.error("Failed to parse thongTinKhachHang cookie:", e);
-    // Optionally remove corrupted cookie
-    // Cookies.remove("thongTinKhachHang");
-  }
+  const authStore = useAuthStore();
+  // Lấy trạng thái đăng nhập của client
+  const clientAuthToken = localStorage.getItem("clientAuthToken");
+  const loggedInUser = localStorage.getItem("loggedInUser");
 
+  // Trạng thái đã đăng nhập của khách hàng
+  const isLoggedInClient = authStore.isLoggedInClient;
+
+  // Lấy trạng thái đăng nhập của admin
+  const adminToken = Cookies.get("token");
   const isLoggedInAdmin = !!adminToken;
-  const isLoggedInClient =
-    !!clientAuthToken || (clientInfo && clientInfo.maKhachHang); // Check if client has token or valid info
 
-  // --- Admin Authentication Logic ---
-  // If trying to access an admin path (not starting with /coolmen) and not logged in as admin
+  // --- Logic Điều hướng cho Admin ---
+  // If trying to access admin pages and not logged in as admin
   if (
     to.meta.requiresAuth &&
     !to.path.startsWith("/coolmen") &&
     !isLoggedInAdmin
   ) {
-    // Allow access to admin login/forgot password
-    if (to.path !== "/dang-nhap" && to.path !== "/quen-mat-khau") {
+    if (to.path !== "/dang-nhap") {
       console.log("Admin: Not authenticated, redirecting to admin login.");
       return next("/dang-nhap");
     }
@@ -441,7 +434,7 @@ router.beforeEach((to, from, next) => {
   // If already logged in as admin and trying to access admin login page
   if (isLoggedInAdmin && to.path === "/dang-nhap") {
     console.log("Admin: Already logged in, redirecting to admin dashboard.");
-    return next("/"); // Redirect to admin dashboard
+    return next("/");
   }
 
   // Admin role check
@@ -449,13 +442,13 @@ router.beforeEach((to, from, next) => {
     try {
       const payload = JSON.parse(atob(adminToken.split(".")[1]));
       const vaiTro = payload.scope || payload.vaiTro || "";
+
       // If STAFF tries to access /nhan-vien (employee management)
       if (vaiTro === "STAFF" && to.path.startsWith("/nhan-vien")) {
         console.log(
           "Admin: Staff role cannot access employee management, redirecting to products."
         );
         return next("/san-pham");
-
       }
     } catch (err) {
       console.error("Admin: Invalid token:", err);
@@ -478,27 +471,14 @@ router.beforeEach((to, from, next) => {
     (to.path === "/coolmen/dang-nhap-khach-hang" ||
       to.path === "/coolmen/dang-ki-khach-hang")
   ) {
-    console.log("Client: Already logged in, redirecting to client homepage.");
+    console.log("Client đã đăng nhập, chuyển hướng về trang chủ.");
     return next("/coolmen");
   }
 
-  // Specific redirect for /xntt (Xác Nhận Thông Tin Customer)
-  // This rule implies /xntt is for a specific state (e.g., after Google login, before full registration)
-  // If email cookie exists but thongTinKhachHang is also present (meaning they are already fully registered/logged in)
-  // Or if email doesn't exist at all (meaning no initial Google login attempt)
-  if (
-    to.path === "/xntt" &&
-    ((Cookies.get("email") && clientInfo && clientInfo.matKhau) ||
-      (!Cookies.get("email") && !clientInfo))
-  ) {
-    if (to.path !== "/coolmen") {
-      console.log(
-        "Client: Redirecting from /xntt due to existing info or no email for confirmation."
-      );
-      return next("/coolmen");
-    } else {
-      return next(false); // Hoặc next() để tránh vòng lặp
-    }
+  // Nếu người dùng cố gắng truy cập một trang được bảo vệ mà chưa đăng nhập
+  if (to.meta.requiresAuthClient && !isLoggedInClient) {
+    console.log("Client: Not authenticated, redirecting to login.");
+    return next("/coolmen/dang-nhap-khach-hang");
   }
 
   // Continue to the next route if no redirects are triggered

@@ -146,7 +146,7 @@
                     <th>Email</th>
                     <th>Số điện thoại</th>
                     <th>Giới tính</th>
-                              <th>Số lần mua</th>
+                    <th>Số lần mua</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -158,7 +158,7 @@
                     <td>{{ kh.email }}</td>
                     <td>{{ kh.soDienThoai }}</td>
                     <td>{{ kh.gioiTinh ? "Nam" : "Nữ" }}</td>
-                    <td>{{ kh.soLanMua || 0 }}</td> <!-- Hiển thị số lần mua -->
+                    <td>{{ kh.soLanMua || 0 }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -203,7 +203,8 @@
 <script>
 import { useToast } from 'vue-toastification';
 import Swal from 'sweetalert2';
-import Cookies from 'js-cookie'
+import Cookies from 'js-cookie';
+
 export default {
   name: "SuaPhieuGiamGia",
   setup() {
@@ -328,39 +329,38 @@ export default {
     },
     giaTriGiam(newVal) {
       console.log(`giaTriGiam changed to ${newVal}`);
-      if (this.giaTriOption === 'vnd') {
-        this.giaTriToiDa = newVal;
-        this.giaTriToiDaFormatted = this.formatCurrency(newVal);
+      if (newVal !== null && !isNaN(newVal)) {
+        this.giaTriGiamFormatted = this.giaTriOption === 'vnd' ? this.formatCurrency(newVal) : newVal.toString();
+        if (this.giaTriOption === 'vnd') {
+          this.giaTriToiDa = newVal;
+          this.giaTriToiDaFormatted = this.formatCurrency(newVal);
+        }
+      } else {
+        this.giaTriGiamFormatted = "";
       }
-      this.giaTriGiamFormatted = this.giaTriOption === 'vnd' ? this.formatCurrency(newVal) : newVal;
       if (!this.isInitialLoad) {
         this.validateGiaTriGiam();
       }
     },
     giaTriToiThieu(newVal) {
-      this.giaTriToiThieuFormatted = this.formatCurrency(newVal);
+      if (newVal !== null && !isNaN(newVal)) {
+        this.giaTriToiThieuFormatted = this.formatCurrency(newVal);
+      } else {
+        this.giaTriToiThieuFormatted = "";
+      }
       if (!this.isInitialLoad) {
         this.validateGiaTriToiThieu();
       }
     },
     giaTriToiDa(newVal) {
-      this.giaTriToiDaFormatted = this.formatCurrency(newVal);
+      if (newVal !== null && !isNaN(newVal)) {
+        this.giaTriToiDaFormatted = this.formatCurrency(newVal);
+      } else {
+        this.giaTriToiDaFormatted = "";
+      }
       if (!this.isInitialLoad) {
         this.validateGiaTriToiDa();
       }
-    },
-    ngayBatDau() {
-      this.validateNgayBatDau();
-      this.validateNgayKetThuc();
-    },
-    ngayKetThuc() {
-      this.validateNgayKetThuc();
-    },
-    selectedRows() {
-      this.validateSelectedRows();
-    },
-    soLuong() {
-      this.validateSoLuong();
     },
   },
   methods: {
@@ -369,36 +369,40 @@ export default {
       return Number(value).toLocaleString("vi-VN", { minimumFractionDigits: 0 });
     },
     parseCurrency(value) {
-      if (!value) return null;
-      const cleaned = value.replace(/[^\d]/g, "");
-      return cleaned ? Number(cleaned) : null;
+      if (!value || value.trim() === "" || value === "-") return null;
+      const cleaned = value.replace(/[^\d-]/g, ""); // Cho phép số và dấu trừ
+      return isNaN(cleaned) ? null : Number(cleaned);
     },
     handleGiaTriGiamInput(event) {
       const value = event.target.value;
-      if (this.giaTriOption === "phanTram") {
-        this.giaTriGiam = this.parseCurrency(value);
-        this.giaTriGiamFormatted = value;
-      } else {
-        this.giaTriGiam = this.parseCurrency(value);
-        this.giaTriGiamFormatted = this.formatCurrency(this.giaTriGiam);
-      }
-      if (this.giaTriOption === "vnd") {
-        this.giaTriToiDa = this.giaTriGiam;
-        this.giaTriToiDaFormatted = this.giaTriGiamFormatted;
+      this.giaTriGiamFormatted = value; // Giữ nguyên giá trị nhập vào
+      this.giaTriGiam = this.parseCurrency(value);
+      if (this.giaTriGiam !== null && !isNaN(this.giaTriGiam)) {
+        this.giaTriGiamFormatted = this.giaTriOption === "vnd" ? this.formatCurrency(this.giaTriGiam) : this.giaTriGiam.toString();
+        if (this.giaTriOption === "vnd") {
+          this.giaTriToiDa = this.giaTriGiam;
+          this.giaTriToiDaFormatted = this.formatCurrency(this.giaTriGiam);
+        }
       }
       this.validateGiaTriGiam();
     },
     handleGiaTriToiThieuInput(event) {
       const value = event.target.value;
+      this.giaTriToiThieuFormatted = value; // Giữ nguyên giá trị nhập vào
       this.giaTriToiThieu = this.parseCurrency(value);
-      this.giaTriToiThieuFormatted = this.formatCurrency(this.giaTriToiThieu);
+      if (this.giaTriToiThieu !== null && !isNaN(this.giaTriToiThieu)) {
+        this.giaTriToiThieuFormatted = this.formatCurrency(this.giaTriToiThieu);
+      }
       this.validateGiaTriToiThieu();
     },
     handleGiaTriToiDaInput(event) {
       if (this.giaTriOption === "vnd") return;
       const value = event.target.value;
+      this.giaTriToiDaFormatted = value; // Giữ nguyên giá trị nhập vào
       this.giaTriToiDa = this.parseCurrency(value);
-      this.giaTriToiDaFormatted = this.formatCurrency(this.giaTriToiDa);
+      if (this.giaTriToiDa !== null && !isNaN(this.giaTriToiDa)) {
+        this.giaTriToiDaFormatted = this.formatCurrency(this.giaTriToiDa);
+      }
       this.validateGiaTriToiDa();
     },
     toggleAllCheckboxes() {
@@ -412,88 +416,117 @@ export default {
       }
       this.validateSelectedRows();
     },
-   async getDanhSachKhachHang() {
-  try {
-  const response = await fetch("http://localhost:8080/danhSachKhachHang", {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
-    if (!response.ok) throw new Error("Không thể tải danh sách khách hàng");
-    const data = await response.json();
-    this.danhSachKhachHang = data.map(kh => ({
-      id: kh.id,
-      maKhachHang: kh.maKhachHang,
-      tenTaiKhoan: kh.tenTaiKhoan,
-      matKhau: kh.matKhau,
-      tenKhachHang: kh.tenKhachHang,
-      email: kh.email,
-      gioiTinh: kh.gioiTinh,
-      soDienThoai: kh.soDienThoai,
-      ngaySinh: kh.ngaySinh,
-      ghiChu: kh.ghiChu,
-      ngayTao: kh.ngayTao,
-      hinhAnh: kh.hinhAnh,
-      trangThai: kh.trangThai,
-      soLanMua: kh.soLanMua || 0 // Thêm số lần mua
-    }));
-    this.currentPage = 1;
-  } catch (err) {
-    console.error("Lỗi:", err);
-    this.danhSachKhachHang = [];
-    this.dataFetchFailed = true;
-    this.toast.error("Không thể tải danh sách khách hàng: " + err.message);
-  }
-},
+    async getDanhSachKhachHang() {
+      try {
+        const response = await fetch("http://localhost:8080/danhSachKhachHang", {
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          }
+        });
+        if (!response.ok) throw new Error("Không thể tải danh sách khách hàng");
+        const data = await response.json();
+        this.danhSachKhachHang = data.map(kh => ({
+          id: kh.id,
+          maKhachHang: kh.maKhachHang,
+          tenTaiKhoan: kh.tenTaiKhoan,
+          matKhau: kh.matKhau,
+          tenKhachHang: kh.tenKhachHang,
+          email: kh.email,
+          gioiTinh: kh.gioiTinh,
+          soDienThoai: kh.soDienThoai,
+          ngaySinh: kh.ngaySinh,
+          ghiChu: kh.ghiChu,
+          ngayTao: kh.ngayTao,
+          hinhAnh: kh.hinhAnh,
+          trangThai: kh.trangThai,
+          soLanMua: kh.soLanMua || 0
+        }));
+        this.currentPage = 1;
+      } catch (err) {
+        console.error("Lỗi:", err);
+        this.danhSachKhachHang = [];
+        this.dataFetchFailed = true;
+        this.toast.error("Không thể tải danh sách khách hàng: " + err.message);
+      }
+    },
     async getPhieuGiamGiaById() {
       try {
+        console.log("Loading voucher with ID:", this.$route.params.id);
         const response = await fetch(`http://localhost:8080/phieuGiamGias/${this.$route.params.id}`, {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          }
+        });
+        
         if (response.ok) {
           const phieu = await response.json();
-          console.log("API Response:", JSON.stringify(phieu, null, 2));
+          console.log("Raw API response:", phieu);
 
+          // Set basic fields
           this.id = phieu.id;
           this.maPhieu = phieu.maPhieuGiamGia || "";
           this.tenPhieu = phieu.tenPhieu || "";
           this.loaiPhieu = phieu.loaiPhieu || "Công khai";
           this.soLuong = phieu.soLuong != null ? phieu.soLuong : (phieu.loaiPhieu === "Cá nhân" ? 1 : null);
-          this.giaTriToiThieu = phieu.giamToiThieu != null ? Number(parseFloat(phieu.giamToiThieu).toFixed(2)) : null;
+
+          // Parse monetary values
+          this.giaTriToiThieu = this.parseBigDecimalValue(phieu.giamToiThieu);
           this.giaTriToiThieuFormatted = this.formatCurrency(this.giaTriToiThieu);
-          this.giaTriToiDa = phieu.giamToiDa != null ? Number(parseFloat(phieu.giamToiDa).toFixed(2)) : null;
+
+          this.giaTriToiDa = this.parseBigDecimalValue(phieu.giamToiDa);
           this.giaTriToiDaFormatted = this.formatCurrency(this.giaTriToiDa);
+
+          // Parse dates
           this.ngayBatDau = phieu.ngayBatDau ? new Date(phieu.ngayBatDau).toISOString().slice(0, 16) : "";
           this.ngayKetThuc = phieu.ngayKetThuc ? new Date(phieu.ngayKetThuc).toISOString().slice(0, 16) : "";
 
-          console.log("Processing discount: soTienGiam =", phieu.soTienGiam, ", phamTramGiamGia =", phieu.phamTramGiamGia);
-          if (phieu.soTienGiam != null && !isNaN(parseFloat(phieu.soTienGiam))) {
+          // Parse discount values with detailed logging
+          const soTienGiam = this.parseBigDecimalValue(phieu.soTienGiam);
+          const phamTramGiamGia = this.parseBigDecimalValue(phieu.phamTramGiamGia);
+
+          console.log("Parsed discount values:", {
+            soTienGiam,
+            phamTramGiamGia,
+            originalSoTien: phieu.soTienGiam,
+            originalPhamTram: phieu.phamTramGiamGia
+          });
+
+          // Determine discount type - prioritize soTienGiam (VND)
+          if (soTienGiam !== null && soTienGiam >= 0) {
+            console.log("Setting as VND discount");
             this.giaTriOption = "vnd";
-            this.giaTriGiam = Math.max(0, Number(parseFloat(phieu.soTienGiam).toFixed(2)));
+            this.giaTriGiam = soTienGiam;
             this.giaTriGiamFormatted = this.formatCurrency(this.giaTriGiam);
             this.giaTriToiDa = this.giaTriGiam;
             this.giaTriToiDaFormatted = this.giaTriGiamFormatted;
-            console.log("Set giaTriOption to 'vnd', giaTriGiam to", this.giaTriGiam, ", giaTriToiDa to", this.giaTriToiDa);
-          } else if (phieu.phamTramGiamGia != null && !isNaN(parseFloat(phieu.phamTramGiamGia))) {
+          } else if (phamTramGiamGia !== null && phamTramGiamGia >= 0) {
+            console.log("Setting as percentage discount");
             this.giaTriOption = "phanTram";
-            this.giaTriGiam = Math.max(0, Math.min(100, Number(parseFloat(phieu.phamTramGiamGia).toFixed(2))));
+            this.giaTriGiam = phamTramGiamGia;
             this.giaTriGiamFormatted = this.giaTriGiam.toString();
-            console.log("Set giaTriOption to 'phanTram', giaTriGiam to", this.giaTriGiam);
           } else {
-            console.warn("No valid discount value found in API response");
+            console.warn("No valid discount value found");
             this.giaTriOption = "phanTram";
             this.giaTriGiam = null;
             this.giaTriGiamFormatted = "";
+            this.errors.giaTriGiam = "Không tìm thấy giá trị giảm hợp lệ từ dữ liệu.";
           }
 
+          console.log("Final state after parsing:", {
+            giaTriOption: this.giaTriOption,
+            giaTriGiam: this.giaTriGiam,
+            giaTriGiamFormatted: this.giaTriGiamFormatted,
+            giaTriToiDa: this.giaTriToiDa,
+            giaTriToiDaFormatted: this.giaTriToiDaFormatted
+          });
+
+          // Load customer details for personal vouchers
           if (this.loaiPhieu === "Cá nhân") {
             const chiTietResponse = await fetch(`http://localhost:8080/chiTietPhieuGiamGias/${this.$route.params.id}`, {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+              headers: {
+                Authorization: `Bearer ${this.token}`
+              }
+            });
             if (chiTietResponse.ok) {
               const chiTietData = await chiTietResponse.json();
               this.selectedRows = chiTietData.map((chiTiet) => chiTiet.idKhachHang.id);
@@ -503,8 +536,17 @@ export default {
             }
           }
 
+          // Use $nextTick to ensure reactive updates are complete
+          await this.$nextTick();
           this.isInitialLoad = false;
           this.validateForm();
+          
+          console.log("State after $nextTick:", {
+            giaTriOption: this.giaTriOption,
+            giaTriGiam: this.giaTriGiam,
+            giaTriGiamFormatted: this.giaTriGiamFormatted
+          });
+          
         } else {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
@@ -514,15 +556,52 @@ export default {
         this.toast.error("Không thể tải dữ liệu phiếu giảm giá: " + error.message);
       }
     },
+    parseBigDecimalValue(value) {
+      console.log("Parsing BigDecimal value:", value, "Type:", typeof value);
+      if (value == null || value === "") {
+        console.log("Value is null or empty");
+        return null;
+      }
+      if (typeof value === "number") {
+        const result = Number(value.toFixed(2));
+        console.log("Parsed as number:", result);
+        return result;
+      }
+      if (typeof value === "string") {
+        const cleaned = value.replace(/[^\d.,\-]/g, "");
+        console.log("Cleaned string:", cleaned);
+        let normalizedValue;
+        if (cleaned.includes(',')) {
+          normalizedValue = cleaned.replace(/\./g, '').replace(',', '.');
+        } else {
+          normalizedValue = cleaned;
+        }
+        console.log("Normalized value:", normalizedValue);
+        const parsed = parseFloat(normalizedValue);
+        const result = isNaN(parsed) ? null : Number(parsed.toFixed(2));
+        console.log("Final parsed result:", result);
+        return result;
+      }
+      console.log("Unknown type, returning null");
+      return null;
+    },
     validateMaPhieu() {
       this.errors.maPhieu = this.maPhieu && this.maPhieu.trim() === ""
         ? "Mã phiếu không được để trống nếu đã nhập!"
         : "";
     },
     validateTenPhieu() {
-      this.errors.tenPhieu = !this.tenPhieu || this.tenPhieu.trim() === ""
-        ? "Tên phiếu là bắt buộc!"
-        : "";
+      const tenPhieuTrimmed = this.tenPhieu.trim();
+      const validNameRegex = /^[a-zA-Z0-9\sÀ-ỹ]*$/; // Cho phép chữ, số, khoảng trắng và ký tự tiếng Việt
+      if (!tenPhieuTrimmed) {
+        this.errors.tenPhieu = "Tên phiếu là bắt buộc!";
+      } else if (!validNameRegex.test(tenPhieuTrimmed)) {
+        this.errors.tenPhieu = "Tên phiếu chỉ được chứa chữ, số, khoảng trắng và ký tự tiếng Việt!";
+      } else if (tenPhieuTrimmed.length > 255) {
+        this.errors.tenPhieu = "Tên phiếu không được vượt quá 255 ký tự!";
+      } else {
+        this.errors.tenPhieu = "";
+      }
     },
     validateGiaTriOption() {
       this.errors.giaTriOption = !["phanTram", "vnd"].includes(this.giaTriOption)
@@ -531,15 +610,18 @@ export default {
       this.validateGiaTriGiam();
     },
     validateGiaTriGiam() {
-      console.log("Validating giaTriGiam:", this.giaTriGiam, "with giaTriOption:", this.giaTriOption);
       if (this.giaTriGiam === null || this.giaTriGiam === "" || isNaN(this.giaTriGiam)) {
         this.errors.giaTriGiam = "Giá trị giảm là bắt buộc!";
         return;
       }
+      if (this.giaTriGiam <= 0) {
+        this.errors.giaTriGiam = "Giá trị giảm phải lớn hơn 0!";
+        return;
+      }
       if (this.giaTriOption === "phanTram") {
-        if (this.giaTriGiam < 0 || this.giaTriGiam > 100) {
-          this.errors.giaTriGiam = "Giá trị giảm phải từ 0 đến 100!";
-          this.giaTriGiam = this.giaTriGiam < 0 ? 0 : this.giaTriGiam > 100 ? 100 : this.giaTriGiam;
+        if (this.giaTriGiam > 100) {
+          this.errors.giaTriGiam = "Phần trăm giảm phải từ 0 đến 100!";
+          this.giaTriGiam = 100;
           this.giaTriGiamFormatted = this.giaTriGiam.toString();
         } else {
           this.errors.giaTriGiam = "";
@@ -547,8 +629,8 @@ export default {
       } else if (this.giaTriOption === "vnd") {
         if (this.giaTriGiam < 1000) {
           this.errors.giaTriGiam = "Giá trị giảm phải từ 1000 trở lên!";
-          this.giaTriToiDa = this.giaTriGiam;
-          this.giaTriToiDaFormatted = this.formatCurrency(this.giaTriGiam);
+        } else if (this.giaTriGiam > 100000000) {
+          this.errors.giaTriGiam = "Giá trị giảm không quá 100 triệu!";
         } else {
           this.errors.giaTriGiam = "";
         }
@@ -557,10 +639,10 @@ export default {
     validateGiaTriToiThieu() {
       if (this.giaTriToiThieu === null || this.giaTriToiThieu === "" || isNaN(this.giaTriToiThieu)) {
         this.errors.giaTriToiThieu = "Giá trị tối thiểu là bắt buộc!";
-      } else if (this.giaTriToiThieu < 0) {
-        this.errors.giaTriToiThieu = "Giá trị tối thiểu không được âm!";
-        this.giaTriToiThieu = 0;
-        this.giaTriToiThieuFormatted = "";
+      } else if (this.giaTriToiThieu <= 0) {
+        this.errors.giaTriToiThieu = "Giá trị tối thiểu phải lớn hơn 0!";
+      } else if (this.giaTriToiThieu > 100000000) {
+        this.errors.giaTriToiThieu = "Giá trị tối thiểu không quá 100 triệu!";
       } else {
         this.errors.giaTriToiThieu = "";
       }
@@ -568,14 +650,14 @@ export default {
     validateGiaTriToiDa() {
       if (this.giaTriToiDa === null || this.giaTriToiDa === "" || isNaN(this.giaTriToiDa)) {
         this.errors.giaTriToiDa = "Giá trị tối đa là bắt buộc!";
-      } else if (this.giaTriToiDa < 0) {
-        this.errors.giaTriToiDa = "Giá trị tối đa không được âm!";
-        this.giaTriToiDa = 0;
-        this.giaTriToiDaFormatted = "";
+      } else if (this.giaTriToiDa <= 0) {
+        this.errors.giaTriToiDa = "Giá trị tối đa phải lớn hơn 0!";
       } else if (this.giaTriOption === "vnd" && this.giaTriToiDa !== this.giaTriGiam) {
         this.errors.giaTriToiDa = "Giá trị tối đa phải bằng giá trị giảm khi chọn VNĐ!";
         this.giaTriToiDa = this.giaTriGiam;
         this.giaTriToiDaFormatted = this.giaTriGiamFormatted;
+      } else if (this.giaTriToiDa > 100000000) {
+        this.errors.giaTriToiDa = "Giá trị tối đa không quá 100 triệu!";
       } else {
         this.errors.giaTriToiDa = "";
       }
@@ -647,6 +729,23 @@ export default {
       this.validateLoaiPhieu();
       this.validateSelectedRows();
       this.validateSoLuong();
+
+      // Additional validation for submission
+      const tenPhieuTrimmed = this.tenPhieu.trim();
+      const validNameRegex = /^[a-zA-Z0-9\sÀ-ỹ]*$/;
+      if (!validNameRegex.test(tenPhieuTrimmed)) {
+        this.errors.tenPhieu = "Tên phiếu chỉ được chứa chữ, số, khoảng trắng và ký tự tiếng Việt!";
+      }
+      if (this.giaTriGiam !== null && (isNaN(this.giaTriGiam) || this.giaTriGiam <= 0)) {
+        this.errors.giaTriGiam = "Giá trị giảm phải là số dương!";
+      }
+      if (this.giaTriToiThieu !== null && (isNaN(this.giaTriToiThieu) || this.giaTriToiThieu <= 0)) {
+        this.errors.giaTriToiThieu = "Giá trị tối thiểu phải là số dương!";
+      }
+      if (this.giaTriToiDa !== null && (isNaN(this.giaTriToiDa) || this.giaTriToiDa <= 0)) {
+        this.errors.giaTriToiDa = "Giá trị tối đa phải là số dương!";
+      }
+
       console.log("Form validation errors:", this.errors);
       return Object.values(this.errors).every((error) => error === "");
     },
@@ -703,10 +802,10 @@ export default {
       try {
         const response = await fetch(`http://localhost:8080/phieuGiamGias/${this.id}`, {
           method: "PUT",
-          headers: { 
+          headers: {
             Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json"
-           },
+          },
           body: JSON.stringify(phieu),
         });
         if (response.ok) {
@@ -766,7 +865,7 @@ export default {
     this.isLoading = true;
     Promise.all([this.getDanhSachKhachHang(), this.getPhieuGiamGiaById()]).finally(() => {
       if (!this.dataFetchFailed) {
-        console.log("Mounted - Initial state: giaTriOption =", this.giaTriOption, ", giaTriGiam =", this.giaTriGiam);
+        console.log("Mounted - Initial state: giaTriOption =", this.giaTriOption, ", giaTriGiam =", this.giaTriGiam, ", giaTriGiamFormatted =", this.giaTriGiamFormatted);
         this.isLoading = false;
       }
     });
@@ -779,6 +878,7 @@ export default {
   background-color: #0a2c57;
   border-color: #0a2c57;
 }
+
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -791,6 +891,7 @@ export default {
   align-items: center;
   z-index: 1000;
 }
+
 .spinner {
   width: 64px;
   height: 64px;
@@ -800,14 +901,17 @@ export default {
   margin-left: 40%;
   animation: spin 1s linear infinite;
 }
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
 }
+
 .loading-overlay p {
   color: white;
   font-size: 1.2rem;

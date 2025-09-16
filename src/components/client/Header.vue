@@ -1,5 +1,5 @@
 <template>
-  <header class="main-header">
+  <header class="main-header modern-header">
     <div class="container">
       <div class="logo">
         <a href="/coolmen">
@@ -7,8 +7,6 @@
           CoolMen
         </a>
       </div>
-
-
 <nav class="main-navigation">
   <ul>
     <li><a href="/coolmen">Trang chủ</a></li>
@@ -31,28 +29,14 @@
   </ul>
 </nav>
       <div class="header-actions">
-        <!-- User -->
-        <div class="user-icon" ref="userIcon" @click="toggleUserDropdown">
-          <a href="#"><i class="fas fa-user"></i></a>
-          <div v-if="showUserDropdown" class="user-dropdown">
-            <ul>
-              <li v-if="isLoggedIn">
-                <a href="/coolmen/tai-khoan">Thông tin cá nhân</a>
-              </li>
-              <li v-if="isLoggedIn">
-                <a href="/coolmen/lich-su-dat-hang">Lịch sử đặt hàng</a>
-              </li>
-              <li v-if="isLoggedIn">
-                <a href="#" @click.prevent="logout">Đăng xuất</a>
-              </li>
-              <li v-else>
-                <a href="/coolmen/dang-nhap-khach-hang">Đăng nhập</a>
-              </li>
-            </ul>
-          </div>
+        <div class="user-icon" ref="userIcon">
+          <router-link v-if="isLoggedIn" to="/coolmen/thong-tin-user" class="user-display-link">
+            <img :src="userAvatar" :alt="userName" class="user-avatar" />
+          </router-link>
+          <router-link v-else to="/coolmen/dang-nhap-khach-hang">
+            <i class="fas fa-user"></i>
+          </router-link>
         </div>
-
-        <!-- Giỏ hàng -->
         <div class="cart-icon">
           <router-link to="/gio-hang">
             <i class="fas fa-shopping-cart"></i>
@@ -140,6 +124,77 @@
   display: block;
 }
 
+.main-navigation ul li a {
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  font-family: 'Inter', sans-serif;
+  position: relative;
+  display: inline-block; /* tránh ảnh hưởng đến sub-menu */
+  transition: color 0.3s ease;
+}
+
+.submenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #fff;
+  list-style: none;
+  padding: 10px 0;
+  margin: 0;
+  width: 180px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  display: none;
+  z-index: 1000;
+}
+.submenu li a {
+  display: block;
+  padding: 8px 15px;
+  color: #333;
+  font-size: 14px;
+  font-weight: normal;
+  width: 100%;
+}
+
+/* Gạch chân ảo */
+.main-navigation ul li a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px; /* không ảnh hưởng chiều cao thật */
+  width: 0;
+  height: 2px;
+  background-color: #0a2c57;
+  transition: width 0.3s ease;
+}
+
+/* Hover */
+.main-navigation ul li a:hover {
+  color: #0a2c57;
+}
+.main-navigation ul li a:hover::after {
+  width: 100%;
+}
+
+/* Submenu */
+.main-navigation ul li ul {
+  position: absolute;
+  top: 100%; /* submenu nằm ngay dưới cha */
+  left: 0;
+  display: none;
+  background: #fff;
+  padding: 10px 0;
+  list-style: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 99;
+}
+
+/* Hover cha thì hiện submenu */
+.main-navigation ul li:hover ul {
+  display: block;
+}
+ 
 .badge {
   background: purple;
   color: white;
@@ -150,6 +205,7 @@
   top: -5px;
   right: -10px;
 }
+
 
 .cart-dropdown {
   position: absolute;
@@ -162,11 +218,13 @@
   z-index: 999;
 }
 
+
 .cart-icon {
   position: relative;
   /* Bố cục gốc để badge định vị */
   display: inline-block;
 }
+
 
 .cart-icon .badge {
   position: absolute;
@@ -183,6 +241,7 @@
   line-height: 1;
 }
 
+
 /* CSS cho Header (Chỉ ảnh hưởng đến component này nhờ 'scoped') */
 .main-header {
   background-color: #f8f8f8;
@@ -195,12 +254,14 @@
   z-index: 1000;
 }
 
+
 .container {
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-sizing: border-box;
 }
+
 
 /* 1. Đẩy icon và chữ logo sát gần bên trái hơn */
 .logo {
@@ -212,6 +273,7 @@
   /* Đảm bảo không có padding thừa từ style khác */
 }
 
+
 .logo a {
   font-size: 28px;
   font-weight: bold;
@@ -221,6 +283,7 @@
   align-items: center;
 }
 
+
 .coolmen-logo-icon {
   width: 48px;
   height: 48px;
@@ -229,6 +292,7 @@
   /* Khoảng cách giữa icon và chữ "CoolMen" */
   object-fit: contain;
 }
+
 
 .main-navigation ul {
   display: flex;
@@ -240,6 +304,7 @@
   align-items: center;
 }
 
+
 .main-navigation ul li a {
   text-decoration: none;
   font-size: 14px;
@@ -250,10 +315,13 @@
   transition: color 0.3s ease;
 }
 
+
 .main-navigation ul li a:hover {
   color: #111827;
   /* màu đậm hơn khi hover */
 }
+
+
 
 
 .header-actions {
@@ -266,12 +334,14 @@
   flex-shrink: 0;
 }
 
+
 .search-box {
   display: flex;
   /* CHỈNH SỬA: Đảm bảo search-box có thể mở rộng */
   flex-grow: 1;
   /* Cho phép search-box mở rộng nếu có không gian */
 }
+
 
 .search-box input {
   padding: 10px 15px;
@@ -290,6 +360,7 @@
   /* Cho phép nó mở rộng nếu cần thiết */
 }
 
+
 .search-box button {
   background-color: #007bff;
   color: white;
@@ -305,15 +376,18 @@
   transition: background-color 0.3s ease;
 }
 
+
 .search-box button:hover {
   background-color: #0056b3;
 }
+
 
 /* Loại bỏ margin-left trên user-icon và cart-icon để gap của header-actions hoạt động */
 .user-icon,
 .cart-icon {
   /* margin-left đã bị loại bỏ */
 }
+
 
 .user-icon a,
 .cart-icon a {
@@ -323,10 +397,12 @@
   transition: color 0.3s ease;
 }
 
+
 .user-icon a:hover,
 .cart-icon a:hover {
   color: #007bff;
 }
+
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -337,11 +413,13 @@
     padding: 0 10px;
   }
 
+
   .logo {
     width: 100%;
     text-align: center;
     margin-bottom: 10px;
   }
+
 
   .main-navigation ul {
     flex-wrap: wrap;
@@ -350,9 +428,11 @@
     margin-top: 15px;
   }
 
+
   .main-navigation li {
     margin: 0 10px 10px;
   }
+
 
   .header-actions {
     width: 100%;
@@ -360,30 +440,36 @@
     margin-top: 10px;
   }
 
+
   .search-box {
     flex-grow: 1;
     max-width: 300px;
   }
 
+
   .search-box input {
     width: auto;
   }
 }
+
 
 @media (max-width: 480px) {
   .logo a {
     font-size: 24px;
   }
 
+
   .search-box input {
     width: auto;
   }
 }
 
+
 .user-icon {
   position: relative;
   cursor: pointer;
 }
+
 
 .user-dropdown {
   position: absolute;
@@ -398,16 +484,19 @@
   padding: 5px 0;
 }
 
+
 .user-dropdown ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
+
 .user-dropdown li {
   padding: 0;
   margin: 0;
 }
+
 
 .user-dropdown a {
   display: block;
@@ -418,10 +507,12 @@
   transition: background-color 0.2s ease;
 }
 
+
 .user-dropdown a:hover {
   background-color: #f0f0f0;
   color: #007bff;
 }
+
 
 .user-icon .user-dropdown a {
   /* Thêm .user-icon vào selector */
@@ -430,6 +521,7 @@
   padding: 8px 15px;
   /* Điều chỉnh lại padding nếu cần để phù hợp với font nhỏ hơn */
 }
+
 
 .user-display {
   display: flex;
