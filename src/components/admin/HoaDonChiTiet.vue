@@ -47,7 +47,6 @@ const token = Cookies.get("token");
 //   return giaTri > tongTienDaThanhToanKhiNhanHang;
 // });
 
-
 // Tách phần payload (phần giữa)
 const payloadBase64 = token.split(".")[1];
 
@@ -78,6 +77,7 @@ const isPhuPhi = computed(
 );
 
 const hoanPhi = ref(false);
+const huyDonHang = ref(false);
 
 const buttons = ref([
   ["Hủy đơn hàng", "Xác nhận"],
@@ -146,6 +146,26 @@ const xacNhanDonHang = async () => {
   } catch (error) {
     console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
   }
+};
+
+// hủy đơn hàng:
+const handleHuyDonHang = () => {
+  if (tongTienDaThanhToan.value > 0) {
+    // mở popup hoàn phí
+    huyDonHang.value = true;
+    // thayDoiTrangThai(5);
+    console.log("tien da thanh toan: ", tongTienDaThanhToan.value)
+  } else {
+    // nếu chưa thanh toán gì → cho hủy thẳng
+    thayDoiTrangThai(5); // giả sử trạng thái 5 = Hủy
+  }
+};
+
+// khi popup hủy confirm xong
+const handleXacNhanHuy = () => {
+  thayDoiTrangThai(5); 
+  huyDonHang.value = false; 
+  reloadTrang(); // nếu muốn reload sau khi hủy
 };
 const handleNextClick = () => {
   const currentLabel = buttons.value[trangThai.value][1];
@@ -408,6 +428,7 @@ const thayDoiTrangThai = async (moiTrangThai) => {
       url: `http://localhost:8080/hoa-don/cap-nhat-trang-thai/${maHoaDon}?trangThai=${moiTrangThai}`,
       headers: {
         "Content-Type": "application/json",
+        // Authorization: `Bearer ${token}`,
       },
       data: {
         ghiChu: note.value,
@@ -556,6 +577,9 @@ function downloadPDF(maHoaDon) {
   axios
     .get(`http://localhost:8080/hoa-don/${maHoaDon}/pdf`, {
       responseType: "blob",
+      headers: {
+        Authorization: `Bearer ${token}`, // ✅ truyền token vào đây
+      },
     })
     .then((response) => {
       const fileURL = window.URL.createObjectURL(
@@ -607,7 +631,7 @@ const fetchAnhSanPham = async (id) => {
 <template>
   <div class="d-flex justify-content-between row g-4">
     <!-- Cột trái -->
-    <div class="col-12 col-lg-8" style="flex: 1"> 
+    <div class="col-12 col-lg-8" style="flex: 1">
       <div class="bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">
@@ -680,7 +704,7 @@ const fetchAnhSanPham = async (id) => {
         </div>
 
         <!-- Textarea -->
-        <div class="mb-3" v-if="trangThai !== 4 && trangThai !== 5">
+        <div class="mb-3" v-if="trangThai == 0">
           <textarea
             class="form-control"
             rows="3"
@@ -698,14 +722,23 @@ const fetchAnhSanPham = async (id) => {
           >
             {{ buttons[trangThai][0] }}
           </button>
+
           <!-- nut huy/hoan -->
           <button
             v-if="trangThai === 0 || trangThai === 3"
             class="btn btn-outline-secondary"
-            @click="thayDoiTrangThai(5)"
+            @click="handleHuyDonHang"
           >
             {{ trangThai === 0 ? "Hủy" : "Hoàn hàng" }}
           </button>
+          <HoanPhuPhi
+            :visible="huyDonHang"
+            :tongTien="-tongTienDaThanhToan"
+            :maHoaDon="maHoaDon"
+            loaiThanhToan="hoan-phi"
+            @close="huyDonHang = false"
+            @thanh-toan-thanh-cong="handleXacNhanHuy"
+          />
 
           <!-- Nút Tiếp tục -->
           <button
@@ -779,7 +812,10 @@ const fetchAnhSanPham = async (id) => {
                   <div class="d-flex align-items-start">
                     <!-- Hình ảnh sản phẩm -->
                     <img
-                      :src="anhMap[item.idSanPhamChiTiet.id] || 'https://via.placeholder.com/50'"
+                      :src="
+                        anhMap[item.idSanPhamChiTiet.id] ||
+                        'https://via.placeholder.com/50'
+                      "
                       style="
                         width: 80px;
                         height: 100px;
@@ -1057,7 +1093,7 @@ const fetchAnhSanPham = async (id) => {
       <div class="bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">Thông tin thanh toán:</h5>
-          <div>
+          <div v-if="trangThai !== 5">
             <button
               v-if="hienNut"
               :class="isPhuPhi ? 'btn btn-warning' : 'btn btn-danger'"

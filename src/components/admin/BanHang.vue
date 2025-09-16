@@ -383,32 +383,14 @@ const thanhToanDonHang = async (order) => {
 
 // hoàn thành đơn hàng:
 const hoanThanhDonHang = async (order) => {
-   // 1. Chuẩn bị dữ liệu sản phẩm chi tiết
-   const maHoaDon = order.maHoaDon;
-    const selectedItems = order.listSanPham;
-    const giamGiaHoaDon = order.soTienGiam || 0;
-    const result = selectedItems.map((sp) => {
-      const soLuongMua = sp.soLuong || 1;
-      const giaGoc = sp.gia || 0;
-      const thanhTien = giaGoc * soLuongMua;
-
-      return {
-        idSanPhamChiTiet: sp.maChiTietSapPham,
-        gia: giaGoc,
-        soLuong: soLuongMua,
-        thanhTien: thanhTien,
-        idHoaDon: maHoaDon,
-        trangThai: 0,
-      };
-    });
-    console.log("gia tri truoc khi goi backend:", result)
+   
   try {
     // ✅ Kiểm tra thanh toán có tồn tại không
     if (
       !order.listSanPham ||
       (Array.isArray(order.listSanPham) && order.listSanPham.length === 0)
     ) {
-      alert("❌ Vui lòng sản phẩm trước khi hoàn tất đơn hàng.");
+      toast.error("❌ Vui lòng sản phẩm trước khi hoàn tất đơn hàng.");
       return;
     }
     // ✅ 2. Kiểm tra thanh toán (validate thôi, chưa gọi API)
@@ -416,7 +398,7 @@ const hoanThanhDonHang = async (order) => {
       !order.thanhToan ||
       (Array.isArray(order.thanhToan) && order.thanhToan.length === 0)
     ) {
-      alert(
+      toast.error(
         "❌ Vui lòng chọn phương thức thanh toán trước khi hoàn tất đơn hàng."
       );
       return;
@@ -527,14 +509,14 @@ const hoanThanhDonHang = async (order) => {
       console.log(`Giảm số lượng phiếu giảm giá ID: ${order.giamGia.id}`);
     }
 
-    alert("✅ Đơn hàng đã hoàn tất thành công!");
+    // toast.success("Đơn hàng đã hoàn tất thành công!");
 
     // ✅ Xóa đơn hàng sau khi hoàn thành
     orders.value = orders.value.filter((o) => o.id !== order.id);
     if (activeTab.value === order.id) {
       activeTab.value = orders.value.length > 0 ? orders.value[0].id : null;
     }
-    toast.success("Lưu đơn hàng thành công");
+    toast.success("Đơn hàng đã hoàn tất thành công!");
   } catch (err) {
     console.error("❌ Lỗi hoàn thành đơn hàng:", err);
     alert("Không thể hoàn tất đơn hàng. Vui lòng thử lại.");
