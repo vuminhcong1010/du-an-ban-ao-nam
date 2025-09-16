@@ -11,25 +11,44 @@
 
 <nav class="main-navigation">
   <ul>
-    <li><a href="/coolmen">Trang chủ</a></li>
-    
+    <li>
+      <router-link to="/coolmen" exact-active-class="active">Trang chủ</router-link>
+    </li>
+
     <!-- Dropdown cho Sản phẩm -->
     <li class="has-submenu">
-      <a href="/coolmen/client-san-pham">Sản phẩm</a>
+      <router-link to="/coolmen/client-san-pham" active-class="active">Sản phẩm</router-link>
       <ul class="submenu">
-        <li><a href="/coolmen/client-san-pham">Tất cả sản phẩm</a></li>
-        <li><a href="/coolmen/ao-vest">Áo vest</a></li>
-        <li><a href="/coolmen/ao-phong">Áo phông</a></li>
-        <li><a href="/coolmen/ao-so-mi">Áo sơ mi</a></li>
+        <li>
+          <router-link to="/coolmen/client-san-pham" active-class="active">Tất cả sản phẩm</router-link>
+        </li>
+        <li>
+          <router-link to="/coolmen/ao-vest" active-class="active">Áo vest</router-link>
+        </li>
+        <li>
+          <router-link to="/coolmen/ao-phong" active-class="active">Áo phông</router-link>
+        </li>
+        <li>
+          <router-link to="/coolmen/ao-so-mi" active-class="active">Áo sơ mi</router-link>
+        </li>
       </ul>
     </li>
 
-    <li><a href="/coolmen/danh-muc-List">Danh mục</a></li>
-    <li><a href="#">Giảm giá</a></li>
-    <li><a href="#">Liên hệ</a></li>
-    <li><a href="/coolmen/tra-cuu-don-hang">Tra cứu đơn hàng</a></li>
+    <li>
+      <router-link to="/coolmen/danh-muc-List" active-class="active">Danh mục</router-link>
+    </li>
+    <li>
+      <router-link to="/coolmen/giam-gia" active-class="active">Giảm giá</router-link>
+    </li>
+    <li>
+      <router-link to="/coolmen/lien-he" active-class="active">Liên hệ</router-link>
+    </li>
+    <li>
+      <router-link to="/coolmen/tra-cuu-don-hang" active-class="active">Tra cứu đơn hàng</router-link>
+    </li>
   </ul>
 </nav>
+
 
 
       <div class="header-actions">
@@ -53,6 +72,15 @@
 </template>
 
 <style scoped>
+/* Khi đang ở route hiện tại */
+.main-navigation ul li a.active {
+  color: #0a2c57;
+}
+
+.main-navigation ul li a.active::after {
+  width: 100%; /* Gạch chân full width */
+}
+
 .main-navigation ul li {
   position: relative;
 }
