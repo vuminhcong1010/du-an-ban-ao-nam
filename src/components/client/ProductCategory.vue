@@ -32,7 +32,7 @@
                         <div class="filter-header" @click="toggleSection('category')">
                             <h5>Thể loại</h5>
                             <span class="filter-count" v-if="categoryCounts.total > 0">({{ categoryCounts.total
-                                }})</span>
+                            }})</span>
                             <i :class="expandedSections.category ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
                         </div>
                         <div v-show="expandedSections.category" class="filter-content">
@@ -42,7 +42,7 @@
                                 <label class="form-check-label" :for="cat">
                                     {{ cat }}
                                     <span class="filter-item-count" v-if="categoryCounts[cat]">({{ categoryCounts[cat]
-                                        }})</span>
+                                    }})</span>
                                 </label>
                             </div>
                         </div>
@@ -86,7 +86,7 @@
                                 <label class="form-check-label" :for="color + '-checkbox'" @click="toggleColor(color)">
                                     {{ color }}
                                     <span class="filter-item-count" v-if="colorCounts[color]">({{ colorCounts[color]
-                                        }})</span>
+                                    }})</span>
                                 </label>
                             </div>
                         </div>
@@ -120,7 +120,7 @@
                                 <label class="form-check-label" :for="`rating-${star}`">
                                     <span class="stars">{{ '★'.repeat(star) }}</span> & hướng lên
                                     <span class="filter-item-count" v-if="ratingCounts[star]">({{ ratingCounts[star]
-                                        }})</span>
+                                    }})</span>
                                 </label>
                             </div>
                         </div>
@@ -179,14 +179,14 @@
                                         <h6 class="card-title">{{ allProducts.name }}</h6>
                                         <div class="rating-section">
                                             <span v-for="star in 5" :key="star" class="star">
-                                                <i v-if="star <= allProducts.rating" class="bi bi-star-fill"></i>
-                                                <i v-else class="bi bi-star"></i>
+                                                <i :class="[
+                                                    'bi',
+                                                    star <= Math.round(allProducts.rating) ? 'bi-star-fill text-warning' : 'bi-star text-muted'
+                                                ]"></i>
                                             </span>
-                                            <small
-                                                v-if="allProducts.reviews !== undefined && allProducts.reviews > 0">({{
-                                                    allProducts.reviews }})</small>
-                                            <small v-else>({{ allProducts.quantity }})</small>
+                                            <small>({{ allProducts.quantity }})</small>
                                         </div>
+
                                         <div class="price-section">
                                             <!-- Nếu có giảm giá -->
                                             <template v-if="allProducts.discount > 0">
@@ -255,7 +255,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import '@vueform/slider/themes/default.css'
 import Slider from '@vueform/slider'
-import { useRouter ,useRoute  } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 const toast = useToast();
 
@@ -569,124 +569,124 @@ function mapColorToCssClass(apiColor) {
 }
 
 const fetchProducts = async () => {
-  loading.value = true;
-  try {
-    // Lấy idDanhMuc từ route params
-    const idDanhMuc = route.params.idDanhMuc
-    console.log('Fetching products for category ID:', idDanhMuc)
+    loading.value = true;
+    try {
+        // Lấy idDanhMuc từ route params
+        const idDanhMuc = route.params.idDanhMuc
+        console.log('Fetching products for category ID:', idDanhMuc)
 
-    // Gọi API lấy sản phẩm theo idDanhMuc
-    const response = await fetch(`http://localhost:8080/home/sanPhamCategoryList?idDanhMuc=${idDanhMuc}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    console.log("Raw data from API:", data);
-    const products = data.data || [];
-    if (Array.isArray(products) && products.length > 0) {
-      const filteredData = products.filter(item =>
-        Array.isArray(item.chiTietSanPham) &&
-        item.chiTietSanPham.some(ct => ct.trangThai === 1)
-      );
-
-      console.log("Filtered (trangThai == 1):", filteredData);
-
-      const mapped = await Promise.all(filteredData.map(async (item) => {
-        const firstDanhMuc = item.danhMucList?.[0] || {};
-        const danhGiaList = item.danhGiaList || [];
-        const ctspList = item.chiTietSanPham || [];
-
-        // Lấy tất cả giá chi tiết sản phẩm
-        const giaList = ctspList
-          .filter(ct => ct.trangThai === 1 && typeof ct.gia === 'number')
-          .map(ct => ct.gia);
-
-        let originalPriceRange = { min: Math.min(...giaList), max: Math.max(...giaList) };
-        let discountPercentage = 0;
-
-        // Fetch giảm giá
-        try {
-          const discountResponse = await fetch(`http://localhost:8080/client/giam-gia/${item.sanPham.id}`);
-
-          if (discountResponse.ok) {
-            const discountData = await discountResponse.json();
-            const discountList = Array.isArray(discountData.data) ? discountData.data : [];
-            if (discountList.length > 0) {
-              const percents = discountList
-                .map(d => Number(d))
-                .filter(p => !isNaN(p));
-
-              if (percents.length > 0) {
-                const sum = percents.reduce((a, b) => a + b, 0);
-                discountPercentage = Math.round(sum / percents.length);
-              }
-
-            }
-          }
-        } catch (err) {
-          console.error("Lỗi khi fetch phần trăm giảm giá:", err);
+        // Gọi API lấy sản phẩm theo idDanhMuc
+        const response = await fetch(`http://localhost:8080/home/sanPhamCategoryList?idDanhMuc=${idDanhMuc}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        let priceRangeLocal = { ...originalPriceRange };
+        const data = await response.json();
 
-        if (discountPercentage > 0) {
-          priceRangeLocal = {
-            min: Math.round(originalPriceRange.min * (1 - discountPercentage / 100)),
-            max: Math.round(originalPriceRange.max * (1 - discountPercentage / 100)),
-          };
+        console.log("Raw data from API:", data);
+        const products = data.data || [];
+        if (Array.isArray(products) && products.length > 0) {
+            const filteredData = products.filter(item =>
+                Array.isArray(item.chiTietSanPham) &&
+                item.chiTietSanPham.some(ct => ct.trangThai === 1)
+            );
+
+            console.log("Filtered (trangThai == 1):", filteredData);
+
+            const mapped = await Promise.all(filteredData.map(async (item) => {
+                const firstDanhMuc = item.danhMucList?.[0] || {};
+                const danhGiaList = item.danhGiaList || [];
+                const ctspList = item.chiTietSanPham || [];
+
+                // Lấy tất cả giá chi tiết sản phẩm
+                const giaList = ctspList
+                    .filter(ct => ct.trangThai === 1 && typeof ct.gia === 'number')
+                    .map(ct => ct.gia);
+
+                let originalPriceRange = { min: Math.min(...giaList), max: Math.max(...giaList) };
+                let discountPercentage = 0;
+
+                // Fetch giảm giá
+                try {
+                    const discountResponse = await fetch(`http://localhost:8080/client/giam-gia/${item.sanPham.id}`);
+
+                    if (discountResponse.ok) {
+                        const discountData = await discountResponse.json();
+                        const discountList = Array.isArray(discountData.data) ? discountData.data : [];
+                        if (discountList.length > 0) {
+                            const percents = discountList
+                                .map(d => Number(d))
+                                .filter(p => !isNaN(p));
+
+                            if (percents.length > 0) {
+                                const sum = percents.reduce((a, b) => a + b, 0);
+                                discountPercentage = Math.round(sum / percents.length);
+                            }
+
+                        }
+                    }
+                } catch (err) {
+                    console.error("Lỗi khi fetch phần trăm giảm giá:", err);
+                }
+
+                let priceRangeLocal = { ...originalPriceRange };
+
+                if (discountPercentage > 0) {
+                    priceRangeLocal = {
+                        min: Math.round(originalPriceRange.min * (1 - discountPercentage / 100)),
+                        max: Math.round(originalPriceRange.max * (1 - discountPercentage / 100)),
+                    };
+                }
+
+                return {
+                    id: item.sanPham.id,
+                    name: item.sanPham.tenSanPham,
+                    image: item.anhSanPham?.[0] || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png',
+
+                    discount: discountPercentage,
+                    priceRange: priceRangeLocal,
+                    originalPriceRange: discountPercentage > 0 ? originalPriceRange : null,
+
+                    rating: danhGiaList.length > 0
+                        ? (danhGiaList.reduce((sum, dg) => sum + dg.diemDanhGia, 0) / danhGiaList.length)
+                        : 0,
+                    reviews: danhGiaList.length,
+
+                    category: firstDanhMuc.tenDanhMuc || '',
+
+                    sizes: [...new Set(ctspList.map(ct => ct.idSize?.soCo).filter(Boolean))],
+                    colors: [...new Set(ctspList.map(ct => ct.idMau?.ten).filter(Boolean))],
+
+                    createdAt: ctspList[0]?.ngayTao || null,
+                    quantity: ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0)
+                };
+            }));
+
+            allProducts.value = mapped;
+            const allMinDiscountedPrices = allProducts.value.map(p => p.priceRange?.min || 0);
+            const allMaxOriginalPrices = allProducts.value.map(p =>
+                (p.originalPriceRange?.max ?? p.priceRange?.max) || 0
+            );
+
+            minPrice.value = Math.min(...allMinDiscountedPrices);
+            maxPrice.value = Math.max(...allMaxOriginalPrices);
+
+            priceRange.value = [minPrice.value, maxPrice.value];
+
+        } else {
+            minPrice.value = 0;
+            maxPrice.value = 0;
+            priceRange.value = [0, 0];
         }
 
-        return {
-          id: item.sanPham.id,
-          name: item.sanPham.tenSanPham,
-          image: item.anhSanPham?.[0] || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png',
-
-          discount: discountPercentage,
-          priceRange: priceRangeLocal,
-          originalPriceRange: discountPercentage > 0 ? originalPriceRange : null,
-
-          rating: danhGiaList.length > 0
-            ? (danhGiaList.reduce((sum, dg) => sum + dg.diemDanhGia, 0) / danhGiaList.length)
-            : 0,
-          reviews: danhGiaList.length,
-
-          category: firstDanhMuc.tenDanhMuc || '',
-
-          sizes: [...new Set(ctspList.map(ct => ct.idSize?.soCo).filter(Boolean))],
-          colors: [...new Set(ctspList.map(ct => ct.idMau?.ten).filter(Boolean))],
-
-          createdAt: ctspList[0]?.ngayTao || null,
-          quantity: ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0)
-        };
-      }));
-
-      allProducts.value = mapped;
-      const allMinDiscountedPrices = allProducts.value.map(p => p.priceRange?.min || 0);
-      const allMaxOriginalPrices = allProducts.value.map(p =>
-        (p.originalPriceRange?.max ?? p.priceRange?.max) || 0
-      );
-
-      minPrice.value = Math.min(...allMinDiscountedPrices);
-      maxPrice.value = Math.max(...allMaxOriginalPrices);
-
-      priceRange.value = [minPrice.value, maxPrice.value];
-
-    } else {
-      minPrice.value = 0;
-      maxPrice.value = 0;
-      priceRange.value = [0, 0];
+    } catch (error) {
+        console.error("Lỗi khi fetch sản phẩm:", error);
+        minPrice.value = 0;
+        maxPrice.value = 0;
+        priceRange.value = [0, 0];
+    } finally {
+        loading.value = false;
     }
-
-  } catch (error) {
-    console.error("Lỗi khi fetch sản phẩm:", error);
-    minPrice.value = 0;
-    maxPrice.value = 0;
-    priceRange.value = [0, 0];
-  } finally {
-    loading.value = false;
-  }
 }
 
 onMounted(fetchProducts);
@@ -906,11 +906,15 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     border-radius: 6px;
     font-size: 15px;
 }
+
 /* Bọc ngoài product-grid */
 .product-page-content {
-    max-width: 1200px; /* hoặc 1280px tùy ý */
-    margin: 0 auto; /* căn giữa */
-    padding: 0 20px; /* thêm khoảng cách lề */
+    max-width: 1200px;
+    /* hoặc 1280px tùy ý */
+    margin: 0 auto;
+    /* căn giữa */
+    padding: 0 20px;
+    /* thêm khoảng cách lề */
 }
 
 /* Product Grid giống ảnh 2 */
@@ -922,17 +926,21 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
 }
 
 /* Transition-group animations for filtering */
-.grid-enter-from, .grid-leave-to {
+.grid-enter-from,
+.grid-leave-to {
     opacity: 0;
     transform: translateY(12px);
 }
+
 .grid-enter-active {
     transition: all 250ms ease;
 }
+
 .grid-leave-active {
     transition: all 220ms ease;
     position: relative;
 }
+
 .grid-move {
     transition: transform 300ms ease;
 }
@@ -949,9 +957,12 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
 
 /* Hiệu ứng hover */
 .product-card .card:hover {
-    transform: translateY(-5px); /* Nổi lên nhẹ */
-    border: 2px solid #0088ff;  /* Viền màu xanh */
-    box-shadow: 0 4px 12px rgba(0, 136, 255, 0.3); /* Đổ bóng nhẹ */
+    transform: translateY(-5px);
+    /* Nổi lên nhẹ */
+    border: 2px solid #0088ff;
+    /* Viền màu xanh */
+    box-shadow: 0 4px 12px rgba(0, 136, 255, 0.3);
+    /* Đổ bóng nhẹ */
 }
 
 

@@ -33,7 +33,7 @@
         </td>
         <td>
           <button class="btn btn-view-update mr-2" @click="navigateToEditCustomer(kh.id)">
-            <Edit style="color: #66FF99;" />
+            <Edit style="color: #4ccc7a;" />
           </button>
           <button class="btn btn-view-update mr-2" @click="$emit('delete-customer', kh.id)">
             <Trash style="color: #CC0000;" />
@@ -42,16 +42,28 @@
       </tr>
     </tbody>
   </table>
-
-
   <div class="mt-4 d-flex align-items-center justify-content-center gap-2">
-    <button class="btn btn-secondary" @click="prevPage" :disabled="page === 0">Trước</button>
-    <input v-model.number="inputPage" @keyup.enter="goToPage" type="number" min="1" :max="totalPages"
-      class="form-control w-auto text-center" />
-    <span>/ {{ totalPages }}</span>
-    <button class="btn btn-secondary" @click="nextPage" :disabled="page >= totalPages - 1">Tiếp</button>
-  </div>
-
+  <button 
+    class="btn custom-btn" 
+    @click="prevPage" 
+    :disabled="page === 0">
+    Trước
+  </button>
+  <input 
+    v-model.number="inputPage" 
+    @keyup.enter="goToPage" 
+    type="number" 
+    min="1" 
+    :max="totalPages"
+    class="form-control w-auto text-center" />
+  <span>/ {{ totalPages }}</span>
+  <button 
+    class="btn custom-btn" 
+    @click="nextPage" 
+    :disabled="page >= totalPages - 1">
+    Tiếp
+  </button>
+</div>
 
 </template>
 
@@ -360,6 +372,54 @@ export default {
 
 .badge-danger {
   background-color: #dc3545 !important;
+}
+
+/* THÊM KIỂU MỚI CHO ẢNH ĐẠI DIỆN */
+.avatar-container {
+  width: 50px;
+  /* Kích thước container */
+  height: 50px;
+  overflow: hidden;
+  /* Cắt bỏ phần thừa */
+  border-radius: 50%;
+  /* Bo tròn container */
+  display: flex;
+  /* Căn giữa ảnh */
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #eee;
+  /* Đường viền nhẹ */
+}
+
+
+.customer-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Đảm bảo ảnh đầy đủ trong container mà không bị méo */
+}
+
+.custom-btn {
+  background-color: #f0f0f0;
+  color: #0a2c57;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.custom-btn:hover {
+  background-color: #0a2c57;
+  color: white;
+}
+
+.custom-btn:disabled {
+  cursor: not-allowed;
+  background-color: #e0e0e0;
+  color: #999;
+  border: 1px solid #ddd;
 }
 </style>
 

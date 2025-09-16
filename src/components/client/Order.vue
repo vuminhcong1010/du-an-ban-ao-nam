@@ -59,7 +59,7 @@
                         <div>
                             <div class="name">{{ item.tenSanPham }}</div>
                             <div v-if="item.phanTramGiamGia > 0" class="save-badge">Tiết kiệm {{ item.phanTramGiamGia
-                                }}%</div>
+                            }}%</div>
                             <div class="variant">{{ item.tenMau }}, {{ item.tenKichCo }}</div>
                         </div>
                     </div>
@@ -100,7 +100,7 @@
                             ${formatCurrency(giamGiaDaApDung.soTienGiam)}` }}
                         </div>
                         <div class="applied-desc">Đã áp dụng: <strong>{{ giamGiaDaApDung.maPhieuGiamGia || 'Voucher'
-                                }}</strong>
+                        }}</strong>
                             <span class="save">-{{ formatCurrency(tienGiam) }}</span>
                         </div>
                     </div>
@@ -1194,45 +1194,61 @@ const fetchAvailableServices = async (toDistrictId) => {
         console.error('Lỗi khi lấy danh sách dịch vụ vận chuyển:', e);
     }
 };
+const getTotalWeight = () => {
+    if (!order.value || order.value.length === 0) return 0;
+
+    const totalWeight = order.value.reduce((total, item) => {
+        const weightKg = item.trongLuong || 0;
+        const weightGram = weightKg * 1000;
+        return total + (weightGram * item.soLuong);
+    }, 0);
+
+    console.log("📦 Tổng trọng lượng đơn hàng (gram):", totalWeight);
+    return totalWeight;
+};
 
 // 5. Calculate Shipping Fee
 const calculateShipFee = async () => {
-    shipFee.value = 0; // Reset fee before calculating
+    shipFee.value = 0;
+
+    if (!serviceId.value || !selectedWard.value || !selectedDistrict.value) return;
+
+    const weight = getTotalWeight(); // ✅ Dùng trọng lượng tính từ giỏ hàng
 
     // Ensure all necessary parameters are available before making the call
-    if (!serviceId.value || !selectedWard.value || !selectedDistrict.value) {
-        // console.log("Missing parameters for fee calculation:", { serviceId: serviceId.value, selectedWard: selectedWard.value, selectedDistrict: selectedDistrict.value });
-        return;
-    }
+    // if (!serviceId.value || !selectedWard.value || !selectedDistrict.value) {
+    //     // console.log("Missing parameters for fee calculation:", { serviceId: serviceId.value, selectedWard: selectedWard.value, selectedDistrict: selectedDistrict.value });
+    //     return;
+    // }
 
     try {
         const { data } = await axios.post(
             'https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee',
             {
                 service_id: serviceId.value,
-                insurance_value: 0, // Adjust as needed
+                insurance_value: 0,
                 coupon: null,
                 from_district_id: fromDistrictId,
                 to_district_id: Number(selectedDistrict.value),
                 to_ward_code: selectedWard.value,
-                weight: 1000, // Example weight in grams
-                length: 15,  // Example dimensions in cm
+                weight: weight || 1000, // fallback nếu lỗi
+                length: 15,
                 width: 15,
                 height: 15
             },
             { headers: { ...headers, shop_id: shopId } }
         );
         if (data.code === 200 && data.data) {
-            shipFee.value = data.data.service_fee || data.data.total || 0;
-            console.log('Phí vận chuyển:', shipFee.value);
+            shipFee.value = data.data.service_fee || 0;
         } else {
             console.warn('Không thể tính phí vận chuyển:', data.message);
         }
     } catch (e) {
         console.error('Lỗi khi tính phí vận chuyển:', e);
-        shipFee.value = 0; // Ensure fee is 0 on error
+        shipFee.value = 0;
     }
 };
+
 
 // *** Centralized Watchers for a More Robust Flow ***
 
@@ -1256,6 +1272,9 @@ watchEffect(() => {
         shipFee.value = 0;
     }
 });
+
+
+
 
 const fetchOrder = async () => {
     try {
@@ -1324,6 +1343,41 @@ async function thanhToan() {
     isLoading.value = true;
 
     try {
+        // Kiểm tra số lượng tồn kho trước khi thanh toán
+        const overStockItems = order.value.filter(item => item.soLuong > item.soLuongTonKho);
+        if (overStockItems.length > 0) {
+            // Tạo nội dung thông báo chi tiết sản phẩm và tồn kho
+            let message = "Sản phẩm vượt quá số lượng tồn kho:<br/>";
+            overStockItems.forEach(item => {
+                message += `- ${item.tenSanPham} (Màu: ${item.mauSac || 'Không xác định'}): Chỉ còn ${item.soLuongTonKho} sản phẩm trong kho.<br/>`;
+            });
+
+            const result = await Swal.fire({
+                icon: 'error',
+                title: 'Số lượng vượt quá tồn kho',
+                html: message,
+                showCancelButton: true,
+                confirmButtonText: 'Đồng ý',
+                cancelButtonText: 'Hủy',
+                reverseButtons: true,
+            });
+
+            if (result.isConfirmed) {
+                // Gọi API xóa giỏ hàng + hóa đơn
+                try {
+                    await axios.delete(`http://localhost:8080/XoaGioHang`, { withCredentials: true });
+                    // Chuyển về trang sản phẩm
+                    await router.push({ name: "client-san-pham" });
+                    Swal.fire('Đã xóa hóa đơn', 'Bạn đã quay lại trang sản phẩm.', 'success');
+                } catch (error) {
+                    Swal.fire('Lỗi', 'Xóa hóa đơn thất bại. Vui lòng thử lại.', 'error');
+                }
+            }
+            isLoading.value = false;
+            return; // Dừng thanh toán
+        }
+
+        // Chuẩn bị dữ liệu thanh toán
         const provinceName = provinces.value.find(p => p.ProvinceID == selectedProvince.value)?.ProvinceName || '';
         const districtName = districts.value.find(d => d.DistrictID == selectedDistrict.value)?.DistrictName || '';
         const wardName = wards.value.find(w => w.WardCode == selectedWard.value)?.WardName || '';
@@ -1362,23 +1416,56 @@ async function thanhToan() {
 
         const paymentMethod = form.value.paymentMethod;
 
-        // 👉 Trường hợp thanh toán COD: Gọi cập nhật hóa đơn ngay
+        // 👉 Thanh toán COD
         if (paymentMethod === 'cod') {
-            await axios.put(`http://localhost:8080/client/capNhatHoaDon/${route.params.hoaDonId}`, data, {
-                withCredentials: true
-            });
+            try {
+                await axios.put(`http://localhost:8080/client/capNhatHoaDon/${route.params.hoaDonId}`, data, {
+                    withCredentials: true
+                });
 
-            sessionStorage.removeItem("gioHang");
-            localStorage.removeItem("gioHang");
-            window.dispatchEvent(new Event("cap-nhat-gio"));
+                sessionStorage.removeItem("gioHang");
+                localStorage.removeItem("gioHang");
+                window.dispatchEvent(new Event("cap-nhat-gio"));
 
-            router.push({ name: "client-san-pham" }).then(() => {
-                toast.success("✅ Thanh toán thành công bằng COD!");
-            });
+                router.push({ name: "client-san-pham" }).then(() => {
+                    toast.success("✅ Thanh toán thành công bằng COD!");
+                });
+            } catch (error) {
+                if (error.response && error.response.status === 409) {
+                    const message = error.response.data || "Sản phẩm vượt quá số lượng tồn kho";
+                    // Sửa lại popup lỗi như trên cho 2 nút Đồng ý và Hủy
+                    const result = await Swal.fire({
+                        icon: 'error',
+                        title: 'Số lượng vượt quá tồn kho',
+                        html: message.replace(/\n/g, "<br/>"),
+                        showCancelButton: true,
+                        confirmButtonText: 'Đồng ý',
+                        cancelButtonText: 'Hủy',
+                        reverseButtons: true,
+                    });
+
+                    if (result.isConfirmed) {
+                        // Gọi API xóa giỏ hàng + hóa đơn
+                        try {
+                            await axios.delete(`http://localhost:8080/client/XoaGioHang`, { withCredentials: true });
+
+                            sessionStorage.removeItem("gioHang");
+                            localStorage.removeItem("gioHang");
+                            window.dispatchEvent(new Event("cap-nhat-gio"));
+                            await router.push({ name: "client-san-pham" });
+                        } catch (err) {
+                        }
+                    }
+                } else {
+                    alert("Thanh toán thất bại");
+                }
+            } finally {
+                isLoading.value = false;
+            }
             return;
         }
 
-        // 👉 Các phương thức cần redirect: VNPay, MoMo, QR Code
+        // Các phương thức thanh toán cần redirect: VNPay, MoMo, QR Code
         sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
 
         if (paymentMethod === 'card') {
@@ -1397,16 +1484,17 @@ async function thanhToan() {
             window.location.href = momoUrl;
         } else if (paymentMethod === 'qrcode') {
             const randomNumber = Math.floor(Math.random() * 1000) + 1;
-            const cancelPage = "http://localhost:5173/return";
-            const successPage = "https://www.google.com/success";
+            const cancelPage = "http://localhost:5173/vnpay-return";
+            const successPage = "http://localhost:5173/coolmen";
             const convertData = {
                 data: "{'amount':" + Math.round(tongCong.value) + ",'cancelUrl':'" + cancelPage + "','description':'" + data.ghiChu + "','orderCode':" + randomNumber + ",'returnUrl':'" + successPage + "'}"
             };
-            
+
             let signature = "";
             await axios.post("http://localhost:8080/convert", convertData).then(res => {
                 signature = res.data;
             });
+
             const ttkh = {
                 orderCode: randomNumber,
                 amount: Math.round(tongCong.value),
@@ -1429,14 +1517,13 @@ async function thanhToan() {
             }).then((Res) => {
                 localStorage.setItem("ttkh", JSON.stringify(ttkh));
                 console.log(Res.data);
-                
+
                 window.location.href = Res.data.data.checkoutUrl;
             }).catch(() => {
-                // window.location.href = "/error";
+                toast.error("Có lỗi xảy ra trong quá trình thanh toán.");
             });
         }
 
-        // Xóa giỏ hàng sau redirect (dùng chung)
         sessionStorage.removeItem("gioHang");
         localStorage.removeItem("gioHang");
         window.dispatchEvent(new Event("cap-nhat-gio"));

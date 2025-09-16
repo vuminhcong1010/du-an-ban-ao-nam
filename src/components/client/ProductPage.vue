@@ -185,10 +185,8 @@
                                                 ]"></i>
                                             </span>
 
-                                            <small
-                                                v-if="allProducts.reviews !== undefined && allProducts.reviews > 0">({{
-                                                    allProducts.reviews }})</small>
-                                            <small v-else>({{ allProducts.quantity }})</small>
+                                            <small>({{ allProducts.quantity }})</small>
+
                                         </div>
                                         <div class="price-section">
                                             <!-- Nếu có giảm giá -->
@@ -272,8 +270,8 @@ const maxPrice = ref(0);
 const priceRange = ref([0, 0])
 const selectedCategories = ref([])
 const selectedSizes = ref([])
-const sortOrder = ref('latest') 
-const sortDirection = ref('desc') 
+const sortOrder = ref('latest')
+const sortDirection = ref('desc')
 const selectedColors = ref([])
 const discountOnly = ref(false)
 const selectedRating = ref(0)
@@ -588,21 +586,24 @@ const fetchProducts = async () => {
 
         console.log("Raw data from API:", data);
         const products = data.data || [];
+
         if (Array.isArray(products) && products.length > 0) {
             const filteredData = products.filter(item =>
                 Array.isArray(item.chiTietSanPham) &&
-                item.chiTietSanPham.some(ct => ct.trangThai === 1)
+                item.chiTietSanPham.some(ct => ct.trangThai === 1 && ct.soLuong > 0)
             );
 
-            console.log("Filtered (trangThai == 1):", filteredData);
+            console.log("Filtered (trangThai == 1 & soLuong > 0):", filteredData);
 
             const mapped = await Promise.all(filteredData.map(async (item) => {
                 const firstDanhMuc = item.danhMucList?.[0] || {};
                 const danhGiaList = item.danhGiaList || [];
-                const ctspList = item.chiTietSanPham || [];
+
+                // Chỉ lấy các chi tiết sản phẩm có số lượng > 0 và trạng thái hợp lệ
+                const ctspList = (item.chiTietSanPham || []).filter(ct => ct.trangThai === 1 && ct.soLuong > 0);
 
                 const giaList = ctspList
-                    .filter(ct => ct.trangThai === 1 && typeof ct.gia === 'number')
+                    .filter(ct => typeof ct.gia === 'number')
                     .map(ct => ct.gia);
 
                 let originalPriceRange = { min: Math.min(...giaList), max: Math.max(...giaList) };
@@ -635,13 +636,14 @@ const fetchProducts = async () => {
                     };
                 }
 
-                // ✅ Tính điểm đánh giá trung bình
                 const validDanhGia = danhGiaList.filter(dg =>
                     dg && typeof dg.diemDanhGia === 'number' && dg.diemDanhGia >= 0
                 );
 
                 const totalScore = validDanhGia.reduce((sum, dg) => sum + dg.diemDanhGia, 0);
                 const rating = validDanhGia.length > 0 ? totalScore / validDanhGia.length : 0;
+                const totalQuantity = ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0);
+                // console.log(">> Tổng số lượng:", item.sanPham.tenSanPham, totalQuantity);
 
                 return {
                     id: item.sanPham.id,
@@ -661,10 +663,9 @@ const fetchProducts = async () => {
                     colors: [...new Set(ctspList.map(ct => ct.idMau?.ten).filter(Boolean))],
 
                     createdAt: ctspList[0]?.ngayTao || null,
-                    quantity: ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0)
+                    quantity: totalQuantity
                 };
             }));
-
 
             allProducts.value = mapped;
             const allMinDiscountedPrices = allProducts.value.map(p => p.priceRange?.min || 0);
@@ -674,9 +675,6 @@ const fetchProducts = async () => {
 
             minPrice.value = Math.min(...allMinDiscountedPrices);
             maxPrice.value = Math.max(...allMaxOriginalPrices);
-
-            priceRange.value = [minPrice.value, maxPrice.value];
-
 
             priceRange.value = [minPrice.value, maxPrice.value];
 
@@ -695,6 +693,7 @@ const fetchProducts = async () => {
         loading.value = false;
     }
 };
+
 onMounted(fetchProducts);
 
 

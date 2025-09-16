@@ -1,36 +1,38 @@
 <template>
   <!-- Tiêu đề + nút thêm -->
   <div class="bg-white p-3 rounded shadow mb-4">
-  <div class="d-flex justify-content-between align-items-center">
-    <h5 class="fw-semibold">Quản lý biến thể sản phẩm</h5>
-    <div class="d-flex gap-2"> <!-- Gộp 2 nút vào 1 div để căn phải -->
-      <button class="btn" data-bs-toggle="modal" @click="moModal(idChiTietSanPham)" data-bs-target="#exampleModal1" style="background-color: #0a2c57; color: white;">
-        <i class="fa-solid fa-plus pe-2"></i>Thêm biến thể sản phẩm
-      </button>
-      <button class="btn" @click="generateAndDownloadAllQR()" style="background-color: #0a2c57; color: white;"> 
-        <i class="fa-solid fa-qrcode pe-2"></i>Tải tất cả mã QR
-      </button>
+    <div class="d-flex justify-content-between align-items-center">
+      <h2 class="fw-bold mb-0">Quản lý biến thể sản phẩm</h2>
+      <div class="d-flex gap-2">
+        <button class="btn" data-bs-toggle="modal" @click="moModal(idChiTietSanPham)" data-bs-target="#exampleModal1" style="background-color: #0a2c57; color: white;">
+          <i class="fa-solid fa-plus pe-2"></i>Thêm biến thể sản phẩm
+        </button>
+        <button class="btn" @click="generateAndDownloadAllQR()" style="background-color: #0a2c57; color: white;"> 
+          <i class="fa-solid fa-qrcode pe-2"></i>Tải tất cả mã QR
+        </button>
+      </div>
     </div>
   </div>
-</div>
-
 
   <!-- Bộ lọc -->
   <div class="bg-white p-3 rounded shadow mb-4">
     <div class="row g-3">
       <!-- Tìm kiếm -->
       <div class="col-md-12">
-        <label class="form-label fw-bold">Bộ lọc</label>
+        <h5 style="margin-bottom: 1em">
+        <i>
+          <FilterIcon></FilterIcon>
+        </i> Bộ lọc
+      </h5>
         <div class="d-flex align-items-center gap-2">
           <input type="text" class="form-control" v-model="keyword" placeholder="Tìm theo mã, tên sản phẩm" />
-          <button type="button" class="btn" @click="apDungBoLoc" style="background-color: #0a2c57; color: white; white-space: nowrap;">Tìm kiếm</button>
           <button type="button" class="btn" @click="lamMoi" style="background-color: #0a2c57; color: white; white-space: nowrap;">Làm mới</button>
         </div>
       </div>
 
       <!-- Trạng thái -->
       <div class="col-md-4 ms-2">
-        <label class="form-label fw-bold">Trạng thái</label>
+        <label class="form-label fw-bold" style="color: #0a2c57;">Trạng thái</label>
         <div class="d-flex gap-3">
           <div class="form-check">
             <input class="form-check-input" type="radio" name="trangThai" id="tatCa" value="tatCa" v-model="selectedTrangThai">
@@ -49,7 +51,7 @@
 
       <!-- Màu -->
       <div class="col-md-2">
-        <label class="form-label fw-bold">Màu</label>
+        <label class="form-label fw-bold" style="color: #0a2c57;">Màu</label>
         <select class="form-select" v-model="selectedMau">
           <option value="Tất cả">Tất cả</option>
           <option v-for="m in mau" :key="m.id" :value="m.ten">{{ m.ten }}</option>
@@ -58,51 +60,31 @@
 
       <!-- Kích cỡ -->
       <div class="col-md-2">
-        <label class="form-label fw-bold">Kích cỡ</label>
+        <label class="form-label fw-bold" style="color: #0a2c57;">Kích cỡ</label>
         <select class="form-select" v-model="selectedKichCo">
           <option value="Tất cả">Tất cả</option>
           <option v-for="s in size" :key="s.id" :value="s.soCo">{{ s.soCo }}</option>
         </select>
       </div>
-
-      <!-- Hiển thị -->
-      <!-- <div class="col-md-3 ms-5">
-        <label class="form-label fw-bold me-3">Danh sách hiển thị</label>
-        <div class="d-flex align-items-center gap-3">
-          <div class="form-check form-check-inline m-0">
-            <input class="form-check-input" type="radio" name="thongTin" id="theoSP" :value="true" v-model="thongTin">
-            <label class="form-check-label" for="theoSP">{{ maSP }}</label>
-          </div>
-
-          <div class="form-check form-check-inline m-0">
-            <input class="form-check-input" type="radio" name="thongTin" id="toanBo" :value="false" v-model="thongTin">
-            <label class="form-check-label" for="toanBo">Toàn bộ biến thể</label>
-          </div>
-        </div>
-      </div> -->
     </div>
   </div>
 
   <!-- Danh sách -->
   <div class="bg-white p-3 rounded shadow mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-semibold m-0">Danh sách biến thể sản phẩm</h5>
-  <div class="d-flex gap-2">
-    <div class="form-group mb-2 me-3">
-      <label class="form-label small fw-bold ">Số lượng:</label>
-      <input type="text" class="form-control" placeholder="Nhập số lượng" style="width: 200px;" v-model="data.soLuong">
+      <h5 class="text-start ps-3 pt-3">Danh sách biến thể sản phẩm</h5>
+      <div class="d-flex gap-2">
+        <div class="form-group mb-2 me-3">
+          <label class="form-label small fw-bold">Số lượng:</label>
+          <input type="text" class="form-control" placeholder="Nhập số lượng" style="width: 200px;" v-model="data.soLuong">
+        </div>
+        <div class="form-group mb-2 me-3">
+          <label class="form-label small fw-bold">Giá:</label>
+          <input type="text" class="form-control" placeholder="Nhập giá" style="width: 200px;" v-model="data.gia">
+        </div>
+        <button class="btn mt-4" style="background-color: #0a2c57; color: white; width: 130px; height: 38px;" type="button" @click="updateAllGia()">Xác nhận</button>
+      </div>
     </div>
-    <div class="form-group mb-2 me-3">
-        <label class="form-label small fw-bold ">Giá:</label>
-        <input type="text" class="form-control" placeholder="Nhập giá" style="width: 200px;" v-model="data.gia">
-    </div>
-    
-    
-    <button class="btn mt-4" style="background-color: #0a2c57; color: white;width: 130px;
-                height: 38px;" type="button" @click="updateAllGia()" > Xác nhận</button>
-  </div>
-</div>
-
 
     <table class="table table-hover text-center align-middle">
       <thead class="table-light">
@@ -135,8 +117,8 @@
               @change="toggleRow(ds.id)"
             />
           </td>
-          <td>{{ ds.idSanPham.maSanPham }}</td>
           <td>{{ index + 1 + (currentPage - 1) * itemsPerPage }}</td>
+          <td>{{ ds.idSanPham.maSanPham }}</td>
           <td>{{ ds.maChiTietSapPham }}</td>
           <td>{{ ds.idSanPham.tenSanPham }}</td>
           <td>{{ ds.idMau.ten }}</td>
@@ -150,7 +132,7 @@
           </td>
           <td>
             <i class="fa-solid fa-repeat me-3" title="thay đổi trạng thái" style="color: #CC0000; font-size: 1.3rem;" @click="remove(ds.id)"></i>
-            <i class="fa-solid fa-pen-to-square" title="cập nhật thông tin" data-bs-toggle="modal" data-bs-target="#exampleModal" @click="moModal(ds.id)" style="color: #0a2c57;font-size: 1.3rem;"></i>
+            <i class="fa-solid fa-pen-to-square" title="cập nhật thông tin" data-bs-toggle="modal" data-bs-target="#exampleModal" @click="moModal(ds.id)" style="color: #28a745;font-size: 1.3rem;"></i>
           </td>
         </tr>
       </tbody>
@@ -183,11 +165,14 @@
       <div class="modal-content">
         <div class="modal-header">
           <h1 class="modal-title fs-5">Thông tin sản phẩm</h1>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" />
+          <button type="button" class="btn-close" data-bs-dismiss="modal" @click="handleModalClose" />
         </div>
-        <div class="modal-body">
-          <component :is="UpdateSanPham" :idChiTietSanPham="send" @close-modal="dongModal1" />
-        </div>
+        <component
+          :is="UpdateSanPham"
+          :idChiTietSanPham="send"
+          :key="`modal-${send}-${componentKey}`"
+          @close-modal="dongModal1"
+        />
       </div>
     </div>
   </div>
@@ -208,14 +193,13 @@
   </div>
 </template>
 
-
 <script setup>
 import { useToast } from "vue-toastification";
 import { useRoute } from 'vue-router'
 import { ref, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
-import { Modal, Toast } from 'bootstrap'
-import { Eye, Trash } from 'lucide-vue-next'
+import { Modal } from 'bootstrap'
+import { Eye, FilterIcon, Trash, Upload, Plus } from "lucide-vue-next";
 import UpdateSanPham from './UpdateSanPham.vue'
 import AddChiTietSanPham from './AddChiTietSanPham.vue'
 import QRCode from 'qrcode'
@@ -235,10 +219,8 @@ const idChiTietSanPham = Number(route.params.id1)
 // ============================
 const allData = ref([])
 const res = ref([])
-const send = ref(null)
 const mau = ref([])
 const size = ref([])
-// const thongTin = ref(false)
 const thongTin = ref(false)
 const maSP = ref()
 
@@ -270,43 +252,24 @@ const goToPage = (page) => {
     currentPage.value = page
   }
 }
+
 // ============================
 // Gọi API chính
 // ============================
-// function ham() {
-//   const url = thongTin.value
-//     ? `http://localhost:8080/san-pham/bien-the-san-pham/${idChiTietSanPham}`
-//     : "http://localhost:8080/san-pham/get-all-bien-the"
-
-//   axios.get(url)
-//     .then(response => {
-//       allData.value = response.data
-//       maSP.value = `SP${idChiTietSanPham.toString().padStart(4, '0')}` // ✅ sửa idCh thành idChiTietSanPham
-//       apDungBoLoc()
-//     })
-//     .catch(error => {
-//       console.error("Lỗi gọi API:", error)
-//     })
-// }
 function ham() {
-  const token = Cookies.get('token') // Lấy token từ cookie
-
   const url = thongTin.value
     ? `http://localhost:8080/san-pham/bien-the-san-pham/${idChiTietSanPham}`
     : "http://localhost:8080/san-pham/get-all-bien-the"
 
   axios.get(url, {
     headers: {
-      Authorization: `Bearer ${token}` // ✅ Thêm token vào header
+      Authorization: `Bearer ${token}`
     }
   })
     .then(response => {
       allData.value = response.data
       maSP.value = `SP${idChiTietSanPham.toString().padStart(4, '0')}`
       keyword.value = maSP.value
-      console.log(allData.value);
-      
-      // keyword.value = maSP.value
       apDungBoLoc()
     })
     .catch(error => {
@@ -316,10 +279,12 @@ function ham() {
       }
     })
 }
+
 function formatGia(gia) {
   if (gia === null || gia === undefined) return '';
   return gia.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
+
 // ============================
 // Hàm lọc client-side
 // ============================
@@ -327,10 +292,7 @@ function apDungBoLoc() {
   currentPage.value = 1 // Reset về trang đầu mỗi khi lọc lại
 
   res.value = allData.value.filter(sp => {
-    // const matchKeyword = sp.maChiTietSapPham?.toLowerCase().includes(keyword.value.toLowerCase()) ||
-    //                      sp.idSanPham?.tenSanPham?.toLowerCase().includes(keyword.value.toLowerCase())||
-    //                      sp.idSanPham?.maSanPham?.toLowerCase().includes(keyword.value.toLowerCase())
-    const matchKeyword = sp.idSanPham?.tenSanPham?.toLowerCase().includes(keyword.value.toLowerCase())||
+    const matchKeyword = sp.idSanPham?.tenSanPham?.toLowerCase().includes(keyword.value.toLowerCase()) ||
                          sp.idSanPham?.maSanPham?.toLowerCase().includes(keyword.value.toLowerCase())
 
     const matchTrangThai = selectedTrangThai.value === 'tatCa' ||
@@ -349,25 +311,29 @@ function apDungBoLoc() {
 // ============================
 onMounted(async () => {
   await ham()
-  const response = await axios.get("http://localhost:8080/san-pham/add"  ,{
+  const response = await axios.get("http://localhost:8080/san-pham/add", {
     headers: {
       Authorization: `Bearer ${token}`
     }
   })
   mau.value = response.data.maus
   size.value = response.data.kichCos
-  selectedTrangThai.value = 'dangBan'  
+  selectedTrangThai.value = 'dangBan'
 })
 
 // ============================
 // Các watch lọc và loại hiển thị
 // ============================
-watch([keyword, selectedTrangThai, selectedMau, selectedKichCo], apDungBoLoc)
-watch(thongTin, () => ham())
+watch([keyword, selectedTrangThai, selectedMau, selectedKichCo], () => {
+  apDungBoLoc();
+});
 
 // ============================
 // Modal xử lý
 // ============================
+const send = ref(null)
+const componentKey = ref(0)
+
 function moModal(id) {
   send.value = id
 }
@@ -382,24 +348,38 @@ function dongModal() {
 }
 
 function dongModal1() {
-  const modalEl = document.getElementById('exampleModal')
-  if (modalEl) {
-    const modalInstance = Modal.getInstance(modalEl) || new Modal(modalEl)
-    modalInstance.hide()
+  componentKey.value = Date.now() // Reset component
+  const modalElement = document.getElementById('exampleModal')
+  const modal = Modal.getInstance(modalElement)
+  if (modal) {
+    modal.hide()
   }
-  setTimeout(() => ham(), 1000)
+  ham()
 }
+
+function handleModalClose() {
+  componentKey.value = Date.now() // Reset component khi đóng bằng nút X
+}
+
+onMounted(() => {
+  const modalElement = document.getElementById('exampleModal')
+  if (modalElement) {
+    modalElement.addEventListener('hidden.bs.modal', () => {
+      componentKey.value = Date.now() // Reset component khi modal đóng
+    })
+  }
+})
 
 // ============================
 // Xoá
 // ============================
 function remove(id) {
   if (confirm('Bạn có chắc chắn muốn xóa?')) {
-    axios.get(`http://localhost:8080/san-pham/delete-chi-tiet-san-pham/${id}`  ,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
+    axios.get(`http://localhost:8080/san-pham/delete-chi-tiet-san-pham/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
     setTimeout(() => ham(), 300)
   }
 }
@@ -433,11 +413,13 @@ async function generateAndDownloadAllQR() {
   }
 }
 
-function lamMoi(){
+function lamMoi() {
   keyword.value = "";
-  apDungBoLoc()
+  selectedTrangThai.value = 'tatCa';
+  selectedMau.value = 'Tất cả';
+  selectedKichCo.value = 'Tất cả';
+  apDungBoLoc();
 }
-
 
 // Khi bấm checkbox tổng
 function toggleSelectAll() {
@@ -446,29 +428,28 @@ function toggleSelectAll() {
   } else {
     selectedRows.value = []
   }
-  console.log(selectedRows.value);
-  
 }
+
 let data = ref({
-    array: [],
-    gia: '',
-    soLuong: ''
-  })
-function updateAllGia(){
+  array: [],
+  gia: '',
+  soLuong: ''
+})
+
+function updateAllGia() {
   data.value.array = selectedRows.value
-  axios.post("http://localhost:8080/san-pham/update-all",data.value  ,{
+  axios.post("http://localhost:8080/san-pham/update-all", data.value, {
     headers: {
       Authorization: `Bearer ${token}`
     }
-  }).then(Response =>{
+  }).then(response => {
     ham()
     toast.success("Cập nhật thành công")
-  }).catch(Error =>{
+  }).catch(error => {
     toast.error("Cập nhật thất bại")
   })
-
-
 }
+
 // Khi bấm từng checkbox riêng lẻ
 function toggleRow(id) {
   if (selectedRows.value.includes(id)) {
@@ -485,11 +466,9 @@ function toggleRow(id) {
 function isChecked(id) {
   return selectedRows.value.includes(id)
 }
-
 </script>
+
 <style scoped>
-
-
 .status-badge {
   padding: 4px 8px;
   border-radius: 4px;
@@ -508,5 +487,9 @@ function isChecked(id) {
   color: #d32f2f;
 }
 
+h2, h5 {
+  font-weight: bold;
+  color: #0a2c57;
+}
 
 </style>

@@ -4,6 +4,8 @@ import { Plus, Trash } from "lucide-vue-next";
 import ThemSanPham from "./ThemSanPhamBanHang.vue";
 import Cookies from "js-cookie";
 import { onMounted } from "vue";
+import { useToast } from "vue-toastification";
+const toast = useToast();
 const props = defineProps({
   order: Object,
   activeTab: Number,
@@ -113,8 +115,14 @@ const nhanSanPhamDaChon = async (danhSachSanPham) => {
 };
 
 const xoaSanPhamKhoiDonHang = (index) => {
+  const confirmAction = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này khỏi đơn hàng?");
+  if (!confirmAction) {
+    return;
+  }
   props.order.listSanPham.splice(index, 1);
+  toast.success("Xóa sản phẩm thành công")
 };
+
 
 // validate:
 const validateSoLuong = (item) => {
@@ -211,7 +219,7 @@ onMounted(async () => {
             <td>{{ index + 1 }}</td>
             <td>
               <img
-                src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
+                :src="item.urlAnh"
                 style="
                   width: 80px;
                   height: 100px;

@@ -1,14 +1,16 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 
 const search = ref("");
 const selected = ref({});
 
+const anhMap = ref({}); // Lưu ảnh theo id sản phẩm
 let listSanPham = ref([]);
 
 // Phân trang
 const currentPage = ref(0);
-const pageSize = ref(5);3
+const pageSize = ref(5);
+3;
 const totalPages = ref(0);
 
 // Props
@@ -32,9 +34,34 @@ const fetchSanPhamPaginated = async () => {
     );
     const data = await response.json();
     listSanPham.value = data.content;
+
+    // lấy ảnh:
+    listSanPham.value.forEach((sp) => {
+      fetchAnhSanPham(sp.id);
+    });
+
     totalPages.value = data.totalPages;
   } catch (error) {
     console.error("Lỗi khi fetch sản phẩm:", error);
+  }
+};
+
+// lay ảnh sản phẩm
+const fetchAnhSanPham = async (id) => {
+  console.log(id);
+  try {
+    const response = await fetch(
+      `http://localhost:8080/chi-tiet-san-pham/lay-anh/${id}`
+    );
+    if (response.ok) {
+      const url = await response.text();
+      console.log(url);
+      anhMap.value[id] = url; // Gán đường dẫn ảnh vào map
+    } else {
+      anhMap.value[id] = "https://via.placeholder.com/50"; // Ảnh mặc định khi không có ảnh
+    }
+  } catch (error) {
+    anhMap.value[id] = "https://via.placeholder.com/50"; // Ảnh mặc định khi lỗi
   }
 };
 
@@ -86,12 +113,17 @@ const apply = () => {
       idHoaDon: maHoaDon,
       baoGiaThayDoi: false,
       giaMoi: "",
+      urlAnh: anhMap.value[item.id],
     };
   });
 
   emit("selected", result);
   emit("close");
 };
+
+const filteredSanPham = computed(() => {
+  return listSanPham.value.filter((sp) => sp.soLuong > 0);
+});
 </script>
 
 <template>
@@ -204,12 +236,12 @@ const apply = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in listSanPham" :key="index">
+                <tr v-for="(item, index) in filteredSanPham" :key="index">
                   <td>{{ index + 1 }}</td>
                   <td>
                     <img
-                      src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
-                      style="width: 20px; height: 20px"
+                      :src="anhMap[item.id] || 'https://via.placeholder.com/50'"
+                      style="width: 50px; height: 50px; object-fit: cover"
                     />
                   </td>
                   <td>{{ item.maChiTietSapPham }}</td>

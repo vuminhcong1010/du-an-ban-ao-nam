@@ -702,7 +702,8 @@ onMounted(() => {
         </div>
         <!-- Thêm input chọn ngày và nút Xem -->
         <div class="thongke-bieudo-cbo d-flex align-items-center" style="gap: 8px;">
-        <button class="btn btn-outline-primary" style="font-size: 15px; padding: 4px 16px;" @click="showDateRange = true">Tùy chỉnh</button>
+          <button class="btn btn-outline-primary" style="font-size: 15px; padding: 4px 16px;"
+            @click="showDateRange = true">Tùy chỉnh</button>
           <select class="select-blue" :value="selectedMoc.key" @change="onChangeMoc">
             <option v-for="moc in mocThoiGianList" :key="moc.key" :value="moc.key">{{ moc.label }}</option>
           </select>
@@ -783,91 +784,102 @@ onMounted(() => {
 
     <!-- Thêm phía trên các card tổng hợp -->
     <div class="growth-row">
-  <div class="order-status-pie-section growth-col">
-    <div class="order-status-pie-header">
-      <b>Trạng Thái Đơn Hàng Tháng Này</b>
-    </div>
-    <div class="order-status-pie-chart-wrapper">
-      <canvas ref="orderStatusChartRef" style="max-width: 420px; height: 320px;"></canvas>
-      <div v-if="orderStatusLoading" class="chart-overlay">Đang tải...</div>
-      <div v-else-if="orderStatusError" class="chart-overlay" style="color: #e53935;">{{ orderStatusError }}</div>
-      <div v-else-if="orderStatusStats && orderStatusStats.tongDonHang === 0" class="chart-overlay">
-        <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom: 8px;"><rect x="4" y="7" width="16" height="10" rx="2" /><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" /></svg>
-        <div>Không có dữ liệu</div>
+      <div class="order-status-pie-section growth-col">
+        <div class="order-status-pie-header">
+          <b>Trạng Thái Đơn Hàng Tháng Này</b>
+        </div>
+        <div class="order-status-pie-chart-wrapper">
+          <canvas ref="orderStatusChartRef" style="max-width: 420px; height: 320px;"></canvas>
+          <div v-if="orderStatusLoading" class="chart-overlay">Đang tải...</div>
+          <div v-else-if="orderStatusError" class="chart-overlay" style="color: #e53935;">{{ orderStatusError }}</div>
+          <div v-else-if="orderStatusStats && orderStatusStats.tongDonHang === 0" class="chart-overlay">
+            <svg width="48" height="48" fill="none" stroke="#bbb" stroke-width="2" viewBox="0 0 24 24"
+              style="margin-bottom: 8px;">
+              <rect x="4" y="7" width="16" height="10" rx="2" />
+              <path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2" />
+            </svg>
+            <div>Không có dữ liệu</div>
+          </div>
+        </div>
+        <div class="order-status-pie-legend">
+          <div class="pie-legend-row" v-for="(label, idx) in ORDER_STATUS_LABELS" :key="label">
+            <span class="pie-legend-color" :style="{ background: ORDER_STATUS_COLORS[idx] }" />
+            <span class="pie-legend-label">{{ label }}</span>
+            <span class="pie-legend-value"><b>{{ orderStatusStats?.tiLePhanTram?.[label] || '0,00' }}%</b></span>
+          </div>
+        </div>
+      </div>
+      <div class="growth-box growth-col">
+        <div class="growth-title">
+          <b>Tốc Độ Tăng Trưởng Cửa Hàng</b>
+          <span v-if="loadingGrowth" style="font-size:13px;color:#888;margin-left:8px;">Đang tải...</span>
+          <span v-if="errorGrowth" style="font-size:13px;color:#e53935;margin-left:8px;">{{ errorGrowth }}</span>
+        </div>
+        <div class="growth-list">
+          <div class="growth-item">
+            <span class="growth-icon"><i class="fa fa-calendar"></i></span>
+            <span class="growth-label">Doanh thu ngày</span>
+            <span class="growth-value">{{ growth.doanhThuNgay.toLocaleString('vi-VN') }} VND</span>
+            <span class="growth-percent" :class="growth.tangTruongDoanhThuNgay < 0 ? 'down' : 'up'">
+              <i :class="growth.tangTruongDoanhThuNgay < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+              {{ growth.tangTruongDoanhThuNgay }} %
+            </span>
+          </div>
+          <div class="growth-item">
+            <span class="growth-icon"><i class="fa fa-calendar"></i></span>
+            <span class="growth-label">Doanh thu tháng</span>
+            <span class="growth-value">{{ growth.doanhThuThang.toLocaleString('vi-VN') }} VND</span>
+            <span class="growth-percent" :class="growth.tangTruongDoanhThuThang < 0 ? 'down' : 'up'">
+              <i :class="growth.tangTruongDoanhThuThang < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+              {{ growth.tangTruongDoanhThuThang }} %
+            </span>
+          </div>
+          <div class="growth-item">
+            <span class="growth-icon"><i class="fa fa-calendar"></i></span>
+            <span class="growth-label">Doanh thu năm</span>
+            <span class="growth-value">{{ growth.doanhThuNam.toLocaleString('vi-VN') }} VND</span>
+            <span class="growth-percent" :class="growth.tangTruongDoanhThuNam < 0 ? 'down' : 'up'">
+              <i :class="growth.tangTruongDoanhThuNam < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+              {{ growth.tangTruongDoanhThuNam }} %
+            </span>
+          </div>
+          <div class="growth-item">
+            <span class="growth-icon"><i class="fa fa-cube"></i></span>
+            <span class="growth-label">Sản phẩm tháng</span>
+            <span class="growth-value">{{ growth.soSanPhamThang }} Sản phẩm</span>
+            <span class="growth-percent" :class="growth.tangTruongSanPhamThang < 0 ? 'down' : 'up'">
+              <i :class="growth.tangTruongSanPhamThang < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+              {{ growth.tangTruongSanPhamThang }} %
+            </span>
+          </div>
+          <div class="growth-item">
+            <span class="growth-icon"><i class="fa fa-calendar"></i></span>
+            <span class="growth-label">Hóa đơn ngày</span>
+            <span class="growth-value">{{ growth.soHoaDonNgay }} Hóa đơn</span>
+            <span class="growth-percent" :class="{
+              up: growth.tangTruongHoaDonNgay > 0,
+              down: growth.tangTruongHoaDonNgay < 0,
+              neutral: growth.tangTruongHoaDonNgay === 0
+            }">
+              <!-- Chỉ hiển thị mũi tên khi khác 0 -->
+              <i v-if="growth.tangTruongHoaDonNgay !== 0"
+                :class="growth.tangTruongHoaDonNgay < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+              {{ growth.tangTruongHoaDonNgay }} %
+            </span>
+          </div>
+
+          <div class="growth-item">
+            <span class="growth-icon"><i class="fa fa-calendar"></i></span>
+            <span class="growth-label">Hóa đơn tháng</span>
+            <span class="growth-value">{{ growth.soHoaDonThang }} Hóa đơn</span>
+            <span class="growth-percent" :class="growth.tangTruongHoaDonThang < 0 ? 'down' : 'up'">
+              <i :class="growth.tangTruongHoaDonThang < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
+              {{ growth.tangTruongHoaDonThang }} %
+            </span>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="order-status-pie-legend">
-      <div class="pie-legend-row" v-for="(label, idx) in ORDER_STATUS_LABELS" :key="label">
-        <span class="pie-legend-color" :style="{background: ORDER_STATUS_COLORS[idx]}" />
-        <span class="pie-legend-label">{{ label }}</span>
-        <span class="pie-legend-value"><b>{{ orderStatusStats?.tiLePhanTram?.[label] || '0,00' }}%</b></span>
-      </div>
-    </div>
-  </div>
-  <div class="growth-box growth-col">
-    <div class="growth-title">
-      <b>Tốc Độ Tăng Trưởng Cửa Hàng</b>
-      <span v-if="loadingGrowth" style="font-size:13px;color:#888;margin-left:8px;">Đang tải...</span>
-      <span v-if="errorGrowth" style="font-size:13px;color:#e53935;margin-left:8px;">{{ errorGrowth }}</span>
-    </div>
-    <div class="growth-list">
-      <div class="growth-item">
-        <span class="growth-icon"><i class="fa fa-calendar"></i></span>
-        <span class="growth-label">Doanh thu ngày</span>
-        <span class="growth-value">{{ growth.doanhThuNgay.toLocaleString('vi-VN') }} VND</span>
-        <span class="growth-percent" :class="growth.tangTruongDoanhThuNgay < 0 ? 'down' : 'up'">
-          <i :class="growth.tangTruongDoanhThuNgay < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
-          {{ growth.tangTruongDoanhThuNgay }} %
-        </span>
-      </div>
-      <div class="growth-item">
-        <span class="growth-icon"><i class="fa fa-calendar"></i></span>
-        <span class="growth-label">Doanh thu tháng</span>
-        <span class="growth-value">{{ growth.doanhThuThang.toLocaleString('vi-VN') }} VND</span>
-        <span class="growth-percent" :class="growth.tangTruongDoanhThuThang < 0 ? 'down' : 'up'">
-          <i :class="growth.tangTruongDoanhThuThang < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
-          {{ growth.tangTruongDoanhThuThang }} %
-        </span>
-      </div>
-      <div class="growth-item">
-        <span class="growth-icon"><i class="fa fa-calendar"></i></span>
-        <span class="growth-label">Doanh thu năm</span>
-        <span class="growth-value">{{ growth.doanhThuNam.toLocaleString('vi-VN') }} VND</span>
-        <span class="growth-percent" :class="growth.tangTruongDoanhThuNam < 0 ? 'down' : 'up'">
-          <i :class="growth.tangTruongDoanhThuNam < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
-          {{ growth.tangTruongDoanhThuNam }} %
-        </span>
-      </div>
-      <div class="growth-item">
-        <span class="growth-icon"><i class="fa fa-cube"></i></span>
-        <span class="growth-label">Sản phẩm tháng</span>
-        <span class="growth-value">{{ growth.soSanPhamThang }} Sản phẩm</span>
-        <span class="growth-percent" :class="growth.tangTruongSanPhamThang < 0 ? 'down' : 'up'">
-          <i :class="growth.tangTruongSanPhamThang < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
-          {{ growth.tangTruongSanPhamThang }} %
-        </span>
-      </div>
-      <div class="growth-item">
-        <span class="growth-icon"><i class="fa fa-calendar"></i></span>
-        <span class="growth-label">Hóa đơn ngày</span>
-        <span class="growth-value">{{ growth.soHoaDonNgay }} Hóa đơn</span>
-        <span class="growth-percent" :class="growth.tangTruongHoaDonNgay < 0 ? 'down' : 'up'">
-          <i :class="growth.tangTruongHoaDonNgay < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
-          {{ growth.tangTruongHoaDonNgay }} %
-        </span>
-      </div>
-      <div class="growth-item">
-        <span class="growth-icon"><i class="fa fa-calendar"></i></span>
-        <span class="growth-label">Hóa đơn tháng</span>
-        <span class="growth-value">{{ growth.soHoaDonThang }} Hóa đơn</span>
-        <span class="growth-percent" :class="growth.tangTruongHoaDonThang < 0 ? 'down' : 'up'">
-          <i :class="growth.tangTruongHoaDonThang < 0 ? 'fa fa-arrow-down' : 'fa fa-arrow-up'"></i>
-          {{ growth.tangTruongHoaDonThang }} %
-        </span>
-      </div>
-    </div>
-  </div>
-</div>
   </div>
 
   <!-- Phần chọn khoảng ngày -->
@@ -894,7 +906,7 @@ onMounted(() => {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 12px #0001;
-  padding: 24px 32px 18px 32px;
+  padding:  32px 18px 32px;
   margin: 24px auto 0 auto;
   max-width: 1400px;
 }
@@ -1056,6 +1068,7 @@ onMounted(() => {
   border: 1.5px solid #1976d2;
   color: #1976d2;
 }
+
 .order-status-pie-legend {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1063,21 +1076,25 @@ onMounted(() => {
   margin-top: 18px;
   justify-content: center;
 }
+
 .pie-legend-row {
   display: flex;
   align-items: center;
   gap: 7px;
   min-width: 220px;
 }
+
 .pie-legend-label {
   flex: 1 1 0;
   text-align: left;
 }
+
 .pie-legend-value {
   min-width: 60px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
 .pie-legend-color {
   width: 18px;
   height: 18px;
@@ -1141,6 +1158,7 @@ onMounted(() => {
   margin-bottom: 32px;
   align-items: stretch;
 }
+
 .growth-col {
   flex: 1 1 0;
   min-width: 340px;
@@ -1149,6 +1167,7 @@ onMounted(() => {
   flex-direction: column;
   justify-content: stretch;
 }
+
 .order-status-pie-section {
   background: #fff;
   border-radius: 16px;
@@ -1160,20 +1179,22 @@ onMounted(() => {
   flex-direction: column;
   justify-content: stretch;
 }
+
 .growth-box {
-    background: #fff;
+  background: #fff;
   border-radius: 16px;
   padding: 18px 18px 10px 18px;
   box-shadow: 0 2px 8px #0001;
   display: flex;
   flex-direction: column;
   justify-content: stretch;
-  width: 100%;        
-  max-width: 800px;   
-  min-width: 0;        
-  flex: 1 1 0; 
-  
+  width: 100%;
+  max-width: 800px;
+  min-width: 0;
+  flex: 1 1 0;
+
 }
+
 .growth-title {
   font-size: 24px;
   font-weight: bold;
@@ -1187,6 +1208,19 @@ onMounted(() => {
   flex-direction: column;
   gap: 14px;
 }
+
+.growth-percent.up {
+  color: green;
+}
+
+.growth-percent.down {
+  color: red;
+}
+
+.growth-percent.neutral {
+  color: orange; /* màu vàng */
+}
+
 
 .growth-item {
   background: #111;
@@ -1228,9 +1262,11 @@ onMounted(() => {
   align-items: center;
   gap: 4px;
 }
+
 .growth-percent.down {
   color: #e53935;
 }
+
 .growth-percent i {
   font-size: 18px;
 }
@@ -1242,6 +1278,7 @@ onMounted(() => {
   gap: 24px;
   margin: 32px 0;
 }
+
 .dashboard-cell {
   min-width: 0;
   min-height: 0;
@@ -1249,4 +1286,24 @@ onMounted(() => {
   flex-direction: column;
   justify-content: stretch;
 }
+
+/* Increase the width of thongke-homqua-container */
+.thongke-homqua-container {
+  max-width: 1600px;  /* Adjusted width */
+}
+
+/* Increase the width of growth-box growth-col */
+.growth-box, .growth-col {
+  max-width: 800px;  /* Adjusted width */
+}
+
+/* Change the title color */
+.thongke-homqua-title,
+.growth-title,
+.top-product-header b,
+.top-customer-header b,
+.order-status-pie-header b {
+  color: #0a2c57;  /* Updated title color */
+}
+
 </style>

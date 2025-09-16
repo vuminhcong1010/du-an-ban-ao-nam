@@ -20,6 +20,54 @@ import Cookies from "js-cookie";
 import { useToast } from "vue-toastification";
 const toast = useToast();
 
+// ------------------- LOGIC WEBSOCKET BẮT ĐẦU -------------------
+import SockJS from "sockjs-client";
+import Stomp from "stompjs";
+
+const stompClient = ref(null);
+const isConnected = ref(false);
+
+onMounted(() => {
+  const socket = new SockJS("http://localhost:8080/ws");
+  stompClient.value = Stomp.over(socket);
+
+  stompClient.value.connect({}, (frame) => {
+    console.log("Connected to WebSocket: " + frame);
+    isConnected.value = true;
+
+    stompClient.value.subscribe("/topic/orders", (message) => {
+      try {
+        const newOrderData = JSON.parse(message.body);
+        console.log("Nhận được đơn hàng mới qua WebSocket: ", newOrderData);
+
+        // --- Đã sửa lỗi: Khởi tạo các thuộc tính cần thiết ---
+        const newOrder = {
+          ...newOrderData,
+          listSanPham: newOrderData.listSanPham || [], // Đảm bảo luôn là một mảng
+          khachHang: newOrderData.khachHang || { tenKhachHang: "Khách lẻ" }, // Khởi tạo nếu null
+          thanhToan: newOrderData.thanhToan || null, // Khởi tạo nếu null
+          soTienGiam: newOrderData.soTienGiam || 0, // Khởi tạo nếu null
+          tongTien: newOrderData.tongTien || 0, // Khởi tạo nếu null
+          hinhThucNhanHang: newOrderData.hinhThucNhanHang || "0", // Khởi tạo nếu null
+          startTime: Date.now(),
+          warningShown: false,
+        };
+        // --------------------------------------------------------
+
+        orders.value.push(newOrder);
+        activeTab.value = newOrder.id;
+      } catch (error) {
+        console.error("Lỗi khi xử lý tin nhắn WebSocket:", error);
+      }
+    });
+  }, (error) => {
+    console.error("Lỗi kết nối WebSocket:", error);
+    isConnected.value = false;
+  });
+});
+
+// ------------------- LOGIC WEBSOCKET KẾT THÚC -------------------
+
 const token = Cookies.get("token");
 // Tách phần payload (phần giữa)
 const payloadBase64 = token.split(".")[1];
@@ -56,54 +104,24 @@ if (storedActiveTab) {
 let nextOrderId =
   orders.value.length > 0 ? Math.max(...orders.value.map((o) => o.id)) + 1 : 1;
 
+// Hàm tạo đơn mới đã được sửa đổi
 async function createNewOrder() {
+  if (!isConnected.value) {
+    toast.error("Không thể tạo đơn hàng! Vui lòng chờ kết nối tới server.");
+    return;
+  }
   try {
-    const response = await fetch("http://localhost:8080/hoa-don/tao-moi", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        idNhanVien: idNv,
-      }),
-    });
-    const maHoaDon = await response.text();
-
-    const newOrder = {
-      id: nextOrderId++,
-      name: `Đơn ${nextOrderId - 1}`,
-      listSanPham: [],
-
-      tongTienSanPham: 0,
-      phiVanChuyen: 0,
-
-      maHoaDon: maHoaDon,
-      khachHang: {
-        idKhachHang: "",
-        tenKhachHang: "Khách lẻ",
-        tenNguoiNhan: "",
-        diaChi: "",
-        sdt: "",
-        gmail:"",
-      },
-      giamGia: null,
-      hinhThucNhanHang: "0",
-
-      thanhToan: [],
-      soTienGiam: 0,
-      tongTien: 0,
-      startTime: Date.now(), // ⏱ Thời gian tạo đơn
-      warningShown: false,
-      thoiGianConLai: 300,
-    };
-
-    orders.value.push(newOrder);
-    activeTab.value = newOrder.id;
+    // Thay vì gọi API REST, gửi một tin nhắn qua WebSocket
+    const messagePayload = { idNhanVien: idNv };
+    // Thay đổi trong file BanHang.vue
+    stompClient.value.send("/app/new-order", {}, JSON.stringify(messagePayload));
+    console.log("Gửi yêu cầu tạo đơn hàng qua WebSocket.");
   } catch (error) {
-    console.error("Lỗi tạo hóa đơn:", error);
+    console.error("Lỗi khi gửi tin nhắn WebSocket:", error);
+    toast.error("Lỗi khi gửi yêu cầu tạo đơn. Vui lòng thử lại.");
   }
 }
+
 
 // xóa hóa đơn nếu ko hoàn thành trong 5p
 
@@ -186,7 +204,7 @@ async function closeOrder(id) {
         Authorization: `Bearer ${token}`,
       },
     });
-
+    toast.success("Xoa don hang thanh cong");
     console.log("✅ Đã xoá hóa đơn:", order.maHoaDon);
     // ✅ Xoá khỏi localStorage
     localStorage.removeItem(`order_${id}`);
@@ -327,6 +345,18 @@ watch(
 
 // ham thanh toan:
 const thanhToanDonHang = async (order) => {
+  // ✅ Kiểm tra có hình thức thanh toán không
+  if (
+    !order.thanhToan ||
+    (Array.isArray(order.thanhToan?.thanhToan) &&
+      order.thanhToan.thanhToan.length === 0)
+  ) {
+    alert(
+      "❌ Vui lòng chọn phương thức thanh toán trước khi hoàn tất đơn hàng."
+    ); // giống validate sản phẩm
+    return false; // ⛔ Trả về false để dừng tiến trình
+  }
+
   const danhSachThanhToan = [];
 
   if (Array.isArray(order.thanhToan?.thanhToan)) {
@@ -355,18 +385,47 @@ const thanhToanDonHang = async (order) => {
     hoaDonId: order.maHoaDon,
     danhSachThanhToan,
   };
-  console.log("Gửi thanh toán với payload:", payload);
+
   try {
-    const res = await axios.post("http://localhost:8080/thanh-toan", payload);
+    const res = await axios.post("http://localhost:8080/thanh-toan", payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     console.log("✅ Thanh toán thành công:", res.data);
+    return true; // ✅ Trả về true khi thành công
   } catch (err) {
     console.error("❌ Lỗi khi thanh toán:", err);
+    alert("❌ Có lỗi xảy ra khi thanh toán. Vui lòng thử lại.");
+    return false;
   }
 };
 
 // hoàn thành đơn hàng:
 const hoanThanhDonHang = async (order) => {
   try {
+    // ✅ Kiểm tra thanh toán có tồn tại không
+    if (
+      !order.listSanPham ||
+      (Array.isArray(order.listSanPham) && order.listSanPham.length === 0)
+    ) {
+      alert("❌ Vui lòng sản phẩm trước khi hoàn tất đơn hàng.");
+      return;
+    }
+    // ✅ 2. Kiểm tra thanh toán (validate thôi, chưa gọi API)
+    if (
+      !order.thanhToan ||
+      (Array.isArray(order.thanhToan) && order.thanhToan.length === 0)
+    ) {
+      alert(
+        "❌ Vui lòng chọn phương thức thanh toán trước khi hoàn tất đơn hàng."
+      );
+      return;
+    }
+    const confirmAction = window.confirm(
+      "Bạn có chắc chắn muốn hoàn tất đơn hàng này không?"
+    );
+    if (!confirmAction) {
+      return;
+    }
     const maHoaDon = order.maHoaDon;
     const selectedItems = order.listSanPham;
     const giamGiaHoaDon = order.soTienGiam || 0;
@@ -394,14 +453,23 @@ const hoanThanhDonHang = async (order) => {
     }));
 
     // ✅ Gọi API cập nhật tồn kho
-    await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(bodyUpdateSoLuong),
-    });
+    const updateSoLuongRes = await fetch(
+      "http://localhost:8080/chi-tiet-san-pham/update-so-luong",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(bodyUpdateSoLuong),
+      }
+    );
+
+    if (!updateSoLuongRes.ok) {
+      const errorMsg = await updateSoLuongRes.text();
+      alert(`❌ Không thể cập nhật số lượng tồn kho: ${errorMsg}`);
+      return; // ⛔ Dừng tiến trình hoàn tất đơn hàng nếu lỗi tồn kho
+    }
 
     // ✅ Gọi API lưu chi tiết hóa đơn
     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
@@ -413,7 +481,13 @@ const hoanThanhDonHang = async (order) => {
       body: JSON.stringify(result),
     });
     // goi ham thanh toan don hang:
-    await thanhToanDonHang(order);
+    // await thanhToanDonHang(order);
+    // ✅ Gọi hàm thanh toán trước khi làm các bước khác
+    const thanhToanOk = await thanhToanDonHang(order);
+    if (!thanhToanOk) {
+      toast.warning("❌ Thanh toán không hợp lệ, dừng hoàn tất đơn hàng.");
+      return;
+    }
 
     // ✅ Gọi API hoàn tất hóa đơn
     const payload = {
@@ -459,6 +533,7 @@ const hoanThanhDonHang = async (order) => {
     if (activeTab.value === order.id) {
       activeTab.value = orders.value.length > 0 ? orders.value[0].id : null;
     }
+    toast.success("Lưu đơn hàng thành công");
   } catch (err) {
     console.error("❌ Lỗi hoàn thành đơn hàng:", err);
     alert("Không thể hoàn tất đơn hàng. Vui lòng thử lại.");
@@ -484,10 +559,14 @@ const currentOrder = computed(() =>
 
 <template>
   <div
-    class="bg-white p-3 rounded mb-4 d-flex align-items-center justify-content-between border"
-    style="height: 60px"
-  >
-    <h5 class="fw-bold mb-0">Bán hàng tại quầy</h5>
+  class="bg-white p-3 rounded mb-4 d-flex align-items-center justify-content-between border"
+  style="height: 60px"
+>
+  <h2 class="fw-bold mb-0">Bán hàng tại quầy</h2>
+  <div class="d-flex gap-2">
+    <button class="btn btn-danger" @click="xoaToanBoLocal" v-if="true">
+      <Trash class="me-1" size="16" /> Xóa tất cả đơn hàng
+    </button>
     <button
       class="btn success"
       style="background-color: #0a2c57; color: white"
@@ -495,10 +574,8 @@ const currentOrder = computed(() =>
     >
       <Plus class="me-1" size="16" /> Tạo đơn mới
     </button>
-    <button class="btn btn-danger" @click="xoaToanBoLocal" v-if="false">
-      <Trash class="me-1" size="16" /> Xóa tất cả đơn hàng
-    </button>
   </div>
+</div>
 
   <ul class="nav nav-tabs">
     <li class="nav-item" v-for="order in orders" :key="order.id">
@@ -510,7 +587,7 @@ const currentOrder = computed(() =>
       >
         {{ order.maHoaDon }}
         <!-- 🔽 Nếu có sản phẩm thì hiển thị số lượng -->
-        <span v-if="order.listSanPham.length > 0" class="badge bg-danger ms-1">
+        <span v-if="(order.listSanPham && order.listSanPham.length > 0)" class="badge bg-danger ms-1">
           {{ order.listSanPham.length }}
         </span>
         <span class="ms-1 text-danger" @click.stop="closeOrder(order.id)"
@@ -628,3 +705,10 @@ const currentOrder = computed(() =>
     </div>
   </div>
 </template>
+
+<style scoped>
+h2, h5 {
+  font-weight: bold;
+  color: #0a2c57;
+}
+</style>

@@ -20,7 +20,7 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "xac-nhan"]);
 
-const hinhThuc = ref("tien_mat");
+const hinhThuc = ref("cod");
 const maGiaoDichChinh = ref("");
 const soTienKhachTra = ref(props.tongTien);
 
@@ -217,7 +217,7 @@ const thanhToanDonHang = async (data) => {
           <div class="mb-3">
             <label class="fw-bold">Hình thức thanh toán</label>
             <select v-model="hinhThuc" class="form-select">
-              <option value="tien_mat">Tiền mặt</option>
+              <!-- <option value="tien_mat">Tiền mặt</option> -->
               <option value="cod">COD</option>
               <option value="vnpay">VNPay</option>
               <option value="momo">Momo</option>

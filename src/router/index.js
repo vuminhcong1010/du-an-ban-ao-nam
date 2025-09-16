@@ -37,7 +37,13 @@ import ClientSanPham from "@/components/client/ProductPage.vue";
 import Oder from "@/components/client/Order.vue";
 import ClientSanPhamDetail from "@/components/client/ProductDetail.vue";
 import LichSuDatHang from "@/components/client/OrderHistory.vue";
-import Return from "@/components/client/ReturnCard.vue";
+import VnpayReturn from "@/components/client/ReturnCard.vue";
+import LienHe from "@/components/client/LienHe.vue";
+// import MyAccount from "@/components/client/MyAccount.vue"; // Make sure this file exists
+import OrderDetail from "@/components/client/OrderDetail.vue"; // Make sure this file exists
+import LoginGG from "@/components/client/LoginGG.vue"; // Google Login Page
+import XacNhanThongTinCustomer from "@/components/client/XacNhanThongTinCustomer.vue"; // Component for confirming customer info (path inconsistency, consider moving)
+import OrderLookup from "@/components/client/OrderLookup.vue";
 import DanhMucList from "@/components/client/Category.vue";
 import ProductCategory from "@/components/client/ProductCategory.vue";
 import MyAccount from "@/components/client/MyAccount.vue"; // Make sure this file exists
@@ -136,6 +142,21 @@ const router = createRouter({
           path: "/xntt", // Confirm Customer Info outside main client layout
           name: "xntt",
           component: XacNhanThongTinCustomer,
+        },
+        {
+          path: "tra-cuu-don-hang", // Confirm Customer Info outside main client layout
+          name: "TraCuuDonHang",
+          component: OrderLookup,
+        },
+        {
+          path: "thong-tin-user", // Confirm Customer Info outside main client layout
+          name: "ThongTinUser",
+          component: ThongTinUser,
+        },
+         {
+          path: "lien-he",
+          name: "lien-he",
+          component: LienHe,
         },
       ],
 

@@ -29,7 +29,7 @@ import {
   Dot,
   ArrowUpRight,
 } from "lucide-vue-next";
-import { ref, onMounted, watch ,nextTick } from "vue";
+import { ref, onMounted, watch, nextTick } from "vue";
 import ThemSanPhamHoaDon from "./ThemSanPhamHoaDon.vue";
 import ThemSanPhamHoaDonOnline from "./ThemSanPhamHoaDonOnline.vue";
 import HoanPhuPhi from "./HoanPhuPhi.vue";
@@ -47,9 +47,20 @@ const token = Cookies.get("token");
 //   return giaTri > tongTienDaThanhToanKhiNhanHang;
 // });
 const tongTienSanPhamBanDau = ref(0);
-const hienNut = computed(() => tongTienSanPham.value !== tongTienSanPhamBanDau.value);
+const giamGia = ref(0);
+const phiVanChuyen = ref(0);
 
-const isPhuPhi = computed(() => tongTienSanPham.value > tongTienSanPhamBanDau.value);
+const hienNut = computed(
+  () =>
+    tongTienDaThanhToan.value + tongTienDaThanhToanKhiNhanHang.value !==
+    tongTienSanPham.value - giamGia.value + phiVanChuyen.value
+);
+
+const isPhuPhi = computed(
+  () =>
+    tongTienSanPham.value - giamGia.value + phiVanChuyen.value >
+    tongTienDaThanhToan.value + tongTienDaThanhToanKhiNhanHang.value
+);
 
 const hoanPhi = ref(false);
 
@@ -167,15 +178,27 @@ const fetchTodos = async () => {
     );
     const json = await response.json();
     listHoaDonChiTiet.value = json;
-      // Gán tổng tiền sản phẩm ban đầu **chỉ 1 lần**
+    // Gán tổng tiền sản phẩm ban đầu **chỉ 1 lần**
     if (tongTienSanPhamBanDau.value === 0) {
       tongTienSanPhamBanDau.value = tongTienSanPham.value;
     }
-    console.log(tongTienSanPhamBanDau.value)
+
+    console.log(tongTienSanPhamBanDau.value);
     // Cập nhật trangThai sau khi có dữ liệu
     trangThai.value = json[0]?.idHoaDon?.trangThai; // tìm chỉ số trong mảng steps
     trangThaiChinhSua.value = json[0]?.idHoaDon?.trangThaiChinhSua;
+    giamGia.value = json[0]?.idHoaDon?.giamGia;
+    phiVanChuyen.value = json[0]?.idHoaDon?.phiVanChuyen;
     console.log("Trang thai chinh sua:", trangThaiChinhSua.value);
+    console.log(
+      "Tong tien thanh toan:",
+      tongTienDaThanhToan.value + tongTienDaThanhToanKhiNhanHang.value
+    );
+    console.log(
+      "Tong tien hang tru giam gia cong van chuyen:",
+      tongTienSanPham.value - giamGia.value + phiVanChuyen.value
+    );
+
     console.log(token);
   } catch (error) {
     console.error("Lỗi khi fetch dữ liệu:", error);
@@ -529,7 +552,6 @@ function downloadPDF(maHoaDon) {
     });
 }
 
-
 console.log(trangThai);
 onMounted(() => {
   nextTick(() => {
@@ -554,28 +576,42 @@ const reloadTrang = () => {
             <FileText :size="24" class="ms-2" /> Hóa đơn chi tiết:
           </h5>
           <!-- Nút Hủy/hoàn: viền + chữ màu #0A2C57, nền trắng -->
-          <button @click="fetchLichSuHoaDon" class="btn btn-sm border text-nowrap d-flex align-items-center gap-1"
+          <button
+            @click="fetchLichSuHoaDon"
+            class="btn btn-sm border text-nowrap d-flex align-items-center gap-1"
             style="
               color: #0a2c57;
               border-color: #0a2c57;
               background-color: white;
-            ">
+            "
+          >
             <List style="width: 16px; height: 16px" />
             Lịch sử hóa đơn
           </button>
           <!-- lich su hoa don -->
-          <LichSuHoaDon v-if="showModalLichSuHoaDon" :lich-su="lichSu" @close="showModalLichSuHoaDon = false">
+          <LichSuHoaDon
+            v-if="showModalLichSuHoaDon"
+            :lich-su="lichSu"
+            @close="showModalLichSuHoaDon = false"
+          >
           </LichSuHoaDon>
         </div>
         <!-- thanh trang thai -->
         <div class="d-flex justify-content-between mb-4 border">
-          <div v-for="(step, index) in visibleSteps" :key="index" class="text-center flex-fill my-2">
-            <div class="rounded-circle text-white d-inline-flex align-items-center justify-content-center" style="
+          <div
+            v-for="(step, index) in visibleSteps"
+            :key="index"
+            class="text-center flex-fill my-2"
+          >
+            <div
+              class="rounded-circle text-white d-inline-flex align-items-center justify-content-center"
+              style="
                 width: 32px;
                 height: 32px;
                 background-color: #0a2c57;
                 color: white;
-              ">
+              "
+            >
               ✓
             </div>
             <div class="mt-2">{{ step }}</div>
@@ -584,10 +620,15 @@ const reloadTrang = () => {
 
         <!-- thong bao don hang hoan thanh -->
         <div v-if="trangThai === 4 || trangThai === 5" class="text-center mt-5">
-          <img :src="trangThai === 4
-              ? 'https://happyphone.vn/wp-content/uploads/2024/05/icon-dat-hang-thanh-cong-09.jpeg'
-              : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgh95EBJ9V3_ncmkDVQcTHrkelmSkV5L8jVOQoNrJNuc12hwHUtOHKxn1ayHJ3ENokFJQ&usqp=CAU'
-            " :alt="trangThai === 4 ? 'Hoàn thành' : 'Đã hủy'" width="70" />
+          <img
+            :src="
+              trangThai === 4
+                ? 'https://happyphone.vn/wp-content/uploads/2024/05/icon-dat-hang-thanh-cong-09.jpeg'
+                : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSgh95EBJ9V3_ncmkDVQcTHrkelmSkV5L8jVOQoNrJNuc12hwHUtOHKxn1ayHJ3ENokFJQ&usqp=CAU'
+            "
+            :alt="trangThai === 4 ? 'Hoàn thành' : 'Đã hủy'"
+            width="70"
+          />
           <p class="mt-2">
             {{
               trangThai === 4
@@ -599,24 +640,39 @@ const reloadTrang = () => {
 
         <!-- Textarea -->
         <div class="mb-3" v-if="trangThai !== 4 && trangThai !== 5">
-          <textarea class="form-control" rows="3" placeholder="Nội dung ghi chú" v-model="note"></textarea>
+          <textarea
+            class="form-control"
+            rows="3"
+            placeholder="Nội dung ghi chú"
+            v-model="note"
+          ></textarea>
         </div>
 
         <!-- Buttons -->
         <div class="d-flex gap-2 justify-content-end">
-          <button v-if="trangThai !== 0 && trangThai !== 4 && trangThai < 2" class="btn btn-outline-secondary"
-            @click="thayDoiTrangThai(trangThai - 1)">
+          <button
+            v-if="trangThai !== 0 && trangThai !== 4 && trangThai < 2"
+            class="btn btn-outline-secondary"
+            @click="thayDoiTrangThai(trangThai - 1)"
+          >
             {{ buttons[trangThai][0] }}
           </button>
           <!-- nut huy/hoan -->
-          <button v-if="trangThai === 0 || trangThai === 3" class="btn btn-outline-secondary"
-            @click="thayDoiTrangThai(5)">
+          <button
+            v-if="trangThai === 0 || trangThai === 3"
+            class="btn btn-outline-secondary"
+            @click="thayDoiTrangThai(5)"
+          >
             {{ trangThai === 0 ? "Hủy" : "Hoàn hàng" }}
           </button>
 
           <!-- Nút Tiếp tục -->
-          <button v-if="trangThai !== 4 && trangThai != 5" class="btn btn-primary" @click="handleNextClick"
-            style="background-color: #0a2c57; color: white">
+          <button
+            v-if="trangThai !== 4 && trangThai != 5"
+            class="btn btn-primary"
+            @click="handleNextClick"
+            style="background-color: #0a2c57; color: white"
+          >
             {{ buttons[trangThai][1] }}
           </button>
         </div>
@@ -626,24 +682,39 @@ const reloadTrang = () => {
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">Sản phẩm:</h5>
 
-          <div class="d-flex justify-content-end gap-2 mt-3" v-if="
-            steps[trangThai] !== 'Giao hàng thành công' &&
-            steps[trangThai] !== 'Đã hủy'
-          ">
-            <button @click="moThemSanPham" class="btn btn-sm text-white d-flex align-items-center gap-1"
-              :style="{ backgroundColor: '#0A2C57' }" v-if="trangThai === 0">
+          <div
+            class="d-flex justify-content-end gap-2 mt-3"
+            v-if="
+              steps[trangThai] !== 'Giao hàng thành công' &&
+              steps[trangThai] !== 'Đã hủy'
+            "
+          >
+            <button
+              @click="moThemSanPham"
+              class="btn btn-sm text-white d-flex align-items-center gap-1"
+              :style="{ backgroundColor: '#0A2C57' }"
+              v-if="trangThai === 0"
+            >
               <Plus style="width: 16px; height: 16px" />
               Thêm sản phẩm
             </button>
             <!-- Teleport modal -->
             <teleport to="body">
               <!-- Nếu trạng thái chỉnh sửa = 0 -->
-              <ThemSanPhamHoaDonOnline v-if="showThemSanPham && trangThaiChinhSua === 0" key="online"
-                @close="showThemSanPham = false" @selected="nhanSanPhamTuThem" />
+              <ThemSanPhamHoaDonOnline
+                v-if="showThemSanPham && trangThaiChinhSua === 0"
+                key="online"
+                @close="showThemSanPham = false"
+                @selected="nhanSanPhamTuThem"
+              />
 
               <!-- Nếu trạng thái chỉnh sửa = 1 -->
-              <ThemSanPhamHoaDon v-else-if="showThemSanPham && trangThaiChinhSua === 1" key="offline"
-                @close="showThemSanPham = false" @selected="nhanSanPhamTuThem" />
+              <ThemSanPhamHoaDon
+                v-else-if="showThemSanPham && trangThaiChinhSua === 1"
+                key="offline"
+                @close="showThemSanPham = false"
+                @selected="nhanSanPhamTuThem"
+              />
             </teleport>
           </div>
         </div>
@@ -666,13 +737,16 @@ const reloadTrang = () => {
                 <td>
                   <div class="d-flex align-items-start">
                     <!-- Hình ảnh sản phẩm -->
-                    <img src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
+                    <img
+                      src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
                       style="
                         width: 80px;
                         height: 100px;
                         object-fit: cover;
                         margin-right: 10px;
-                      " alt="Sản phẩm" />
+                      "
+                      alt="Sản phẩm"
+                    />
                     <!-- Thông tin sản phẩm -->
                     <div>
                       <h6 class="mb-1">
@@ -697,29 +771,33 @@ const reloadTrang = () => {
                 </td>
                 <td class="text-center align-middle">{{ item.soLuong }}</td>
                 <td class="text-center align-middle">
-                  {{ item.idSanPhamChiTiet.gia }}
+                  {{ item.gia }}
                 </td>
                 <td class="text-center align-middle">{{ item.thanhTien }}</td>
                 <td class="text-center align-middle">
                   <button
                     class="btn p-1 border-0 bg-transparent d-flex align-items-center justify-content-center mx-auto"
-                    v-if="trangThai === 0" @click="
+                    v-if="trangThai === 0"
+                    @click="
                       trangThaiChinhSua === 0
                         ? xoaSanPhamOnline(
-                          item.id,
-                          item.idSanPhamChiTiet.idSanPham.tenSanPham,
-                          item.idSanPhamChiTiet.idMau.ten,
-                          item.idSanPhamChiTiet.idSize.soCo
-                        )
+                            item.id,
+                            item.idSanPhamChiTiet.idSanPham.tenSanPham,
+                            item.idSanPhamChiTiet.idMau.ten,
+                            item.idSanPhamChiTiet.idSize.soCo
+                          )
                         : xoaSanPham(
-                          item.id,
-                          item.idSanPhamChiTiet.idSanPham.tenSanPham,
-                          item.idSanPhamChiTiet.idMau.ten,
-                          item.idSanPhamChiTiet.idSize.soCo
-                        )
-                      ">
+                            item.id,
+                            item.idSanPhamChiTiet.idSanPham.tenSanPham,
+                            item.idSanPhamChiTiet.idMau.ten,
+                            item.idSanPhamChiTiet.idSize.soCo
+                          )
+                    "
+                  >
                     <i>
-                      <Trash style="width: 16px; height: 16px; color: #0a2c57" />
+                      <Trash
+                        style="width: 16px; height: 16px; color: #0a2c57"
+                      />
                     </i>
                   </button>
                   <i v-else>
@@ -740,7 +818,11 @@ const reloadTrang = () => {
           <h5 class="fw-semibold">
             <Receipt class="me-2" /> Đơn hàng: {{ maHoaDon }}
           </h5>
-          <button class="btn" style="border: none; color: #0a2c57" @click="downloadPDF(maHoaDon)">
+          <button
+            class="btn"
+            style="border: none; color: #0a2c57"
+            @click="downloadPDF(maHoaDon)"
+          >
             <Printer class="me-1" size="16" /> In hóa đơn
           </button>
         </div>
@@ -749,7 +831,10 @@ const reloadTrang = () => {
 
         <div class="mb-2">
           <label class="fw-bold">Hình thức đặt hàng:</label>
-          <ShoppingCart class="ms-2" style="width: 16px; height: 16px; color: #0a2c57" />
+          <ShoppingCart
+            class="ms-2"
+            style="width: 16px; height: 16px; color: #0a2c57"
+          />
           {{
             listHoaDonChiTiet[0]?.idHoaDon?.loaiDon === 0
               ? " Tại cửa hàng"
@@ -759,7 +844,10 @@ const reloadTrang = () => {
 
         <div class="mb-2">
           <label class="fw-bold">Hình thức nhận hàng:</label>
-          <Truck class="ms-2" style="width: 16px; height: 16px; color: #0a2c57" />
+          <Truck
+            class="ms-2"
+            style="width: 16px; height: 16px; color: #0a2c57"
+          />
           {{
             listHoaDonChiTiet[0]?.idHoaDon?.hinhThucNhanHang === 0
               ? " Tại cửa hàng"
@@ -776,28 +864,42 @@ const reloadTrang = () => {
         <div>
           <label class="fw-bold">Trạng thái thanh toán:</label>
           <Dot class="ms-2" style="width: 16px; height: 16px; color: #0a2c57" />
-          <span :class="{
-            'text-success fw-semibold':
-              tongTienSanPham -
-              listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
-              listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
-              tongTienDaThanhToan ===
-              0,
-            'text-danger fw-semibold':
-              tongTienSanPham -
-              listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
-              listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
-              tongTienDaThanhToan !==
-              0,
-          }">
+          <span
+            :class="{
+              'text-success fw-semibold':
+                tongTienSanPham -
+                  listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
+                  listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
+                  tongTienDaThanhToan ===
+                0,
+              'text-danger fw-semibold':
+                tongTienSanPham -
+                  listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
+                  listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
+                  tongTienDaThanhToan >
+                0,
+              'text-warning fw-semibold':
+                tongTienSanPham -
+                  listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
+                  listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
+                  tongTienDaThanhToan <
+                0,
+            }"
+          >
             {{
               tongTienSanPham -
                 listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
                 listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
-                tongTienDaThanhToan ===
-                0
-                ? " Đã thanh toán"
-                : " Chưa thanh toán"
+                tongTienDaThanhToan >
+              0
+                ? "Chưa thanh toán"
+                : tongTienSanPham -
+                    listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
+                    listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
+                    tongTienDaThanhToan ===
+                  0
+                ? "Đã thanh toán"
+                : "Chờ hoàn phí"
             }}
           </span>
         </div>
@@ -807,27 +909,34 @@ const reloadTrang = () => {
         <div class="align-items-center mb-3">
           <h5 class="fw-semibold">
             Khách hàng:
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.tenKhachHang }}
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.tenKhachHang }}
           </h5>
           <label for="">
             <Phone style="width: 16px; height: 16px; color: #0a2c57"></Phone> :
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.soDienThoai }}
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.sdt }}
           </label>
           <br />
           <label for="">
             <Mail style="width: 16px; height: 16px; color: #0a2c57"></Mail> :
-            {{ listHoaDonChiTiet[0]?.idHoaDon?.khachHang?.email }}
+            {{ listHoaDonChiTiet[0]?.idHoaDon?.gmail }}
           </label>
         </div>
         <hr />
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h6 class="mb-0">Thông tin người nhận hàng:</h6>
           <div>
-            <button v-if="isEditing" class="btn btn-sm btn-primary me-2" @click="luuThongTin">
+            <button
+              v-if="isEditing"
+              class="btn btn-sm btn-primary me-2"
+              @click="luuThongTin"
+            >
               Lưu thông tin
             </button>
-            <button v-if="trangThai === 0 && !isEditing" class="btn p-1 border-0 bg-transparent"
-              @click="isEditing = true">
+            <button
+              v-if="trangThai === 0 && !isEditing"
+              class="btn p-1 border-0 bg-transparent"
+              @click="isEditing = true"
+            >
               <Edit style="width: 19px; height: 19px; color: #0a2c57" /> Sửa
             </button>
           </div>
@@ -840,10 +949,21 @@ const reloadTrang = () => {
             <span class="input-group-text bg-light">
               <User style="width: 16px; height: 16px; color: #0a2c57" />
             </span>
-            <input type="text" class="form-control" :value="listHoaDonChiTiet[0]?.idHoaDon?.tenKhachHang"
-              :readonly="true" :disabled="!isEditing" v-if="!isEditing" />
-            <input v-else type="text" v-model="receiverInfo.tenKhachHang" class="form-control"
-              placeholder="Tên người nhận" />
+            <input
+              type="text"
+              class="form-control"
+              :value="listHoaDonChiTiet[0]?.idHoaDon?.tenKhachHang"
+              :readonly="true"
+              :disabled="!isEditing"
+              v-if="!isEditing"
+            />
+            <input
+              v-else
+              type="text"
+              v-model="receiverInfo.tenKhachHang"
+              class="form-control"
+              placeholder="Tên người nhận"
+            />
           </div>
 
           <!-- Địa chỉ -->
@@ -851,9 +971,21 @@ const reloadTrang = () => {
             <span class="input-group-text bg-light">
               <MapPin style="width: 16px; height: 16px; color: #0a2c57" />
             </span>
-            <input type="text" class="form-control" :value="listHoaDonChiTiet[0]?.idHoaDon?.diaChi" :readonly="true"
-              :disabled="!isEditing" v-if="!isEditing" />
-            <input v-else type="text" v-model="receiverInfo.diaChi" class="form-control" placeholder="Địa chỉ" />
+            <input
+              type="text"
+              class="form-control"
+              :value="listHoaDonChiTiet[0]?.idHoaDon?.diaChi"
+              :readonly="true"
+              :disabled="!isEditing"
+              v-if="!isEditing"
+            />
+            <input
+              v-else
+              type="text"
+              v-model="receiverInfo.diaChi"
+              class="form-control"
+              placeholder="Địa chỉ"
+            />
           </div>
 
           <!-- Số điện thoại -->
@@ -861,9 +993,21 @@ const reloadTrang = () => {
             <span class="input-group-text bg-light">
               <Phone style="width: 16px; height: 16px; color: #0a2c57" />
             </span>
-            <input type="text" class="form-control" :value="listHoaDonChiTiet[0]?.idHoaDon?.sdt" :readonly="true"
-              :disabled="!isEditing" v-if="!isEditing" />
-            <input v-else type="text" v-model="receiverInfo.sdt" class="form-control" placeholder="Số điện thoại" />
+            <input
+              type="text"
+              class="form-control"
+              :value="listHoaDonChiTiet[0]?.idHoaDon?.sdt"
+              :readonly="true"
+              :disabled="!isEditing"
+              v-if="!isEditing"
+            />
+            <input
+              v-else
+              type="text"
+              v-model="receiverInfo.sdt"
+              class="form-control"
+              placeholder="Số điện thoại"
+            />
           </div>
         </div>
       </div>
@@ -873,17 +1017,28 @@ const reloadTrang = () => {
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">Thông tin thanh toán:</h5>
           <div>
-            <button v-if="hienNut" :class="isPhuPhi ? 'btn btn-warning' : 'btn btn-danger'" @click="hoanPhi = true">
-              {{ isPhuPhi ? 'Phụ Phí' : 'Hoàn Phí' }}
+            <button
+              v-if="hienNut"
+              :class="isPhuPhi ? 'btn btn-warning' : 'btn btn-danger'"
+              @click="hoanPhi = true"
+            >
+              {{ isPhuPhi ? "Phụ Phí" : "Hoàn Phí" }}
             </button>
 
-            <HoanPhuPhi :visible="hoanPhi" :tongTien="tongTienSanPham -
-              listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
-              listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
-              tongTienDaThanhToan -
-              tongTienDaThanhToanKhiNhanHang
-              " :maHoaDon="maHoaDon" :loaiThanhToan="isPhuPhi ? 'phu-phi' : 'hoan-phi'" @close="hoanPhi = false"
-              @thanh-toan-thanh-cong="reloadTrang" />
+            <HoanPhuPhi
+              :visible="hoanPhi"
+              :tongTien="
+                tongTienSanPham -
+                listHoaDonChiTiet[0]?.idHoaDon?.giamGia +
+                listHoaDonChiTiet[0]?.idHoaDon?.phiVanChuyen -
+                tongTienDaThanhToan -
+                tongTienDaThanhToanKhiNhanHang
+              "
+              :maHoaDon="maHoaDon"
+              :loaiThanhToan="isPhuPhi ? 'phu-phi' : 'hoan-phi'"
+              @close="hoanPhi = false"
+              @thanh-toan-thanh-cong="reloadTrang"
+            />
           </div>
         </div>
 
@@ -898,9 +1053,11 @@ const reloadTrang = () => {
 
         <div class="d-flex justify-content-between">
           <label for="">Khuyến mại/ giảm giá: </label>
-          <span>-{{
-            listHoaDonChiTiet[0]?.idHoaDon?.giamGia?.toLocaleString("vi-VN")
-          }}</span>
+          <span
+            >-{{
+              listHoaDonChiTiet[0]?.idHoaDon?.giamGia?.toLocaleString("vi-VN")
+            }}</span
+          >
         </div>
 
         <div class="d-flex justify-content-between">
@@ -916,8 +1073,13 @@ const reloadTrang = () => {
           <!-- Đã thanh toán + nút xem lịch sử -->
           <div>
             <span>Đã thanh toán </span>
-            <button @click="fetchLichSuThanhToan" class="btn btn-link p-0 text-decoration-none"
-              style="color: blue; margin-bottom: 5px" @mouseover="hovering = true" @mouseleave="hovering = false">
+            <button
+              @click="fetchLichSuThanhToan"
+              class="btn btn-link p-0 text-decoration-none"
+              style="color: blue; margin-bottom: 5px"
+              @mouseover="hovering = true"
+              @mouseleave="hovering = false"
+            >
               ( <ArrowUpRight style="width: 14px"></ArrowUpRight> xem lịch sử)
             </button>
             <span>:</span>
@@ -927,8 +1089,11 @@ const reloadTrang = () => {
           <span>{{ tongTienDaThanhToanFormatted }}</span>
 
           <!-- Modal lịch sử thanh toán -->
-          <LichSuThanhToan v-if="showModalLichSuThanhToan" :lichSuThanhToan="lichSuThanhToan"
-            @close="showModalLichSuThanhToan = false" />
+          <LichSuThanhToan
+            v-if="showModalLichSuThanhToan"
+            :lichSuThanhToan="lichSuThanhToan"
+            @close="showModalLichSuThanhToan = false"
+          />
         </div>
 
         <br />
