@@ -6,7 +6,8 @@
     <div class="bg-white p-3 rounded border mb-4">
     <div class="avatar-wrapper">
     <div class="avatar-profile">
-        <img :src="nhanVien.anh" alt="Avatar nhân viên" />
+        <!-- <img :src="nhanVien.anh" alt="Avatar nhân viên" /> -->
+         <img src="https://picsum.photos/300/200" alt="">
     </div>
     </div>
 
@@ -44,23 +45,36 @@
         <input type="date" class="form-control" v-model="nhanVien.ngaySinh" readonly/>
       </div>
 
-      <div class="col-md-6">
-        <label class="form-label">CCCD</label>
-        <input type="text" class="form-control" v-model="nhanVien.cccd" readonly />
-      </div>
+  <div class="col-md-6">
+    <label class="form-label">CCCD</label>
+    <div class="input-group">
+      <input
+        :type="showCCCD ? 'text' : 'password'"
+        class="form-control"
+        v-model="nhanVien.cccd"
+        readonly
+      />
+      <button class="btn btn-outline-secondary" type="button" @click="showCCCD = !showCCCD">
+        <i :class="showCCCD ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+      </button>
+    </div>
+  </div>
 
       <div class="col-md-6">
         <label class="form-label">Vai trò</label>
-        <input type="text" class="form-control" :value="nhanVien.role?.roleName" readonly />
+        <input type="text" class="form-control"
+       :value="nhanVien.vaiTro?.tenVaiTro || ''"
+       readonly />
+
       </div>
 
       <div class="col-md-6">
-        <label class="form-label">Trạng thái</label>
-        <select class="form-select" v-model="nhanVien.trangThai" disabled>
-          <option :value="1">Đang hoạt động</option>
-          <option :value="0">Ngừng hoạt động</option>
-        </select>
-      </div>
+  <label class="form-label">Trạng thái</label>
+  <input type="text" class="form-control" 
+         :value="nhanVien.trangThai === 1 ? 'Đang hoạt động' : 'Ngừng hoạt động'" 
+         disabled>
+</div>
+
     <div class="col-md-6">
             <label class="form-label">Địa chỉ</label>
             <input type="text" class="form-control" :value="diaChi" readonly />
@@ -82,7 +96,7 @@
 import { ref, onMounted,computed } from 'vue';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-
+const showCCCD = ref(false)
 const token = Cookies.get('token');
 const nhanVien = ref({
   id: null,
@@ -113,18 +127,20 @@ const diaChi = computed(() => {
   return `${nv.thonXom || ''}, ${nv.xaPhuong || ''}, ${nv.quanHuyen || ''}, ${nv.tinhThanh || ''}`;
 });
 
-onMounted(() => {
-  axios
+onMounted(async() => {
+  await axios
     .post('http://localhost:8080/thong-tin-nhan-vien', { token })
     .then((response) => {
       nhanVien.value = response.data.data;
-      console.log(response.data.data);
       
     })
     .catch((err) => {
       console.error('Lỗi khi lấy thông tin nhân viên:', err);
     });
+    console.log(nhanVien.value);
+
 });
+
 </script>
 <style scoped>
 .avatar-wrapper {
