@@ -1490,7 +1490,6 @@ async function thanhToan() {
             const convertData = {
                 data: "{'amount':" + Math.round(tongCong.value) + ",'cancelUrl':'" + cancelPage + "','description':'" + data.ghiChu + "','orderCode':" + randomNumber + ",'returnUrl':'" + successPage + "'}"
             };
-
             let signature = "";
             await axios.post("http://localhost:8080/convert", convertData).then(res => {
                 signature = res.data;

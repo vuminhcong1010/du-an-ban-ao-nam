@@ -76,8 +76,8 @@ const fetchTodos = async () => {
     totalPages.value = json.totalPages;
     currentPage.value = json.number;
       
-    // Đảm bảo sắp xếp hóa đơn theo thứ tự ngày tạo mới nhất ở frontend (nếu cần)
-    todos.value.sort((a, b) => new Date(b.ngayTao) - new Date(a.ngayTao)); 
+    // // Đảm bảo sắp xếp hóa đơn theo thứ tự ngày tạo mới nhất ở frontend (nếu cần)
+    // todos.value.sort((a, b) => new Date(b.ngayTao) - new Date(a.ngayTao)); 
 
   } catch (error) {
     console.error("Lỗi khi fetch dữ liệu:", error.message);

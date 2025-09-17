@@ -382,13 +382,6 @@
 }
 
 
-/* Loại bỏ margin-left trên user-icon và cart-icon để gap của header-actions hoạt động */
-.user-icon,
-.cart-icon {
-  /* margin-left đã bị loại bỏ */
-}
-
-
 .user-icon a,
 .cart-icon a {
   color: #555;

@@ -47,13 +47,13 @@ import XacNhanThongTinCustomer from "@/components/client/XacNhanThongTinCustomer
 import OrderLookup from "@/components/client/OrderLookup.vue";
 import DanhMucList from "@/components/client/Category.vue";
 import ProductCategory from "@/components/client/ProductCategory.vue";
-import MyAccount from "@/components/client/MyAccount.vue"; // Make sure this file exists
-import OrderDetail from "@/components/client/OrderDetail.vue"; // Make sure this file exists
-import LoginGG from "@/components/client/LoginGG.vue"; // Google Login Page
-import XacNhanThongTinCustomer from "@/components/client/XacNhanThongTinCustomer.vue"; // Component for confirming customer info (path inconsistency, consider moving)
-import OrderLookup from "@/components/client/OrderLookup.vue";
-import DanhMucList from "@/components/client/Category.vue";
-import ProductCategory from "@/components/client/ProductCategory.vue";
+// import MyAccount from "@/components/client/MyAccount.vue"; // Make sure this file exists
+// import OrderDetail from "@/components/client/OrderDetail.vue"; // Make sure this file exists
+// import LoginGG from "@/components/client/LoginGG.vue"; // Google Login Page
+// import XacNhanThongTinCustomer from "@/components/client/XacNhanThongTinCustomer.vue"; // Component for confirming customer info (path inconsistency, consider moving)
+// import OrderLookup from "@/components/client/OrderLookup.vue";
+// import DanhMucList from "@/components/client/Category.vue";
+// import ProductCategory from "@/components/client/ProductCategory.vue";
 import ThongTinUser from "@/components/client/ThongTinUser.vue"; // User Info Component
 import gioHang from "@/components/client/GioHangPage.vue"; // User Info Component
 

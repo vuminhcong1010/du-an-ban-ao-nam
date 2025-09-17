@@ -269,8 +269,6 @@ export default {
 }
 
 
-
-
 .table th,
 .table td {
   padding: 0.75rem;

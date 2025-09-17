@@ -51,7 +51,7 @@
         <p>Ninh Kiều — Cần Thơ</p>
       </div>
       <div class="store-card">
-        <img src="/src/assets/11-1628570889-953-width660height367.jpg" alt="CoolMen Nha Trang" />
+        <img src="/src/assets/Paner1.png" alt="CoolMen Nha Trang" />
         <p>Trần Phú — Nha Trang</p>
       </div>
       <div class="store-card">
