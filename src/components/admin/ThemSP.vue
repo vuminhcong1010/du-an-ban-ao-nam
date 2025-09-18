@@ -131,14 +131,14 @@
               </div>
               <div class="col-md-6 mb-3 mt-2">
                 <label for="trongLuong" class="form-label fw-bolder"
-                  >Trọng lượng</label
+                  >Trọng lượng (g)</label
                 >
                 <input
                   type="number"
                   class="form-control"
                   id="trongLuong"
                   v-model="req.trongLuong"
-                  step="0.1"
+                  step="1"
                 />
               </div>
               <div class="col-md-12 mb-3 mt-2">
@@ -766,10 +766,15 @@ function validateForm() {
     isValid = false;
     alert("Vui lòng chọn cổ áo.");
   }
-  if (!req.value.trongLuong || req.value.trongLuong <= 0) {
-    isValid = false;
-    alert("Trọng lượng không hợp lệ.");
-  }
+if (
+  !req.value.trongLuong || 
+  req.value.trongLuong <= 0 || 
+  !Number.isInteger(Number(req.value.trongLuong))
+) {
+  isValid = false;
+  alert("Trọng lượng phải là số nguyên dương.");
+}
+
   if (!req.value.moTa || req.value.moTa.trim() === "") {
     isValid = false;
     alert("Vui lòng nhập mô tả sản phẩm.");
