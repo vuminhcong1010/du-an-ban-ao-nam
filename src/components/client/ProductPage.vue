@@ -185,8 +185,6 @@
                                                 ]"></i>
                                             </span>
 
-                                            <small>({{ allProducts.quantity }})</small>
-
                                         </div>
                                         <div class="price-section">
                                             <!-- Nếu có giảm giá -->

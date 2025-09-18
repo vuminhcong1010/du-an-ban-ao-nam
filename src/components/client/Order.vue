@@ -143,7 +143,7 @@
                     <span>{{ formatCurrency(tongTienSanPham) }}</span>
                 </div>
                 <div class="sum-row">
-                    <span>Tổng tiền phí vận chuyển</span>
+                    <span>Tổng tiền phí vận chuyển <img src="/src/assets/GHN.png" alt="GHN" class="ship-logo" /></span>
                     <span>{{ formatCurrency(shipFee) }}</span>
                 </div>
                 <div v-if="giamGiaDaApDung" class="sum-row">
@@ -1199,8 +1199,7 @@ const getTotalWeight = () => {
 
     const totalWeight = order.value.reduce((total, item) => {
         const weightKg = item.trongLuong || 0;
-        const weightGram = weightKg * 1000;
-        return total + (weightGram * item.soLuong);
+        return total + (weightKg * item.soLuong);
     }, 0);
 
     console.log("📦 Tổng trọng lượng đơn hàng (gram):", totalWeight);
@@ -2050,6 +2049,12 @@ input.form-control:focus {
     display: flex;
     justify-content: flex-end;
     margin-top: 12px;
+}
+
+.ship-logo {
+    height: 18px;
+    margin-left: 8px;
+    vertical-align: middle;
 }
 
 .btn.primary {

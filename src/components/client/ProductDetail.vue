@@ -223,7 +223,7 @@
                                     <textarea v-model="reviewContent" class="form-control" rows="3"
                                         placeholder="Chất lượng tuyệt vời"></textarea>
                                 </div>
-                                <button @click="submitReview" class="btn btn-warning">Nộp</button>
+                                <button @click="submitReview" class="btn btn-warning">Gửi</button>
                             </div>
                         </div>
                     </div>

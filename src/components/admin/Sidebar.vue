@@ -73,26 +73,26 @@ const menuItems = computed(() => {
 let timeoutId = null
 let trangThai = ref(true)
 
-function yourFunction() {
-  const currentToken = Cookies.get('token')
-  if (!currentToken) {
-    console.warn("❌ Không có token")
-    return
-  }
+// function yourFunction() {
+//   const currentToken = Cookies.get('token')
+//   if (!currentToken) {
+//     console.warn("❌ Không có token")
+//     return
+//   }
 
-  axios.post("http://localhost:8080/refeshToken", { token: currentToken })
-    .then(response => {
-      const newToken = response.data.data
-      Cookies.set('token', newToken)
+//   axios.post("http://localhost:8080/refeshToken", { token: currentToken })
+//     .then(response => {
+//       const newToken = response.data.data
+//       Cookies.set('token', newToken)
 
-      // 🔁 Làm mới lại bộ đếm
-      setupTokenWatcher()
-      window.dispatchEvent(new Event('tokenRefreshed'))
-    })
-    .catch(err => {
-      console.error("❌ Lỗi refresh token:", err)
-    })
-}
+//       // 🔁 Làm mới lại bộ đếm
+//       setupTokenWatcher()
+//       window.dispatchEvent(new Event('tokenRefreshed'))
+//     })
+//     .catch(err => {
+//       console.error("❌ Lỗi refresh token:", err)
+//     })
+// }
 
 
 const router = useRouter()
@@ -135,12 +135,12 @@ function setupTokenWatcher() {
     if (secondsLeft > warningBefore) {
       const delay = (secondsLeft - warningBefore) * 1000
       timeoutId = setTimeout(() => {
-        yourFunction()
+        // yourFunction()
       }, delay)
       console.log(`⏱ Token sẽ làm mới sau ${Math.floor(delay / 1000)} giây`)
 
     } else {
-      yourFunction()
+      // yourFunction()
     }
 
   } catch (err) {
