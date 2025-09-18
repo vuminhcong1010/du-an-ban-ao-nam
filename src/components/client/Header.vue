@@ -734,4 +734,3 @@ onUnmounted(() => {
   window.removeEventListener("cap-nhat-gio", capNhatGioHang);
 });
 </script>
-

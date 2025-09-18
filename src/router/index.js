@@ -105,6 +105,11 @@ const router = createRouter({
           component: DanhMucList,
         },
         {
+          path: "lien-he",
+          name: "lien-he",
+          component: LienHe,
+        },
+        {
           path: "/product-category/:idDanhMuc",
           name: "product-category",
           component: ProductCategory,
