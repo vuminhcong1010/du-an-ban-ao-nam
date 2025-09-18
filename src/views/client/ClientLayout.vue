@@ -20,7 +20,10 @@ export default {
   }
 }
 </script>
-
+<script setup>
+import Cookies from 'js-cookie'
+Cookies.remove('token')
+</script>
 <style scoped>
 /* CSS cho ClientLayout, chỉ áp dụng cho component này nhờ 'scoped' */
 .client-layout {

@@ -63,6 +63,7 @@ const isPhuPhi = computed(
 );
 
 const hoanPhi = ref(false);
+const huyDonHang = ref(false);
 
 const buttons = ref([
   ["Hủy đơn hàng", "Xác nhận"],
@@ -132,6 +133,27 @@ const xacNhanDonHang = async () => {
     console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
   }
 };
+
+// hủy đơn hàng:
+const handleHuyDonHang = () => {
+  if (tongTienDaThanhToan.value > 0) {
+    // mở popup hoàn phí
+    huyDonHang.value = true;
+    // thayDoiTrangThai(5);
+    console.log("tien da thanh toan: ", tongTienDaThanhToan.value)
+  } else {
+    // nếu chưa thanh toán gì → cho hủy thẳng
+    thayDoiTrangThai(5); // giả sử trạng thái 5 = Hủy
+  }
+};
+
+// khi popup hủy confirm xong
+const handleXacNhanHuy = () => {
+  thayDoiTrangThai(5); 
+  huyDonHang.value = false; 
+  reloadTrang(); // nếu muốn reload sau khi hủy
+};
+
 const handleNextClick = () => {
   const currentLabel = buttons.value[trangThai.value][1];
 
@@ -535,6 +557,9 @@ function downloadPDF(maHoaDon) {
   axios
     .get(`http://localhost:8080/hoa-don/${maHoaDon}/pdf`, {
       responseType: "blob",
+      headers: {
+        Authorization: `Bearer ${token}`, // ✅ truyền token vào đây
+      },
     })
     .then((response) => {
       const fileURL = window.URL.createObjectURL(
@@ -639,7 +664,7 @@ const reloadTrang = () => {
         </div>
 
         <!-- Textarea -->
-        <div class="mb-3" v-if="trangThai !== 4 && trangThai !== 5">
+       <div class="mb-3" v-if="trangThai == 0">
           <textarea
             class="form-control"
             rows="3"
@@ -661,11 +686,18 @@ const reloadTrang = () => {
           <button
             v-if="trangThai === 0 || trangThai === 3"
             class="btn btn-outline-secondary"
-            @click="thayDoiTrangThai(5)"
+             @click="handleHuyDonHang"
           >
             {{ trangThai === 0 ? "Hủy" : "Hoàn hàng" }}
           </button>
-
+          <HoanPhuPhi
+            :visible="huyDonHang"
+            :tongTien="-tongTienDaThanhToan"
+            :maHoaDon="maHoaDon"
+            loaiThanhToan="hoan-phi"
+            @close="huyDonHang = false"
+            @thanh-toan-thanh-cong="handleXacNhanHuy"
+          />
           <!-- Nút Tiếp tục -->
           <button
             v-if="trangThai !== 4 && trangThai != 5"
@@ -1016,7 +1048,7 @@ const reloadTrang = () => {
       <div class="bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">Thông tin thanh toán:</h5>
-          <div>
+          <div v-if="trangThai !== 5">
             <button
               v-if="hienNut"
               :class="isPhuPhi ? 'btn btn-warning' : 'btn btn-danger'"

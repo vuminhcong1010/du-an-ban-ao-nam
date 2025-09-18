@@ -1,11 +1,16 @@
 <template>
   <div v-if="!isLoading" class="container-fluid mt-4">
+    <div class="header-section">
+      <button @click="goBack" class="back-button">
+        <i class="fa-solid fa-arrow-left"></i> Quay lại
+      </button>
+      <h2 class="page-title-aligned">Thêm phiếu giảm giá mới</h2>
+    </div>
+
     <div class="card mb-4">
       <div class="card-body">
-        <h2 class="fw-bold mb-4">Thêm Phiếu Giảm Giá</h2>
-        <div class="row gx-4">
-          <!-- Cột 1 -->
-          <div class="col-md-3">
+        <div class="row gx-5">
+          <div class="col-md-6">
             <div class="mb-3">
               <label class="form-label">Mã phiếu giảm giá</label>
               <input v-model="maPhieu" type="text" class="form-control"
@@ -17,7 +22,7 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Hình thức giảm <span class="text-danger">*</span></label>
-              <div style="margin-top: 15px; margin-bottom: 23px;">
+              <div style="margin-top: 5px;">
                 <div class="form-check form-check-inline">
                   <input class="form-check-input" type="radio" name="giatri" id="phanTram" value="phanTram"
                     v-model="giaTriOption" @change="validateGiaTriOption" />
@@ -58,8 +63,7 @@
               </div>
             </div>
           </div>
-          <!-- Cột 2 -->
-          <div class="col-md-3">
+          <div class="col-md-6">
             <div class="mb-3">
               <label class="form-label">Tên phiếu giảm giá <span class="text-danger">*</span></label>
               <input v-model="tenPhieu" type="text" class="form-control" placeholder="Nhập tên phiếu giảm giá"
@@ -68,7 +72,7 @@
                 {{ errors.tenPhieu }}
               </div>
             </div>
-            <div class="mb-4">
+            <div class="mb-3">
               <label class="form-label">Giá trị giảm <span class="text-danger">*</span></label>
               <div class="input-group">
                 <input v-model="giaTriGiamFormatted" type="text" class="form-control"
@@ -101,29 +105,33 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Loại phiếu giảm giá <span class="text-danger">*</span></label>
-              <br>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="loai" id="congkhai" value="Công khai"
-                  v-model="loaiPhieu" @change="validateLoaiPhieu" />
-                <label class="form-check-label" for="congkhai">Công khai</label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="loai" id="canhan" value="Cá nhân" v-model="loaiPhieu"
-                  @change="validateLoaiPhieu" />
-                <label class="form-check-label" for="canhan">Cá nhân</label>
+              <div style="margin-top: 5px;">
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="loai" id="congkhai" value="Công khai"
+                    v-model="loaiPhieu" @change="validateLoaiPhieu" />
+                  <label class="form-check-label" for="congkhai">Công khai</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="loai" id="canhan" value="Cá nhân" v-model="loaiPhieu"
+                    @change="validateLoaiPhieu" />
+                  <label class="form-check-label" for="canhan">Cá nhân</label>
+                </div>
               </div>
               <div v-if="errors.loaiPhieu" class="invalid-feedback d-block">
                 {{ errors.loaiPhieu }}
               </div>
             </div>
           </div>
-          <!-- Cột 3: Bảng khách hàng -->
-          <div class="col-md-6" v-if="loaiPhieu === 'Cá nhân'">
-            <div class="mb-2">
-              <label class="form-label">Tìm kiếm:</label>
-              <input v-model="searchQuery" type="text" class="form-control"
+        </div>
+
+        <div class="row" v-if="loaiPhieu === 'Cá nhân'">
+          <div class="col-md-12">
+            <h5 class="mt-4 mb-3">Chọn khách hàng</h5>
+            <div class="mb-2 d-flex align-items-center">
+              <label class="form-label me-2 mb-0">Tìm kiếm:</label>
+              <input v-model="searchQuery" type="text" class="form-control w-25 me-3"
                 placeholder="Nhập tên, email hoặc số điện thoại" @input="currentPage = 1" />
-              <label class="form-label mt-2" style="margin-right: 20px;">Giới tính:</label>
+              <label class="form-label me-2 mb-0">Giới tính:</label>
               <div class="form-check form-check-inline">
                 <input class="form-check-input" type="radio" name="gioitinh" id="gioiTinhTatCa" value=""
                   v-model="gioiTinhFilter" />
@@ -181,17 +189,18 @@
                 </li>
               </ul>
             </nav>
-            <div v-if="errors.selectedRows" class="text-danger mt-2">
+            <div v-if="errors.selectedRows" class="text-danger mt-2 text-center">
               {{ errors.selectedRows }}
             </div>
           </div>
         </div>
+
         <div class="d-flex justify-content-end mt-4">
-          <button @click="$router.push('/phieu-giam-gia')" class="btn btn-danger me-2">
-            Quay lại
+          <button @click="goBack" class="btn btn-secondary me-2">
+            Hủy
           </button>
           <button @click="confirmThemPhieuGiamGia" class="btn btn-primary" :disabled="isLoading">
-            Thêm phiếu giảm giá
+            Lưu
           </button>
         </div>
       </div>
@@ -360,6 +369,9 @@ export default {
     },
   },
   methods: {
+    goBack() {
+      this.$router.push('/phieu-giam-gia');
+    },
     formatCurrency(value) {
       if (value === null || value === "" || isNaN(value)) return "";
       return Number(value).toLocaleString("vi-VN", { minimumFractionDigits: 0 });
@@ -754,6 +766,11 @@ export default {
 </script>
 
 <style scoped>
+
+.btn-secondary:hover{
+  transform: translateY(-1px);
+}
+
 .btn-primary {
   background-color: #0a2c57;
   border-color: #0a2c57;
@@ -762,6 +779,7 @@ export default {
 .btn-primary:hover {
   background-color: #08203e;
   border-color: #08203e;
+  transform: translateY(-1px);
 }
 
 .btn-primary:disabled {
@@ -806,5 +824,48 @@ export default {
   color: white;
   font-size: 1.2rem;
   margin-top: 10px;
+}
+
+/* Header Section (Quay lại và Tiêu đề) */
+.header-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  gap: 2rem;
+}
+
+.back-button {
+  background-color: #e9ecef;
+  color: #495057;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.4rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.back-button:hover {
+  background-color: #dee2e6;
+  color: #0a2c57;
+}
+
+.page-title-aligned {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #0a2c57;
+  margin: 0;
+  line-height: 1;
+}
+
+/* Các trường input/select */
+.form-label {
+  font-weight: 600;
+}
+
+.form-control, .form-select {
+  border-radius: 0.5rem;
 }
 </style>

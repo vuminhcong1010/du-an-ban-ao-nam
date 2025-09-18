@@ -2,7 +2,7 @@
   <div class="p-4">
     <div class="header-section">
       <button @click="goBack" class="back-button">
-        ← Quay lại
+        <i class="fa-solid fa-arrow-left"></i> Quay lại
       </button>
       <h2 class="page-title-aligned">Thêm khách hàng mới</h2>
     </div>
@@ -520,7 +520,7 @@ body {
 
 .back-button:hover {
   background-color: #dee2e6;
-  color: #343a40;
+  color: #0a2c57;
 }
 
 
@@ -531,7 +531,7 @@ body {
   /* Tăng kích thước font cho tiêu đề */
   font-weight: 700;
   /* Đậm hơn */
-  color: #212529;
+  color: #0a2c57;
   /* Màu chữ rất đậm */
   margin: 0;
   /* Đảm bảo không có margin mặc định */

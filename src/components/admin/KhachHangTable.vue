@@ -418,7 +418,28 @@ export default {
   transition: background-color 0.3s ease;
 }
 
+.custom-btn {
+    background-color: #f0f0f0;
+    color: #0a2c57;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
 
+.custom-btn:hover {
+    background-color: #0a2c57;
+    color: white;
+}
+
+.custom-btn:disabled {
+    cursor: not-allowed;
+    background-color: #e0e0e0;
+    color: #999;
+    border: 1px solid #ddd;
+}
 
 
 /* Các style cho badge (giữ lại vì đang dùng trong bảng) */
@@ -431,6 +452,34 @@ export default {
 
 .badge-danger {
   background-color: #dc3545 !important;
+}
+
+
+.avatar-container {
+  /* Tùy chỉnh kích thước container nếu cần, ví dụ 50px */
+  width: 50px; 
+  height: 50px;
+  /* Đảm bảo ảnh luôn nằm trong khung */
+  overflow: hidden; 
+}
+
+.customer-avatar {
+  /* Đảm bảo ảnh hiển thị dưới dạng block để dễ căn chỉnh */
+  display: block;
+  /* Đặt chiều rộng và chiều cao bằng 100% của container cha (.avatar-container) */
+  width: 100%;
+  height: 100%;
+  /* Tạo khung tròn cho ảnh */
+  border-radius: 50%;
+  /* Căn giữa ảnh trong container */
+  object-fit: cover;
+  /* Thêm hiệu ứng chuyển động khi di chuột qua */
+  transition: transform 0.3s ease-in-out; 
+}
+
+/* Thêm hiệu ứng khi di chuột qua */
+.customer-avatar:hover {
+  transform: scale(1.1);
 }
 </style>
 

@@ -407,7 +407,8 @@ const hoanThanhDonHang = async (order) => {
       !order.listSanPham ||
       (Array.isArray(order.listSanPham) && order.listSanPham.length === 0)
     ) {
-      alert("❌ Vui lòng sản phẩm trước khi hoàn tất đơn hàng.");
+      // alert("❌ Vui lòng sản phẩm trước khi hoàn tất đơn hàng.");
+      toast.error("Vui lòng chọn sản phẩm trước khi hoàn tất đơn hàng.");
       return;
     }
     // ✅ 2. Kiểm tra thanh toán (validate thôi, chưa gọi API)
@@ -415,8 +416,8 @@ const hoanThanhDonHang = async (order) => {
       !order.thanhToan ||
       (Array.isArray(order.thanhToan) && order.thanhToan.length === 0)
     ) {
-      alert(
-        "❌ Vui lòng chọn phương thức thanh toán trước khi hoàn tất đơn hàng."
+      toast.error(
+        "Vui lòng chọn phương thức thanh toán trước khi hoàn tất đơn hàng."
       );
       return;
     }
@@ -526,14 +527,14 @@ const hoanThanhDonHang = async (order) => {
       console.log(`Giảm số lượng phiếu giảm giá ID: ${order.giamGia.id}`);
     }
 
-    alert("✅ Đơn hàng đã hoàn tất thành công!");
+    //toast.success("✅ Đơn hàng đã hoàn tất thành công!");
 
     // ✅ Xóa đơn hàng sau khi hoàn thành
     orders.value = orders.value.filter((o) => o.id !== order.id);
     if (activeTab.value === order.id) {
       activeTab.value = orders.value.length > 0 ? orders.value[0].id : null;
     }
-    toast.success("Lưu đơn hàng thành công");
+    toast.success("Đơn hàng đã hoàn tất thành công!");
   } catch (err) {
     console.error("❌ Lỗi hoàn thành đơn hàng:", err);
     alert("Không thể hoàn tất đơn hàng. Vui lòng thử lại.");

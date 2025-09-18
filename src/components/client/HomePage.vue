@@ -101,7 +101,7 @@
               </span>
 
               <!-- Ảnh sản phẩm -->
-              <router-link :to="`/product/${product.id}`" class="image-wrapper d-block position-relative">
+              <router-link :to="`/coolmen/client-san-pham-detail/${product.id}`" class="image-wrapper d-block position-relative">
                 <img :src="product.image" alt="product" class="img-fluid rounded-top" />
                 <div class="overlay d-flex align-items-center justify-content-center">
                   <button class="btn-buy" @click.stop="goToProductDetail(product.id)">Mua ngay</button>
@@ -109,7 +109,7 @@
               </router-link>
 
               <!-- Tên sản phẩm -->
-              <router-link :to="`/product/${product.id}`" class="product-name mt-2 fw-semibold text-dark d-block text-truncate px-2">
+              <router-link :to="`/coolmen/client-san-pham-detail/${product.id}`" class="product-name mt-2 fw-semibold text-dark d-block text-truncate px-2">
                 {{ product.name }}
               </router-link>
 
@@ -209,7 +209,7 @@
               </router-link>
 
               <!-- Tên sản phẩm -->
-              <router-link :to="`/product/${product.id}`" class="product-name mt-2 fw-semibold text-dark d-block text-truncate px-2">
+              <router-link :to="`/coolmen/client-san-pham-detail/${product.id}`" class="product-name mt-2 fw-semibold text-dark d-block text-truncate px-2">
                 {{ product.name }}
               </router-link>
 
