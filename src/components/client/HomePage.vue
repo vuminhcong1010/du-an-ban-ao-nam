@@ -193,8 +193,8 @@
         <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
           <div class="col-6 col-sm-4 col-md-3 col-lg-2" v-for="product in highlightProducts" :key="product.id">
             <div class="card-product position-relative text-center shadow-sm rounded-3 overflow-hidden">
-              <!-- HOT Corner Ribbon -->
-              <div class="corner-ribbon ribbon-hot">HOT</div>
+              <!-- NEW Corner Ribbon -->
+              <div class="corner-ribbon ribbon-new">NEW</div>
 
               <!-- Discount Badge -->
               <span v-if="product.discount > 0" class="discount-badge">-{{ product.discount }}%</span>
@@ -412,7 +412,10 @@ export default {
   box-shadow: 0 3px 6px rgba(0,0,0,0.2);
 }
 .ribbon-hot {
-  background: linear-gradient(135deg, #ff3b30 0%, #c71d1d 100%);
+  background: linear-gradient(135deg, #e63946 0%, #dc2626 100%);
+}
+.ribbon-new {
+  background: linear-gradient(135deg, #FFC107 0%, #FFA000 100%);
 }
 .discount-badge {
   position: absolute;

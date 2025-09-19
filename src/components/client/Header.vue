@@ -344,10 +344,6 @@
 
 
 /* Loại bỏ margin-left trên user-icon và cart-icon để gap của header-actions hoạt động */
-.user-icon,
-.cart-icon {
-  /* margin-left đã bị loại bỏ */
-}
 
 
 .user-icon a,
@@ -655,7 +651,8 @@ const capNhatGioHang = async () => {
       }
     });
     danhSachGio.value = data;
-    soLuongGio.value = data.reduce((tong, sp) => tong + sp.soLuong, 0);
+    // Thay đổi: Hiển thị số lượng danh sách sản phẩm thay vì tổng số lượng
+    soLuongGio.value = data.length;
   } catch (error) {
     danhSachGio.value = [];
     soLuongGio.value = 0;
@@ -666,7 +663,8 @@ const capNhatGioHang = async () => {
 
 const capNhatGioHangLocal = (newDanhSach) => {
   danhSachGio.value = newDanhSach;
-  soLuongGio.value = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0);
+  // Thay đổi: Hiển thị số lượng danh sách sản phẩm thay vì tổng số lượng
+  soLuongGio.value = newDanhSach.length;
   sessionStorage.removeItem("gioHang");
   localStorage.removeItem("gioHang");
 };
@@ -674,7 +672,8 @@ const capNhatGioHangLocal = (newDanhSach) => {
 
 const xoaSanPham = (idSanPhamChiTiet) => {
   danhSachGio.value = danhSachGio.value.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet);
-  soLuongGio.value = danhSachGio.value.reduce((tong, sp) => tong + sp.soLuong, 0);
+  // Thay đổi: Hiển thị số lượng danh sách sản phẩm thay vì tổng số lượng
+  soLuongGio.value = danhSachGio.value.length;
 };
 
 
