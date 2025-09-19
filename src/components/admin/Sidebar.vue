@@ -55,16 +55,7 @@ const menuItems = computed(() => {
       ? [{ to: '/nhan-vien', label: 'Nhân Viên', icon: UserCog }]
       : []),
     { to: '/khach-hang', label: 'Khách Hàng', icon: User },
-    {
-      
-      to: '/thong-ke',
-      label: 'Thống Kê',
-      icon: BarChart,
-      children: [
-        { to: '/thong-ke/bao-cao', label: 'Báo cáo' },
-        { to: '/thong-ke', label: 'Biểu đồ' }
-      ]
-    }
+    
   ]
   return items
 })

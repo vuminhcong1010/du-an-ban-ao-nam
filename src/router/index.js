@@ -28,7 +28,7 @@ import DotGiamGia from "@/components/admin/DotGiamGia.vue";
 import DangNhap from "@/components/admin/DangNhap.vue"; // Admin Login
 import Cookies from "js-cookie";
 import { useAuthStore } from "@/stores/auth";
-
+import ForgotPassword from "@/components/client/ForgotPassword.vue";
 // --- CLIENT COMPONENTS ---
 import ClientLayout from "@/views/client/ClientLayout.vue";
 import HomePage from "@/components/client/HomePage.vue";
@@ -182,6 +182,11 @@ const router = createRouter({
       path: "/dang-nhap", // Admin login page
       name: "dang-nhap",
       component: DangNhap,
+    },
+    {
+      path: "/coolmen/quen-mat-khau", // Confirm Customer Info outside main client layout
+      name: "QuenMatKhauClient",
+      component: ForgotPassword,
     },
     {
       path: "/quen-mat-khau",

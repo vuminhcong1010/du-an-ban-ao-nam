@@ -1216,7 +1216,7 @@ const uploadAllImages = async () => {
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',
                     cancelButtonColor: '#d33',
-                    confirmButtonText: 'Sửa',
+                    confirmButtonText: 'Thêm',
                     cancelButtonText: 'Hủy'
                 });
     if (!result.isConfirmed) {
