@@ -73,7 +73,11 @@
                         </template>
                     </div>
                     <div class="cell cell-qty">
-                        <input type="number" v-model="item.soLuong" @change="kiemTraSoLuong(item)" class="qty" />
+                        <div class="quantity-controls">
+                            <button @click="giamSoLuong(item)" class="qty-btn minus" :disabled="item.soLuong <= 1">-</button>
+                            <input type="number" v-model="item.soLuong" @change="kiemTraSoLuong(item)" class="qty" />
+                            <button @click="tangSoLuong(item)" class="qty-btn plus" :disabled="item.soLuong >= item.soLuongTon">+</button>
+                        </div>
                     </div>
                     <div class="cell cell-amount">{{ formatCurrency((item.hasDiscount ? item.giaSauKhiGiam :
                         item.giaTruocKhiGiam) *
@@ -953,6 +957,33 @@ function kiemTraSoLuong(item) {
             toast.warning(`❌ Số lượng phải tối thiểu là 1.`, { timeout: 3000 });
         });
     }
+
+    // ✅ Tự động áp dụng lại phiếu giảm giá sau khi thay đổi số lượng
+    apDungLaiPhieuGiamGia();
+}
+
+// ✅ Hàm tự động áp dụng lại phiếu giảm giá
+function apDungLaiPhieuGiamGia() {
+    if (giamGiaDaApDung.value) {
+        // Tính lại số tiền giảm với tổng tiền mới
+        tienGiam.value = tinhTienGiam(giamGiaDaApDung.value);
+    }
+}
+
+// ✅ Hàm tăng số lượng
+function tangSoLuong(item) {
+    if (item.soLuong < item.soLuongTon) {
+        item.soLuong++;
+        kiemTraSoLuong(item);
+    }
+}
+
+// ✅ Hàm giảm số lượng
+function giamSoLuong(item) {
+    if (item.soLuong > 1) {
+        item.soLuong--;
+        kiemTraSoLuong(item);
+    }
 }
 
 function apDungTuDongPhieuTotNhat(danhSachPhieu) {
@@ -1045,6 +1076,7 @@ function tinhTienGiam(phieu) {
     let tienGiam = 0;
 
     if (phieu.soTienGiam) {
+        // Giới hạn số tiền giảm không vượt quá tổng tiền sản phẩm
         tienGiam = Math.min(phieu.soTienGiam, tong);
     } else if (phieu.phamTramGiamGia) {
         tienGiam = Math.round((tong * phieu.phamTramGiamGia) / 100);
@@ -1053,6 +1085,9 @@ function tinhTienGiam(phieu) {
         if (phieu.giamToiDa) {
             tienGiam = Math.min(tienGiam, phieu.giamToiDa);
         }
+        
+        // ✅ Quan trọng: Giới hạn số tiền giảm không vượt quá tổng tiền sản phẩm
+        tienGiam = Math.min(tienGiam, tong);
     }
 
     return tienGiam;
@@ -1564,6 +1599,13 @@ onMounted(async () => {
         });
     }, { deep: true });
 
+    // ✅ Watcher để tự động áp dụng lại phiếu giảm giá khi thay đổi số lượng
+    watch(tongTienSanPham, () => {
+        if (giamGiaDaApDung.value) {
+            apDungLaiPhieuGiamGia();
+        }
+    });
+
     watch(order, () => {
         const tongHienTai = tongTienSanPham.value;
 
@@ -1919,6 +1961,59 @@ input.form-control:focus {
     border: 1px solid #ccc;
     border-radius: 6px;
     padding: 6px 8px;
+}
+
+/* ✅ CSS cho controls số lượng */
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.qty-btn {
+    width: 32px;
+    height: 34px;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+.qty-btn.minus {
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-right: none;
+}
+
+.qty-btn.plus {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-left: none;
+}
+
+.qty-btn:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #6f42c1;
+    color: #6f42c1;
+}
+
+.qty-btn:disabled {
+    background: #f8f9fa;
+    color: #ccc;
+    cursor: not-allowed;
+    border-color: #e9ecef;
+}
+
+.quantity-controls .qty {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    text-align: center;
 }
 
 /* Note + voucher row */
