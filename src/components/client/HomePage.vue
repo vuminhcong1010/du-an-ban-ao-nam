@@ -114,19 +114,19 @@
               <!-- Giá sản phẩm -->
               <div class="price-display mt-1">
                 <template v-if="product.discount > 0 && product.originalPriceRange">
-                  <span class="text-muted text-decoration-line-through me-1 small">
+                  <div class="text-muted text-decoration-line-through small">
                     {{ formatPrice(product.originalPriceRange.min) }}
                     <template v-if="product.originalPriceRange.min !== product.originalPriceRange.max">
                       - {{ formatPrice(product.originalPriceRange.max) }}
                     </template>
-                  </span>
+                  </div>
                 </template>
-                <span class="text-dark fw-bold">
+                <div class="text-dark fw-bold">
                   {{ formatPrice(product.priceRange.min) }}
                   <template v-if="product.priceRange.min !== product.priceRange.max">
                     - {{ formatPrice(product.priceRange.max) }}
                   </template>
-                </span>
+                </div>
               </div>
 
               <!-- Số lượng đã bán -->
@@ -390,6 +390,9 @@ export default {
 /* Card Product Styling */
 .card-product {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 .card-product:hover {
   transform: translateY(-5px);
@@ -719,6 +722,18 @@ export default {
   right: 15px;
   font-size: 2rem;
   color: #ccc;
+}
+
+/* ✅ CSS để đảm bảo chiều cao bằng nhau cho card sản phẩm */
+.sold-quantity {
+  margin-top: auto;
+}
+
+.price-display {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 </style>
 
