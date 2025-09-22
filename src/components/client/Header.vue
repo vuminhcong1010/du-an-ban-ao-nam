@@ -38,9 +38,6 @@
       <router-link to="/coolmen/danh-muc-List" active-class="active">Danh mục</router-link>
     </li>
     <li>
-      <router-link to="/coolmen/giam-gia" active-class="active">Giảm giá</router-link>
-    </li>
-    <li>
       <router-link to="/coolmen/lien-he" active-class="active">Liên hệ</router-link>
     </li>
     <li>
