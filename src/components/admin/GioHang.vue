@@ -114,13 +114,40 @@ const nhanSanPhamDaChon = async (danhSachSanPham) => {
   }
 };
 
-const xoaSanPhamKhoiDonHang = (index) => {
-  const confirmAction = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này khỏi đơn hàng?");
-  if (!confirmAction) {
-    return;
+// const xoaSanPhamKhoiDonHang = (index) => {
+//   const confirmAction = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này khỏi đơn hàng?");
+//   if (!confirmAction) {
+//     return;
+//   }
+//   props.order.listSanPham.splice(index, 1);
+//   toast.success("Xóa sản phẩm thành công")
+// };
+import Swal from "sweetalert2";
+const xoaSanPhamKhoiDonHang = async (index) => {
+  try {
+    const result = await Swal.fire({
+      title: "Xác nhận",
+      text: "Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Đồng ý",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) {
+      console.log("❌ Người dùng đã hủy xoá sản phẩm");
+      return;
+    }
+
+    // Thực hiện xoá
+    props.order.listSanPham.splice(index, 1);
+
+    toast.success("Xóa sản phẩm thành công!");
+  } catch (err) {
+    console.error("❌ Lỗi xoá sản phẩm:", err);
+    Swal.fire("Lỗi", "Xóa sản phẩm thất bại! Vui lòng thử lại.", "error");
   }
-  props.order.listSanPham.splice(index, 1);
-  toast.success("Xóa sản phẩm thành công")
 };
 
 

@@ -599,9 +599,7 @@ function clearForm(){
   req.value.soLuong = null
   req.value.trongLuong = null
   req.value.moTa = null
-  req.value.images = []
-  removeExistingImage()
-  removeSelectedFile()
+  
 }
 // Xử lý chọn file
 function handleFileChange(event) {
@@ -638,7 +636,7 @@ async function uploadAllImages() {
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',
                     cancelButtonColor: '#d33',
-                    confirmButtonText: 'Sửa',
+                    confirmButtonText: 'Thêm',
                     cancelButtonText: 'Hủy'
                 });
     if (!result.isConfirmed) {
@@ -677,7 +675,7 @@ async function uploadAllImages() {
     }
   })
      setTimeout(() => {
-  }, 200);
+  }, 1000);
     toast.success("Cập nhật thành công");
     clearForm()
     submitAndClose()

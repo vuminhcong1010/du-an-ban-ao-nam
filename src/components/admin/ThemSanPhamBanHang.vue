@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
-
+import { QrcodeStream } from "vue-qrcode-reader";
+import { QrCode } from "lucide-vue-next";
 const search = ref("");
 const selected = ref({});
 
@@ -124,6 +125,45 @@ const apply = () => {
 const filteredSanPham = computed(() => {
   return listSanPham.value.filter((sp) => sp.soLuong > 0);
 });
+
+// ✅ QUÉT QR CODE
+const showScanner = ref(false);
+
+const startScan = () => {
+  showScanner.value = true;
+};
+
+const stopScan = () => {
+  showScanner.value = false;
+};
+
+const onDetect = async (detectedCodes) => {
+  if (!detectedCodes.length) return;
+
+  const result = detectedCodes[0].rawValue; // lấy QR đầu tiên
+  console.log("QR code:", result);
+
+  try {
+    const response = await fetch(
+      `http://localhost:8080/chi-tiet-san-pham/${result}`
+    );
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Có lỗi xảy ra khi tìm sản phẩm!");
+      return;
+    }
+
+    await fetchAnhSanPham(data.id);
+    selectedItems.value = [data];
+    apply();
+  } catch (error) {
+    console.error("Lỗi khi tìm sản phẩm bằng QR:", error);
+    alert("Không thể kết nối đến server!");
+  }
+};
+
+
 </script>
 
 <template>
@@ -156,6 +196,45 @@ const filteredSanPham = computed(() => {
                     placeholder="Tìm theo mã, tên sản phẩm"
                     v-model="timKiem"
                   />
+                  <!-- Nút bật camera -->
+                  <button
+                    class="btn d-flex align-items-center justify-content-center"
+                    style="
+                      background-color: #0a2c57;
+                      color: white;
+                      width: 42px;
+                      height: 38px;
+                    "
+                    @click="startScan"
+                    v-if="!showScanner"
+                  >
+                    <QrCode :size="20" />
+                  </button>
+
+                  <!-- Camera + nút X -->
+                  <div
+                    v-if="showScanner"
+                    class="position-relative d-inline-block mb-3"
+                  >
+                    <!-- Camera -->
+                    <qrcode-stream
+                      @detect="onDetect"
+                      :paused="!showScanner"
+                      style="
+                        width: 100px;
+                        height: 100px;
+                        border: 1px solid #ccc;
+                        border-radius: 8px;
+                      "
+                    />
+
+                    <!-- Nút X -->
+                    <button
+                      class="btn-close position-absolute"
+                      style="top: 5px; right: 5px; background-color: white"
+                      @click="stopScan"
+                    ></button>
+                  </div>
                   <button
                     type="button"
                     class="btn"
@@ -231,7 +310,6 @@ const filteredSanPham = computed(() => {
                   <th>Chất liệu</th>
                   <th>Giá</th>
                   <th>Kho</th>
-
                   <th>Chọn</th>
                 </tr>
               </thead>

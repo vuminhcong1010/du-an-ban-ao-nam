@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRoute } from "vue-router";
 import Cookies from "js-cookie";
 
@@ -12,6 +12,28 @@ let listSanPham = ref([]);
 const currentPage = ref(0);
 const pageSize = ref(5);
 const totalPages = ref(0);
+
+// lay ảnh sản phẩm
+const anhMap = ref({}); // Lưu ảnh theo id sản phẩm
+
+const fetchAnhSanPham = async (id) => {
+  console.log(id);
+  try {
+    const response = await fetch(
+      `http://localhost:8080/chi-tiet-san-pham/lay-anh/${id}`
+    );
+    if (response.ok) {
+      const url = await response.text();
+      console.log(url);
+      anhMap.value[id] = url; // Gán đường dẫn ảnh vào map
+    } else {
+      anhMap.value[id] = "https://via.placeholder.com/50"; // Ảnh mặc định khi không có ảnh
+    }
+  } catch (error) {
+    anhMap.value[id] = "https://via.placeholder.com/50"; // Ảnh mặc định khi lỗi
+  }
+};
+
 const fetchSanPhamPaginated = async () => {
   try {
     const response = await fetch(
@@ -24,6 +46,10 @@ const fetchSanPhamPaginated = async () => {
     );
     const data = await response.json();
     listSanPham.value = data.content; // Spring Data trả về `content`, `totalPages`, ...
+    // lấy ảnh:
+    listSanPham.value.forEach((sp) => {
+      fetchAnhSanPham(sp.id);
+    });
     totalPages.value = data.totalPages;
   } catch (error) {
     console.error("Lỗi khi fetch sản phẩm:", error);
@@ -85,34 +111,145 @@ const toggleSelection = (item) => {
   }
 };
 
+// const apply = async () => {
+//   const result = selectedItems.value.map((item) => {
+//     const soLuongMua = quantities.value[item.maChiTietSapPham] || 1;
+//     const gia = item.gia;
+//     return {
+//       idSanPhamChiTiet: item.maChiTietSapPham,
+//       gia: giaSauGiam,
+//       soLuong: soLuongMua,
+//       thanhTien: gia * soLuongMua,
+//       idHoaDon: maHoaDon,
+//       trangThai: 0, // hoặc trạng thái mặc định
+//     };
+//   });
+
+//   //kiểm tra dữ liệu:
+//   // 👉 Kiểm tra dữ liệu gốc
+//   console.log("✅ Dữ liệu result gửi xuống:", result);
+
+//   const bodyUpdateSoLuong = result.map((r) => ({
+//     idSanPhamChiTiet: r.idSanPhamChiTiet,
+//     soLuongMua: r.soLuong,
+//   }));
+
+//   // 👉 Kiểm tra body gửi xuống API update số lượng
+//   console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
+
+//   // 1. Cập nhật tồn kho
+//   try {
+//     await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
+//       method: "POST",
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify(bodyUpdateSoLuong),
+//     });
+//   } catch (error) {
+//     console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
+//   }
+
+//   // 2. Lưu chi tiết hóa đơn
+//   try {
+//     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
+//       method: "POST",
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify(result),
+//     });
+
+//     // 3. Ghi lịch sử cho từng sản phẩm vừa thêm
+//     for (const r of result) {
+//       await fetch("http://localhost:8080/lich-su-hoa-don/them", {
+//         method: "POST",
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({
+//           maHoaDon: maHoaDon, // ✅ đúng tên trường trong DTO
+//           noiDungThayDoi: "Thêm sản phẩm",
+//           nguoiThucHien: "admin",
+//           ghiChu: "", // để backend tự sinh
+//           idChiTietSanPham: r.idSanPhamChiTiet,
+//         }),
+//       });
+//     }
+//   } catch (error) {
+//     console.error("Lỗi khi lưu hóa đơn chi tiết:", error);
+//   }
+//   emit("selected", selectedItems.value);
+//   emit("close");
+// };
 const apply = async () => {
-  const result = selectedItems.value.map((item) => {
-    const soLuongMua = quantities.value[item.maChiTietSapPham] || 1;
-    const gia = item.gia;
-    return {
-      idSanPhamChiTiet: item.maChiTietSapPham,
-      gia: item.gia,
-      soLuong: soLuongMua,
-      thanhTien: gia * soLuongMua,
-      idHoaDon: maHoaDon,
-      trangThai: 0, // hoặc trạng thái mặc định
-    };
-  });
-
-  //kiểm tra dữ liệu:
-  // 👉 Kiểm tra dữ liệu gốc
-  console.log("✅ Dữ liệu result gửi xuống:", result);
-
-  const bodyUpdateSoLuong = result.map((r) => ({
-    idSanPhamChiTiet: r.idSanPhamChiTiet,
-    soLuongMua: r.soLuong,
-  }));
-
-  // 👉 Kiểm tra body gửi xuống API update số lượng
-  console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
-
-  // 1. Cập nhật tồn kho
   try {
+    // Lấy danh sách id sản phẩm đã chọn
+    const productIds = selectedItems.value.map((item) => item.id);
+    if (productIds.length === 0) return;
+
+    // Gọi API check giảm giá
+    const response = await fetch("http://localhost:8080/api/discounts/check", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(productIds),
+    });
+
+    if (!response.ok) throw new Error("Lỗi khi kiểm tra giảm giá");
+
+    const discountInfos = await response.json(); // [{ chiTietSanPhamId, phamTramGiam, soTienGiam }]
+    const discountMap = new Map();
+    discountInfos.forEach((info) => {
+      discountMap.set(info.chiTietSanPhamId, info);
+    });
+
+    // Tạo mảng kết quả để gửi backend
+    const result = selectedItems.value.map((item) => {
+      let giaGoc = parseFloat(item.gia) || 0;
+      let giaSauGiam = giaGoc;
+
+      const discount = discountMap.get(item.id);
+      if (discount) {
+        if (discount.phamTramGiam != null) {
+          giaSauGiam = giaGoc * (1 - discount.phamTramGiam / 100);
+        } else if (discount.soTienGiam != null) {
+          giaSauGiam = giaGoc - discount.soTienGiam;
+        }
+      }
+
+      giaSauGiam = Math.max(Math.round(giaSauGiam), 0);
+
+      const soLuongMua = quantities.value[item.maChiTietSapPham] || 1;
+
+      return {
+        idSanPhamChiTiet: item.maChiTietSapPham,
+        gia: giaSauGiam,
+        soLuong: soLuongMua,
+        thanhTien: giaSauGiam * soLuongMua,
+        idHoaDon: maHoaDon,
+        trangThai: 0,
+        tenSanPham: item.idSanPham.tenSanPham,
+      };
+    });
+
+    console.log("✅ Dữ liệu gửi xuống:", result);
+
+    // TODO: gọi API update số lượng, lưu hóa đơn chi tiết, ghi lịch sử như bạn viết tiếp
+// -------------------
+    // 1. Cập nhật tồn kho
+    const bodyUpdateSoLuong = result.map((r) => ({
+      idSanPhamChiTiet: r.idSanPhamChiTiet,
+      soLuongMua: r.soLuong,
+    }));
+
+    console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
+
     await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
       method: "POST",
       headers: {
@@ -121,12 +258,9 @@ const apply = async () => {
       },
       body: JSON.stringify(bodyUpdateSoLuong),
     });
-  } catch (error) {
-    console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
-  }
 
-  // 2. Lưu chi tiết hóa đơn
-  try {
+    // -------------------
+    // 2. Lưu chi tiết hóa đơn
     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
       method: "POST",
       headers: {
@@ -136,6 +270,7 @@ const apply = async () => {
       body: JSON.stringify(result),
     });
 
+    // -------------------
     // 3. Ghi lịch sử cho từng sản phẩm vừa thêm
     for (const r of result) {
       await fetch("http://localhost:8080/lich-su-hoa-don/them", {
@@ -145,40 +280,28 @@ const apply = async () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          maHoaDon: maHoaDon, // ✅ đúng tên trường trong DTO
+          idHoaDon: { maHoaDon: maHoaDon }, // ✅ đúng tên trường trong DTO
           noiDungThayDoi: "Thêm sản phẩm",
           nguoiThucHien: "admin",
-          ghiChu: "", // để backend tự sinh
-          idChiTietSanPham: r.idSanPhamChiTiet,
+          ghiChu: `admin thực hiện thêm sản phẩm ${r.tenSanPham}`, // để backend tự sinh
+          // idChiTietSanPham: r.idSanPhamChiTiet,
         }),
       });
     }
-  } catch (error) {
-    console.error("Lỗi khi lưu hóa đơn chi tiết:", error);
-  }
-  emit("selected", selectedItems.value);
-  emit("close");
-};
 
-// them anh san pham:
-
-const layDuongDanAnh = async (idChiTietSanPham) => {
-  try {
-    const response = await fetch(
-      `http://localhost:8080/chi-tiet-san-pham/lay-anh/${idChiTietSanPham}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    const data = await response.json();
-    listSanPham.value = data.content; // Spring Data trả về `content`, `totalPages`, ...
-    totalPages.value = data.totalPages;
-  } catch (error) {
-    console.error("Lỗi khi lay duong dan anh san pham:", error);
+    // -------------------
+    // 4. Emit ra ngoài để đóng modal + reload
+    emit("selected", selectedItems.value);
+    emit("close");
+  } catch (err) {
+    console.error(err);
   }
 };
+
+
+const filteredSanPham = computed(() => {
+  return listSanPham.value.filter((sp) => sp.soLuong > 0);
+});
 </script>
 
 <template>
@@ -190,7 +313,7 @@ const layDuongDanAnh = async (idChiTietSanPham) => {
     <div class="modal-dialog custom-modal modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Chọn nhiều sản phẩm</h5>
+          <h5 class="modal-title">Chọn nhiều sản phẩm</h5> 
           <button
             type="button"
             class="btn-close"
@@ -294,11 +417,11 @@ const layDuongDanAnh = async (idChiTietSanPham) => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in listSanPham" :key="index">
+                <tr v-for="(item, index) in filteredSanPham" :key="index">
                   <td>{{ index + 1 }}</td>
                   <td>
                     <img
-                      src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
+                      :src="anhMap[item.id] || 'https://via.placeholder.com/50'"
                       style="width: 20px; height: 20px"
                     />
                   </td>
@@ -369,7 +492,7 @@ const layDuongDanAnh = async (idChiTietSanPham) => {
       </div>
     </div>
   </div>
-  <h2>{{ maHoaDon }}</h2>
+  
 </template>
 
 <style scoped>
