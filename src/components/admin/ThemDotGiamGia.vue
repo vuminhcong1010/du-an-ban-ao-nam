@@ -185,12 +185,7 @@
 import { useToast } from 'vue-toastification';
 import Swal from 'sweetalert2';
 import Cookies from 'js-cookie'
-import { useRouter } from 'vue-router';
 export default {
-     setup() {
-    const router = useRouter();
-    return { router};
-  },
     data() {
         return {
             token: Cookies.get('token'),
@@ -274,16 +269,13 @@ export default {
         }
     },
     methods: {
-        goBack() {
-      this.$router.push('/dot-giam-gia');
-    },
         async getChatLieu() {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/chat-lieu', {
-                headers: {
-                    Authorization: `Bearer ${this.token}` 
-                }
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
                 });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách chất liệu: ${res.statusText}`);
                 this.chatLieu = await res.json() || [];
@@ -298,10 +290,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/tay-ao', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách tay áo: ${res.statusText}`);
                 this.tayAo = await res.json() || [];
                 if (!this.tayAo.length) {
@@ -315,10 +307,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/co-ao', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách cổ áo: ${res.statusText}`);
                 this.coAo = await res.json() || [];
                 if (!this.coAo.length) {
@@ -332,10 +324,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/kich-co', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách kích cỡ: ${res.statusText}`);
                 this.kichCo = await res.json() || [];
                 if (!this.kichCo.length) {
@@ -349,10 +341,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/mau', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách màu: ${res.statusText}`);
                 this.mau = await res.json() || [];
                 if (!this.mau.length) {
@@ -366,10 +358,10 @@ export default {
             const toast = useToast();
             try {
                 const response = await fetch('http://localhost:8080/doi-giam-gia/san-pham-giam-gia', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!response.ok) throw new Error(`Không thể lấy danh sách sản phẩm: ${response.statusText}`);
                 const json = await response.json();
                 if (json.message !== 'Success') throw new Error(json.message);
@@ -381,6 +373,7 @@ export default {
                 toast.error('Lỗi tải danh sách sản phẩm: ' + error.message);
             }
         },
+        // Cập nhật hàm fetchProductVariants để lọc ngay từ đầu
         async fetchProductVariants() {
             const toast = useToast();
             try {
@@ -388,45 +381,50 @@ export default {
                 this.filteredVariants = [];
                 this.selectedVariantIds = [];
                 this.selectAllVariants = false;
+
                 if (this.selectedProductIds.length > 0) {
                     const promises = this.selectedProductIds.map(id =>
                         fetch(`http://localhost:8080/doi-giam-gia/san-pham-chi-tiet/${id}`, {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-}).then(res => {
+                            headers: {
+                                Authorization: `Bearer ${this.token}`
+                            }
+                        }).then(res => {
                             if (!res.ok) throw new Error(`Không thể lấy biến thể cho sản phẩm ${id}`);
                             return res.json();
                         })
                     );
+
                     const chiTietSanPhamResults = await Promise.all(promises);
                     const variantWithImages = await Promise.all(
-                        chiTietSanPhamResults.flat().map(async (variant) => {
-                            try {
-                                const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`, {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
-                                const images = await response.json();
-                                const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`;
-                                return {
-                                    ...variant,
-                                    maChiTietSanPham,
-                                    images: images || [],
-                                    mainImage: images.length > 0 ? images[0].duongDanAnh : 'https://via.placeholder.com/50'
-                                };
-                            } catch (error) {
-                                console.error(`Lỗi khi lấy ảnh cho variant ${variant.id}:`, error);
-                                return {
-                                    ...variant,
-                                    maChiTietSanPham: variant.maChiTietSanPham || `SPCT-${variant.id}`,
-                                    images: [],
-                                    mainImage: 'https://via.placeholder.com/50'
-                                };
-                            }
-                        })
+                        chiTietSanPhamResults.flat()
+                            .filter(variant => variant.soLuong > 0) // Lọc ngay từ đầu
+                            .map(async (variant) => {
+                                try {
+                                    const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`, {
+                                        headers: {
+                                            Authorization: `Bearer ${this.token}`
+                                        }
+                                    });
+                                    const images = await response.json();
+                                    const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`;
+                                    return {
+                                        ...variant,
+                                        maChiTietSanPham,
+                                        images: images || [],
+                                        mainImage: images.length > 0 ? images[0].duongDanAnh : 'https://via.placeholder.com/50'
+                                    };
+                                } catch (error) {
+                                    console.error(`Lỗi khi lấy ảnh cho variant ${variant.id}:`, error);
+                                    return {
+                                        ...variant,
+                                        maChiTietSanPham: variant.maChiTietSanPham || `SPCT-${variant.id}`,
+                                        images: [],
+                                        mainImage: 'https://via.placeholder.com/50'
+                                    };
+                                }
+                            })
                     );
+
                     this.productVariants = variantWithImages;
                     this.filteredVariants = [...this.productVariants];
                     this.selectedVariantIds = this.productVariants.map(variant => variant.id);
@@ -442,8 +440,12 @@ export default {
                 toast.error('Lỗi tải danh sách sản phẩm chi tiết: ' + error.message);
             }
         },
+        // Cập nhật hàm filterVariants trong methods
         filterVariants() {
             this.filteredVariants = this.productVariants.filter(variant => {
+                // Chỉ hiển thị sản phẩm có số lượng tồn > 0
+                const hasPositiveInventory = variant.soLuong > 0;
+
                 const matchesSearch = !this.variantSearchQuery ||
                     variant.maChiTietSanPham?.toLowerCase().includes(this.variantSearchQuery.toLowerCase()) ||
                     variant.idSanPham?.tenSanPham?.toLowerCase().includes(this.variantSearchQuery.toLowerCase());
@@ -463,14 +465,22 @@ export default {
                 const matchesTayAo = !this.selectedLoai4 ||
                     variant.idTayAo?.id === this.selectedLoai4;
 
-                return matchesSearch && matchesChatLieu && matchesMau && matchesKichCo && matchesCoAo && matchesTayAo;
+                // Trả về true chỉ khi tất cả điều kiện đều thỏa mãn VÀ số lượng tồn > 0
+                return hasPositiveInventory && matchesSearch && matchesChatLieu && matchesMau && matchesKichCo && matchesCoAo && matchesTayAo;
             });
 
+            // Cập nhật selectedVariantIds để loại bỏ các variant không còn trong filteredVariants
             this.selectedVariantIds = this.selectedVariantIds.filter(id =>
                 this.filteredVariants.some(variant => variant.id === id)
             );
+
+            // Cập nhật trạng thái checkbox "Chọn tất cả"
             this.selectAllVariants = this.selectedVariantIds.length === this.filteredVariants.length && this.filteredVariants.length > 0;
+
+            // Validate lại field
             this.validateField('selectedVariantIds');
+
+            // Reset về trang đầu
             this.goToVariantPage(0);
         },
         showImageGallery(images) {
@@ -518,7 +528,7 @@ export default {
                     break;
                 case 'tenDotGiamGia':
                     const trimmedTenDotGiamGia = this.form.tenDotGiamGia ? this.form.tenDotGiamGia.trim() : '';
-                    if (!trimmedTenDotGiamGia ) {
+                    if (!trimmedTenDotGiamGia) {
                         this.errors.tenDotGiamGia = 'Vui lòng nhập tên đợt giảm giá';
                     } else if (trimmedTenDotGiamGia.length > 255) {
                         this.errors.tenDotGiamGia = 'Tên không được vượt quá 255 ký tự';
@@ -615,10 +625,10 @@ export default {
             try {
                 const response = await fetch('http://localhost:8080/doi-giam-gia', {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         Authorization: `Bearer ${this.token}`,
                         'Content-Type': 'application/json'
-                     },
+                    },
                     body: JSON.stringify(dotGiamGia)
                 });
                 const result = await response.json();

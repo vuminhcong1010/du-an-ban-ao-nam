@@ -424,7 +424,6 @@ function remove(id) {
 // ============================
 const selectedRows = ref([]) // Danh sách ID đang được chọn
 const selectAll = ref(false) // Trạng thái checkbox tổng
-
 async function generateAndDownloadAllQR() {
   if (selectedRows.value.length === 0) {
     toast.error("Vui lòng chọn ít nhất một biến thể để tạo mã QR.")
@@ -432,19 +431,30 @@ async function generateAndDownloadAllQR() {
   }
 
   for (const id of selectedRows.value) {
-    const qrText = `ID: ${id}` // Có thể thay bằng URL hoặc mã chi tiết thực tế
+    // Tạo lại chuỗi mã chi tiết từ id (vd: 1 -> CTSP0001)
+    const formattedId = `CTSP${id.toString().padStart(4, "0")}`
+
+    
+    for(let i=0;i<allData.value.length;i++){
+      if(allData.value[i].maChiTietSapPham.includes(id)){
+   const qrText = allData.value[i].maChiTietSapPham // Nội dung mã QR
 
     try {
       const dataUrl = await QRCode.toDataURL(qrText)
-      const link = document.createElement('a')
+      const link = document.createElement("a")
       link.href = dataUrl
       link.download = `QR_${id}.png`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
     } catch (err) {
-      console.error(`Lỗi tạo QR cho ID ${id}:`, err)
+      console.error(`Lỗi tạo QR cho mã chi tiết ${formattedId}:`, err)
     }
+      }
+      
+    }
+
+   
   }
 }
 

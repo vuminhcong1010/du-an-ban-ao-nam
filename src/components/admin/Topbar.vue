@@ -14,7 +14,7 @@ const token = Cookies.get('token')
 let trangThai = ref(true)
 let tenNhanVien = ref()
 let image = ref()
-
+let vaiTro = ref()
 let req = {
   token: token
 }
@@ -29,6 +29,8 @@ if (!token) {
     image.value =`http://localhost:8080`+payload.anh
     console.log('image.value', payload.anh);
     tenNhanVien.value = payload.tenNhanVien
+    console.log(token);
+    vaiTro.value = payload.scope
     if (exp <= now) {
       console.warn("⛔ Token đã hết hạn")
       Cookies.remove('token')       // ❌ Xóa token cũ
@@ -110,8 +112,10 @@ function removeToken(){
     data-bs-toggle="dropdown"
     aria-expanded="false"
   >
+  
     <img :src="image" alt="Avatar" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
     <div class="fw-medium ms-2">{{ tenNhanVien }}</div>
+    <div class="fw-medium ms-2">({{ vaiTro }})</div>
   </div>
 
   <!-- Menu xổ xuống -->

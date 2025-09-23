@@ -1,25 +1,23 @@
 <template>
   <div class="vnpay-return">
-    <div
-      class="message-box"
-      v-if="!isLoading"
-      :class="{ success: success, error: !success }"
-    >
+    <div class="message-box" v-if="!isLoading" :class="{ success: success, error: !success }">
       <h2 v-if="success">🎉 Thanh toán thành công!</h2>
       <h2 v-else>❌ Thanh toán thất bại!</h2>
 
-      <p v-if="success">Cảm ơn bạn đã mua hàng tại cửa hàng của chúng tôi.</p>
-      <p v-else>Mã lỗi: {{ errorCode }}</p>
-      <p v-else>Vui lòng thử lại hoặc chọn phương thức thanh toán khác.</p>
 
-      <router-link
-        class="back-button"
-        :to="success ? { name: 'home' } : { name: 'client-Oder', params: { hoaDonId } }"
-        @click.native.prevent="handleBackClick"
-      >
+      <p v-if="success">Cảm ơn bạn đã mua hàng tại cửa hàng của chúng tôi.</p>
+      <p v-else>
+        Mã lỗi: {{ errorCode }} <br />
+        Vui lòng thử lại hoặc chọn phương thức thanh toán khác.
+      </p>
+
+
+      <router-link class="back-button" :to="success ? { name: 'home' } : { name: 'client-Oder', params: { hoaDonId } }"
+        @click.native.prevent="handleBackClick">
         🔙 {{ success ? "Quay về trang chủ" : "Quay lại hóa đơn để thanh toán lại" }}
       </router-link>
     </div>
+
 
     <div v-else class="loading-box">
       <h2>⏳ Đang xử lý kết quả thanh toán...</h2>
@@ -27,83 +25,162 @@
   </div>
 </template>
 
+
 <script setup>
 import { onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import axios from "axios";
+import Cookies from "js-cookie";
 import { useToast } from "vue-toastification";
 
+
 const route = useRoute();
-const router = useRouter();
 const toast = useToast();
+
 
 const success = ref(false);
 const errorCode = ref("");
-const hoaDonId = route.query.vnp_TxnRef;
+const hoaDonId = String(route.query.vnp_TxnRef || "");
 const isLoading = ref(true);
 
+
+// local apiClient cho file này (base đến /client)
+const apiClient = axios.create({
+  baseURL: "http://localhost:8080/client",
+  headers: { "Content-Type": "application/json" },
+});
+
+
+const getUserId = () => {
+  try {
+    const u = localStorage.getItem("userId");
+    if (u) return parseInt(u);
+    const logged = JSON.parse(localStorage.getItem("loggedInUser") || "null");
+    return logged ? logged.id : null;
+  } catch (e) {
+    console.error("parse loggedInUser err", e);
+    return null;
+  }
+};
+
+
+const clearCart = async () => {
+  try {
+    await apiClient.post("/ClearSessionGioHang", {}, { withCredentials: true });
+  } catch (e) {
+    console.warn("clearCart failed", e);
+  }
+  sessionStorage.removeItem("gioHang");
+  localStorage.removeItem("gioHang");
+  sessionStorage.removeItem("dataHoaDon");
+  localStorage.removeItem("dataHoaDon");
+  window.dispatchEvent(new Event("cap-nhat-gio"));
+};
+
+
 onMounted(async () => {
-  const responseCode = route.query.vnp_ResponseCode;
+  const responseCode = String(route.query.vnp_ResponseCode || "").trim();
+  const txnStatus = String(route.query.vnp_TransactionStatus || "").trim();
+
+
+  console.log("VNPay return query:", route.query);
+
 
   try {
-    if (responseCode === "00") {
-      const storedData = JSON.parse(sessionStorage.getItem("dataHoaDon"));
+    if (responseCode === "00" && txnStatus === "00") {
+      // Tìm dataHoaDon: ưu tiên session, fallback local, fallback backend
+      let storedData = null;
+      const sess = sessionStorage.getItem("dataHoaDon");
+      const local = localStorage.getItem("dataHoaDon");
 
-      if (storedData) {
-        // Gửi dữ liệu cập nhật hóa đơn
-        await axios.put(`http://localhost:8080/client/capNhatHoaDon/${hoaDonId}`, storedData);
 
-
-        await axios.post("http://localhost:8080/client/ClearSessionGioHang", {}, {
-          withCredentials: true
-        });
-
-        // ✅ Xóa giỏ hàng phía client
-        sessionStorage.removeItem("gioHang");
-        localStorage.removeItem("gioHang");
-        sessionStorage.removeItem("dataHoaDon");
-
-        // ✅ Gửi sự kiện để header cập nhật
-        window.dispatchEvent(new Event("cap-nhat-gio"));
-
-        toast.success("✅ Thanh toán thành công! Đang gửi mail xác nhận...");
-        success.value = true;
+      if (sess) {
+        storedData = JSON.parse(sess);
+        console.log("Found dataHoaDon in sessionStorage");
+      } else if (local) {
+        storedData = JSON.parse(local);
+        console.log("Found dataHoaDon in localStorage");
       } else {
-        toast.warning("⚠️ Không tìm thấy dữ liệu hóa đơn trong session.");
+        // fallback: lấy từ backend bằng hoaDonId (nếu backend lưu order lúc tạo)
+        try {
+          console.log("No client storage found — fetching order from backend:", hoaDonId);
+          const res = await apiClient.get(`/orders/${hoaDonId}`); // **chỉnh endpoint theo BE**
+          storedData = res.data;
+          console.log("Loaded order from backend:", storedData);
+        } catch (err) {
+          console.warn("Không lấy được order từ backend:", err);
+        }
       }
+
+
+      if (!storedData) {
+        // Không có dữ liệu để gửi lên BE => báo rõ ràng
+        toast.warning("⚠️ Không tìm thấy dữ liệu hóa đơn. Vui lòng kiểm tra hoặc thử lại.");
+        success.value = false;
+        errorCode.value = "MISSING_DATA";
+        return;
+      }
+
+
+      // Lấy token / userId nếu login, gọi API cập nhật tương ứng
+      const token = Cookies.get("token");
+      const userId = getUserId();
+
+
+      if (token && userId) {
+        // Nếu backend có endpoint /client/orders/update-all - gọi chính xác theo BE
+        await apiClient.put("/orders/update-all", storedData, {
+          headers: { "X-User-ID": userId, Authorization: `Bearer ${token}` },
+        });
+      } else {
+        // Guest -> gọi endpoint client cũ (chỉnh URL nếu BE khác)
+        await apiClient.put(`/capNhatHoaDon/${hoaDonId}`, storedData);
+      }
+
+
+      await clearCart();
+      toast.success("✅ Thanh toán thành công! Đơn hàng đã được cập nhật.");
+      success.value = true;
+      setTimeout(() => {
+        window.location.href = "http://localhost:5173/coolmen";
+      }, 1500);
+      // 👉 Redirect ra successPage (có thể hardcode hoặc lấy từ query/backend)
+     
     } else {
       success.value = false;
       errorCode.value = responseCode || "Không rõ";
       toast.error(`❌ Thanh toán thất bại! Mã lỗi: ${errorCode.value}`);
+
+
+      window.location.href = "http://localhost:5173/vnpay-return";
     }
   } catch (error) {
-    console.error("❌ Lỗi xử lý kết quả thanh toán:", error);
+    console.error("Lỗi xử lý return VNPay:", error);
     success.value = false;
-    errorCode.value = responseCode || "Không rõ";
+    errorCode.value = route.query.vnp_ResponseCode || "Không rõ";
     toast.error("Đã xảy ra lỗi khi xử lý kết quả thanh toán.");
+
+
+    window.location.href = "http://localhost:5173/vnpay-return";
   } finally {
     isLoading.value = false;
   }
 });
 
-// 👇 Xử lý khi bấm nút quay lại
-async function handleBackClick() {
-  if (success.value) {
-    // 🔥 Gọi lại để đảm bảo BE session cũng clear (phòng khi user reload lại)
-    await axios.post("http://localhost:8080/client/ClearSessionGioHang", {}, {
-      withCredentials: true
-    });
 
-    sessionStorage.removeItem("gioHang");
-    localStorage.removeItem("gioHang");
-    sessionStorage.removeItem("dataHoaDon");
 
-    window.dispatchEvent(new Event("cap-nhat-gio"));
-  } else {
-    toast.info("💡 Vui lòng thử lại phương thức thanh toán khác.");
-  }
-}
+
 </script>
+
+
+
+
+
+
+
+
+
+
 
 
 <style scoped>
@@ -115,6 +192,7 @@ async function handleBackClick() {
   background-color: #f3f4f6;
   padding: 20px;
 }
+
 
 .message-box {
   background: #ffffff;
@@ -128,23 +206,28 @@ async function handleBackClick() {
   transition: 0.3s ease;
 }
 
+
 .success {
   border-color: #38a169;
 }
 
+
 .error {
   border-color: #e53e3e;
 }
+
 
 .message-box h2 {
   font-size: 24px;
   margin-bottom: 12px;
 }
 
+
 .message-box p {
   font-size: 16px;
   margin: 6px 0;
 }
+
 
 .back-button {
   display: inline-block;
@@ -159,8 +242,12 @@ async function handleBackClick() {
   transition: all 0.3s ease;
 }
 
+
 .back-button:hover {
   background-color: #0f62fe;
   color: white;
 }
 </style>
+
+
+

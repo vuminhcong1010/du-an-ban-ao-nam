@@ -34,7 +34,7 @@ const nhanPhieuGiamGiaDaChon = async (phieu) => {
         },
       });
       // Update the quantity in the frontend
-      props.order.giamGia.soLuong -= 1;
+      // props.order.giamGia.soLuong -= 1;
       console.log(`Decreased voucher quantity for ID: ${phieu.id}, new quantity: ${props.order.giamGia.soLuong}`);
     }
 
@@ -84,15 +84,7 @@ const validateMaGiamGia = async (maGiamGia) => {
 
 const huyChonPhieuGiamGia = async () => {
   try {
-    // Restore voucher quantity if one was previously selected
-    if (props.order.giamGia && props.order.giamGia.id) {
-      await axios.put(`http://localhost:8080/ban_hang/phieuGG/increase/${props.order.giamGia.id}`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log(`Restored voucher quantity for ID: ${props.order.giamGia.id}`);
-    }
+ 
 
     // Clear the selected voucher
     props.order.giamGia = null;

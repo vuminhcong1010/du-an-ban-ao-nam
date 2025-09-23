@@ -539,122 +539,168 @@ const colorMap = {
 };
 
 const muaNgay = async () => {
-    if (!product.value) return;
+  if (!product.value) return;
 
-    if (selectedColors.value.length === 0) {
-        toast.error("❌ Vui lòng chọn ít nhất một màu sắc");
-        return;
+  if (selectedColors.value.length === 0) {
+    toast.error("❌ Vui lòng chọn ít nhất một màu sắc");
+    return;
+  }
+  if (selectedSizes.value.length === 0) {
+    toast.error("❌ Vui lòng chọn ít nhất một kích cỡ.");
+    return;
+  }
+  if (quantity.value <= 0) {
+    toast.error("❌ Số lượng không hợp lệ.");
+    return;
+  }
+
+  const selectedColor = selectedColors.value[0];
+  const selectedSizeObj = selectedSizes.value[0];
+  const kichCo = selectedSizeObj.soCo;
+
+  // Payload chung dùng cho kiểm tra tồn kho
+  const checkPayload = {
+    idSanPham: product.value.id,
+    mauSacList: [selectedColor],
+    kichCoList: [kichCo]
+  };
+
+  try {
+    const checkRes = await axios.post("http://localhost:8080/client/check-so-luong", checkPayload, { withCredentials: true });
+    const available = Number(checkRes?.data?.availableQuantity ?? checkRes?.data?.available ?? 0);
+
+    if (available === 0) {
+      toast.error("❌ Sản phẩm hiện đã hết hàng.");
+      product.value.quantity = 0; // cập nhật UI số lượng
+      return;
+    }
+    if (quantity.value > available) {
+      toast.error(`❌ Sản phẩm đã được cập nhật — chỉ còn ${available} trong kho. Vui lòng điều chỉnh số lượng.`);
+      product.value.quantity = available; // cập nhật UI để người dùng điều chỉnh
+      return;
+    }
+  } catch (err) {
+    // nếu server trả 400 với availableQuantity trong body, lấy ra
+    const resp = err.response?.data;
+    const availOnErr = resp?.availableQuantity ?? resp?.available;
+    if (availOnErr !== undefined) {
+      const avail = Number(availOnErr);
+      toast.error(`❌ Sản phẩm đã được cập nhật — chỉ còn ${avail} trong kho.`);
+      product.value.quantity = avail;
+      return;
     }
 
-    if (selectedSizes.value.length === 0) {
-        toast.error("❌ Vui lòng chọn ít nhất một kích cỡ.");
-        return;
+    console.error("❌ Lỗi kiểm tra tồn kho:", err);
+    toast.error("❌ Không kiểm tra được tồn kho — vui lòng thử lại.");
+    return;
+  }
+
+  // Nếu qua được bước kiểm tra, tiến hành mua ngay
+  const payload = {
+    idSanPham: product.value.id,
+    soLuong: quantity.value,
+    mauSacList: [selectedColor],
+    kichCoList: [kichCo]
+  };
+
+  try {
+    const res = await axios.post("http://localhost:8080/client/MuaNgay", payload, { withCredentials: true });
+    const hoaDonId = res.data.hoaDonId;
+    if (!hoaDonId) {
+      toast.error("❌ Không tạo được hóa đơn.");
+      return;
     }
-
-    if (quantity.value <= 0 || quantity.value > product.value.quantity) {
-        toast.error(`❌ Số lượng không hợp lệ.`);
-        return;
+    toast.success("🎉 Mua ngay thành công!", { timeout: 3000, position: "top-right" });
+    window.dispatchEvent(new Event("cap-nhat-gio"));
+    router.push({ name: "client-Oder", params: { hoaDonId } });
+  } catch (err) {
+    console.error("❌ Lỗi khi thực hiện mua ngay:", err);
+    // Nếu BE trả lỗi gồm availableQuantity, hiển thị
+    const resp = err.response?.data;
+    if (resp?.availableQuantity !== undefined) {
+      product.value.quantity = Number(resp.availableQuantity);
+      toast.error(`❌ Số lượng vượt quá tồn kho — hiện chỉ còn ${resp.availableQuantity}.`);
+      return;
     }
-
-    const selectedColor = selectedColors.value[0];
-    const selectedSizeObj = selectedSizes.value[0];
-    const kichCo = selectedSizeObj.soCo;
-
-    const payload = {
-        idSanPham: product.value.id,
-        soLuong: quantity.value,
-        mauSacList: [selectedColor],
-        kichCoList: [kichCo]
-    };
-
-    // ✅ Log trọng lượng trước khi gọi API
-    const totalWeightGrams = (product.value.trongLuong || 0) * 1000 * quantity.value;
-    console.log("📦 Mua ngay - Tổng trọng lượng đơn hàng (gram):", totalWeightGrams);
-
-    try {
-        const res = await axios.post("http://localhost:8080/client/MuaNgay", payload, {
-            withCredentials: true
-        });
-
-        const hoaDonId = res.data.hoaDonId;
-
-        if (!hoaDonId) {
-            toast.error("❌ Không tạo được hóa đơn.");
-            return;
-        }
-
-        toast.success("🎉 Mua ngay thành công!", {
-            timeout: 3000,
-            position: "top-right"
-        });
-        window.dispatchEvent(new Event("cap-nhat-gio"));
-
-        router.push({
-            name: "client-Oder",
-            params: { hoaDonId }
-        });
-
-    } catch (err) {
-        console.error("❌ Lỗi khi thực hiện mua ngay:", err);
-        toast.error("❌ Mua ngay thất bại, vui lòng thử lại.");
-    }
+    toast.error("❌ Mua ngay thất bại, vui lòng thử lại.");
+  }
 };
 
 
-
 const themVaoGioHang = async () => {
-    if (!product.value) return;
+  if (!product.value) return;
 
-    if (selectedColors.value.length === 0) {
-        toast.error("❌ Vui lòng chọn ít nhất một màu sắc");
-        return;
+  if (selectedColors.value.length === 0) {
+    toast.error("❌ Vui lòng chọn ít nhất một màu sắc");
+    return;
+  }
+  if (selectedSizes.value.length === 0) {
+    toast.error("❌ Vui lòng chọn ít nhất một kích cỡ.");
+    return;
+  }
+  if (quantity.value <= 0) {
+    toast.error("❌ Vui lòng chọn số lượng hợp lệ.");
+    return;
+  }
+
+  const selectedColor = selectedColors.value[0];
+  const selectedSizeObj = selectedSizes.value[0];
+  const kichCo = selectedSizeObj.soCo;
+
+  const checkPayload = {
+    idSanPham: product.value.id,
+    mauSacList: [selectedColor],
+    kichCoList: [kichCo]
+  };
+
+  try {
+    const checkRes = await axios.post("http://localhost:8080/client/check-so-luong", checkPayload, { withCredentials: true });
+    const available = Number(checkRes?.data?.availableQuantity ?? checkRes?.data?.available ?? 0);
+    if (available === 0) {
+      toast.error("❌ Sản phẩm hiện đã hết hàng.");
+      product.value.quantity = 0;
+      return;
     }
-
-    if (selectedSizes.value.length === 0) {
-        toast.error("❌ Vui lòng chọn ít nhất một kích cỡ.");
-        return;
+    if (quantity.value > available) {
+      toast.error(`❌ Sản phẩm đã được cập nhật — chỉ còn ${available} trong kho. Vui lòng điều chỉnh số lượng.`);
+      product.value.quantity = available;
+      return;
     }
-
-    if (quantity.value <= 0) {
-        toast.error("❌ Vui lòng chọn số lượng hợp lệ.");
-        return;
+  } catch (err) {
+    const resp = err.response?.data;
+    const availOnErr = resp?.availableQuantity ?? resp?.available;
+    if (availOnErr !== undefined) {
+      toast.error(`❌ Sản phẩm đã được cập nhật — chỉ còn ${availOnErr} trong kho.`);
+      product.value.quantity = Number(availOnErr);
+      return;
     }
+    console.error("❌ Lỗi kiểm tra tồn kho:", err);
+    toast.error("❌ Không kiểm tra được tồn kho — vui lòng thử lại.");
+    return;
+  }
 
-    if (quantity.value > product.value.quantity) {
-        alert(`Chỉ còn ${product.value.quantity} sản phẩm trong kho.`);
-        return;
+  // Qua kiểm tra -> thực hiện thêm vào giỏ
+  const payload = {
+    idSanPham: product.value.id,
+    soLuong: quantity.value,
+    mauSacList: [selectedColor],
+    kichCoList: [kichCo]
+  };
+
+  try {
+    const res = await axios.post("http://localhost:8080/client/ThemSanPham", payload, { withCredentials: true });
+    toast.success("🎉 " + res.data, { timeout: 3000, position: "top-right" });
+    window.dispatchEvent(new Event("cap-nhat-gio"));
+  } catch (err) {
+    console.error("❌ Lỗi khi thêm sản phẩm vào giỏ hàng:", err);
+    const resp = err.response?.data;
+    if (resp?.availableQuantity !== undefined) {
+      product.value.quantity = Number(resp.availableQuantity);
+      toast.error(`❌ Số lượng vượt quá tồn kho — hiện chỉ còn ${resp.availableQuantity}.`);
+      return;
     }
-
-    const selectedColor = selectedColors.value[0];
-    const selectedSizeObj = selectedSizes.value[0];
-    const kichCo = selectedSizeObj.soCo;
-
-    const payload = {
-        idSanPham: product.value.id,
-        soLuong: quantity.value,
-        mauSacList: [selectedColor],
-        kichCoList: [kichCo]
-    };
-
-    const totalWeight = (product.value.trongLuong || 0) * 1000 * quantity.value;
-    console.log("🛒 Thêm vào giỏ - Tổng trọng lượng (gram):", totalWeight);
-
-    try {
-        const res = await axios.post("http://localhost:8080/client/ThemSanPham", payload, {
-            withCredentials: true
-        });
-
-        toast.success("🎉 " + res.data, {
-            timeout: 3000,
-            position: "top-right"
-        });
-
-        window.dispatchEvent(new Event("cap-nhat-gio"));
-
-    } catch (err) {
-        console.error("❌ Lỗi khi thêm sản phẩm vào giỏ hàng:", err);
-        toast.error("❌ Thêm sản phẩm thất bại. Vui lòng thử lại!");
-    }
+    toast.error("❌ Thêm sản phẩm thất bại. Vui lòng thử lại!");
+  }
 };
 
 
