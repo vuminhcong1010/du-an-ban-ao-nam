@@ -2,18 +2,18 @@
     <div class="account-container">
         <div class="sidebar">
             <img :src="userAvatar" :alt="userName" class="user-avatar" />
-            <h3 class="welcome-text">Welcome, {{ userName }}</h3>
+            <h3 class="welcome-text">Chào mừng, {{ userName }}</h3>
             <p class="user-email">{{ userEmail }}</p>
             <nav class="account-nav">
                 <ul>
                     <li :class="{ active: currentView === 'details' }" @click="changeView('details')">
-                        <i class="fas fa-user"></i> My Details
+                        <i class="fas fa-user"></i> Thông Tin Cá Nhân
                     </li>
                     <li :class="{ active: currentView === 'orders' }" @click="changeView('orders')">
-                        <i class="fas fa-shopping-bag"></i> Orders
+                        <i class="fas fa-shopping-bag"></i> Đơn Hàng Của Tôi
                     </li>
                     <li @click="logout">
-                        <i class="fas fa-sign-out-alt"></i> Logout
+                        <i class="fas fa-sign-out-alt"></i> Đăng Xuất
                     </li>
                 </ul>
             </nav>

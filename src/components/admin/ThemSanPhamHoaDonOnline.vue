@@ -7,6 +7,10 @@ const token = Cookies.get('token')
 const search = ref("");
 const selected = ref({});
 const quantities = ref({});
+const mau = ref([]);     // dữ liệu màu từ API
+const kichco = ref([]);  // dữ liệu kích cỡ từ API
+const selectedKichCoId = ref(null);
+const selectedMauId = ref(null);
 let listSanPham = ref([]);
 // phân trang:
 const currentPage = ref(0);
@@ -16,10 +20,10 @@ const fetchSanPhamPaginated = async () => {
   try {
     const response = await fetch(
       `http://localhost:8080/chi-tiet-san-pham/phan-trang?page=${currentPage.value}&size=${pageSize.value}`, {
-  headers: {
-    Authorization: `Bearer ${token}` 
-  }
-}
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
     );
     const data = await response.json();
     listSanPham.value = data.content; // Spring Data trả về `content`, `totalPages`, ...
@@ -30,6 +34,8 @@ const fetchSanPhamPaginated = async () => {
 };
 
 onMounted(() => {
+  fetchMau();
+  fetchKichCo();
   fetchSanPhamPaginated();
 });
 
@@ -83,7 +89,26 @@ const toggleSelection = (item) => {
     delete quantities.value[item.maChiTietSapPham];
   }
 };
-
+const fetchKichCo = async () => {
+  try {
+    const response = await fetch("http://localhost:8080/doi-giam-gia/kich-co", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    kichco.value = await response.json();  // 🔥 dùng response
+  } catch (err) {
+    console.error("Lỗi khi gọi API kích cỡ:", err);
+  }
+};
+const fetchMau = async () => {
+  try {
+    const response = await fetch("http://localhost:8080/doi-giam-gia/mau", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    mau.value = await response.json();   // 🔥 dùng response
+  } catch (err) {
+    console.error("Lỗi khi gọi API màu:", err);
+  }
+};
 const apply = async () => {
   const result = selectedItems.value.map((item) => {
     const soLuongMua = quantities.value[item.maChiTietSapPham] || 1;
@@ -111,25 +136,25 @@ const apply = async () => {
   console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
 
   // 1. Cập nhật tồn kho
-    // try {
-    //   await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
-    //     method: "POST",
-    //     headers: {
-    //       Authorization: `Bearer ${token}`,
-    //       "Content-Type": "application/json",
-    //     },
-    //     body: JSON.stringify(bodyUpdateSoLuong),
-    //   });
-    // } catch (error) {
-    //   console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
-    // }
+  // try {
+  //   await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
+  //     method: "POST",
+  //     headers: {
+  //       Authorization: `Bearer ${token}`,
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify(bodyUpdateSoLuong),
+  //   });
+  // } catch (error) {
+  //   console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
+  // }
 
   // 2. Lưu chi tiết hóa đơn
   try {
     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}` ,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(result),
@@ -140,7 +165,7 @@ const apply = async () => {
       await fetch("http://localhost:8080/lich-su-hoa-don/them", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}` ,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -162,20 +187,12 @@ const apply = async () => {
 </script>
 
 <template>
-  <div
-    class="modal fade show d-block"
-    tabindex="-1"
-    style="background-color: rgba(0, 0, 0, 0.5); z-index: 1050"
-  >
+  <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5); z-index: 1050">
     <div class="modal-dialog custom-modal modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Chọn nhiều sản phẩm online</h5>
-          <button
-            type="button"
-            class="btn-close"
-            @click="$emit('close')"
-          ></button>
+          <button type="button" class="btn-close" @click="$emit('close')"></button>
         </div>
         <div class="modal-body">
           <!-- <input
@@ -189,66 +206,36 @@ const apply = async () => {
               <div class="col-md-12">
                 <label class="form-label fw-bold">Bộ lọc</label>
                 <div class="d-flex align-items-center gap-2">
-                  <input
-                    type="text"
-                    class="form-control"
-                    placeholder="Tìm theo mã, tên sản phẩm"
-                    v-model="timKiem"
-                  />
-                  <button
-                    type="button"
-                    class="btn"
-                    style="
+                  <input type="text" class="form-control" placeholder="Tìm theo mã, tên sản phẩm" v-model="search" />
+
+                  <button type="button" class="btn" style="
                       background-color: #0a2c57;
                       color: white;
                       white-space: nowrap;
-                    "
-                    @click="locSanPham"
-                  >
+                    " @click="locSanPham">
                     Tìm kiếm
                   </button>
                 </div>
               </div>
 
-              <!-- Trạng thái -->
-              <div class="col-md-5 ms-2">
-                <label class="form-label fw-bold">Trạng thái</label>
-                <div class="d-flex gap-3">
-                  <input type="radio" /> Đang bán <input type="radio" /> Ngừng
-                  bán
-                </div>
-              </div>
-
-              <!-- Danh mục -->
+              <!-- Kích cỡ -->
               <div class="col-md-3">
-                <label class="form-label fw-bold">Danh mục</label>
-                <select
-                  class="form-select"
-                  v-model="selectedDanhMucId"
-                  @change="locSanPham"
-                >
-                  <option :value="null">Tất cả danh mục</option>
-                  <option v-for="dm in danhMuc" :key="dm.id" :value="dm.id">
-                    {{ dm.tenDanhMuc }}
+                <label class="form-label fw-bold" style="color: #0a2c57;">Kích cỡ</label>
+                <select class="form-select" v-model="selectedKichCoId" @change="locSanPham">
+                  <option :value="null">Tất cả Kích cỡ</option>
+                  <option v-for="kc in kichco" :key="kc.id" :value="kc.id">
+                    {{ kc.soCo }}
                   </option>
                 </select>
               </div>
 
-              <!-- Chất liệu -->
+              <!-- Màu -->
               <div class="col-md-3">
-                <label class="form-label fw-bold">Chất liệu</label>
-                <select
-                  class="form-select"
-                  v-model="selectedChatLieuId"
-                  @change="locSanPham"
-                >
-                  <option :value="null">Tất cả chất liệu</option>
-                  <option
-                    v-for="cl in danhSachChatLieu"
-                    :key="cl.id"
-                    :value="cl.id"
-                  >
-                    {{ cl.tenChatLieu }}
+                <label class="form-label fw-bold" style="color: #0a2c57;">Màu</label>
+                <select class="form-select" v-model="selectedMauId" @change="locSanPham">
+                  <option :value="null">Tất cả màu</option>
+                  <option v-for="m in mau" :key="m.id" :value="m.id">
+                    {{ m.ten }}
                   </option>
                 </select>
               </div>
@@ -277,10 +264,8 @@ const apply = async () => {
                 <tr v-for="(item, index) in listSanPham" :key="index">
                   <td>{{ index + 1 }}</td>
                   <td>
-                    <img
-                      src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
-                      style="width: 20px; height: 20px"
-                    />
+                    <img src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
+                      style="width: 20px; height: 20px" />
                   </td>
                   <td>{{ item.maChiTietSapPham }}</td>
                   <td>{{ item.idSanPham.tenSanPham }}</td>
@@ -294,30 +279,17 @@ const apply = async () => {
                     }}
                   </td>
                   <td>
-                    <input
-                      type="number"
-                      min="1"
-                      :max="item.soLuong"
-                      v-model.number="quantities[item.maChiTietSapPham]"
-                      :disabled="
-                        !selectedItems.some(
-                          (i) => i.maChiTietSapPham === item.maChiTietSapPham
-                        )
-                      "
-                      class="form-control form-control-sm"
-                      style="width: 70px"
-                    />
+                    <input type="number" min="1" :max="item.soLuong" v-model.number="quantities[item.maChiTietSapPham]"
+                      :disabled="!selectedItems.some(
+                        (i) => i.maChiTietSapPham === item.maChiTietSapPham
+                      )
+                        " class="form-control form-control-sm" style="width: 70px" />
                   </td>
                   <td class="text-center">
-                    <input
-                      type="checkbox"
-                      :checked="
-                        selectedItems.some(
-                          (i) => i.maChiTietSapPham === item.maChiTietSapPham
-                        )
-                      "
-                      @change="toggleSelection(item)"
-                    />
+                    <input type="checkbox" :checked="selectedItems.some(
+                      (i) => i.maChiTietSapPham === item.maChiTietSapPham
+                    )
+                      " @change="toggleSelection(item)" />
                   </td>
                 </tr>
               </tbody>
@@ -325,19 +297,11 @@ const apply = async () => {
           </div>
           <!-- phân trang  -->
           <div class="d-flex justify-content-between align-items-center mt-3">
-            <button
-              class="btn btn-outline-primary"
-              :disabled="currentPage === 0"
-              @click="prevPage"
-            >
+            <button class="btn btn-outline-primary" :disabled="currentPage === 0" @click="prevPage">
               Trang trước
             </button>
             <span>Trang {{ currentPage + 1 }} / {{ totalPages }}</span>
-            <button
-              class="btn btn-outline-primary"
-              :disabled="currentPage >= totalPages - 1"
-              @click="nextPage"
-            >
+            <button class="btn btn-outline-primary" :disabled="currentPage >= totalPages - 1" @click="nextPage">
               Trang sau
             </button>
           </div>

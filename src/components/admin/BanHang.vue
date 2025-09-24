@@ -230,19 +230,7 @@ async function closeOrder(id) {
       return;
     }
 
-    // 2. Hoàn lại số lượng phiếu giảm giá (nếu có)
-    if (order.giamGia && order.giamGia.id) {
-      await axios.put(
-        `http://localhost:8080/ban_hang/phieuGG/increase/${order.giamGia.id}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log(`✅ Hoàn lại số lượng phiếu giảm giá ID: ${order.giamGia.id}`);
-    }
+    
 
     // 3. Xóa hóa đơn
     await axios.delete(`http://localhost:8080/hoa-don/xoa/${order.maHoaDon}`, {
@@ -725,17 +713,24 @@ const hoanThanhDonHang = async (order) => {
       await axios.post("http://localhost:8080/ban_hang/hoan-thanh", payload);
 
       // ✅ Giảm số lượng phiếu giảm giá nếu có
-      if (order.giamGia?.id) {
-        await axios.put(
-          `http://localhost:8080/ban_hang/phieuGG/decrease/${order.giamGia.id}`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+    // ✅ Giảm số lượng phiếu giảm giá nếu có
+if (order.giamGia && order.giamGia.id) {
+  try {
+    await axios.put(
+      `http://localhost:8080/ban_hang/phieuGG/decrease/${order.giamGia.id}`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       }
+    );
+    console.log(`✅ Đã giảm số lượng phiếu giảm giá ID: ${order.giamGia.id}`);
+  } catch (err) {
+    console.error(`❌ Lỗi giảm số lượng phiếu giảm giá:`, err);
+    // Không nên dừng tiến trình hoàn tất đơn hàng vì lỗi này
+  }
+}
 
       // ✅ Xóa đơn hàng sau khi hoàn thành
       orders.value = orders.value.filter((o) => o.id !== order.id);

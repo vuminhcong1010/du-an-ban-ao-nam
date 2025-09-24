@@ -18,20 +18,6 @@
     <!-- Dropdown cho Sản phẩm -->
     <li class="has-submenu">
       <router-link to="/coolmen/client-san-pham" active-class="active">Sản phẩm</router-link>
-      <ul class="submenu">
-        <li>
-          <router-link to="/coolmen/client-san-pham" active-class="active">Tất cả sản phẩm</router-link>
-        </li>
-        <li>
-          <router-link to="/coolmen/ao-vest" active-class="active">Áo vest</router-link>
-        </li>
-        <li>
-          <router-link to="/coolmen/ao-phong" active-class="active">Áo phông</router-link>
-        </li>
-        <li>
-          <router-link to="/coolmen/ao-so-mi" active-class="active">Áo sơ mi</router-link>
-        </li>
-      </ul>
     </li>
 
     <li>

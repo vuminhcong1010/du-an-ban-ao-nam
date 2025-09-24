@@ -4,7 +4,6 @@
     <p>Đây là trang thông tin tài khoản của bạn.</p>
 
     <div v-if="user">
-      <p><strong>Tên tài khoản:</strong> {{ user.tenTaiKhoan }}</p>
       <p><strong>Email:</strong> {{ user.email }}</p>
       <p><strong>Tên khách hàng:</strong> {{ user.tenKhachHang }}</p>
       </div>
@@ -20,6 +19,8 @@
 
       <label for="email">Email:</label>
       <input type="email" id="email" :value="user ? user.email : ''" readonly />
+      <label for="phone">SĐT:</label>
+      <input type="text" id="phone" :value="user ? user.soDienThoai : ''" readonly />
       <button @click="editDetails">Cập nhật chi tiết</button>
     </section>
 

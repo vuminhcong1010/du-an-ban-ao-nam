@@ -84,7 +84,22 @@
               </span>
             </td>
             <td>
-              <Trash class="me-3" style="color: #cc0000" @click="remove(sp.id)" />
+              <template v-if="sp.trangThai === 1">
+                <Trash
+                  class="me-3"
+                  :title="'Chuyển sang Ngừng bán'"
+                  style="color: #cc0000"
+                  @click="remove(sp.id, sp.trangThai)"
+                />
+              </template>
+              <template v-else>
+                <i
+                  class="fa-solid fa-repeat me-3"
+                  :title="'Chuyển lại Đang bán'"
+                  style="color: #CC0000; font-size: 1.3rem;"
+                  @click="remove(sp.id, sp.trangThai)"
+                ></i>
+              </template>
               <Eye class="me-3" style="color: #0a2c57" @click="chuyenTrang(sp.id)" />
             </td>
           </tr>
@@ -123,6 +138,7 @@ import { ref, computed, onMounted, watch } from "vue"
 import axios from "axios"
 import Cookies from 'js-cookie'
 import { useToast } from "vue-toastification";
+import Swal from 'sweetalert2'
 
 const toast = useToast();
 const token = Cookies.get('token')
@@ -215,16 +231,35 @@ watch(currentPage, (newPage) => {
 });
 
 // Xoá sản phẩm
-const remove = async (id) => {
+const remove = async (id, trangThaiHienTai) => {
   try {
+   const isDangBan = Number(trangThaiHienTai) === 1
+   const result = await Swal.fire({
+                    title: 'Xác nhận chuyển trạng thái?',
+                    text: isDangBan
+                      ? 'Bạn có chắc chắn muốn chuyển trạng thái thành Ngừng bán?'
+                      : 'Bạn có muốn xác nhận chuyển trạng thái quay lại Đang bán?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Xác nhận',
+                    cancelButtonText: 'Hủy'
+                });
+    if (!result.isConfirmed) {
+      toast.info('Đã hủy thao tác chuyển trạng thái');
+      console.log('User cancelled');
+      return;
+    }
     await axios.get(`http://localhost:8080/san-pham/delete/${id}`, {
+
       headers: { Authorization: `Bearer ${token}` }
     });
     await fetchData();
-    toast.success("Xóa sản phẩm thành công!");
+    toast.success("Chuyển trạng thái sản phẩm thành công!");
   } catch (err) {
-    console.error("Lỗi khi xóa sản phẩm:", err);
-    toast.error("Lỗi khi xóa sản phẩm!");
+    console.error("Lỗi khi chuyển trạng thái sản phẩm:", err);
+    toast.error("Lỗi khi chuyển trạng thái sản phẩm!");
   }
 }
 
