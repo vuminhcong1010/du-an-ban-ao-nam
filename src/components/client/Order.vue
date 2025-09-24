@@ -59,7 +59,7 @@
                         <div>
                             <div class="name">{{ item.tenSanPham }}</div>
                             <div v-if="item.phanTramGiamGia > 0" class="save-badge">Tiết kiệm {{ item.phanTramGiamGia
-                            }}%</div>
+                                }}%</div>
                             <div class="variant">{{ item.tenMau }}, {{ item.tenKichCo }}</div>
                         </div>
                     </div>
@@ -73,7 +73,10 @@
                         </template>
                     </div>
                     <div class="cell cell-qty">
-                        <input type="number" v-model="item.soLuong" @change="kiemTraSoLuong(item)" class="qty" />
+                        <div class="quantity-controls">
+                            <input type="number" v-model.lazy.number="item.soLuong" class="qty" min="1"
+                                :max="item.soLuongTon" step="1" @change="kiemTraSoLuong(item)" @wheel.prevent />
+                        </div>
                     </div>
                     <div class="cell cell-amount">{{ formatCurrency((item.hasDiscount ? item.giaSauKhiGiam :
                         item.giaTruocKhiGiam) *
@@ -100,7 +103,7 @@
                             ${formatCurrency(giamGiaDaApDung.soTienGiam)}` }}
                         </div>
                         <div class="applied-desc">Đã áp dụng: <strong>{{ giamGiaDaApDung.maPhieuGiamGia || 'Voucher'
-                        }}</strong>
+                                }}</strong>
                             <span class="save">-{{ formatCurrency(tienGiam) }}</span>
                         </div>
                     </div>
@@ -143,7 +146,7 @@
                     <span>{{ formatCurrency(tongTienSanPham) }}</span>
                 </div>
                 <div class="sum-row">
-                    <span>Tổng tiền phí vận chuyển</span>
+                    <span>Tổng tiền phí vận chuyển <img src="/src/assets/GHN.png" alt="GHN" class="ship-logo" /></span>
                     <span>{{ formatCurrency(shipFee) }}</span>
                 </div>
                 <div v-if="giamGiaDaApDung" class="sum-row">
@@ -953,7 +956,36 @@ function kiemTraSoLuong(item) {
             toast.warning(`❌ Số lượng phải tối thiểu là 1.`, { timeout: 3000 });
         });
     }
+
+    // ✅ Tự động áp dụng lại phiếu giảm giá sau khi thay đổi số lượng
+    apDungLaiPhieuGiamGia();
 }
+
+// ✅ Hàm tự động áp dụng lại phiếu giảm giá
+function apDungLaiPhieuGiamGia() {
+    if (giamGiaDaApDung.value) {
+        // Tính lại số tiền giảm với tổng tiền mới
+        tienGiam.value = tinhTienGiam(giamGiaDaApDung.value);
+    }
+}
+
+// ✅ Hàm tăng số lượng
+function tangSoLuong(item) {
+    if (item.soLuong < item.soLuongTon) {
+        item.soLuong++;
+        kiemTraSoLuong(item);
+    }
+}
+
+// ✅ Hàm giảm số lượng
+function giamSoLuong(item) {
+    if (item.soLuong > 1) {
+        item.soLuong--;
+        kiemTraSoLuong(item);
+    }
+}
+
+// (removed) Cho phép nhập bàn phím bình thường; chỉ tính khi blur/change
 
 function apDungTuDongPhieuTotNhat(danhSachPhieu) {
     const tong = tongTienSanPham.value;
@@ -1045,6 +1077,7 @@ function tinhTienGiam(phieu) {
     let tienGiam = 0;
 
     if (phieu.soTienGiam) {
+        // Giới hạn số tiền giảm không vượt quá tổng tiền sản phẩm
         tienGiam = Math.min(phieu.soTienGiam, tong);
     } else if (phieu.phamTramGiamGia) {
         tienGiam = Math.round((tong * phieu.phamTramGiamGia) / 100);
@@ -1053,6 +1086,9 @@ function tinhTienGiam(phieu) {
         if (phieu.giamToiDa) {
             tienGiam = Math.min(tienGiam, phieu.giamToiDa);
         }
+
+        // ✅ Quan trọng: Giới hạn số tiền giảm không vượt quá tổng tiền sản phẩm
+        tienGiam = Math.min(tienGiam, tong);
     }
 
     return tienGiam;
@@ -1199,8 +1235,7 @@ const getTotalWeight = () => {
 
     const totalWeight = order.value.reduce((total, item) => {
         const weightKg = item.trongLuong || 0;
-        const weightGram = weightKg * 1000;
-        return total + (weightGram * item.soLuong);
+        return total + (weightKg * item.soLuong);
     }, 0);
 
     console.log("📦 Tổng trọng lượng đơn hàng (gram):", totalWeight);
@@ -1326,6 +1361,31 @@ function formatCurrency(value) {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
 }
 
+// async () => {
+//     const hoaDonId = route.params.hoaDonId;
+//     try {
+//         await axios.get(`http://localhost:8080/client/kiemTraHoaDon/${hoaDonId}`);
+//         // Hợp lệ, tiếp tục
+//     } catch (err) {
+//         if (err.response && err.response.status === 409) {
+//             await Swal.fire({
+//                 icon: 'warning',
+//                 title: 'Hóa đơn đã được thanh toán',
+//                 text: 'Đơn hàng này đã được thanh toán trước đó. Vui lòng tạo đơn hàng mới.',
+//                 confirmButtonText: 'Quay lại sản phẩm'
+//             });
+//             await router.push({ name: 'client-san-pham' });
+//         } else {
+//             await Swal.fire({
+//                 icon: 'error',
+//                 title: 'Lỗi',
+//                 text: 'Không tìm thấy hóa đơn.',
+//                 confirmButtonText: 'Trở về'
+//             });
+//             await router.push({ name: 'client-san-pham' });
+//         }
+//     }
+// }
 
 const tongCong = computed(() => tongTienSanPham.value + shipFee.value - tienGiam.value);
 
@@ -1432,108 +1492,100 @@ async function thanhToan() {
                 });
             } catch (error) {
                 if (error.response && error.response.status === 409) {
-                    const message = error.response.data || "Sản phẩm vượt quá số lượng tồn kho";
-                    // Sửa lại popup lỗi như trên cho 2 nút Đồng ý và Hủy
                     const result = await Swal.fire({
-                        icon: 'error',
-                        title: 'Số lượng vượt quá tồn kho',
-                        html: message.replace(/\n/g, "<br/>"),
+                        icon: 'warning',
+                        title: 'Hóa đơn đã được thanh toán',
+                        text: 'Đơn hàng này đã được thanh toán trước đó. Vui lòng tạo đơn hàng mới.',
                         showCancelButton: true,
-                        confirmButtonText: 'Đồng ý',
-                        cancelButtonText: 'Hủy',
-                        reverseButtons: true,
+                        confirmButtonText: 'Quay lại sản phẩm',
+                        cancelButtonText: 'Bỏ qua',
+                        reverseButtons: true
                     });
 
                     if (result.isConfirmed) {
-                        // Gọi API xóa giỏ hàng + hóa đơn
-                        try {
-                            await axios.delete(`http://localhost:8080/client/XoaGioHang`, { withCredentials: true });
-
-                            sessionStorage.removeItem("gioHang");
-                            localStorage.removeItem("gioHang");
-                            window.dispatchEvent(new Event("cap-nhat-gio"));
-                            await router.push({ name: "client-san-pham" });
-                        } catch (err) {
-                        }
+                        await router.push({ name: "client-san-pham" });
                     }
-                } else {
-                    alert("Thanh toán thất bại");
+
+                    isLoading.value = false;
+                    return;
                 }
-            } finally {
-                isLoading.value = false;
-            }
-            return;
+
+                alert("Thanh toán thất bại");
+        } finally {
+            isLoading.value = false;
         }
+        return;
+    }
 
         // Các phương thức thanh toán cần redirect: VNPay, MoMo, QR Code
         sessionStorage.setItem("dataHoaDon", JSON.stringify(data));
 
-        if (paymentMethod === 'card') {
-            const response = await axios.post(`http://localhost:8080/vnpay`, {
-                amount: Math.round(tongCong.value),
-                hoaDonId: route.params.hoaDonId
-            });
-            const vnpayUrl = response.data;
-            window.location.href = vnpayUrl;
-        } else if (paymentMethod === 'momo') {
-            const response = await axios.post(`http://localhost:8080/momo`, {
-                amount: Math.round(tongCong.value),
-                hoaDonId: route.params.hoaDonId
-            });
-            const momoUrl = response.data.shortLink;
-            window.location.href = momoUrl;
-        } else if (paymentMethod === 'qrcode') {
-            const randomNumber = Math.floor(Math.random() * 1000) + 1;
-            const cancelPage = "http://localhost:5173/vnpay-return";
-            const successPage = "http://localhost:5173/coolmen";
+    if (paymentMethod === 'card') {
+        const response = await axios.post(`http://localhost:8080/vnpay`, {
+            amount: Math.round(tongCong.value),
+            hoaDonId: route.params.hoaDonId
+        });
+        const vnpayUrl = response.data;
+        window.location.href = vnpayUrl;
+    } else if (paymentMethod === 'momo') {
+        const response = await axios.post(`http://localhost:8080/momo`, {
+            amount: Math.round(tongCong.value),
+            hoaDonId: route.params.hoaDonId
+        });
+        const momoUrl = response.data.shortLink;
+        window.location.href = momoUrl;
+    } else if (paymentMethod === 'qrcode') {
+        const randomNumber = Math.floor(Math.random() * 1000) + 1;
+        const cancelPage = "http://localhost:5173/vnpay-return";
+        const successPage = "http://localhost:5173/coolmen";
 
-            const convertData = {
-                data: "{'amount':" + Math.round(tongCong.value) + ",'cancelUrl':'" + cancelPage + "','description':'" + data.ghiChu + "','orderCode':" + randomNumber + ",'returnUrl':'" + successPage + "'}"
-            };
-            let signature = "";
-            await axios.post("http://localhost:8080/convert", convertData).then(res => {
-                signature = res.data;
-            });
+        const convertData = {
+            data: "{'amount':" + Math.round(tongCong.value) + ",'cancelUrl':'" + cancelPage + "','description':'" + data.ghiChu + "','orderCode':" + randomNumber + ",'returnUrl':'" + successPage + "'}"
+        };
+        let signature = "";
+        await axios.post("http://localhost:8080/convert", convertData).then(res => {
+            signature = res.data;
+        });
 
-            const ttkh = {
-                orderCode: randomNumber,
-                amount: Math.round(tongCong.value),
-                description: data.ghiChu,
-                buyerName: data.hoTen,
-                buyerPhone: data.sdt,
-                buyerAddress: data.diaChi,
-                cancelUrl: cancelPage,
-                returnUrl: successPage,
-                signature: signature
-            };
-            console.log("Dữ liệu thanh toán QR Code:", ttkh);
+        const ttkh = {
+            orderCode: randomNumber,
+            amount: Math.round(tongCong.value),
+            description: data.ghiChu,
+            buyerName: data.hoTen,
+            buyerPhone: data.sdt,
+            buyerAddress: data.diaChi,
+            cancelUrl: cancelPage,
+            returnUrl: successPage,
+            signature: signature
+        };
+        console.log("Dữ liệu thanh toán QR Code:", ttkh);
 
-            await axios.post("https://api-merchant.payos.vn/v2/payment-requests", ttkh, {
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-client-id": "0e92cf06-3fe2-4e62-b56c-691c19251a35",
-                    "x-api-key": "2dcc721a-fa13-4ff6-80ca-7b6b89a81749"
-                }
-            }).then((Res) => {
-                localStorage.setItem("ttkh", JSON.stringify(ttkh));
-                console.log(Res.data);
+        await axios.post("https://api-merchant.payos.vn/v2/payment-requests", ttkh, {
+            headers: {
+                "Content-Type": "application/json",
+                "x-client-id": "0e92cf06-3fe2-4e62-b56c-691c19251a35",
+                "x-api-key": "2dcc721a-fa13-4ff6-80ca-7b6b89a81749"
+            }
+        }).then((Res) => {
+            localStorage.setItem("ttkh", JSON.stringify(ttkh));
+            console.log(Res.data);
 
-                window.location.href = Res.data.data.checkoutUrl;
-            }).catch(() => {
-                toast.error("Có lỗi xảy ra trong quá trình thanh toán.");
-            });
-        }
-
-        sessionStorage.removeItem("gioHang");
-        localStorage.removeItem("gioHang");
-        window.dispatchEvent(new Event("cap-nhat-gio"));
-
-    } catch (e) {
-        console.error("Lỗi thanh toán:", e);
-        alert("Thanh toán thất bại");
-    } finally {
-        isLoading.value = false;
+            window.location.href = Res.data.data.checkoutUrl;
+        }).catch(() => {
+            toast.error("Có lỗi xảy ra trong quá trình thanh toán.");
+        });
     }
+
+    sessionStorage.removeItem("gioHang");
+    localStorage.removeItem("gioHang");
+    window.dispatchEvent(new Event("cap-nhat-gio"));
+
+} catch (e) {
+    console.error("Lỗi thanh toán:", e);
+    alert("Thanh toán thất bại");
+} finally {
+    isLoading.value = false;
+}
 }
 
 
@@ -1564,6 +1616,13 @@ onMounted(async () => {
             }
         });
     }, { deep: true });
+
+    // ✅ Watcher để tự động áp dụng lại phiếu giảm giá khi thay đổi số lượng
+    watch(tongTienSanPham, () => {
+        if (giamGiaDaApDung.value) {
+            apDungLaiPhieuGiamGia();
+        }
+    });
 
     watch(order, () => {
         const tongHienTai = tongTienSanPham.value;
@@ -1922,6 +1981,59 @@ input.form-control:focus {
     padding: 6px 8px;
 }
 
+/* ✅ CSS cho controls số lượng */
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.qty-btn {
+    width: 32px;
+    height: 34px;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+.qty-btn.minus {
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-right: none;
+}
+
+.qty-btn.plus {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-left: none;
+}
+
+.qty-btn:hover:not(:disabled) {
+    background: #f8f9fa;
+    border-color: #6f42c1;
+    color: #6f42c1;
+}
+
+.qty-btn:disabled {
+    background: #f8f9fa;
+    color: #ccc;
+    cursor: not-allowed;
+    border-color: #e9ecef;
+}
+
+.quantity-controls .qty {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    text-align: center;
+}
+
 /* Note + voucher row */
 .row-inline {
     display: grid;
@@ -2050,6 +2162,12 @@ input.form-control:focus {
     display: flex;
     justify-content: flex-end;
     margin-top: 12px;
+}
+
+.ship-logo {
+    height: 18px;
+    margin-left: 8px;
+    vertical-align: middle;
 }
 
 .btn.primary {

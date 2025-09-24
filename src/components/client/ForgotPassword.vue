@@ -18,9 +18,27 @@
     <!-- Dropdown cho Sản phẩm -->
     <li class="has-submenu">
       <router-link to="/coolmen/client-san-pham" active-class="active">Sản phẩm</router-link>
+      <ul class="submenu">
+        <li>
+          <router-link to="/coolmen/client-san-pham" active-class="active">Tất cả sản phẩm</router-link>
+        </li>
+        <li>
+          <router-link to="/coolmen/ao-vest" active-class="active">Áo vest</router-link>
+        </li>
+        <li>
+          <router-link to="/coolmen/ao-phong" active-class="active">Áo phông</router-link>
+        </li>
+        <li>
+          <router-link to="/coolmen/ao-so-mi" active-class="active">Áo sơ mi</router-link>
+        </li>
+      </ul>
     </li>
+
     <li>
       <router-link to="/coolmen/danh-muc-List" active-class="active">Danh mục</router-link>
+    </li>
+    <li>
+      <router-link to="/coolmen/giam-gia" active-class="active">Giảm giá</router-link>
     </li>
     <li>
       <router-link to="/coolmen/lien-he" active-class="active">Liên hệ</router-link>
@@ -326,6 +344,10 @@
 
 
 /* Loại bỏ margin-left trên user-icon và cart-icon để gap của header-actions hoạt động */
+.user-icon,
+.cart-icon {
+  /* margin-left đã bị loại bỏ */
+}
 
 
 .user-icon a,
@@ -633,8 +655,7 @@ const capNhatGioHang = async () => {
       }
     });
     danhSachGio.value = data;
-    // Thay đổi: Hiển thị số lượng danh sách sản phẩm thay vì tổng số lượng
-    soLuongGio.value = data.length;
+    soLuongGio.value = data.reduce((tong, sp) => tong + sp.soLuong, 0);
   } catch (error) {
     danhSachGio.value = [];
     soLuongGio.value = 0;
@@ -645,8 +666,7 @@ const capNhatGioHang = async () => {
 
 const capNhatGioHangLocal = (newDanhSach) => {
   danhSachGio.value = newDanhSach;
-  // Thay đổi: Hiển thị số lượng danh sách sản phẩm thay vì tổng số lượng
-  soLuongGio.value = newDanhSach.length;
+  soLuongGio.value = newDanhSach.reduce((tong, sp) => tong + sp.soLuong, 0);
   sessionStorage.removeItem("gioHang");
   localStorage.removeItem("gioHang");
 };
@@ -654,8 +674,7 @@ const capNhatGioHangLocal = (newDanhSach) => {
 
 const xoaSanPham = (idSanPhamChiTiet) => {
   danhSachGio.value = danhSachGio.value.filter(sp => sp.idSanPhamChiTiet !== idSanPhamChiTiet);
-  // Thay đổi: Hiển thị số lượng danh sách sản phẩm thay vì tổng số lượng
-  soLuongGio.value = danhSachGio.value.length;
+  soLuongGio.value = danhSachGio.value.reduce((tong, sp) => tong + sp.soLuong, 0);
 };
 
 
@@ -684,3 +703,7 @@ onUnmounted(() => {
 });
 </script>
 
+
+<style scoped>
+/* Giữ nguyên phần CSS */
+</style>

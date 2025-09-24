@@ -92,13 +92,11 @@
         <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
           <div class="col-6 col-sm-4 col-md-3 col-lg-2" v-for="product in bestSellers" :key="product.id">
             <div class="card-product position-relative text-center shadow-sm rounded-3 overflow-hidden">
-              <!-- HOT Badge -->
-              <span class="badge bg-danger position-absolute top-0 start-0 m-2">Hot</span>
+              <!-- HOT Corner Ribbon -->
+              <div class="corner-ribbon ribbon-hot">HOT</div>
 
-              <!-- Giảm giá -->
-              <span v-if="product.discount > 0" class="badge bg-danger discount-badge position-absolute top-0 end-0 m-2">
-                -{{ product.discount }}%
-              </span>
+              <!-- Discount Badge -->
+              <span v-if="product.discount > 0" class="discount-badge">-{{ product.discount }}%</span>
 
               <!-- Ảnh sản phẩm -->
               <router-link :to="`/coolmen/client-san-pham-detail/${product.id}`" class="image-wrapper d-block position-relative">
@@ -116,19 +114,19 @@
               <!-- Giá sản phẩm -->
               <div class="price-display mt-1">
                 <template v-if="product.discount > 0 && product.originalPriceRange">
-                  <span class="text-muted text-decoration-line-through me-1 small">
+                  <div class="text-muted text-decoration-line-through small">
                     {{ formatPrice(product.originalPriceRange.min) }}
                     <template v-if="product.originalPriceRange.min !== product.originalPriceRange.max">
                       - {{ formatPrice(product.originalPriceRange.max) }}
                     </template>
-                  </span>
+                  </div>
                 </template>
-                <span class="text-dark fw-bold">
+                <div class="text-dark fw-bold">
                   {{ formatPrice(product.priceRange.min) }}
                   <template v-if="product.priceRange.min !== product.priceRange.max">
                     - {{ formatPrice(product.priceRange.max) }}
                   </template>
-                </span>
+                </div>
               </div>
 
               <!-- Số lượng đã bán -->
@@ -195,10 +193,11 @@
         <transition-group name="grid" tag="div" class="row g-3 justify-content-center" appear>
           <div class="col-6 col-sm-4 col-md-3 col-lg-2" v-for="product in highlightProducts" :key="product.id">
             <div class="card-product position-relative text-center shadow-sm rounded-3 overflow-hidden">
-              <!-- Giảm giá -->
-              <span v-if="product.discount > 0" class="badge bg-danger discount-badge position-absolute top-0 end-0 m-2">
-                -{{ product.discount }}%
-              </span>
+              <!-- NEW Corner Ribbon -->
+              <div class="corner-ribbon ribbon-new">NEW</div>
+
+              <!-- Discount Badge -->
+              <span v-if="product.discount > 0" class="discount-badge">-{{ product.discount }}%</span>
 
               <!-- Ảnh sản phẩm -->
               <router-link :to="`/coolmen/client-san-pham-detail/${product.id}`" class="image-wrapper d-block position-relative">
@@ -222,22 +221,40 @@
                 <span class="ms-1 text-muted">({{ product.reviews }})</span>
               </div>
 
-              <!-- Giá sản phẩm -->
-              <div class="price-display mt-1 mb-2">
-                <template v-if="product.discount > 0">
-                  <span class="text-muted text-decoration-line-through me-1 small">
+                  <!-- Giá -->
+              <div class="text-center mt-1">
+                <!-- Nếu có giảm giá và có originalPriceRange -->
+                <template v-if="product.discount > 0 && product.originalPriceRange && product.priceRange">
+                  <div class="text-muted text-decoration-line-through small">
                     {{ formatPrice(product.originalPriceRange.min) }}
                     <template v-if="product.originalPriceRange.min !== product.originalPriceRange.max">
                       - {{ formatPrice(product.originalPriceRange.max) }}
                     </template>
-                  </span>
+                  </div>
+                  <div class="fw-bold text-dark">
+                    {{ formatPrice(product.priceRange.min) }}
+                    <template v-if="product.priceRange.min !== product.priceRange.max">
+                      - {{ formatPrice(product.priceRange.max) }}
+                    </template>
+                  </div>
                 </template>
-                <span class="text-dark fw-bold">
-                  {{ formatPrice(product.priceRange.min) }}
-                  <template v-if="product.priceRange.min !== product.priceRange.max">
-                    - {{ formatPrice(product.priceRange.max) }}
-                  </template>
-                </span>
+
+                <!-- Không giảm giá nhưng có priceRange -->
+                <template v-else-if="product.priceRange">
+                  <div class="fw-bold text-dark">
+                    {{ formatPrice(product.priceRange.min) }}
+                    <template v-if="product.priceRange.min !== product.priceRange.max">
+                      - {{ formatPrice(product.priceRange.max) }}
+                    </template>
+                  </div>
+                </template>
+
+                <!-- Không có giá -->
+                <template v-else>
+                  <div class="fw-bold text-dark">
+                    Liên hệ
+                  </div>
+                </template>
               </div>
             </div>
           </div>
@@ -373,10 +390,47 @@ export default {
 /* Card Product Styling */
 .card-product {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 .card-product:hover {
   transform: translateY(-5px);
   box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+}
+.corner-ribbon {
+  width: 120px;
+  background: #e63946;
+  color: #fff;
+  position: absolute;
+  top: 12px;
+  left: -35px;
+  text-align: center;
+  line-height: 28px;
+  letter-spacing: 1px;
+  transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
+  z-index: 5;
+  font-weight: 700;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+}
+.ribbon-hot {
+  background: linear-gradient(135deg, #e63946 0%, #dc2626 100%);
+}
+.ribbon-new {
+  background: linear-gradient(135deg, #FFC107 0%, #FFA000 100%);
+}
+.discount-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #ff3b30;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+  z-index: 6;
 }
 .image-wrapper {
   position: relative;
@@ -669,6 +723,18 @@ export default {
   font-size: 2rem;
   color: #ccc;
 }
+
+/* ✅ CSS để đảm bảo chiều cao bằng nhau cho card sản phẩm */
+.sold-quantity {
+  margin-top: auto;
+}
+
+.price-display {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
 </style>
 
 <script setup>
@@ -723,6 +789,18 @@ function formatPrice(value) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
 }
 
+// Tính tổng tồn kho khả dụng của 1 sản phẩm từ danh sách chi tiết
+function getTotalAvailableQuantity(item) {
+  const ctspList = item?.chiTietSanPham || []
+  return ctspList.reduce((sum, ct) => {
+    const qty =
+      (typeof ct.soLuongTon === 'number' ? ct.soLuongTon : undefined) ??
+      (typeof ct.soLuong === 'number' ? ct.soLuong : undefined) ??
+      (typeof ct.soLuongTrongKho === 'number' ? ct.soLuongTrongKho : 0)
+    return sum + (Number.isFinite(qty) ? qty : 0)
+  }, 0)
+}
+
 onMounted(async () => {
   try {
     // Danh mục
@@ -737,6 +815,8 @@ onMounted(async () => {
     // Bán chạy
     const resBestsellers = await axios.get('http://localhost:8080/home/danh-sach')
     const rawProducts = resBestsellers.data.data
+      .filter(p => (p?.sanPham?.trangThai === 1))
+      .filter(p => getTotalAvailableQuantity(p) > 0)
       .filter(p => p.tongSoLuongBan > 0)
       .sort((a, b) => b.tongSoLuongBan - a.tongSoLuongBan)
       .slice(0, 6)
@@ -818,7 +898,9 @@ const newProducts = ref([])
 const fetchNewProducts = async () => {
   try {
     const res = await axios.get('http://localhost:8080/home/danh-sach')
-    const data = res.data.data || []
+    const data = (res.data.data || [])
+      .filter(p => (p?.sanPham?.trangThai === 1))
+      .filter(p => getTotalAvailableQuantity(p) > 0)
 
     // Sắp xếp theo ngày tạo giảm dần (mới nhất trước)
     const sorted = data.slice().sort((a, b) => {
@@ -885,7 +967,9 @@ const fetchHighlightProducts = async () => {
   try {
     const res = await axios.get('http://localhost:8080/home/danh-sach') // reuse same API
     const data = res.data.data
-
+      .filter(p => (p?.sanPham?.trangThai === 1))
+      .filter(p => getTotalAvailableQuantity(p) > 0)
+  
     // Tính điểm trung bình đánh giá và sắp xếp
     const processed = await Promise.all(data.map(async item => {
       const ctspList = item.chiTietSanPham?.filter(ct => ct.trangThai === 1) || []

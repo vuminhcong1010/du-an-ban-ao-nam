@@ -798,7 +798,7 @@ const getTotalWeight = () => {
     const totalWeight = order.value.danhSachSanPham.reduce((total, item) => {
         const weightKg = item.trongLuong || 0;
         // Chuyển đổi kg sang gram và cộng dồn
-        return total + (weightKg * item.soLuong * 1000);
+        return total + (weightKg * item.soLuong);
     }, 0);
 
     // GHN yêu cầu trọng lượng tối thiểu là 100g, nên cần kiểm tra và gán giá trị tối thiểu
@@ -818,13 +818,22 @@ const calculateUpdateSummary = async () => {
 
     let newTotal = tempOrder.value.danhSachSanPham.reduce((sum, item) => sum + item.thanhTien, 0);
     let addressChange = changesQueue.value.find(c => c.type === 'address');
-    let addressForShipping = addressChange ? addressChange.address : order.value.selectedAddressDetail;
+    // Nếu không đổi địa chỉ thì fallback dùng địa chỉ gốc trong order
+    let addressForShipping = addressChange 
+    ? addressChange.address 
+    : (order.value.selectedAddressDetail || {
+          tinhThanhPho: order.value.tinhThanhPho,
+          quanHuyen: order.value.quanHuyen,
+          xaPhuong: order.value.xaPhuong
+      });
      const weight = getTotalWeight(); // Tính tổng trọng lượng đơn hàng
 
     shippingServices.value = {};
     selectedShippingFee.value = 0;
 
-    if (addressChange || (changesQueue.value.length > 0 && !showUpdateDetails.value)) {
+    // if (addressChange || (changesQueue.value.length > 0 && !showUpdateDetails.value)) {
+    // if (addressChange || changesQueue.value.length > 0) {
+    if (addressChange) {
         isLoading.value = true;
         try {
             const toProvinceId = await getProvinceIdByName(addressForShipping.tinhThanhPho);

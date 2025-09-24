@@ -184,7 +184,6 @@
                                                     star <= Math.round(allProducts.rating) ? 'bi-star-fill text-warning' : 'bi-star text-muted'
                                                 ]"></i>
                                             </span>
-                                            <small>({{ allProducts.quantity }})</small>
                                         </div>
 
                                         <div class="price-section">

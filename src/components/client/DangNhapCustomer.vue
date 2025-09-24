@@ -62,7 +62,7 @@
 
 
           <div class="form-extra">
-            <router-link to="/quen-mat-khau" class="forgot">Quên mật khẩu?</router-link>
+            <router-link to="/coolmen/quen-mat-khau" class="forgot">Quên mật khẩu?</router-link>
           </div>
 
 
@@ -487,14 +487,3 @@ h1 {
   .orb { left: 50%; transform: translate(-50%,-50%); width: 420px; height:420px; }
 }
 </style>
-
-
-
-
-
-
-
-
-
-
-

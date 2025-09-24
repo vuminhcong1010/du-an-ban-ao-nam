@@ -171,7 +171,6 @@
   </div>
 </template>
 
-
 <script setup>
 import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { Client } from '@stomp/stompjs'
@@ -195,11 +194,35 @@ const messagesContainer = ref(null)
 let ChatAI = ref(true)
 const isUser = Cookies.get("token")
 
+// Track các tin nhắn local đang chờ xác nhận từ server
+const pendingMessages = ref(new Set())
+
+// --- Utility: cleanup connection / subscriptions ---
+function cleanupStompClient() {
+  try {
+    if (stompClient) {
+      // hủy tất cả subscription (dành cho employee use-case)
+      activeSubscriptions.forEach(sub => {
+        try { sub.unsubscribe() } catch(e){ /* ignore */ }
+      })
+      activeSubscriptions.clear()
+      // deactivate stomp client
+      try { stompClient.deactivate() } catch (e) { /* ignore */ }
+      stompClient = null
+    }
+  } catch (e) {
+    console.error("❌ Lỗi cleanup stomp:", e)
+  } finally {
+    isConnected.value = false
+  }
+}
+
 // Hàm tải lịch sử tin nhắn
-const loadMessageHistory = async (roomId) => {
+const loadMessageHistory = async (rId) => {
+  if (!rId) return
   isLoadingMessages.value = true
   try {
-    const response = await axios.get(`http://localhost:8080/lich-su-phong-chat/${roomId}`)
+    const response = await axios.get(`http://localhost:8080/lich-su-phong-chat/${rId}`)
     const history = response.data.data || []
     messages.value = history.map(msg => ({
       sender: msg.sender,
@@ -225,40 +248,418 @@ const scrollToBottom = () => {
 watch(messages, () => {
   scrollToBottom()
 }, { deep: true })
+
+// Gửi tin nhắn (optimistic UI)
+function sendMessage() {
+  if (!message.value.trim() || !roomId.value) return
+
+  const messageContent = message.value
+  const messageTimestamp = new Date().toISOString()
+  const messageId = `local-${Date.now()}-${Math.random()}`
+
+  const customerMessage = {
+    id: messageId,
+    sender: isEmployee.value ? 'Nhân viên' : 'Khách hàng',
+    content: messageContent,
+    timestamp: new Date(messageTimestamp).toLocaleTimeString(),
+    isLocal: true,
+    isPending: true
+  }
+
+  messages.value.push(customerMessage)
+  pendingMessages.value.add(messageId)
+
+  if (stompClient && stompClient.connected) {
+    try {
+      stompClient.publish({
+        destination: `/app/room/${roomId.value}/send`,
+        body: JSON.stringify({
+          sender: customerMessage.sender,
+          content: messageContent,
+          timestamp: messageTimestamp,
+          localId: messageId,
+          roomId: roomId.value // Thêm roomId để server biết phòng nào
+        })
+      })
+    } catch (error) {
+      console.error('Lỗi gửi tin nhắn:', error)
+      toast.error('Không thể gửi tin nhắn.')
+      const index = messages.value.findIndex(m => m.id === messageId)
+      if (index > -1) messages.value.splice(index, 1)
+      pendingMessages.value.delete(messageId)
+    }
+  } else {
+    toast.error('WebSocket chưa kết nối.')
+    const index = messages.value.findIndex(m => m.id === messageId)
+    if (index > -1) messages.value.splice(index, 1)
+    pendingMessages.value.delete(messageId)
+  }
+
+  message.value = ''
+}
+
+// Kết nối WebSocket cho user (client)
+function connectWebSocket() {
+  if (!roomId.value) return
+
+  // cleanup nếu có connection cũ
+  cleanupStompClient()
+
+  const socket = new SockJS('/ws')
+  stompClient = new Client({
+    webSocketFactory: () => socket,
+    reconnectDelay: 5000,
+    heartbeatIncoming: 4000,
+    heartbeatOutgoing: 4000,
+    onConnect: () => {
+      console.log('✅ WebSocket connected for client')
+      isConnected.value = true
+      // subscribe phòng hiện tại (chỉ 1 subscribe cho client)
+      const subscription = stompClient.subscribe(`/topic/room/${roomId.value}/messages`, (msg) => {
+        try {
+          const body = JSON.parse(msg.body)
+          console.log('📨 Client nhận tin nhắn:', body)
+
+          if (body.localId && pendingMessages.value.has(body.localId)) {
+            const localMessageIndex = messages.value.findIndex(m => m.id === body.localId)
+            if (localMessageIndex > -1) {
+              messages.value[localMessageIndex] = {
+                ...messages.value[localMessageIndex],
+                isPending: false,
+                isLocal: false,
+                timestamp: new Date(body.timestamp).toLocaleTimeString()
+              }
+            }
+            pendingMessages.value.delete(body.localId)
+            return
+          }
+
+          const messageData = {
+            id: `server-${body.timestamp}-${Math.random()}`,
+            sender: body.sender,
+            content: body.content,
+            timestamp: new Date(body.timestamp).toLocaleTimeString(),
+            isLocal: false,
+            isPending: false
+          }
+
+          const isDuplicate = messages.value.some(m => 
+            m.content === messageData.content && 
+            m.sender === messageData.sender &&
+            Math.abs(new Date(`1970-01-01 ${m.timestamp}`).getTime() - 
+                    new Date(`1970-01-01 ${messageData.timestamp}`).getTime()) < 2000
+          )
+
+          if (!isDuplicate) messages.value.push(messageData)
+        } catch (error) {
+          console.error('Lỗi parse message:', error)
+        }
+      })
+
+      // lưu subscription tạm để có thể unsubscribe khi rời phòng
+      activeSubscriptions.set(roomId.value, subscription)
+    },
+    onStompError: (err) => {
+      console.error("STOMP Error:", err)
+    },
+    onDisconnect: () => {
+      isConnected.value = false
+    }
+  })
+  stompClient.activate()
+}
+
+// Kết nối WebSocket cho employee (nhiều phòng) - SỬA CHÍNH Ở ĐÂY
+function connectWebSocketForEmployee() {
+  if (!danhSachPhongChat.value || danhSachPhongChat.value.length === 0) return
+
+  cleanupStompClient()
+
+  const socket = new SockJS('/ws')
+  stompClient = new Client({
+    webSocketFactory: () => socket,
+    reconnectDelay: 5000,
+    heartbeatIncoming: 4000,
+    heartbeatOutgoing: 4000,
+    onConnect: () => {
+      console.log('✅ WebSocket connected for employee')
+      isConnected.value = true
+      
+      // Subscribe tất cả phòng chat của nhân viên
+      danhSachPhongChat.value.forEach(room => {
+        const roomIdToSubscribe = typeof room === 'object' ? room.id : room
+        console.log(`📡 Employee subscribing to room: ${roomIdToSubscribe}`)
+        
+        const subscription = stompClient.subscribe(`/topic/room/${roomIdToSubscribe}/messages`, (msg) => {
+          try {
+            const body = JSON.parse(msg.body)
+            console.log(`📨 Employee nhận tin nhắn từ phòng ${roomIdToSubscribe}:`, body)
+
+            // Nếu là phòng đang được chọn, hiển thị tin nhắn
+            if (roomIdToSubscribe === roomId.value) {
+              if (body.localId && pendingMessages.value.has(body.localId)) {
+                const localMessageIndex = messages.value.findIndex(m => m.id === body.localId)
+                if (localMessageIndex > -1) {
+                  messages.value[localMessageIndex] = {
+                    ...messages.value[localMessageIndex],
+                    isPending: false,
+                    isLocal: false,
+                    timestamp: new Date(body.timestamp).toLocaleTimeString()
+                  }
+                }
+                pendingMessages.value.delete(body.localId)
+                return
+              }
+
+              const messageData = {
+                id: `server-${body.timestamp}-${Math.random()}`,
+                roomId: roomIdToSubscribe,
+                sender: body.sender,
+                content: body.content,
+                timestamp: new Date(body.timestamp).toLocaleTimeString(),
+                isLocal: false,
+                isPending: false
+              }
+
+              const isDuplicate = messages.value.some(m => 
+                m.content === messageData.content && 
+                m.sender === messageData.sender &&
+                Math.abs(new Date(`1970-01-01 ${m.timestamp}`).getTime() - 
+                        new Date(`1970-01-01 ${messageData.timestamp}`).getTime()) < 2000
+              )
+
+              if (!isDuplicate) {
+                messages.value.push(messageData)
+              }
+            } else {
+              // Tin nhắn từ phòng khác - cập nhật thông báo
+              console.log(`🔔 Tin nhắn mới từ phòng ${roomIdToSubscribe}`)
+              
+              // Cập nhật lastMessage và unreadCount cho phòng đó
+              const roomIndex = danhSachPhongChat.value.findIndex(r => 
+                (typeof r === 'object' ? r.id : r) === roomIdToSubscribe
+              )
+              
+              if (roomIndex > -1) {
+                // Chỉ tăng unreadCount nếu tin nhắn không phải từ nhân viên
+                if (body.sender !== 'Nhân viên') {
+                  danhSachPhongChat.value[roomIndex].unreadCount = 
+                    (danhSachPhongChat.value[roomIndex].unreadCount || 0) + 1
+                }
+                
+                danhSachPhongChat.value[roomIndex].lastMessage = body.content
+                danhSachPhongChat.value[roomIndex].lastMessageTime = 
+                  new Date(body.timestamp).toLocaleTimeString()
+                
+                // Hiển thị notification toast
+                if (body.sender !== 'Nhân viên') {
+                  toast.info(`Tin nhắn mới từ phòng ${roomIdToSubscribe}: ${body.content}`)
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Lỗi parse message:', error)
+          }
+        })
+        
+        activeSubscriptions.set(roomIdToSubscribe, subscription)
+      })
+    },
+    onStompError: (err) => {
+      console.error("STOMP Error:", err)
+    },
+    onDisconnect: () => {
+      isConnected.value = false
+    }
+  })
+  stompClient.activate()
+}
+
+// Timeout cleanup tin nhắn pending quá lâu
+setInterval(() => {
+  pendingMessages.value.forEach(messageId => {
+    const messageIndex = messages.value.findIndex(m => m.id === messageId && m.isPending)
+    if (messageIndex > -1) {
+      messages.value[messageIndex].isPending = false
+      messages.value[messageIndex].failed = true
+    }
+    pendingMessages.value.delete(messageId)
+  })
+}, 10000)
+
+// Chọn phòng (khi employee click) - SỬA CHÍNH Ở ĐÂY
+function selectRoom(room) {
+  selectedRoom.value = room
+  const newRoomId = typeof room === 'object' ? room.id : room
+  
+  // Cập nhật roomId hiện tại
+  roomId.value = newRoomId
+  
+  // Reset unreadCount khi vào phòng
+  const roomIndex = danhSachPhongChat.value.findIndex(r => 
+    (typeof r === 'object' ? r.id : r) === newRoomId
+  )
+  if (roomIndex > -1) {
+    danhSachPhongChat.value[roomIndex].unreadCount = 0
+  }
+  
+  // Xóa tin nhắn cũ và load lịch sử mới
+  messages.value = []
+  loadMessageHistory(roomId.value)
+  
+  console.log(`🔄 Employee chuyển sang phòng: ${newRoomId}`)
+}
+
+onBeforeUnmount(() => {
+  cleanupStompClient()
+})
+
+// Hàm yêu cầu nhân viên / chuyển AI <-> nhân viên
+async function yeuCauNhanVien() {
+  // toggle chế độ
+  ChatAI.value = !ChatAI.value
+  toast.success(ChatAI.value ? 'Đã chuyển sang chat với AI' : 'Đã chuyển sang chat với nhân viên')
+
+  // leave current room subscription nếu có
+  if (!roomId.value) {
+    console.warn("⚠ Không có roomId để hủy đăng ký.");
+  } else {
+    const subscription = activeSubscriptions.get(roomId.value);
+    if (subscription) {
+      try { subscription.unsubscribe(); } catch (e) {}
+      activeSubscriptions.delete(roomId.value);
+      console.log(`✅ Đã hủy đăng ký phòng ${roomId.value}`);
+    }
+  }
+
+  // reset trạng thái phòng
+  roomId.value = ''
+  selectedRoom.value = ''
+  messages.value = []
+
+  // xử lý cho khách (không đăng nhập)
+  if (!isUser) {
+    isEmployee.value = false
+    let thongTinCookie = Cookies.get("thongTinKhachHang")
+
+    // nếu không có cookie thông tin khách => tạo guest tạm
+    if (!thongTinCookie) {
+      const guest = {
+        maKhachHang: `guest-${Date.now()}`,
+        tenKhachHang: 'Khách'
+      }
+      Cookies.set("thongTinKhachHang", JSON.stringify(guest), { expires: 1/24 }) // tồn tại 1 giờ
+      thongTinCookie = Cookies.get("thongTinKhachHang")
+      console.log("ℹ Tạo guest tạm:", guest)
+    }
+
+    let thongTin
+    try {
+      thongTin = JSON.parse(thongTinCookie)
+    } catch (e) {
+      console.error("❌ Cookie 'thongTinKhachHang' không hợp lệ JSON:", e)
+      // fallback: tạo guest
+      const guest = { maKhachHang: `guest-${Date.now()}`, tenKhachHang: 'Khách' }
+      Cookies.set("thongTinKhachHang", JSON.stringify(guest), { expires: 1/24 })
+      thongTin = guest
+    }
+
+    if (!ChatAI.value) {
+      // user muốn chat với nhân viên -> tạo room (server có thể trả false nếu không có NV online)
+      const idKH = thongTin.maKhachHang
+      try {
+        const response = await axios.get(`http://localhost:8080/create-room/${idKH}`);
+        if (response.data.data === false) {
+          toast.info("Hiện tại không có nhân viên nào đang online, vui lòng thử lại sau")
+          // fallback về waiting-room
+          roomId.value = 'waiting-room'
+          connectWebSocket()
+        } else {
+          roomId.value = response.data.message // server trả roomId
+          connectWebSocket()
+        }
+      } catch (error) {
+        console.error('Lỗi khi tạo phòng:', error);
+        // fallback về waiting-room
+        roomId.value = 'waiting-room'
+        connectWebSocket()
+      }
+    } else {
+      // Chat với AI / waiting-room
+      roomId.value = 'waiting-room'
+      connectWebSocket()
+    }
+
+  } else {
+    // xử lý cho nhân viên (giữ nguyên flow cũ)
+    isEmployee.value = true
+    const token = Cookies.get("token")
+    let payload = null
+    try { payload = JSON.parse(atob(token.split('.')[1])) } catch(e){ console.error("❌ JWT parse error", e); return }
+    const idNV = payload.idNv
+    if (!idNV) {
+      console.error("❌ Không tìm thấy idNV cho nhân viên")
+      return
+    }
+
+    try {
+      const res = await axios.get(`http://localhost:8080/danh-sach-phong-chat/${idNV}`);
+      danhSachPhongChat.value = res.data.data.map(roomId => ({
+        id: roomId,
+        name: `Phòng ${roomId}`,
+        tenKhachHang: roomId.split('-')[0],
+        lastMessage: '',
+        lastMessageTime: '',
+        unreadCount: 0
+      }));
+      connectWebSocketForEmployee();
+      if (danhSachPhongChat.value && danhSachPhongChat.value.length > 0) {
+        selectRoom(danhSachPhongChat.value[0]);
+        loadMessageHistory(danhSachPhongChat.value[0].id);
+      }
+    } catch (err) {
+      console.error("❌ Lỗi khi lấy danh sách phòng chat:", err);
+    }
+  }
+}
+
+// --- Mounted: nếu user chưa login thì cho phép vào waiting-room (tạo guest tạm nếu cần) ---
 onMounted(async () => {
   if (!isUser) {
     isEmployee.value = false
     const thongTinCookie = Cookies.get("thongTinKhachHang")
     
     if (!thongTinCookie) {
-      toast.error('Vui lòng đăng nhập để sử dụng chức năng này')
-      return
-    }
-    
-    let thongTin
-    try {
-      thongTin = JSON.parse(thongTinCookie)
-    } catch (e) {
-      console.error("❌ Cookie 'thongTinKhachHang' không hợp lệ JSON:", e)
+      // tạo guest tạm và vào waiting-room luôn (không bắt đăng nhập)
+      const guest = {
+        maKhachHang: `guest-${Date.now()}`,
+        tenKhachHang: 'Khách'
+      }
+      Cookies.set("thongTinKhachHang", JSON.stringify(guest), { expires: 1/24 }) // 1 giờ
+      roomId.value = 'waiting-room'
+      connectWebSocket()
       return
     }
 
+    // nếu có cookie hợp lệ -> connect (vẫn vào waiting-room mặc định)
+    roomId.value = 'waiting-room'
     connectWebSocket()
 
-    // ❌ Bỏ việc gọi trực tiếp loadMessageHistory ở đây
-    // Vì lúc này roomId.value thường chưa có
   } else {
+    // Employee flow (giữ nguyên)
     isEmployee.value = true
     const token = Cookies.get("token")
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    let idNV = payload.idNv
+    let payload = null
+    try { payload = JSON.parse(atob(token.split('.')[1])) } catch(e){ console.error("❌ JWT parse error", e); return }
+    const idNV = payload.idNv
     
     if (!idNV) {
       console.error("❌ Không tìm thấy idNV cho nhân viên")
       return
     }
     
-    await axios.get(`http://localhost:8080/danh-sach-phong-chat/${idNV}`).then(res => {
+    try {
+      const res = await axios.get(`http://localhost:8080/danh-sach-phong-chat/${idNV}`)
       danhSachPhongChat.value = res.data.data.map(roomId => ({
         id: roomId,
         name: `Phòng ${roomId}`,
@@ -273,340 +674,20 @@ onMounted(async () => {
         selectRoom(danhSachPhongChat.value[0])
         loadMessageHistory(danhSachPhongChat.value[0].id)
       }
-    }).catch((err) => {
+    } catch (err) {
       console.error("❌ Lỗi khi lấy danh sách phòng chat:", err)
-    })
+    }
   }
 })
 
-// 👇 Watch để user load khi roomId thay đổi
+// Watch roomId: khi thay đổi (không phải waiting-room) load lịch sử
 watch(roomId, async (newVal) => {
   if (newVal && newVal !== 'waiting-room') {
-    console.log("📌 User load history khi roomId có:", newVal)
     await loadMessageHistory(newVal)
   }
 })
-
-// ✅ Giải pháp: Thêm flag để phân biệt tin nhắn local và từ server
-const pendingMessages = ref(new Set()) // Track các tin nhắn đang chờ xác nhận
-
-// ✅ Hàm sendMessage với optimistic UI update
-function sendMessage() {
-  if (!message.value.trim() || !roomId.value) return
-
-  const messageContent = message.value
-  const messageTimestamp = new Date().toISOString()
-  const messageId = `local-${Date.now()}-${Math.random()}` // ID unique cho tin nhắn local
-  
-  const customerMessage = {
-    id: messageId,
-    sender: isEmployee.value ? 'Nhân viên' : 'Khách hàng',
-    content: messageContent,
-    timestamp: new Date(messageTimestamp).toLocaleTimeString(),
-    isLocal: true, // Flag đánh dấu tin nhắn local
-    isPending: true // Đang chờ xác nhận từ server
-  }
-
-  // Thêm tin nhắn vào UI ngay lập tức (optimistic update)
-  messages.value.push(customerMessage)
-  pendingMessages.value.add(messageId)
-
-  if (stompClient && stompClient.connected) {
-    try {
-      stompClient.publish({
-        destination: `/app/room/${roomId.value}/send`,
-        body: JSON.stringify({
-          sender: customerMessage.sender,
-          content: messageContent,
-          timestamp: messageTimestamp,
-          localId: messageId // Gửi localId để có thể mapping
-        })
-      })
-    } catch (error) {
-      console.error('Lỗi gửi tin nhắn:', error)
-      toast.error('Không thể gửi tin nhắn.')
-      
-      // Xóa tin nhắn khỏi UI nếu gửi thất bại
-      const index = messages.value.findIndex(m => m.id === messageId)
-      if (index > -1) {
-        messages.value.splice(index, 1)
-      }
-      pendingMessages.value.delete(messageId)
-    }
-  } else {
-    toast.error('WebSocket chưa kết nối.')
-    // Xóa tin nhắn khỏi UI nếu không có kết nối
-    const index = messages.value.findIndex(m => m.id === messageId)
-    if (index > -1) {
-      messages.value.splice(index, 1)
-    }
-    pendingMessages.value.delete(messageId)
-  }
-
-  message.value = ''
-}
-
-// ✅ Cải thiện connectWebSocket để xử lý tin nhắn từ server
-function connectWebSocket() {
-  if (!roomId.value) return
-  
-  const socket = new SockJS('/ws')
-  stompClient = new Client({
-    webSocketFactory: () => socket,
-    reconnectDelay: 5000,
-    heartbeatIncoming: 4000,
-    heartbeatOutgoing: 4000,
-    onConnect: () => {
-      isConnected.value = true
-      stompClient.subscribe(`/topic/room/${roomId.value}/messages`, (msg) => {
-        try {
-          const body = JSON.parse(msg.body)
-          
-          // Nếu có localId, tìm và cập nhật tin nhắn local
-          if (body.localId && pendingMessages.value.has(body.localId)) {
-            const localMessageIndex = messages.value.findIndex(m => m.id === body.localId)
-            if (localMessageIndex > -1) {
-              // Cập nhật tin nhắn local thành tin nhắn đã được server xác nhận
-              messages.value[localMessageIndex] = {
-                ...messages.value[localMessageIndex],
-                isPending: false,
-                isLocal: false,
-                timestamp: new Date(body.timestamp).toLocaleTimeString()
-              }
-            }
-            pendingMessages.value.delete(body.localId)
-            return // Không thêm tin nhắn mới
-          }
-          
-          // Tin nhắn từ người khác hoặc từ server không có localId
-          const messageData = {
-            id: `server-${body.timestamp}-${Math.random()}`,
-            sender: body.sender,
-            content: body.content,
-            timestamp: new Date(body.timestamp).toLocaleTimeString(),
-            isLocal: false,
-            isPending: false
-          }
-
-          // Kiểm tra duplicate dựa trên content và thời gian gần nhau
-          const isDuplicate = messages.value.some(m => 
-            m.content === messageData.content && 
-            m.sender === messageData.sender &&
-            Math.abs(new Date(`1970-01-01 ${m.timestamp}`).getTime() - 
-                    new Date(`1970-01-01 ${messageData.timestamp}`).getTime()) < 2000 // 2 giây
-          )
-
-          if (!isDuplicate) {
-            messages.value.push(messageData)
-          }
-        } catch (error) {
-          console.error('Lỗi parse message:', error)
-        }
-      })
-    }
-  })
-  stompClient.activate()
-}
-
-// ✅ Tương tự cho connectWebSocketForEmployee
-function connectWebSocketForEmployee() {
-  const socket = new SockJS('/ws')
-  stompClient = new Client({
-    webSocketFactory: () => socket,
-    reconnectDelay: 5000,
-    heartbeatIncoming: 4000,
-    heartbeatOutgoing: 4000,
-    onConnect: () => {
-      isConnected.value = true
-      danhSachPhongChat.value.forEach(room => {
-        const roomIdToSubscribe = typeof room === 'object' ? room.id : room
-        const subscription = stompClient.subscribe(`/topic/room/${roomIdToSubscribe}/messages`, (msg) => {
-          try {
-            const body = JSON.parse(msg.body)
-            
-            // Xử lý tin nhắn cho phòng hiện tại
-            if (roomIdToSubscribe === roomId.value) {
-              // Nếu có localId, cập nhật tin nhắn local
-              if (body.localId && pendingMessages.value.has(body.localId)) {
-                const localMessageIndex = messages.value.findIndex(m => m.id === body.localId)
-                if (localMessageIndex > -1) {
-                  messages.value[localMessageIndex] = {
-                    ...messages.value[localMessageIndex],
-                    isPending: false,
-                    isLocal: false,
-                    timestamp: new Date(body.timestamp).toLocaleTimeString()
-                  }
-                }
-                pendingMessages.value.delete(body.localId)
-                return
-              }
-              
-              // Tin nhắn từ người khác
-              const messageData = {
-                id: `server-${body.timestamp}-${Math.random()}`,
-                roomId: roomIdToSubscribe,
-                sender: body.sender,
-                content: body.content,
-                timestamp: new Date(body.timestamp).toLocaleTimeString(),
-                isLocal: false,
-                isPending: false
-              }
-              
-              // Kiểm tra duplicate
-              const isDuplicate = messages.value.some(m => 
-                m.content === messageData.content && 
-                m.sender === messageData.sender &&
-                Math.abs(new Date(`1970-01-01 ${m.timestamp}`).getTime() - 
-                        new Date(`1970-01-01 ${messageData.timestamp}`).getTime()) < 2000
-              )
-
-              if (!isDuplicate) {
-                messages.value.push(messageData)
-              }
-            }
-          } catch (error) {
-            console.error('Lỗi parse message:', error)
-          }
-        })
-        activeSubscriptions.set(roomIdToSubscribe, subscription)
-      })
-    }
-  })
-  stompClient.activate()
-
-// ✅ Timeout để cleanup các tin nhắn pending quá lâu
-setTimeout(() => {
-  pendingMessages.value.forEach(messageId => {
-    const messageIndex = messages.value.findIndex(m => m.id === messageId && m.isPending)
-    if (messageIndex > -1) {
-      // Đánh dấu tin nhắn là failed hoặc xóa nó
-      messages.value[messageIndex].isPending = false
-      messages.value[messageIndex].failed = true
-    }
-    pendingMessages.value.delete(messageId)
-  })
-}, 10000) // 10 giây timeout
-}
-
-function selectRoom(room) {
-  selectedRoom.value = room
-  roomId.value = typeof room === 'object' ? room.id : room
-  messages.value = []
-  loadMessageHistory(roomId.value)
-}
-
-onBeforeUnmount(() => {
-  if (stompClient) {
-    activeSubscriptions.forEach(subscription => subscription.unsubscribe())
-    activeSubscriptions.clear()
-    stompClient.deactivate()
-  }
-})
-
-async function yeuCauNhanVien() {
-  
-  console.log(roomId.value);
-  if(ChatAI.value===true){
-    ChatAI.value=false
-    toast.success('Đã chuyển sang chat với nhân viên')
-  }else{
-    ChatAI.value=true
-    toast.success('Đã chuyển sang chat với AI')
-  }
-  if (!roomId.value) {
-    console.warn("⚠ Không có roomId để hủy đăng ký.");
-  } else {
-    const subscription = activeSubscriptions.get(roomId.value);
-    if (subscription) {
-      subscription.unsubscribe();
-      activeSubscriptions.delete(roomId.value);
-      console.log(`✅ Đã hủy đăng ký phòng ${roomId.value}`);
-      toast.success(`Đã rời khỏi phòng ${roomId.value}`);
-    } else {
-      console.warn(`⚠ Không tìm thấy subscription cho phòng ${roomId.value}`);
-    }
-  }
-
-  roomId.value = '';
-  selectedRoom.value = '';
-  messages.value = [];
-
-  // Phần async xử lý user/employee
-  if (!isUser) {
-    // Xử lý khách hàng
-    isEmployee.value = false;
-    const thongTinCookie = Cookies.get("thongTinKhachHang");
-    
-    if (!thongTinCookie) {
-      toast.error('Vui lòng đăng nhập để sử dụng chức năng này');
-      return;
-    }
-    
-    let thongTin;
-    try {
-      thongTin = JSON.parse(thongTinCookie);
-    } catch (e) {
-      console.error("❌ Cookie 'thongTinKhachHang' không hợp lệ JSON:", e);
-      return;
-    }
-    if(ChatAI.value===false){
-      const idKH = thongTin.maKhachHang;
-    try {
-      const response = await axios.get(`http://localhost:8080/create-room/${idKH}`);
-      if (response.data.data === false) {   
-        toast.info("Hiện tại không có nhân viên nào đang online vui lòng thử lại sau");
-      } else {
-        roomId.value = response.data.message;
-      }
-      connectWebSocket();
-      
-    } catch (error) {
-      console.error('Lỗi khi tạo phòng:', error);
-    }
-  }else{
-    roomId.value = 'waiting-room'
-    connectWebSocket();
-  }
-    
-
-  } else {
-    // Xử lý nhân viên
-    isEmployee.value = true;
-    const token = Cookies.get("token");
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    let idNV = payload.idNv;
-
-    if (!idNV) {
-      console.error("❌ Không tìm thấy idNV cho nhân viên");
-      return;
-    }
-
-    try {
-      const res = await axios.get(`http://localhost:8080/danh-sach-phong-chat/${idNV}`);
-      danhSachPhongChat.value = res.data.data.map(roomId => ({
-        id: roomId,
-        name: `Phòng ${roomId}`,
-        tenKhachHang: roomId.split('-')[0],
-        lastMessage: '',
-        lastMessageTime: '',
-        unreadCount: 0
-      }));
-      console.log('Danh sách phòng chat:', res.data.data);
-
-      connectWebSocketForEmployee();
-
-      if (danhSachPhongChat.value && danhSachPhongChat.value.length > 0) {
-        selectRoom(danhSachPhongChat.value[0]);
-        loadMessageHistory(danhSachPhongChat.value[0].id);
-      }
-    } catch (err) {
-      console.error("❌ Lỗi khi lấy danh sách phòng chat:", err);
-    }
-  }
-}
-
-
 </script>
+
 
 
 <style scoped>

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Eye, Plus, Trash, Edit, Filter as FilterIcon } from 'lucide-vue-next';
 import Cookies from 'js-cookie';
 import { useToast } from 'vue-toastification';
-
+import Swal from 'sweetalert2'
 const token = Cookies.get('token');
 const res = ref([]);
 const totalItems = ref(0);
@@ -72,6 +72,16 @@ const add = async () => {
     return;
   }
   try {
+      const result = await Swal.fire({
+    title: 'Xác nhận xóa?',
+    text: 'Bạn có chắc muốn xóa dữ liệu này không?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Thêm',
+    cancelButtonText: 'Hủy'
+  });
     await axios.post("http://localhost:8080/co-ao/add", req.value, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -85,6 +95,16 @@ const add = async () => {
 };
 
 const update = async () => {
+    const result = await Swal.fire({
+    title: 'Xác nhận xóa?',
+    text: 'Bạn có chắc muốn xóa dữ liệu này không?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Update',
+    cancelButtonText: 'Hủy'
+  });
   if (!req.value.tenCoAo.trim()) {
     toast.error("Vui lòng nhập đầy đủ thông tin");
     return;
@@ -110,6 +130,21 @@ const update = async () => {
 };
 
 const remove = async (id) => {
+  const result = await Swal.fire({
+    title: 'Xác nhận xóa?',
+    text: 'Bạn có chắc muốn xóa dữ liệu này không?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Xóa',
+    cancelButtonText: 'Hủy'
+  });
+  if (!result.isConfirmed) {
+    toast.info('Hủy thao tác xóa');
+    console.log('User cancelled');
+    return;
+  }
   try {
     await axios.get(`http://localhost:8080/co-ao/delete/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
