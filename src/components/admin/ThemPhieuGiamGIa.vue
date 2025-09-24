@@ -497,11 +497,9 @@ export default {
     },
     validateTenPhieu() {
       const tenPhieuTrimmed = this.tenPhieu.trim();
-      const validNameRegex = /^[a-zA-Z0-9\sÀ-ỹ]*$/; // Cho phép chữ, số, khoảng trắng và ký tự tiếng Việt
+     
       if (!tenPhieuTrimmed) {
         this.errors.tenPhieu = "Tên phiếu là bắt buộc!";
-      } else if (!validNameRegex.test(tenPhieuTrimmed)) {
-        this.errors.tenPhieu = "Tên phiếu chỉ được chứa chữ, số, khoảng trắng và ký tự tiếng Việt!";
       } else if (tenPhieuTrimmed.length > 255) {
         this.errors.tenPhieu = "Tên phiếu không được vượt quá 255 ký tự!";
       } else {
