@@ -957,7 +957,7 @@ const calculateUpdateSummary = async () => {
     selectedShippingFee.value = 0;
 
 
-    if (addressChange || (changesQueue.value.length > 0 && !showUpdateDetails.value)) {
+    if (addressChange) {
         isLoading.value = true;
         try {
             const toProvinceId = await getProvinceIdByName(addressForShipping.tinhThanhPho);

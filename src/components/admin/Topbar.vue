@@ -24,11 +24,13 @@ if (!token) {
 } else {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
+    const payloadForTen = JSON.parse(decodeURIComponent(escape(atob(token.split('.')[1]))));
+
     const exp = payload.exp
     const now = Math.floor(Date.now() / 1000)
     image.value =`http://localhost:8080`+payload.anh
     console.log('image.value', payload.anh);
-    tenNhanVien.value = payload.tenNhanVien
+    tenNhanVien.value = payloadForTen.tenNhanVien
     console.log(token);
     vaiTro.value = payload.scope
     if (exp <= now) {
@@ -194,6 +196,9 @@ function removeToken(){
   background-color: #0a2c57 !important;
   color: white !important;
 }
-
+.fw-medium {
+    font-family:Arial, sans-serif;
+    font-weight: 500;
+}
   
 </style>

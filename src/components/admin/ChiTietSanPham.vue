@@ -220,7 +220,7 @@ import UpdateSanPham from './UpdateSanPham.vue'
 import AddChiTietSanPham from './AddChiTietSanPham.vue'
 import QRCode from 'qrcode'
 import Cookies from 'js-cookie'
-
+import Swal from 'sweetalert2'
 const token = Cookies.get('token')
 const toast = useToast();
 
@@ -393,8 +393,8 @@ function dongModal1() {
 // ============================
 // Xoá
 // ============================
-function remove(id) {
-    const result =  Swal.fire({
+async function  remove(id) {
+    const result = await Swal.fire({
                     title: 'Xác nhận chuyển trạng thái?',
                     text: 'Bạn có chắc muốn chuyển trạng thái?',
                     icon: 'question',
