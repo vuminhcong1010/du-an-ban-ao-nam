@@ -1,22 +1,17 @@
 <template>
   <div class="vnpay-return">
-    <div
-      class="message-box"
-      v-if="!isLoading"
-      :class="{ success: success, error: !success }"
-    >
+    <div class="message-box" v-if="!isLoading" :class="{ success: success, error: !success }">
       <h2 v-if="success">🎉 Thanh toán thành công!</h2>
       <h2 v-else>❌ Thanh toán thất bại!</h2>
 
       <p v-if="success">Cảm ơn bạn đã mua hàng tại cửa hàng của chúng tôi.</p>
-      <p v-else>Mã lỗi: {{ errorCode }}</p>
-      <p v-else>Vui lòng thử lại hoặc chọn phương thức thanh toán khác.</p>
+      <p v-else>
+        Mã lỗi: {{ errorCode }} <br />
+        Vui lòng thử lại hoặc chọn phương thức thanh toán khác.
+      </p>
 
-      <router-link
-        class="back-button"
-        :to="success ? { name: 'home' } : { name: 'client-Oder', params: { hoaDonId } }"
-        @click.native.prevent="handleBackClick"
-      >
+      <router-link class="back-button" :to="success ? { name: 'home' } : { name: 'client-Oder', params: { hoaDonId } }"
+        @click.native.prevent="handleBackClick">
         🔙 {{ success ? "Quay về trang chủ" : "Quay lại hóa đơn để thanh toán lại" }}
       </router-link>
     </div>
@@ -29,82 +24,101 @@
 
 <script setup>
 import { onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import axios from "axios";
+import Cookies from "js-cookie";
 import { useToast } from "vue-toastification";
 
 const route = useRoute();
-const router = useRouter();
 const toast = useToast();
 
 const success = ref(false);
 const errorCode = ref("");
-const hoaDonId = route.query.vnp_TxnRef;
+const hoaDonId = String(route.query.vnp_TxnRef || "");
 const isLoading = ref(true);
 
+const apiClient = axios.create({
+  baseURL: "http://localhost:8080/client",
+  headers: { "Content-Type": "application/json" },
+});
+
+const getUserId = () => {
+  try {
+    const u = localStorage.getItem("userId");
+    if (u) return parseInt(u);
+    const logged = JSON.parse(localStorage.getItem("loggedInUser") || "null");
+    return logged ? logged.id : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+const clearCart = async () => {
+  try {
+    await apiClient.post("/ClearSessionGioHang", {}, { withCredentials: true });
+  } catch {}
+  sessionStorage.removeItem("gioHang");
+  localStorage.removeItem("gioHang");
+  sessionStorage.removeItem("dataHoaDon");
+  localStorage.removeItem("dataHoaDon");
+  window.dispatchEvent(new Event("cap-nhat-gio"));
+};
+
 onMounted(async () => {
-  const responseCode = route.query.vnp_ResponseCode;
+  const responseCode = String(route.query.vnp_ResponseCode || "").trim();
+  const txnStatus = String(route.query.vnp_TransactionStatus || "").trim();
 
   try {
-    if (responseCode === "00") {
-      const storedData = JSON.parse(sessionStorage.getItem("dataHoaDon"));
+    if (responseCode === "00" && txnStatus === "00") {
+      // ✅ Thành công
+      success.value = true;
+
+      let storedData = sessionStorage.getItem("dataHoaDon") || localStorage.getItem("dataHoaDon");
+      if (storedData) storedData = JSON.parse(storedData);
+
+      const token = Cookies.get("token");
+      const userId = getUserId();
 
       if (storedData) {
-        // Gửi dữ liệu cập nhật hóa đơn
-        await axios.put(`http://localhost:8080/client/capNhatHoaDon/${hoaDonId}`, storedData);
-
-
-        await axios.post("http://localhost:8080/client/ClearSessionGioHang", {}, {
-          withCredentials: true
-        });
-
-        // ✅ Xóa giỏ hàng phía client
-        sessionStorage.removeItem("gioHang");
-        localStorage.removeItem("gioHang");
-        sessionStorage.removeItem("dataHoaDon");
-
-        // ✅ Gửi sự kiện để header cập nhật
-        window.dispatchEvent(new Event("cap-nhat-gio"));
-
-        toast.success("✅ Thanh toán thành công! Đang gửi mail xác nhận...");
-        success.value = true;
-      } else {
-        toast.warning("⚠️ Không tìm thấy dữ liệu hóa đơn trong session.");
+        if (token && userId) {
+          await apiClient.put("/orders/update-all", storedData, {
+            headers: { "X-User-ID": userId, Authorization: `Bearer ${token}` },
+          });
+        } else {
+          await apiClient.put(`/capNhatHoaDon/${hoaDonId}`, storedData);
+        }
       }
+
+      await clearCart();
+      toast.success("✅ Thanh toán thành công! Đơn hàng đã được cập nhật.");
+
+      // 👉 Hiện UI trước
+      isLoading.value = false;
+
+      // 👉 Sau 2s mới chuyển trang
+      setTimeout(() => {
+        window.location.href = "http://localhost:5173/coolmen";
+      }, 2000);
+
     } else {
+      // ❌ Thất bại
       success.value = false;
       errorCode.value = responseCode || "Không rõ";
       toast.error(`❌ Thanh toán thất bại! Mã lỗi: ${errorCode.value}`);
+
+      isLoading.value = false; // hiển thị lỗi
     }
   } catch (error) {
-    console.error("❌ Lỗi xử lý kết quả thanh toán:", error);
+    console.error("Lỗi xử lý return VNPay:", error);
     success.value = false;
-    errorCode.value = responseCode || "Không rõ";
+    errorCode.value = route.query.vnp_ResponseCode || "Không rõ";
     toast.error("Đã xảy ra lỗi khi xử lý kết quả thanh toán.");
-  } finally {
-    isLoading.value = false;
+
+    isLoading.value = false; // hiển thị lỗi
   }
 });
 
-// 👇 Xử lý khi bấm nút quay lại
-async function handleBackClick() {
-  if (success.value) {
-    // 🔥 Gọi lại để đảm bảo BE session cũng clear (phòng khi user reload lại)
-    await axios.post("http://localhost:8080/client/ClearSessionGioHang", {}, {
-      withCredentials: true
-    });
-
-    sessionStorage.removeItem("gioHang");
-    localStorage.removeItem("gioHang");
-    sessionStorage.removeItem("dataHoaDon");
-
-    window.dispatchEvent(new Event("cap-nhat-gio"));
-  } else {
-    toast.info("💡 Vui lòng thử lại phương thức thanh toán khác.");
-  }
-}
 </script>
-
 
 <style scoped>
 .vnpay-return {

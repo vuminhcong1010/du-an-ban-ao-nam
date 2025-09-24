@@ -56,7 +56,7 @@
               <th scope="col">Tên</th>
               <th scope="col">Giá trị giảm</th>
               <th scope="col">Loại</th>
-              <th scope="col">Giảm tối thiểu</th>
+              <th scope="col">Giá trị tối thiểu</th>
               <th scope="col">Giảm tối đa</th>
               <th scope="col">Số lượng</th>
               <th scope="col">Ngày bắt đầu</th>

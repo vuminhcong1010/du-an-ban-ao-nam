@@ -1,35 +1,35 @@
 <template>
-    <div class="container-fluid py-4">
-        <div class="header-section">
-            <button @click="goBack" class="back-button">
-                <i class="fa-solid fa-arrow-left"></i> Quay lại
-            </button>
-            <h2 class="page-title-aligned">Thêm đợt giảm giá mới</h2>
-        </div>
-    
-        <div class="bg-white p-4 rounded-3 shadow-sm">
-            <div class="row gx-5">
-                <div class="col-md-6 border-end">
+    <div class="container-fluid mt-2">
+        <div class="bg-white p-4 rounded shadow-sm">
+            <h3 class="mb-3 fw-bold">
+                <router-link to="/dot-giam-gia" class="text-decoration-none text-dark">
+                    <i class="fa fa-arrow-left me-2"></i>Đợt Giảm Giá
+                </router-link>
+                / <span class="text-primary">Thêm Đợt Giảm Giá</span>
+            </h3>
+            <div class="row g-4 p-4 rounded border mt-4">
+                <!-- Left Column: Form -->
+                <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Mã đợt giảm giá</label>
+                        <label class="form-label fw-semibold">Mã đợt giảm giá</label>
                         <input type="text" class="form-control" v-model="form.maDotGiamGia"
-                               :class="{ 'is-invalid': errors.maDotGiamGia }" @input="validateField('maDotGiamGia')" />
+                            :class="{ 'is-invalid': errors.maDotGiamGia }" @input="validateField('maDotGiamGia')" />
                         <small class="text-muted">Để trống để tự động sinh mã</small>
                         <div class="invalid-feedback">{{ errors.maDotGiamGia }}</div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Tên đợt giảm giá <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Tên đợt giảm giá <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" v-model="form.tenDotGiamGia"
-                               :class="{ 'is-invalid': errors.tenDotGiamGia }" @input="validateField('tenDotGiamGia')" />
+                            :class="{ 'is-invalid': errors.tenDotGiamGia }" @input="validateField('tenDotGiamGia')" />
                         <div class="invalid-feedback">{{ errors.tenDotGiamGia }}</div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Phần trăm giảm <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Phần trăm giảm <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="number" class="form-control" v-model.number="form.giaTri"
-                                   :class="{ 'is-invalid': errors.giaTri }" @input="validateField('giaTri')" min="0.01" max="100" />
+                                :class="{ 'is-invalid': errors.giaTri }" @input="validateField('giaTri')" min="0.01" max="100" />
                             <span class="input-group-text">%</span>
                         </div>
                         <div class="invalid-feedback d-block">{{ errors.giaTri }}</div>
@@ -37,66 +37,65 @@
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Ngày bắt đầu <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Ngày bắt đầu <span class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control" v-model="form.ngayBatDau"
-                                   :class="{ 'is-invalid': errors.ngayBatDau }" :min="minDateTime"
-                                   @input="validateField('ngayBatDau')" />
+                                :class="{ 'is-invalid': errors.ngayBatDau }" :min="minDateTime"
+                                @input="validateField('ngayBatDau')" />
                             <div class="invalid-feedback">{{ errors.ngayBatDau }}</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Ngày kết thúc <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Ngày kết thúc <span class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control" v-model="form.ngayKetThuc"
-                                   :class="{ 'is-invalid': errors.ngayKetThuc }" :min="minDateTime"
-                                   @input="validateField('ngayKetThuc')" />
+                                :class="{ 'is-invalid': errors.ngayKetThuc }" :min="minDateTime"
+                                @input="validateField('ngayKetThuc')" />
                             <div class="invalid-feedback">{{ errors.ngayKetThuc }}</div>
                         </div>
                     </div>
-                </div>
 
+                  
+                </div>
                 <div class="col-md-6">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <label class="fw-bold">Danh sách sản phẩm</label>
                         <div class="input-group input-group-sm w-50">
                             <input type="text" class="form-control" placeholder="Tìm theo tên..." v-model="searchQuery"
-                                   @input="filterProducts" />
-                            <span class="input-group-text search-icon"><i class="fa fa-search"></i></span>
+                                @input="filterProducts" />
+                            <span class="input-group-text"><i class="fa fa-search"></i></span>
                         </div>
                     </div>
-                    <div class="table-container">
-                        <table class="table table-hover product-table">
-                            <thead class="table-light">
-                                <tr>
-                                    <th><input type="checkbox" @change="selectAllProducts" v-model="selectAll" /></th>
-                                    <th>Tên sản phẩm</th>
-                                    <th>Số lượng</th>
-                                    <th>Trạng thái</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="sanpham in paginatedProducts" :key="sanpham.id">
-                                    <td>
-                                        <input type="checkbox" :value="sanpham.id" v-model="selectedProductIds"
-                                               @change="fetchProductVariants" />
-                                    </td>
-                                    <td>{{ sanpham.tenSanPham }}</td>
-                                    <td>{{ soLuongTheoSanPham[sanpham.id] || 0 }}</td>
-                                    <td>
-                                        <span class="badge rounded-pill"
-                                              :class="{'bg-success': sanpham.trangThai === 1, 'bg-danger': sanpham.trangThai !== 1}">
-                                            {{ sanpham.trangThai === 1 ? 'Đang bán' : 'Ngừng bán' }}
-                                        </span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th><input type="checkbox" @change="selectAllProducts" v-model="selectAll" /></th>
+                                <th>Tên sản phẩm</th>
+                                <th>Số lượng</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="sanpham in paginatedProducts" :key="sanpham.id">
+                                <td>
+                                    <input type="checkbox" :value="sanpham.id" v-model="selectedProductIds"
+                                        @change="fetchProductVariants" />
+                                </td>
+                                <td>{{ sanpham.tenSanPham }}</td>
+                                <td>{{ soLuongTheoSanPham[sanpham.id] || 0 }}</td>
+                                <td>
+                                    <span class="badge rounded-pill"
+                                        :style="{ backgroundColor: sanpham.trangThai === 1 ? '#10b981' : '#D14343' }">
+                                        {{ sanpham.trangThai === 1 ? 'Đang bán' : 'Ngừng bán' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                     <nav class="mt-4">
-                        <ul class="pagination justify-content-end">
+                        <ul class="pagination justify-content-center">
                             <li class="page-item" :class="{ disabled: productPage === 0 }">
                                 <a class="page-link" href="#" @click.prevent="prevProductPage">«</a>
                             </li>
                             <li class="page-item" v-for="p in productTotalPages" :key="p"
-                                :class="{ 'active-pagination': p - 1 === productPage }">
+                                :class="{ active: p - 1 === productPage }">
                                 <a class="page-link" href="#" @click.prevent="goToProductPage(p - 1)">{{ p }}</a>
                             </li>
                             <li class="page-item" :class="{ disabled: productPage >= productTotalPages - 1 }">
@@ -107,62 +106,126 @@
                     <div class="invalid-feedback d-block" v-if="errors.sp">{{ errors.sp }}</div>
                 </div>
             </div>
-
-            <div v-if="selectedProductIds.length > 0" class="mt-5 p-4 rounded-3 border">
-                <h4>Danh sách sản phẩm chi tiết</h4>
-                <div class="row g-3 align-items-end mt-2 mb-4">
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold">Tìm kiếm</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" placeholder="Nhập tên, mã" v-model="variantSearchQuery" @input="filterVariants" />
-                            <span class="input-group-text search-icon"><i class="fa fa-search"></i></span>
+            <div v-if="selectedProductIds.length > 0" class="row g-4 p-4 rounded border mt-4">
+                <div>
+                    <h4>Danh sách sản phẩm chi tiết</h4>
+                    <div class="row g-3 align-items-end mt-2">
+                        <div class="col-md-2">
+                            <label class="form-label">Tìm kiếm</label>
+                            <input type="text" class="form-control rounded-pill" placeholder="Nhập tên, mã"
+                                v-model="variantSearchQuery" @input="filterVariants" />
+                        </div>
+                        <div class="col-md-2" v-if="chatLieu.length > 0">
+                            <label for="loaiChatLieu" class="form-label">Chất liệu:</label>
+                            <select id="loaiChatLieu" v-model="selectedLoai" class="form-select"
+                                @change="filterVariants">
+                                <option value="">Tất cả</option>
+                                <option v-for="chat in chatLieu" :key="chat.id" :value="chat.id">
+                                    {{ chat.tenChatLieu }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2" v-if="mau.length > 0">
+                            <label for="loaiMau" class="form-label">Màu:</label>
+                            <select id="loaiMau" v-model="selectedLoai1" class="form-select" @change="filterVariants">
+                                <option value="">Tất cả</option>
+                                <option v-for="m in mau" :key="m.id" :value="m.id">
+                                    {{ m.ten }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2" v-if="kichCo.length > 0">
+                            <label for="LoaiKichCo" class="form-label">Kích cỡ:</label>
+                            <select id="LoaiKichCo" v-model="selectedLoai2" class="form-select"
+                                @change="filterVariants">
+                                <option value="">Tất cả</option>
+                                <option v-for="k in kichCo" :key="k.id" :value="k.id">
+                                    {{ k.soCo }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2" v-if="coAo.length > 0">
+                            <label for="loaiCoAo" class="form-label">Cổ áo:</label>
+                            <select id="loaiCoAo" v-model="selectedLoai3" class="form-select" @change="filterVariants">
+                                <option value="">Tất cả</option>
+                                <option v-for="c in coAo" :key="c.id" :value="c.id">
+                                    {{ c.tenCoAo }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-2" v-if="tayAo.length > 0">
+                            <label for="loaiTayAo" class="form-label">Tay áo:</label>
+                            <select id="loaiTayAo" v-model="selectedLoai4" class="form-select" @change="filterVariants">
+                                <option value="">Tất cả</option>
+                                <option v-for="t in tayAo" :key="t.id" :value="t.id">
+                                    {{ t.tenTayAo }}
+                                </option>
+                            </select>
                         </div>
                     </div>
-                    </div>
-                
-                <div class="table-container">
-                    <table class="table table-hover variant-table">
-                        <thead class="table-light">
-                            <tr>
-                                <th>
-                                    <input type="checkbox"
-                                           :checked="selectedVariantIds.length === filteredVariants.length && filteredVariants.length > 0"
-                                           @change="toggleSelectAllVariants" />
-                                </th>
-                                <th>STT</th>
-                                <th>Ảnh sản phẩm</th>
-                                <th>Mã sản phẩm</th>
-                                <th>Tên sản phẩm</th>
-                                <th>Số lượng tồn</th>
-                                <th>Giá bán</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(variant, index) in paginatedVariants" :key="variant.id">
-                                <td><input type="checkbox" :value="variant.id" v-model="selectedVariantIds" @change="validateField('selectedVariantIds')" /></td>
-                                <td>{{ (variantPage * itemsPerPage) + index + 1 }}</td>
-                                <td>
-                                    <div class="icon-container">
-                                        <img :src="variant.images.length > 0 ? variant.images[0].duongDanAnh : 'https://via.placeholder.com/50'" alt="Ảnh sản phẩm" style="width: 50px; height: 50px; object-fit: cover;" />
-                                        <span v-if="variant.images.length > 1" class="badge bg-secondary position-absolute top-0 end-0 translate-middle badge-plus">+{{ variant.images.length - 1 }}</span>
-                                    </div>
-                                </td>
-                                <td>{{ variant.maChiTietSanPham || 'N/A' }}</td>
-                                <td>{{ variant.idSanPham?.tenSanPham || 'N/A' }}</td>
-                                <td>{{ variant.soLuong || 0 }}</td>
-                                <td>{{ variant.gia ? variant.gia.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) : 'N/A' }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
-                
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>
+                                <input type="checkbox"
+                                    :checked="selectedVariantIds.length === filteredVariants.length && filteredVariants.length > 0"
+                                    @change="toggleSelectAllVariants" />
+                            </th>
+                            <th>STT</th>
+                            <th>Ảnh sản phẩm</th>
+                            <th>Mã sản phẩm</th>
+                            <th>Tên sản phẩm</th>
+                            <th>Chất liệu</th>
+                            <th>Số lượng tồn</th>
+                            <th>Màu sắc</th>
+                            <th>Kích cỡ</th>
+                            <th>Cổ áo</th>
+                            <th>Tay áo</th>
+                            <th>Giá bán</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(variant, index) in paginatedVariants" :key="variant.id">
+                            <td><input type="checkbox" :value="variant.id" v-model="selectedVariantIds"
+                                    @change="validateField('selectedVariantIds')" /></td>
+                            <td>{{ (variantPage * itemsPerPage) + index + 1 }}</td>
+                            <td>
+                                <div v-if="variant.images.length > 0" class="icon-container">
+                                    <img :src="variant.images[0].duongDanAnh" alt="Ảnh sản phẩm"
+                                        style="width: 100px; height: 100px; object-fit: cover; cursor: pointer;"
+                                        @click="showImageGallery(variant.images)" />
+                                    <span v-if="variant.images.length > 1" class="badge bg-secondary">+{{
+                                        variant.images.length - 1 }}</span>
+                                    <div class="percentage-tag">{{ form.giaTri ? '+' + form.giaTri + '%' : '+0%' }}</div>
+                                </div>
+                                <div v-else class="icon-container">
+                                    <img src="https://via.placeholder.com/50" alt="Ảnh sản phẩm"
+                                        style="width: 50px; height: 50px; object-fit: cover;" />
+                                    <div class="percentage-tag">{{ form.giaTri ? '+' + form.giaTri + '%' : '+0%' }}</div>
+                                </div>
+                            </td>
+                            <td>{{ variant.maChiTietSanPham || 'N/A' }}</td>
+                            <td>{{ variant.idSanPham?.tenSanPham || 'N/A' }}</td>
+                            <td>{{ variant.idSanPham?.idChatLieu?.tenChatLieu || 'N/A' }}</td>
+                            <td>{{ variant.soLuong || 0 }}</td>
+                            <td>{{ variant.idMau?.ten || 'N/A' }}</td>
+                            <td>{{ variant.idSize?.soCo || 'N/A' }}</td>
+                            <td>{{ variant.idCoAo?.tenCoAo || 'N/A' }}</td>
+                            <td>{{ variant.idTayAo?.tenTayAo || 'N/A' }}</td>
+                            <td>{{ variant.gia ? variant.gia.toLocaleString('vi-VN', {
+                                style: 'currency', currency: 'VND'
+                            }) : 'N/A' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
                 <nav class="mt-4">
-                    <ul class="pagination justify-content-end">
+                    <ul class="pagination justify-content-center">
                         <li class="page-item" :class="{ disabled: variantPage === 0 }">
                             <a class="page-link" href="#" @click.prevent="prevVariantPage">«</a>
                         </li>
                         <li class="page-item" v-for="p in variantTotalPages" :key="p"
-                            :class="{ 'active-pagination': p - 1 === variantPage }">
+                            :class="{ active: p - 1 === variantPage }">
                             <a class="page-link" href="#" @click.prevent="goToVariantPage(p - 1)">{{ p }}</a>
                         </li>
                         <li class="page-item" :class="{ disabled: variantPage >= variantTotalPages - 1 }">
@@ -170,13 +233,17 @@
                         </li>
                     </ul>
                 </nav>
-                <div class="invalid-feedback d-block" v-if="errors.selectedVariantIds">{{ errors.selectedVariantIds }}</div>
+                <div class="invalid-feedback d-block" v-if="errors.selectedVariantIds">{{ errors.selectedVariantIds }}
+                </div>
             </div>
-
-            <div class="d-flex justify-content-end mt-4">
-                <button class="btn btn-cancel me-2" @click="goBack">Hủy</button>
-                <button class="btn btn-save" @click="submitForm">Lưu</button>
-            </div>
+              <div class="mt-4">
+                        <button class="btn btn-primary me-2" @click="submitForm">
+                            <i class="fa fa-plus me-1"></i>Thêm mới
+                        </button>
+                        <router-link to="/dot-giam-gia" class="btn btn-outline-secondary">
+                            <i class="fa fa-arrow-left me-1"></i>Quay lại
+                        </router-link>
+                    </div>
         </div>
     </div>
 </template>
@@ -185,12 +252,7 @@
 import { useToast } from 'vue-toastification';
 import Swal from 'sweetalert2';
 import Cookies from 'js-cookie'
-import { useRouter } from 'vue-router';
 export default {
-     setup() {
-    const router = useRouter();
-    return { router};
-  },
     data() {
         return {
             token: Cookies.get('token'),
@@ -274,9 +336,6 @@ export default {
         }
     },
     methods: {
-        goBack() {
-      this.$router.push('/dot-giam-gia');
-    },
         async getChatLieu() {
             const toast = useToast();
             try {
@@ -691,151 +750,36 @@ export default {
 </script>
 
 <style scoped>
-/* General Layout and Background */
-
-.bg-white {
-    background-color: #ffffff;
-}
-
-/* Header Section */
-.header-section {
-  display: flex;
-  align-items: center;
-  margin-bottom: 2.5rem;
-  gap: 2rem;
-}
-
-.back-button {
-  background-color: #e9ecef;
-  /* Màu xám nhạt */
-  color: #495057;
-  /* Màu chữ xám đậm */
-  padding: 0.75rem 1.25rem;
-  /* Tăng padding cho nút */
-  border-radius: 0.4rem;
-  /* Bo tròn vừa phải */
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  flex-shrink: 0;
-  /* Không co lại */
-  font-size: 1rem;
-  /* Kích thước font cho nút */
-}
-.back-button:hover {
-  background-color: #dee2e6;
-  color: #0a2c57;
-}
-
-.page-title-aligned {
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: #0a2c57;
-  margin: 0;
-  line-height: 1;
-}
-
-/* Form Styling */
-.form-label {
-    font-weight: 600;
-    color: #495057;
-}
-
-.form-control, .form-select {
-    border-radius: 6px;
-    border: 1px solid #e0e0e0;
-}
-
-.form-control:focus, .form-select:focus {
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    border-color: #86b7fe;
-}
-
-/* Table and Pagination */
-.table-container {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.product-table, .variant-table {
-    width: 100%;
-    margin-bottom: 0;
-}
-
-.table thead th {
-    background-color: #f8f9fa;
-    color: #495057;
-    font-weight: 600;
-}
-
 .table-hover tbody tr:hover {
     background-color: #f1f1f1;
 }
 
-.page-item.active-pagination .page-link {
-    background-color: #0b2253;
-    border-color: #0b2253;
-    color: #fff;
+.page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
 }
 
 .page-link {
-    color: #0b2253;
+    color: #0d6efd;
 }
 
-.pagination {
-    margin-bottom: 0;
-}
-
-.search-icon {
+.page-link:hover {
     background-color: #e9ecef;
-    border-color: #ced4da;
-    color: #495057;
 }
 
-/* Image and Badges */
 .icon-container {
     position: relative;
     display: inline-block;
 }
 
-.badge-plus {
-    background-color: #6c757d !important;
-    font-size: 0.75rem;
-    padding: 0.3em 0.6em;
-}
-/* Action Buttons */
-.btn-save {
-    background-color: #0a2c57;
+.percentage-tag {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: #ff3333;
     color: white;
-    font-weight: 600;
-    border: none;
-    padding: 10px 20px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
 }
-
-.btn-save:hover {
-    background-color: #071f3e;
-    color: white;
-    transform: translateY(-1px);
-}
-
-.btn-cancel {
-    background-color: #6c757d;
-    color: white;
-    font-weight: 600;
-    border: none;
-    padding: 10px 20px;
-}
-
-.btn-cancel:hover {
-    background-color: #5c636a;
-    transform: translateY(-1px);
-    color: white;
-}
-
-.border-end {
-    border-right: 1px solid #e0e0e0 !important;
-}
-
-
 </style>

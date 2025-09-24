@@ -36,7 +36,8 @@
                     <div class="info-group">
                         <p><strong>Mã hóa đơn:</strong> {{ order.maHoaDon }}</p>
                         <p><strong>Ngày đặt:</strong> {{ formatDate(order.ngayDat) }}</p>
-                        <p><strong>Trạng thái:</strong> <span :class="getStatusClass(order.trangThai)">{{ getStatusText(order.trangThai) }}</span></p>
+                        <p><strong>Trạng thái:</strong> <span :class="getStatusClass(order.trangThai)">{{
+                            getStatusText(order.trangThai) }}</span></p>
                         <p><strong>Loại hóa đơn:</strong> {{ order.loaiHoaDon || 'Online' }}</p>
                         <p><strong>Ghi chú:</strong> {{ order.ghiChu || 'Không có' }}</p>
                     </div>
@@ -45,13 +46,15 @@
 
                 <div class="info-block customer-info-block">
                     <h3>Thông tin khách hàng</h3>
-                    <p>{{ order.maKhachHang || 'N/A' }} - {{ order.tenKhachHang || 'N/A' }} - {{ order.soDienThoai || 'N/A' }}</p>
+                    <p>{{ order.maKhachHang || 'N/A' }} - {{ order.tenKhachHang || 'N/A' }} - {{ order.soDienThoai ||
+                        'N/A' }}</p>
                 </div>
 
 
                 <div class="info-block product-list-detail">
                     <h3>Sản phẩm</h3>
-                    <ul v-if="tempOrder && tempOrder.danhSachSanPham && tempOrder.danhSachSanPham.length > 0" class="order-items-list-detail">
+                    <ul v-if="tempOrder && tempOrder.danhSachSanPham && tempOrder.danhSachSanPham.length > 0"
+                        class="order-items-list-detail">
                         <li v-for="item in tempOrder.danhSachSanPham" :key="item.idHoaDonChiTiet">
                             <div class="item-info-detail">
                                 <img :src="item.duongDanAnh" alt="Product Image" class="product-thumbnail">
@@ -63,11 +66,13 @@
                                     <span>Thành tiền: {{ formatCurrency(item.thanhTien) }}</span>
                                 </div>
                             </div>
-                            <div class="item-actions-detail" v-if="order.trangThai === 0">
-                                <button @click="confirmUpdateOrderItem(item.idHoaDonChiTiet, item.soLuong)" class="btn-edit">
-                                    Cập nhật SL
+                            <div class="item-actions-detail">
+                                <button @click="confirmUpdateOrderItem(item.idHoaDonChiTiet, item.soLuong)"
+                                    class="btn-edit" v-if="order.trangThai === 0">
+                                    Cập nhật số lượng
                                 </button>
-                                <button @click="confirmDeleteOrderItem(item.idHoaDonChiTiet)" class="btn-delete">
+                                <button @click="confirmDeleteOrderItem(item.idHoaDonChiTiet)" class="btn-delete"
+                                    v-if="order.trangThai === 0 && tempOrder.danhSachSanPham.length > 1">
                                     Xóa
                                 </button>
                             </div>
@@ -96,14 +101,18 @@
                         <p><strong>SĐT người nhận:</strong> {{ order.sdtNguoiNhan }}</p>
                     </div>
                     <p class="address-line">
-                        <strong>Địa chỉ nhận hàng:</strong> {{ tempOrder ? tempOrder.diaChiNguoiNhan : order.diaChiNguoiNhan }}
-                        <i v-if="order.trangThai === 0" @click="openAddressModal" class="fas fa-map-marker-alt address-action-icon"></i>
+                        <strong>Địa chỉ nhận hàng:</strong> {{ tempOrder ? tempOrder.diaChiNguoiNhan :
+                            order.diaChiNguoiNhan }}
+                        <i v-if="order.trangThai === 0" @click="openAddressModal"
+                            class="fas fa-map-marker-alt address-action-icon"></i>
                     </p>
-                    <button v-if="order.trangThai === 0 && hasChanges" @click="saveDirectChanges" class="btn-save-direct-changes">Lưu tên/SĐT</button>
+                    <button v-if="order.trangThai === 0 && hasChanges" @click="saveDirectChanges"
+                        class="btn-save-direct-changes">Lưu tên/SĐT</button>
                 </div>
 
 
-                <div v-if="showUpdateDetails && updateSummary" id="update-summary-div" class="info-block update-summary-block">
+                <div v-if="showUpdateDetails && updateSummary" id="update-summary-div"
+                    class="info-block update-summary-block">
                     <h2 class="section-title">Tóm Tắt Thay Đổi Đơn Hàng</h2>
                     <div class="summary-line">
                         <p class="label">Tổng tiền cũ (Không VC):</p>
@@ -120,46 +129,55 @@
                                 </span>
                                 <span v-else-if="change.type === 'quantity'" class="change-text">
                                     Thay đổi SL "{{ change.name }}": {{ change.oldQty }} ->
-                                    <span class="change-highlight" :class="{ 'text-green-600': change.price < 0, 'text-red-600': change.price > 0 }">
-                                        {{ change.newQty }} ({{ change.price > 0 ? '+' : '' }}{{ formatCurrency(change.price) }})
+                                    <span class="change-highlight"
+                                        :class="{ 'text-green-600': change.price < 0, 'text-red-600': change.price > 0 }">
+                                        {{ change.newQty }} ({{ change.price > 0 ? '+' : '' }}{{
+                                            formatCurrency(change.price) }})
                                     </span>
                                 </span>
                                 <span v-else-if="change.type === 'delete'" class="change-text">
-                                    Xóa "{{ change.name }}" <span class="change-highlight text-red-600">(-{{ formatCurrency(change.price) }})</span>
+                                    Xóa "{{ change.name }}" <span class="change-highlight text-red-600">(-{{
+                                        formatCurrency(change.price) }})</span>
                                 </span>
                             </li>
                         </ul>
                     </div>
-                   
+
                     <div v-if="Object.keys(shippingServices).length > 0" class="shipping-options">
                         <h4 class="change-title">Phí vận chuyển:</h4>
                         <p class="old-shipping-fee">Phí cũ: {{ formatCurrency(updateSummary.oldShippingFee) }}</p>
                         <div class="radio-group">
                             <label v-for="(service, key) in shippingServices" :key="key" class="radio-label">
-                                <input type="radio" :value="service.fee" v-model="selectedShippingFee" @change="calculateUpdateSummary" class="radio-input">
+                                <input type="radio" :value="service.fee" v-model="selectedShippingFee"
+                                    @change="calculateUpdateSummary" class="radio-input">
                                 <span class="radio-text">{{ service.name }} ({{ formatCurrency(service.fee) }})</span>
                                 <span v-if="service.isFastest" class="fastest-badge">Nhanh nhất</span>
                             </label>
                         </div>
-                        <p v-if="updateSummary.addressChanged" class="shipping-warning">Vui lòng chọn lại đơn vị vận chuyển để tính toán phí mới.</p>
+                        <p v-if="updateSummary.addressChanged" class="shipping-warning">Vui lòng chọn lại đơn vị vận
+                            chuyển để tính toán phí mới.</p>
                     </div>
-                   
+
                     <div class="total-summary">
                         <p class="label final-total-label">Tổng tiền mới (Đã bao gồm VC):</p>
-                        <p class="value final-total" :class="{ 'text-blue-600': updateSummary.finalChange === 0, 'text-red-600': updateSummary.finalChange > 0, 'text-green-600': updateSummary.finalChange < 0 }">
+                        <p class="value final-total"
+                            :class="{ 'text-blue-600': updateSummary.finalChange === 0, 'text-red-600': updateSummary.finalChange > 0, 'text-green-600': updateSummary.finalChange < 0 }">
                             {{ formatCurrency(updateSummary.newTotalWithShipping) }}
                         </p>
                         <p class="change-amount">
                             Tổng chênh lệch:
-                            <span :class="{ 'text-red-600': updateSummary.finalChange > 0, 'text-green-600': updateSummary.finalChange < 0 }">
-                                ({{ updateSummary.finalChange > 0 ? '+' : '' }}{{ formatCurrency(updateSummary.finalChange) }})
+                            <span
+                                :class="{ 'text-red-600': updateSummary.finalChange > 0, 'text-green-600': updateSummary.finalChange < 0 }">
+                                ({{ updateSummary.finalChange > 0 ? '+' : '' }}{{
+                                    formatCurrency(updateSummary.finalChange) }})
                             </span>
                         </p>
                     </div>
 
 
                     <div class="action-buttons">
-                        <button @click="confirmFinalChanges" class="btn btn-primary btn-confirm">Xác nhận Lưu Thay Đổi</button>
+                        <button @click="confirmFinalChanges" class="btn btn-primary btn-confirm">Xác nhận Lưu Thay
+                            Đổi</button>
                     </div>
                 </div>
 
@@ -168,14 +186,16 @@
                     <h3>Lịch sử thanh toán</h3>
                     <p class="no-history-message">Hiện tại không có thông tin lịch sử thanh toán.</p>
                     <div v-if="updateSummary && updateSummary.finalChange > 0">
-                        <p class="payment-required-text">Bạn cần thanh toán thêm: {{ formatCurrency(updateSummary.finalChange) }}</p>
+                        <p class="payment-required-text">Bạn cần thanh toán thêm: {{
+                            formatCurrency(updateSummary.finalChange) }}</p>
                         <div class="payment-buttons">
                             <button @click="handlePayment('cod')" class="btn btn-cod">Trả COD khi nhận hàng</button>
                             <button @click="handlePayment('vnpay')" class="btn btn-vnpay">Thanh toán VNPay ngay</button>
                         </div>
                     </div>
                     <div v-else-if="updateSummary && updateSummary.finalChange < 0">
-                        <p class="refund-text">Bạn sẽ được hoàn lại: {{ formatCurrency(Math.abs(updateSummary.finalChange)) }} (Admin sẽ xác nhận hoàn tiền)</p>
+                        <p class="refund-text">Bạn sẽ được hoàn lại: {{
+                            formatCurrency(Math.abs(updateSummary.finalChange)) }} (Admin sẽ xác nhận hoàn tiền)</p>
                     </div>
                 </div>
             </div>
@@ -196,7 +216,8 @@
                         <div v-for="address in savedAddresses" :key="address.id" class="address-item">
                             <div class="address-info">
                                 <p><strong>{{ address.hoTen }}</strong> - {{ address.sdt }}</p>
-                                <p>{{ address.diaChiChiTiet }}, {{ address.xaPhuong }}, {{ address.quanHuyen }}, {{ address.tinhThanhPho }}</p>
+                                <p>{{ address.diaChiChiTiet }}, {{ address.xaPhuong }}, {{ address.quanHuyen }}, {{
+                                    address.tinhThanhPho }}</p>
                                 <span v-if="address.isMacDinh" class="default-badge">Mặc định</span>
                             </div>
                             <div class="address-actions">
@@ -210,14 +231,16 @@
                             </div>
                         </div>
                     </div>
-                    <p v-else class="no-addresses-message">Bạn chưa có địa chỉ đã lưu nào. Vui lòng thêm địa chỉ mới.</p>
+                    <p v-else class="no-addresses-message">Bạn chưa có địa chỉ đã lưu nào. Vui lòng thêm địa chỉ mới.
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 
 
-    <AddressModal :show="showAddEditModal" :initialAddress="currentAddress" :customerId="getUserId()" @close="closeAddEditModal" @address-saved="refreshAddressList" />
+    <AddressModal :show="showAddEditModal" :initialAddress="currentAddress" :customerId="getUserId()"
+        @close="closeAddEditModal" @address-saved="refreshAddressList" />
 </template>
 
 
@@ -263,14 +286,8 @@ const apiClient = axios.create({
     headers: { 'Content-Type': 'application/json' }
 });
 
-
 const shopId = 5939518; // Hoặc ID shop thực tế của bạn
 const fromDistrictId = 1644;
-
-
-
-
-// --- Utility Functions (giữ nguyên) ---
 
 
 const getUserId = () => {
@@ -355,8 +372,6 @@ const getStatusClass = (status) => {
 
 
 // --- Fetch Initial Data ---
-
-
 const fetchOrderDetail = async () => {
     const id = route.params.id;
     const userId = getUserId();
@@ -369,7 +384,7 @@ const fetchOrderDetail = async () => {
         const res = await apiClient.get(`/orders/${id}`, { headers: { 'X-User-ID': userId } });
         if (res.data && res.data.data) {
             order.value = res.data.data;
-             // THÊM DÒNG NÀY ĐỂ KIỂM TRA
+            // THÊM DÒNG NÀY ĐỂ KIỂM TRA
             console.log("Dữ liệu đơn hàng ĐÃ GÁN vào order.value:", JSON.stringify(order.value, null, 2));
             // Cập nhật tempOrder sau khi fetch thành công
             tempOrder.value = JSON.parse(JSON.stringify(res.data.data));
@@ -395,8 +410,6 @@ onMounted(() => {
 
 
 // --- Address Modal Logic (giữ nguyên, trừ phần selectAddress) ---
-
-
 const openAddressModal = async () => {
     if (order.value.trangThai !== 0) {
         toast.warning("Chỉ có thể thay đổi địa chỉ khi đơn hàng đang 'Chờ xác nhận'.");
@@ -419,13 +432,12 @@ const fetchSavedAddresses = async () => {
         return;
     }
 
-
     try {
         const token = Cookies.get('token');
         const response = await apiClient.get('/addresses', {
             headers: {
                 'X-User-ID': userId,
-                'Authorization': `Bearer ${token}`
+                // 'Authorization': `Bearer ${token}`
             }
         });
         if (response.data && response.data.data) {
@@ -525,8 +537,6 @@ const saveDirectChanges = async () => {
 
 
 // --- CƠ CHẾ TÍNH TOÁN VÀ XÁC NHẬN TỔNG HỢP ---
-
-
 const selectAddress = async (address) => {
     if (order.value.trangThai !== 0) {
         toast.warning("Chỉ có thể thay đổi địa chỉ khi đơn hàng đang 'Chờ xác nhận'.");
@@ -577,12 +587,20 @@ const confirmUpdateOrderItem = async (hoaDonChiTietId, currentQuantity) => {
         return;
     }
 
+    // Tìm sản phẩm tương ứng trong danh sách để lấy thông tin tồn kho
+    const item = tempOrder.value.danhSachSanPham.find(i => i.idHoaDonChiTiet === hoaDonChiTietId);
+    if (!item) {
+        toast.error("Không tìm thấy sản phẩm này trong đơn hàng.");
+        return;
+    }
+
+    const soLuongTonKho = item.soLuongTonKho;
 
     const { value: newQuantityInput } = await Swal.fire({
         title: 'Cập nhật số lượng',
         input: 'text',
         inputValue: currentQuantity,
-        inputLabel: `Nhập số lượng mới cho sản phẩm (Hiện tại: ${currentQuantity})`,
+        inputLabel: `Nhập số lượng mới cho sản phẩm (Tồn kho: ${soLuongTonKho}, Hiện tại: ${currentQuantity})`,
         inputPlaceholder: 'Số lượng mới...',
         showCancelButton: true,
         confirmButtonText: 'Cập nhật',
@@ -591,6 +609,9 @@ const confirmUpdateOrderItem = async (hoaDonChiTietId, currentQuantity) => {
             const num = parseInt(value);
             if (isNaN(num) || num <= 0) {
                 return 'Vui lòng nhập số lượng hợp lệ (> 0)';
+            }
+            if (num > soLuongTonKho) {
+                return `Số lượng nhập (${num}) vượt quá số lượng tồn kho (${soLuongTonKho}).`;
             }
         }
     });
@@ -764,28 +785,50 @@ const getWardCodeByName = async (wardName, districtId) => {
 };
 
 
+// Bổ sung: Hàm để tính tổng trọng lượng của đơn hàng
+// Thay đổi trong hàm calculateTotalWeight
+// Bổ sung: Hàm để tính tổng trọng lượng của đơn hàng
+const getTotalWeight = () => {
+    // Kiểm tra xem order.value có tồn tại và danhSachSanPham có phải là mảng không
+    if (!order.value || !Array.isArray(order.value.danhSachSanPham)) {
+        console.log("Không có dữ liệu sản phẩm để tính trọng lượng.");
+        return 0;
+    }
+
+    const totalWeight = order.value.danhSachSanPham.reduce((total, item) => {
+        const weightKg = item.trongLuong || 0;
+        // Chuyển đổi kg sang gram và cộng dồn
+        return total + (weightKg * item.soLuong * 1000);
+    }, 0);
+
+    // GHN yêu cầu trọng lượng tối thiểu là 100g, nên cần kiểm tra và gán giá trị tối thiểu
+    const finalWeightInGrams = Math.max(100, Math.round(totalWeight));
+
+    console.log("📦 Tổng trọng lượng đơn hàng (gram):", finalWeightInGrams);
+    return finalWeightInGrams;
+};
+
+
+
 const calculateUpdateSummary = async () => {
     if (!tempOrder.value || (changesQueue.value.length === 0 && selectedShippingFee.value === order.value.phiVanChuyen)) {
         showUpdateDetails.value = false;
         return;
     }
 
-
     let newTotal = tempOrder.value.danhSachSanPham.reduce((sum, item) => sum + item.thanhTien, 0);
     let addressChange = changesQueue.value.find(c => c.type === 'address');
     let addressForShipping = addressChange ? addressChange.address : order.value.selectedAddressDetail;
-
+     const weight = getTotalWeight(); // Tính tổng trọng lượng đơn hàng
 
     shippingServices.value = {};
     selectedShippingFee.value = 0;
-
 
     if (addressChange || (changesQueue.value.length > 0 && !showUpdateDetails.value)) {
         isLoading.value = true;
         try {
             const toProvinceId = await getProvinceIdByName(addressForShipping.tinhThanhPho);
-            const fromProvinceId = 244; // Tĩnh Thái Nguyên
-
+            const fromProvinceId = 244; // Tỉnh Thái Nguyên
 
             if (!toProvinceId) {
                 toast.error('Không tìm thấy ID tỉnh/thành phố tương ứng. Vui lòng kiểm tra lại địa chỉ đã lưu.');
@@ -793,25 +836,20 @@ const calculateUpdateSummary = async () => {
                 return;
             }
 
-
             const fromDistrictId = await getDistrictIdByName('Thành phố Thái Nguyên', fromProvinceId);
             const toDistrictId = await getDistrictIdByName(addressForShipping.quanHuyen, toProvinceId);
-           
+
             if (!fromDistrictId || !toDistrictId) {
                 toast.error('Không tìm thấy ID quận/huyện tương ứng.');
                 isLoading.value = false;
                 return;
             }
 
-
-            // GỌI API BACKEND CHO AVAILABLE SERVICES
             const servicesRes = await fetchAvailableServices(toDistrictId, fromDistrictId);
-
 
             if (servicesRes && servicesRes.data && servicesRes.data.length > 0) {
                 const serviceId = servicesRes.data[0].service_id;
                 const toWardCode = await getWardCodeByName(addressForShipping.xaPhuong, toDistrictId);
-
 
                 if (!toWardCode) {
                     toast.error('Không tìm thấy mã xã/phường tương ứng. Vui lòng kiểm tra lại địa chỉ.');
@@ -819,8 +857,6 @@ const calculateUpdateSummary = async () => {
                     return;
                 }
 
-
-                // GỌI API BACKEND CHO CALCULATE FEE
                 const feeRes = await calculateShipFee({
                     service_id: serviceId,
                     insurance_value: newTotal,
@@ -830,12 +866,12 @@ const calculateUpdateSummary = async () => {
                     to_ward_code: toWardCode,
                     height: 15,
                     length: 15,
-                    weight: 1000,
+                    weight: weight || 1000,
                     width: 15
                 });
-               
+
                 if (feeRes.code === 200 && feeRes.data) {
-                    selectedShippingFee.value = feeRes.data.total; // GHN trả về total trong response
+                    selectedShippingFee.value = feeRes.data.total;
                     shippingServices.value.ghn = {
                         name: 'Giao Hàng Nhanh',
                         fee: selectedShippingFee.value,
@@ -849,7 +885,7 @@ const calculateUpdateSummary = async () => {
                 toast.warning("Không có dịch vụ vận chuyển nào khả dụng cho địa chỉ này.");
             }
         } catch (e) {
-            console.error('Lỗi khi tính phí vận chuyển GHN:', e.response?.data || e);
+            console.error('❌ Lỗi khi tính phí vận chuyển GHN:', e.response?.data || e);
             toast.error(e.response?.data?.message || 'Lỗi khi tính phí vận chuyển GHN.');
             selectedShippingFee.value = order.value.phiVanChuyen;
         } finally {
@@ -859,23 +895,37 @@ const calculateUpdateSummary = async () => {
         selectedShippingFee.value = order.value.phiVanChuyen;
     }
 
+    // ⛔ BỎ LOGIC TÍNH LẠI GIẢM GIÁ
+    // Giữ nguyên tiền giảm giá cũ của đơn hàng gốc, vì backend sẽ tự hủy voucher
+    const discountAmount = order.value.giamGia || 0;
 
-    const newTotalWithShipping = newTotal + selectedShippingFee.value;
-    const finalChange = newTotalWithShipping - order.value.tongTien;
-
+    // Tính tổng tiền mới (chỉ để hiển thị cho người dùng)
+    const newTotalWithShipping = newTotal + selectedShippingFee.value - discountAmount;
 
     updateSummary.value = {
-        oldTotal: order.value.tongTien - order.value.phiVanChuyen,
+        // ... (Giữ nguyên các thuộc tính khác)
+        oldTotal: order.value.tongTienSanPham, // Sửa lại thành tiền sản phẩm cũ
         oldTotalWithShipping: order.value.tongTien,
         oldShippingFee: order.value.phiVanChuyen,
         newShippingFee: selectedShippingFee.value,
-        changes: changesQueue.value.filter(c => c.type !== 'address' || c.description),
         newTotal: newTotal,
+        discountAmount: discountAmount, // Sử dụng giá trị cũ từ order.value
         newTotalWithShipping: newTotalWithShipping,
-        finalChange: finalChange,
+        finalChange: newTotalWithShipping - order.value.tongTien,
+        changes: changesQueue.value.filter(c => c.type !== 'address' || c.description),
         addressChanged: addressChange !== undefined
     };
 
+    console.group("📊 DEBUG: Cập nhật đơn hàng");
+    console.log("🛒 Subtotal cũ:", updateSummary.value.oldTotal);
+    console.log("🛒 Subtotal mới:", updateSummary.value.newTotal);
+    console.log("🚚 Phí ship cũ:", updateSummary.value.oldShippingFee);
+    console.log("🚚 Phí ship mới:", updateSummary.value.newShippingFee);
+    console.log("🎟️ Giảm giá áp dụng:", updateSummary.value.discountAmount);
+    console.log("💰 Tổng tiền cũ (gồm ship):", updateSummary.value.oldTotalWithShipping);
+    console.log("💰 Tổng tiền mới (gồm ship):", updateSummary.value.newTotalWithShipping);
+    console.log("📉 Tiền chênh lệch:", updateSummary.value.finalChange);
+    console.groupEnd();
 
     showUpdateDetails.value = true;
     await nextTick();
@@ -934,6 +984,8 @@ const confirmFinalChanges = async () => {
         return;
     }
 
+    const finalPaymentMethod = 'cod'; // hoặc 'vnpay' tuỳ vào lựa chọn của người dùng
+
 
     // TẠO DTO ĐỂ GỬI LÊN SERVER - ĐÃ SỬA LẠI CHO KHỚP VỚI BACKEND
     const updateDto = {
@@ -950,7 +1002,7 @@ const confirmFinalChanges = async () => {
 
         // Đổi tên trường cho khớp với backend
         phiVanChuyen: updateSummary.value.newShippingFee,
-       
+
         // Bổ sung phương thức thanh toán mới
         phuongThucThanhToanMoi: 'cod', // Cần lấy từ trạng thái của user hoặc logic khác
 
@@ -968,13 +1020,13 @@ const confirmFinalChanges = async () => {
         // Giữ nguyên các trường khác
         tongTienCu: updateSummary.value.oldTotalWithShipping,
     };
-   
+
     console.log("Dữ liệu gửi lên server (updateDto):", updateDto);
 
 
     try {
         const token = Cookies.get('token');
-       
+
         // SỬA LẠI ĐÚNG ĐƯỜNG DẪN API
         await apiClient.put(`/orders/update-all`, updateDto, {
             headers: { 'X-User-ID': userId, 'Authorization': `Bearer ${token}` }
@@ -985,11 +1037,20 @@ const confirmFinalChanges = async () => {
 
 
         const finalChange = updateSummary.value.finalChange;
-       
-        // Xử lý thanh toán bổ sung nếu cần
+
+        // 2. Xử lý thanh toán bổ sung nếu cần
         if (finalChange > 0) {
+            try {
+                sessionStorage.setItem('dataHoaDon', JSON.stringify(updateDto));
+                localStorage.setItem('dataHoaDon', JSON.stringify(updateDto));
+            } catch (e) {
+                console.warn('Không thể lưu dataHoaDon vào storage:', e);
+            }
+
+            // Nếu có thay đổi dương, hiển thị popup để người dùng chọn cách thanh toán
             await handleExtraPayment(finalChange, order.value.id, userId);
         } else if (finalChange < 0) {
+            // Nếu có thay đổi âm, thông báo hoàn tiền và cập nhật lại dữ liệu
             await Swal.fire(
                 'Cập nhật thành công',
                 `Bạn sẽ được hoàn lại ${formatCurrency(Math.abs(finalChange))}. Admin sẽ xử lý hoàn tiền cho bạn.`,
@@ -997,21 +1058,20 @@ const confirmFinalChanges = async () => {
             );
             await fetchOrderDetail();
         } else {
+            // Nếu không có thay đổi tiền, chỉ cần cập nhật lại dữ liệu
+            await Swal.fire('Cập nhật thành công', '', 'success');
             await fetchOrderDetail();
         }
-
 
     } catch (error) {
         console.error("Lỗi khi cập nhật đơn hàng:", error);
         toast.error(error.response?.data?.message || 'Không thể cập nhật đơn hàng. Vui lòng thử lại.');
     } finally {
-        // Dọn dẹp trạng thái để chuẩn bị cho lần chỉnh sửa tiếp theo
         showUpdateDetails.value = false;
         updateSummary.value = null;
         changesQueue.value = [];
     }
 };
-
 
 // Đặt hàm này bên ngoài confirmFinalChanges để tái sử dụng
 async function handleExtraPayment(amount, orderId, userId) {
@@ -1021,32 +1081,25 @@ async function handleExtraPayment(amount, orderId, userId) {
         icon: 'info',
         showCancelButton: true,
         confirmButtonText: 'Thanh toán VNPay ngay',
-        cancelButtonText: 'Trả cod khi nhận hàng',
+        cancelButtonText: 'Trả COD khi nhận hàng',
         reverseButtons: true
     });
 
-
-    // value sẽ là true nếu bấm confirm (VNPay), và sẽ là dismiss nếu bấm cancel (COD)
-    if (paymentMethod) {
-        // --- Xử lý thanh toán VNPay ---
+    if (paymentMethod) { // Người dùng chọn VNPay (bấm Confirm)
         try {
             toast.info("Đang tạo link thanh toán VNPay...");
             const vnpayRequest = {
-                amount: amount.toString(),
+                amount: Math.round(amount),
                 hoaDonId: orderId,
-                ghiChu: `Thanh toan phu phi cho don hang ${orderId}`
+                ghiChu: `Thanh toan phu phi cho don hang ${orderId}`,
+                // Thêm URL thành công và thất bại vào request gửi lên backend
+                cancelPage: "http://localhost:5173/vnpay-return",
+                successPage: "http://localhost:5173/coolmen" // <--- Thêm dòng này để chỉ định trang thành công
             };
-            const token = Cookies.get('token');
-            const vnpayRes = await apiClient.post('/payments/create-payment-url', vnpayRequest, {
-                headers: {
-                    'X-User-ID': userId,
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const vnpayRes = await axios.post(`http://localhost:8080/vnpay`, vnpayRequest);
 
-
-            if (vnpayRes.data && vnpayRes.data.url) {
-                window.location.href = vnpayRes.data.url;
+            if (vnpayRes.data) {
+                window.location.href = vnpayRes.data; // Chuyển hướng đến URL VNPAY
             } else {
                 toast.error("Không thể tạo link thanh toán VNPay. Vui lòng thử lại.");
             }
@@ -1054,8 +1107,7 @@ async function handleExtraPayment(amount, orderId, userId) {
             console.error('Lỗi khi tạo VNPay URL:', vnpayError);
             toast.error(vnpayError.response?.data?.message || 'Lỗi khi tạo link thanh toán. Vui lòng thử lại.');
         }
-    } else {
-        // --- Xử lý thanh toán COD ---
+    } else { // Người dùng chọn COD (bấm Cancel)
         toast.success("Đã ghi nhận thanh toán bằng COD. Vui lòng thanh toán số tiền chênh lệch khi nhận hàng.");
     }
 }
@@ -1074,14 +1126,16 @@ body {
     padding: 2rem 5%;
     box-sizing: border-box;
     /* Dùng margin-top để tránh bị thanh header cố định che */
-    margin-top: 60px; /* Điều chỉnh giá trị này nếu thanh header của bạn cao hơn */
+    margin-top: 60px;
+    /* Điều chỉnh giá trị này nếu thanh header của bạn cao hơn */
 }
 
 
 @media (max-width: 768px) {
     .order-detail-wrapper {
         padding: 1rem 2%;
-        margin-top: 50px; /* Điều chỉnh cho màn hình nhỏ */
+        margin-top: 50px;
+        /* Điều chỉnh cho màn hình nhỏ */
     }
 }
 
@@ -1170,13 +1224,15 @@ h3 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    z-index: 2; /* Đảm bảo các bước không bị chồng chéo */
+    z-index: 2;
+    /* Đảm bảo các bước không bị chồng chéo */
 }
 
 
 /* Vấn đề bị đè lên nhau đã được khắc phục bằng cách điều chỉnh flexbox và z-index */
 .status-step .step-text {
-    word-break: break-word; /* Ngăn chữ tràn ra ngoài */
+    word-break: break-word;
+    /* Ngăn chữ tràn ra ngoài */
 }
 
 
@@ -1246,7 +1302,8 @@ h3 {
     z-index: 10;
     border: 3px solid #fff;
     transition: background-color 0.4s ease;
-    margin-bottom: 5px; /* Thêm khoảng trống giữa chấm và chữ */
+    margin-bottom: 5px;
+    /* Thêm khoảng trống giữa chấm và chữ */
 }
 
 
@@ -1311,7 +1368,7 @@ h3 {
 
 
 .status-step.active::after,
-.status-step.active + .status-step::after {
+.status-step.active+.status-step::after {
     background-color: #3498db;
 }
 
@@ -1965,52 +2022,68 @@ h3 {
 /* --- Nút Cập nhật và Xóa sản phẩm --- */
 .item-actions-detail {
     display: flex;
-    gap: 0.75rem; /* Khoảng cách giữa 2 nút */
+    gap: 0.75rem;
+    /* Khoảng cách giữa 2 nút */
     margin-top: 1rem;
-    align-items: center; /* Căn giữa theo chiều dọc */
-    flex-wrap: wrap; /* Cho phép các nút xuống dòng trên màn hình nhỏ */
+    align-items: center;
+    /* Căn giữa theo chiều dọc */
+    flex-wrap: wrap;
+    /* Cho phép các nút xuống dòng trên màn hình nhỏ */
 }
 
 
 .btn-edit,
 .btn-delete {
-    padding: 0.75rem 1.5rem; /* Padding mặc định */
-    border-radius: 8px; /* Bo góc mềm mại hơn */
+    padding: 0.75rem 1.5rem;
+    /* Padding mặc định */
+    border-radius: 8px;
+    /* Bo góc mềm mại hơn */
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease; /* Hiệu ứng chuyển động mượt mà */
-    border: 1px solid transparent; /* Tạo viền ban đầu */
-    min-width: 120px; /* Đặt chiều rộng tối thiểu cho nút */
-    text-align: center; /* Căn giữa chữ trong nút */
+    transition: all 0.3s ease;
+    /* Hiệu ứng chuyển động mượt mà */
+    border: 1px solid transparent;
+    /* Tạo viền ban đầu */
+    min-width: 120px;
+    /* Đặt chiều rộng tối thiểu cho nút */
+    text-align: center;
+    /* Căn giữa chữ trong nút */
 }
 
 
 /* Nút "Cập nhật SL" */
 .btn-edit {
-    background-color: #409eff; /* Màu xanh dương hiện đại */
+    background-color: #409eff;
+    /* Màu xanh dương hiện đại */
     color: #fff;
-    flex-grow: 2; /* Cho phép nút này giãn ra nhiều hơn */
-    padding: 0.75rem 1.8rem; /* Tăng padding ngang để rộng hơn một chút */
+    flex-grow: 2;
+    /* Cho phép nút này giãn ra nhiều hơn */
+    padding: 0.75rem 1.8rem;
+    /* Tăng padding ngang để rộng hơn một chút */
 }
 
 
 .btn-edit:hover {
-    background-color: #1a73e8; /* Đậm hơn khi hover */
+    background-color: #1a73e8;
+    /* Đậm hơn khi hover */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 
 /* Nút "Xóa" */
 .btn-delete {
-    background-color: #f56c6c; /* Màu đỏ nổi bật cho hành động xóa */
+    background-color: #f56c6c;
+    /* Màu đỏ nổi bật cho hành động xóa */
     color: #fff;
-    flex-grow: 1; /* Nút Xóa vẫn giãn ra nhưng ít hơn nút Cập nhật */
+    flex-grow: 1;
+    /* Nút Xóa vẫn giãn ra nhưng ít hơn nút Cập nhật */
 }
 
 
 .btn-delete:hover {
-    background-color: #c94040; /* Đậm hơn khi hover */
+    background-color: #c94040;
+    /* Đậm hơn khi hover */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -2020,17 +2093,21 @@ h3 {
     .item-actions-detail {
         width: 100%;
         justify-content: space-between;
-        flex-direction: column; /* Xếp chồng nút lên nhau trên màn hình siêu nhỏ */
-        gap: 0.5rem; /* Khoảng cách nhỏ hơn khi xếp chồng */
+        flex-direction: column;
+        /* Xếp chồng nút lên nhau trên màn hình siêu nhỏ */
+        gap: 0.5rem;
+        /* Khoảng cách nhỏ hơn khi xếp chồng */
     }
 
 
     .btn-edit,
     .btn-delete {
-        flex: 1 1 100%; /* Cả hai nút chiếm toàn bộ chiều rộng khi xếp chồng */
-        padding: 0.6rem 0.75rem; /* Giảm padding trên mobile */
-        min-width: auto; /* Bỏ min-width để nút co giãn linh hoạt */
+        flex: 1 1 100%;
+        /* Cả hai nút chiếm toàn bộ chiều rộng khi xếp chồng */
+        padding: 0.6rem 0.75rem;
+        /* Giảm padding trên mobile */
+        min-width: auto;
+        /* Bỏ min-width để nút co giãn linh hoạt */
     }
 }
 </style>
-
