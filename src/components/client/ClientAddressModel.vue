@@ -278,7 +278,11 @@ const saveAddress = async () => {
   try {
     if (isEditing.value && addressForm.value.id) {
       await apiClient.put(`/addresses/${addressForm.value.id}`, requestData, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { 
+          //Authorization: `Bearer ${token}`,
+                  'X-User-ID': props.customerId 
+         }
+
       });
       toast.success('Cập nhật địa chỉ thành công!');
     } else {
@@ -288,7 +292,7 @@ const saveAddress = async () => {
       }
       await apiClient.post(`/addresses`, requestData, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          //Authorization: `Bearer ${token}`,
           'X-User-ID': props.customerId
         }
       });

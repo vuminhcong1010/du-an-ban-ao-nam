@@ -3,7 +3,7 @@
     <div class="container">
       <div class="logo">
         <a href="/coolmen">
-          <img src="/src/assets/logo.png" alt="CoolMen Icon" class="coolmen-logo-icon">
+          <img src="/src/assets/Cool_men-xoa-phong.png" alt="CoolMen Icon" class="coolmen-logo-icon">
           CoolMen
         </a>
       </div>

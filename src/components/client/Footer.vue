@@ -4,7 +4,7 @@
       <div class="row">
         <!-- Logo + Mô tả -->
         <div class="col-md-3 mb-3">
-          <img src="/src/assets/logo.png" alt="CoolMen" class="mb-2" style="max-width: 80px;">
+          <img src="/src/assets/Cool_men-xoa-phong.png" alt="CoolMen" class="mb-2" style="max-width: 80px;">
           <p class="footer-text">
             CoolMen là thương hiệu thời trang nam mang đến những sản phẩm đa dạng từ áo thun, sơ mi, quần jeans, vest đến phụ kiện thời trang. 
             Chúng tôi cam kết cung cấp chất liệu bền đẹp, thiết kế tinh tế, giá cả hợp lý để mỗi khách hàng đều có thể tự tin khẳng định phong cách riêng.

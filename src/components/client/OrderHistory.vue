@@ -6,8 +6,8 @@
 
     <p v-if="loading" class="loading-message">Đang tải lịch sử đơn hàng...</p>
 
-    <div v-if="orders.length > 0" class="order-list">
-      <div v-for="order in orders" :key="order.id" class="order-card">
+    <div v-if="paginatedOrders.length > 0" class="order-list">
+      <div v-for="order in paginatedOrders" :key="order.id" class="order-card">
         <div class="card-header">
           <h3>Mã đơn hàng: {{ order.maHoaDon }}</h3>
           <p><strong>Trạng thái:</strong> <span :class="getStatusClass(order.trangThai)">{{ getStatusText(order.trangThai) }}</span></p>
@@ -42,48 +42,36 @@
         </div>
       </div>
     </div>
+    
+    <div v-if="totalPages > 1" class="pagination-controls">
+      <button @click="prevPage" :disabled="currentPage === 1" class="pagination-btn">Trang trước</button>
+      <span>Trang {{ currentPage }} / {{ totalPages }}</span>
+      <button @click="nextPage" :disabled="currentPage === totalPages" class="pagination-btn">Trang sau</button>
+    </div>
 
-    <div v-else-if="!loading">
+    <div v-else-if="!loading && orders.length === 0">
       <p class="no-orders-message">Hiện tại bạn chưa có đơn hàng nào.</p>
     </div>
 
-    <div v-if="showDetailModal && selectedOrder" class="modal-overlay" @click.self="closeDetailModal">
-      <div class="modal-content">
-        <button class="close-button" @click="closeDetailModal">&times;</button>
-        <h2>Chi tiết đơn hàng #{{ selectedOrder.maHoaDon }}</h2>
-        <p><strong>Ngày đặt:</strong> {{ formatDate(selectedOrder.ngayDat) }}</p>
-        <p><strong>Tổng tiền:</strong> {{ formatCurrency(selectedOrder.tongTien) }}</p>
-        <p><strong>Trạng thái:</strong> <span :class="getStatusClass(selectedOrder.trangThai)">{{ getStatusText(selectedOrder.trangThai) }}</span></p>
-        <p><strong>Địa chỉ giao hàng:</strong> {{ selectedOrder.diaChiNguoiNhan }}</p>
-        <p><strong>Số điện thoại:</strong> {{ selectedOrder.sdtNguoiNhan }}</p>
-        <p><strong>Ghi chú:</strong> {{ selectedOrder.ghiChu || 'Không có' }}</p>
-
-        <h3>Sản phẩm:</h3>
-        <ul v-if="selectedOrder.danhSachSanPham && selectedOrder.danhSachSanPham.length > 0" class="order-items-list">
-          <li v-for="item in selectedOrder.danhSachSanPham" :key="item.idHoaDonChiTiet">
-            <div class="item-info">
-              <span>{{ item.tenSanPham }} ({{ item.tenKichCo }} / {{ item.tenMau }}) - Số lượng: {{ item.soLuong }}</span>
-              <span>Giá: {{ formatCurrency(item.giaBanTaiThoiDiem) }}</span>
-            </div>
-          </li>
-        </ul>
-        <p v-else class="no-items-message">Đơn hàng này chưa có sản phẩm nào.</p>
-      </div>
     </div>
-  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 
+// Các biến hiện có
 const orders = ref([]);
 const loading = ref(true);
 const error = ref(null);
 const showDetailModal = ref(false);
 const selectedOrder = ref(null);
 const router = useRouter();
+
+// Các biến mới cho Phân trang
+const currentPage = ref(1); // Trang hiện tại, bắt đầu từ trang 1
+const itemsPerPage = 5; // Số lượng đơn hàng trên mỗi trang
 
 const apiClient = axios.create({
   baseURL: 'http://localhost:8080/client/orders',
@@ -153,7 +141,8 @@ const fetchOrderHistory = async () => {
     });
 
     if (response.data && response.data.data) {
-      orders.value = response.data.data;
+      // Sắp xếp đơn hàng theo ngày đặt mới nhất
+      orders.value = response.data.data.sort((a, b) => new Date(b.ngayDat) - new Date(a.ngayDat));
       console.log('Fetched orders:', orders.value);
     } else {
       orders.value = [];
@@ -193,7 +182,6 @@ const closeDetailModal = () => {
   selectedOrder.value = null;
 };
 
-// Condition changed to order.trangThai === 0
 const confirmCancelOrder = (orderId) => {
   if (confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${orderId} này không? Hành động này không thể hoàn tác.`)) {
     cancelOrder(orderId);
@@ -218,6 +206,29 @@ const cancelOrder = async (orderId) => {
   }
 };
 
+// Logic phân trang
+const totalPages = computed(() => {
+  return Math.ceil(orders.value.length / itemsPerPage);
+});
+
+const paginatedOrders = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return orders.value.slice(start, end);
+});
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
+
 onMounted(() => {
   fetchOrderHistory();
 });
@@ -226,21 +237,21 @@ onMounted(() => {
 <style scoped>
 /* Keep existing styles */
 .order-history-container {
-width: 100%; /* Đã thay đổi */
+  width: 100%; /* Đã thay đổi */
   margin: 0 auto;
   padding: 25px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f0f2f5;
+  /* background-color: #f0f2f5;
   border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  margin-top: 80px; /* Adjusted for header overlap */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); */
+  margin-top: 5px; /* Adjusted for header overlap */
 }
 
 
 
 h1 {
   text-align: center;
-  color: #2c3e50;
+  color: #0a2c57;
   margin-bottom: 30px;
   font-size: 2.5em;
   font-weight: 700;
@@ -539,5 +550,40 @@ h1 {
 @keyframes slideIn {
   from { transform: translateY(-30px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 30px;
+  gap: 20px;
+}
+
+.pagination-btn {
+  background-color: #0a2c57;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #0d3e7e;
+}
+
+.pagination-btn:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.pagination-controls span {
+  font-size: 1.1em;
+  color: #555;
+  font-weight: 500;
 }
 </style>
