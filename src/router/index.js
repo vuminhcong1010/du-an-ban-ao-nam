@@ -20,7 +20,7 @@ import ThemPhieuGiamGia from "@/components/admin/ThemPhieuGiamGIa.vue";
 import SuaPhieuGiamGia from "@/components/admin/SuaPhieuGiamGia.vue";
 import HoaDon from "../components/admin/HoaDon.vue";
 import HoaDonChiTiet from "@/components/admin/HoaDonChiTiet.vue";
-import BanHang from "@/components/admin/BanHang.vue";
+import BanHang from "@/components/admin/BanHang.vue"
 import ThemSP from "@/components/admin/ThemSP.vue"; // This is likely the "add product" page
 import SuaDotGiamGia from "@/components/admin/SuaDotGiamGia.vue";
 import ThemDotGiamGia from "@/components/admin/ThemDotGiamGia.vue";

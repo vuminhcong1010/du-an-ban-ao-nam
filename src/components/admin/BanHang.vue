@@ -241,7 +241,9 @@ async function closeOrder(id) {
           },
         }
       );
-      console.log(`✅ Hoàn lại số lượng phiếu giảm giá ID: ${order.giamGia.id}`);
+      console.log(
+        `✅ Hoàn lại số lượng phiếu giảm giá ID: ${order.giamGia.id}`
+      );
     }
 
     // 3. Xóa hóa đơn
@@ -268,7 +270,6 @@ async function closeOrder(id) {
     Swal.fire("Lỗi", "Xóa hóa đơn thất bại! Vui lòng thử lại.", "error");
   }
 }
-
 
 // đóng đơn hàng tự động:
 async function closeOrderTuDong(id) {
@@ -638,9 +639,29 @@ const hoanThanhDonHang = async (order) => {
 
       // ✅ Kiểm tra thanh toán
       if (!order.thanhToan || order.thanhToan.length === 0) {
-        toast.error("❌ Vui lòng chọn phương thức thanh toán trước khi hoàn tất đơn hàng.");
+        toast.error(
+          "❌ Vui lòng chọn phương thức thanh toán trước khi hoàn tất đơn hàng."
+        );
         return;
       }
+      // kiểm tra phiếu giảm giá:
+      const checkRes = await fetch(
+        `http://localhost:8080/ban_hang/kiem-tra-so-luong/${order.giamGia.id}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!checkRes.ok) {
+        const errorMsg = await checkRes.text();
+        toast.error(`Lỗi kiểm tra số lượng: ${errorMsg}`);
+        return;
+      }
+
+      // toast.success("Phiếu giảm giá còn số lượng hợp lệ");
 
       const maHoaDon = order.maHoaDon;
       const selectedItems = order.listSanPham;
@@ -750,8 +771,6 @@ const hoanThanhDonHang = async (order) => {
     }
   });
 };
-
-
 
 function xoaToanBoLocal() {
   const confirmed = window.confirm(

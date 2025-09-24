@@ -225,7 +225,7 @@ const apply = async () => {
 
       giaSauGiam = Math.max(Math.round(giaSauGiam), 0);
 
-      const soLuongMua = quantities.value[item.maChiTietSapPham] || 1;
+      const soLuongMua = 1;
 
       return {
         idSanPhamChiTiet: item.maChiTietSapPham,
@@ -357,7 +357,7 @@ const filteredSanPham = computed(() => {
               <div class="col-md-5 ms-2">
                 <label class="form-label fw-bold">Trạng thái</label>
                 <div class="d-flex gap-3">
-                  <input type="radio" /> Đang bán <input type="radio" /> Ngừng
+                  <input type="radio" checked /> Đang bán <input type="radio" /> Ngừng
                   bán
                 </div>
               </div>
@@ -367,13 +367,10 @@ const filteredSanPham = computed(() => {
                 <label class="form-label fw-bold">Danh mục</label>
                 <select
                   class="form-select"
-                  v-model="selectedDanhMucId"
-                  @change="locSanPham"
                 >
-                  <option :value="null">Tất cả danh mục</option>
-                  <option v-for="dm in danhMuc" :key="dm.id" :value="dm.id">
-                    {{ dm.tenDanhMuc }}
-                  </option>
+                  <option selected>Tất cả danh mục</option>
+                  <option >Áo</option>
+                  <option >Quần</option>
                 </select>
               </div>
 
@@ -382,17 +379,11 @@ const filteredSanPham = computed(() => {
                 <label class="form-label fw-bold">Chất liệu</label>
                 <select
                   class="form-select"
-                  v-model="selectedChatLieuId"
-                  @change="locSanPham"
                 >
-                  <option :value="null">Tất cả chất liệu</option>
-                  <option
-                    v-for="cl in danhSachChatLieu"
-                    :key="cl.id"
-                    :value="cl.id"
-                  >
-                    {{ cl.tenChatLieu }}
-                  </option>
+                  <option selected>Tất cả chất liệu</option>
+                  <option >Cotton</option>
+                  <option >Nano</option>
+                  <option >Poly</option>
                 </select>
               </div>
             </div>
@@ -412,7 +403,7 @@ const filteredSanPham = computed(() => {
                   <th>Chất liệu</th>
                   <th>Giá</th>
                   <th>Kho</th>
-                  <th>Số lượng mua</th>
+                  <!-- <th>Số lượng mua</th> -->
                   <th>Hành động</th>
                 </tr>
               </thead>
@@ -433,10 +424,10 @@ const filteredSanPham = computed(() => {
                   <td>{{ item.gia }}</td>
                   <td>
                     {{
-                      item.soLuong - (quantities[item.maChiTietSapPham] || 0)
+                      item.soLuong
                     }}
                   </td>
-                  <td>
+                  <!-- <td>
                     <input
                       type="number"
                       min="1"
@@ -450,7 +441,7 @@ const filteredSanPham = computed(() => {
                       class="form-control form-control-sm"
                       style="width: 70px"
                     />
-                  </td>
+                  </td> -->
                   <td class="text-center">
                     <input
                       type="checkbox"

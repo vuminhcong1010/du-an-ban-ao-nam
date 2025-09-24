@@ -344,7 +344,7 @@ const thanhToanDonHang = async (data) => {
               />
             </div>
             <div class="col-md-6">
-              <label class="fw-bold">Số tiền khách trả:</label>
+              <label class="fw-bold">Số tiền:</label>
               <input
                 v-model.number="soTienKhachTra"
                 type="number"

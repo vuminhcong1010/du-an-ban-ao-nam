@@ -251,6 +251,10 @@ const apply = async () => {
       Swal.fire("Lỗi", "Số lượng phải lớn hơn 0", "error");
       return;
     }
+    if (soLuongMoi.value > props.kho) {
+      Swal.fire("Lỗi", "Số lượng vượt quá số lượng tồn", "error");
+      return;
+    }
 
     // --- 0. Xác nhận thay đổi ---
     const result = await Swal.fire({
@@ -306,12 +310,14 @@ const apply = async () => {
         soLuongMua: soLuongMoi.value - props.soLuongHienTai,
       }]),
     });
-
+    console.log("so luong moi",soLuongMoi.value)
     // --- 3. Lưu chi tiết hóa đơn ---
     const chiTietHoaDon = [{
       idSanPhamChiTiet: props.maChiTietSanPham,
-      gia: giaSauGiam,
-      soLuong: soLuongMoi.value - props.soLuongHienTai,
+      gia: giaSauGiam ,
+      soLuong: (soLuongMoi.value - props.soLuongHienTai) >= 0 
+             ? (soLuongMoi.value - props.soLuongHienTai) 
+             : soLuongMoi.value,
       thanhTien: giaSauGiam * soLuongMoi.value,
       idHoaDon: props.idHoaDon,
       trangThai: 0,

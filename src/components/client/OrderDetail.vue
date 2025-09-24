@@ -2546,7 +2546,6 @@ h3 {
 
 
 
-
     .btn-edit,
     .btn-delete {
         flex: 1 1 100%;
