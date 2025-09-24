@@ -160,12 +160,11 @@
 <script setup>
 import { useToast } from "vue-toastification";
 import axios from 'axios'
-import { ref, watch, onBeforeUnmount } from 'vue'
+import { ref, watch, onBeforeUnmount, onMounted } from 'vue'
 import { defineEmits } from 'vue'
 import QRCode from 'qrcode'
 import Swal from 'sweetalert2'
 import Cookies from 'js-cookie'
-
 const token = Cookies.get('token')
 const toast = useToast();
 const props = defineProps({
@@ -189,8 +188,8 @@ let image = ref([])
 let show = ref(true)
 let errors = ref({}) //
 const emit = defineEmits(['close-modal'])
+
 function submitAndClose() {
-  
   // thực hiện logic lưu ở đây (nếu có)
   emit('close-modal') // yêu cầu cha đóng modal
 }
@@ -253,25 +252,20 @@ const validateForm = () => {
     newErrors.moTa = 'Mô tả không được để trống'
   }
 
-  // // Các trường bắt buộc khác
-  // if (!req.value.idMau.id) newErrors.idMau = 'Vui lòng chọn màu'
-  // if (!req.value.idSize.id) newErrors.idSize = 'Vui lòng chọn size'
-  // if (!req.value.idCoAo.id) newErrors.idCoAo = 'Vui lòng chọn cổ áo'
-  // if (!req.value.idTayAo.id) newErrors.idTayAo = 'Vui lòng chọn tay áo'
-  // if (!req.value.idKieuAo.id) newErrors.idKieuAo = 'Vui lòng chọn kiểu áo'
-
   errors.value = newErrors
   return Object.keys(newErrors).length === 0
 }
 
-// Fetch dữ liệu sản phẩm khi props thay đổi
-watch(() => props.idChiTietSanPham, async (newVal) => {
+// Tạo function riêng để fetch data
+const fetchProductData = async (id) => {
+  if (!id) return
+  
   try {
-    const response = await axios.get(`http://localhost:8080/san-pham/find-by-id/${newVal}`,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
+    const response = await axios.get(`http://localhost:8080/san-pham/find-by-id/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
     const data = response.data
     chatLieu.value = data.wrapper.chatLieus
     kieuAo.value = data.wrapper.kieuAos
@@ -287,7 +281,20 @@ watch(() => props.idChiTietSanPham, async (newVal) => {
   } catch (err) {
     console.error("❌ Lỗi khi gọi API:", err)
   }
+}
+
+// Gọi API ngay khi component mount
+onMounted(() => {
+  if (props.idChiTietSanPham) {
+    fetchProductData(props.idChiTietSanPham)
+  }
 })
+
+// Fetch dữ liệu sản phẩm khi props thay đổi
+watch(() => props.idChiTietSanPham, (newVal) => {
+  fetchProductData(newVal)
+}, { immediate: true })
+
 // Hàm tạo QR
 const taoQR = async (ma) => {
   if (!qrCanvas.value) return
@@ -347,20 +354,22 @@ function removeUploadedImage(rowIndex, imageIndex) {
 // Upload toàn bộ ảnh
 async function uploadAllImages() {
   const result = await Swal.fire({
-                    title: 'Xác nhận sửa?',
-                    text: 'Bạn có chắc muốn sửa dữ liệu này không?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Sửa',
-                    cancelButtonText: 'Hủy'
-                });
-    if (!result.isConfirmed) {
-      toast.info('Hủy thao tác sửa');
-      console.log('User cancelled');
-      return;
-    }
+    title: 'Xác nhận sửa?',
+    text: 'Bạn có chắc muốn sửa dữ liệu này không?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Sửa',
+    cancelButtonText: 'Hủy'
+  });
+  
+  if (!result.isConfirmed) {
+    toast.info('Hủy thao tác sửa');
+    console.log('User cancelled');
+    return;
+  }
+  
   for (let rowIndex = 0; rowIndex < files.value.length; rowIndex++) {
     const currentFiles = files.value[rowIndex] || []
     if (!currentFiles.length) continue
@@ -394,25 +403,25 @@ async function uploadAllImages() {
   // Gộp tất cả URL ảnh
   req.value.images = imageUrls.value.flat()
   console.log(req.value);
+  
   try {
     if(validateForm()){
-         await axios.post("http://localhost:8080/san-pham/update-chi-tiet-san-pham",req.value,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
-     setTimeout(() => {
-  }, 500);
-    toast.success("Cập nhật thành công");
-    submitAndClose()
-    }else{
+      await axios.post("http://localhost:8080/san-pham/update-chi-tiet-san-pham", req.value, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      setTimeout(() => {
+      }, 500);
+      toast.success("Cập nhật thành công");
+      submitAndClose()
+    } else {
       toast.error("Vui lòng điền đầy đủ thông tin ");
     }
   } catch (err) {
     toast.error("Cập nhật thất bại");
     console.error('❌ Lỗi gửi API:', err)
   }
-  
 }
 
 onBeforeUnmount(() => {

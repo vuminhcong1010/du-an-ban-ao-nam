@@ -4,26 +4,26 @@
     <main class="client-main-content">
       <router-view></router-view>
     </main>
+    <ClientFooter />
   </div>
 </template>
 
 <script>
-// Import component Header từ thư mục components/client
-// Đảm bảo đường dẫn này đúng với vị trí file Header.vue của bạn
-import ClientHeader from '@/components/client/Header.vue';
-
-// Nếu bạn có một component Footer, hãy import nó vào đây
-// import ClientFooter from '@/components/client/Footer.vue';
+import ClientHeader from '@/components/client/Header.vue'
+import ClientFooter from '@/components/client/Footer.vue'
 
 export default {
-  name: 'ClientLayout', // Tên của component layout này
+  name: 'ClientLayout',
   components: {
-    ClientHeader, // Đăng ký ClientHeader để có thể sử dụng trong template
-    // ClientFooter, // Đăng ký ClientFooter nếu có
-  },
-};
+    ClientHeader,
+    ClientFooter
+  }
+}
 </script>
-
+<!-- <script setup>
+import Cookies from 'js-cookie'
+Cookies.remove('token')
+</script> -->
 <style scoped>
 /* CSS cho ClientLayout, chỉ áp dụng cho component này nhờ 'scoped' */
 .client-layout {
@@ -39,6 +39,7 @@ export default {
 
 .client-main-content {
   flex-grow: 1;
+  background-color: #F3F4F6;
   /* Cho phép phần nội dung chính chiếm hết không gian còn lại */
   /*
     LƯU Ý QUAN TRỌNG VỀ PADDING VÀ MAX-WIDTH:

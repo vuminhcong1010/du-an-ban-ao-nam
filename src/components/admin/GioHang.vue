@@ -4,6 +4,8 @@ import { Plus, Trash } from "lucide-vue-next";
 import ThemSanPham from "./ThemSanPhamBanHang.vue";
 import Cookies from "js-cookie";
 import { onMounted } from "vue";
+import { useToast } from "vue-toastification";
+const toast = useToast();
 const props = defineProps({
   order: Object,
   activeTab: Number,
@@ -112,10 +114,15 @@ const nhanSanPhamDaChon = async (danhSachSanPham) => {
   }
 };
 
-
 const xoaSanPhamKhoiDonHang = (index) => {
+  const confirmAction = window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này khỏi đơn hàng?");
+  if (!confirmAction) {
+    return;
+  }
   props.order.listSanPham.splice(index, 1);
+  toast.success("Xóa sản phẩm thành công")
 };
+
 
 // validate:
 const validateSoLuong = (item) => {
@@ -210,7 +217,18 @@ onMounted(async () => {
         <tbody>
           <tr v-for="(item, index) in order.listSanPham" :key="index">
             <td>{{ index + 1 }}</td>
-            <td></td>
+            <td>
+              <img
+                :src="item.urlAnh"
+                style="
+                  width: 80px;
+                  height: 100px;
+                  object-fit: cover;
+                  margin-right: 10px;
+                "
+                alt="Sản phẩm"
+              />
+            </td>
             <td>{{ item.idSanPham.tenSanPham }}</td>
             <td>
               <span>Size: {{ item.idSize.soCo }}</span> <br />

@@ -1,14 +1,16 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 
 const search = ref("");
 const selected = ref({});
 
+const anhMap = ref({}); // Lưu ảnh theo id sản phẩm
 let listSanPham = ref([]);
 
 // Phân trang
 const currentPage = ref(0);
 const pageSize = ref(5);
+3;
 const totalPages = ref(0);
 
 // Props
@@ -32,9 +34,34 @@ const fetchSanPhamPaginated = async () => {
     );
     const data = await response.json();
     listSanPham.value = data.content;
+
+    // lấy ảnh:
+    listSanPham.value.forEach((sp) => {
+      fetchAnhSanPham(sp.id);
+    });
+
     totalPages.value = data.totalPages;
   } catch (error) {
     console.error("Lỗi khi fetch sản phẩm:", error);
+  }
+};
+
+// lay ảnh sản phẩm
+const fetchAnhSanPham = async (id) => {
+  console.log(id);
+  try {
+    const response = await fetch(
+      `http://localhost:8080/chi-tiet-san-pham/lay-anh/${id}`
+    );
+    if (response.ok) {
+      const url = await response.text();
+      console.log(url);
+      anhMap.value[id] = url; // Gán đường dẫn ảnh vào map
+    } else {
+      anhMap.value[id] = "https://via.placeholder.com/50"; // Ảnh mặc định khi không có ảnh
+    }
+  } catch (error) {
+    anhMap.value[id] = "https://via.placeholder.com/50"; // Ảnh mặc định khi lỗi
   }
 };
 
@@ -85,7 +112,8 @@ const apply = () => {
       thanhTien: item.gia,
       idHoaDon: maHoaDon,
       baoGiaThayDoi: false,
-      giaMoi:"",
+      giaMoi: "",
+      urlAnh: anhMap.value[item.id],
     };
   });
 
@@ -93,6 +121,9 @@ const apply = () => {
   emit("close");
 };
 
+const filteredSanPham = computed(() => {
+  return listSanPham.value.filter((sp) => sp.soLuong > 0);
+});
 </script>
 
 <template>
@@ -113,6 +144,79 @@ const apply = () => {
         </div>
 
         <div class="modal-body">
+          <!-- bo loc -->
+          <div class="">
+            <div class="row g-3">
+              <div class="col-md-12">
+                <label class="form-label fw-bold">Bộ lọc</label>
+                <div class="d-flex align-items-center gap-2">
+                  <input
+                    type="text"
+                    class="form-control"
+                    placeholder="Tìm theo mã, tên sản phẩm"
+                    v-model="timKiem"
+                  />
+                  <button
+                    type="button"
+                    class="btn"
+                    style="
+                      background-color: #0a2c57;
+                      color: white;
+                      white-space: nowrap;
+                    "
+                    @click="locSanPham"
+                  >
+                    Tìm kiếm
+                  </button>
+                </div>
+              </div>
+
+              <!-- Trạng thái -->
+              <div class="col-md-5 ms-2">
+                <label class="form-label fw-bold">Trạng thái</label>
+                <div class="d-flex gap-3">
+                  <input type="radio" /> Đang bán <input type="radio" /> Ngừng
+                  bán
+                </div>
+              </div>
+
+              <!-- Danh mục -->
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Danh mục</label>
+                <select
+                  class="form-select"
+                  v-model="selectedDanhMucId"
+                  @change="locSanPham"
+                >
+                  <option :value="null">Tất cả danh mục</option>
+                  <option v-for="dm in danhMuc" :key="dm.id" :value="dm.id">
+                    {{ dm.tenDanhMuc }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Chất liệu -->
+              <div class="col-md-3">
+                <label class="form-label fw-bold">Chất liệu</label>
+                <select
+                  class="form-select"
+                  v-model="selectedChatLieuId"
+                  @change="locSanPham"
+                >
+                  <option :value="null">Tất cả chất liệu</option>
+                  <option
+                    v-for="cl in danhSachChatLieu"
+                    :key="cl.id"
+                    :value="cl.id"
+                  >
+                    {{ cl.tenChatLieu }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <!-- --------------- -->
+
           <!-- Table sản phẩm -->
           <div class="table-responsive">
             <table class="table align-middle">
@@ -127,17 +231,17 @@ const apply = () => {
                   <th>Chất liệu</th>
                   <th>Giá</th>
                   <th>Kho</th>
-               
+
                   <th>Chọn</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(item, index) in listSanPham" :key="index">
+                <tr v-for="(item, index) in filteredSanPham" :key="index">
                   <td>{{ index + 1 }}</td>
                   <td>
                     <img
-                      src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
-                      style="width: 20px; height: 20px"
+                      :src="anhMap[item.id] || 'https://via.placeholder.com/50'"
+                      style="width: 50px; height: 50px; object-fit: cover"
                     />
                   </td>
                   <td>{{ item.maChiTietSapPham }}</td>
@@ -147,11 +251,15 @@ const apply = () => {
                   <td>{{ item.idSanPham.idChatLieu.tenChatLieu }}</td>
                   <td>{{ item.gia.toLocaleString() }}đ</td>
                   <td>{{ item.soLuong }}</td>
-                  
+
                   <td>
                     <input
                       type="checkbox"
-                      :checked="selectedItems.some(i => i.maChiTietSapPham === item.maChiTietSapPham)"
+                      :checked="
+                        selectedItems.some(
+                          (i) => i.maChiTietSapPham === item.maChiTietSapPham
+                        )
+                      "
                       @change="toggleSelection(item)"
                     />
                   </td>

@@ -218,7 +218,7 @@ onMounted(() => {
   font-size: 13px; /* nhỏ hơn */
   font-weight: 600;
   margin-bottom: 4px;
-  color: #222;
+  color:  #0a2c57;
 }
 .thongke-tonghop-value {
   font-size: 20px; /* nhỏ hơn */

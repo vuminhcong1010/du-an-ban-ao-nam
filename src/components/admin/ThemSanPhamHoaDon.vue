@@ -1,9 +1,9 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import Cookies from 'js-cookie'
+import Cookies from "js-cookie";
 
-const token = Cookies.get('token')
+const token = Cookies.get("token");
 const search = ref("");
 const selected = ref({});
 const quantities = ref({});
@@ -15,11 +15,12 @@ const totalPages = ref(0);
 const fetchSanPhamPaginated = async () => {
   try {
     const response = await fetch(
-      `http://localhost:8080/chi-tiet-san-pham/phan-trang?page=${currentPage.value}&size=${pageSize.value}`, {
-  headers: {
-    Authorization: `Bearer ${token}` 
-  }
-}
+      `http://localhost:8080/chi-tiet-san-pham/phan-trang?page=${currentPage.value}&size=${pageSize.value}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
     const data = await response.json();
     listSanPham.value = data.content; // Spring Data trả về `content`, `totalPages`, ...
@@ -103,7 +104,7 @@ const apply = async () => {
   console.log("✅ Dữ liệu result gửi xuống:", result);
 
   const bodyUpdateSoLuong = result.map((r) => ({
-    idSanPhamChiTiet: r.id,
+    idSanPhamChiTiet: r.idSanPhamChiTiet,
     soLuongMua: r.soLuong,
   }));
 
@@ -129,7 +130,7 @@ const apply = async () => {
     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}` ,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(result),
@@ -140,7 +141,7 @@ const apply = async () => {
       await fetch("http://localhost:8080/lich-su-hoa-don/them", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}` ,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -157,6 +158,26 @@ const apply = async () => {
   }
   emit("selected", selectedItems.value);
   emit("close");
+};
+
+// them anh san pham:
+
+const layDuongDanAnh = async (idChiTietSanPham) => {
+  try {
+    const response = await fetch(
+      `http://localhost:8080/chi-tiet-san-pham/lay-anh/${idChiTietSanPham}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    const data = await response.json();
+    listSanPham.value = data.content; // Spring Data trả về `content`, `totalPages`, ...
+    totalPages.value = data.totalPages;
+  } catch (error) {
+    console.error("Lỗi khi lay duong dan anh san pham:", error);
+  }
 };
 </script>
 

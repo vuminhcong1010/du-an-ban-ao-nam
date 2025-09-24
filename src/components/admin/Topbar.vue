@@ -33,7 +33,7 @@ if (!token) {
       console.warn("⛔ Token đã hết hạn")
       Cookies.remove('token')       // ❌ Xóa token cũ
       trangThai.value = false
-      router.push('/login')         // 👉 Điều hướng sang login
+      router.push('/dang-nhap')         // 👉 Điều hướng sang login
     } else {
       trangThai.value = true
     }
@@ -41,7 +41,7 @@ if (!token) {
   } catch (err) {
     Cookies.remove('token')
     trangThai.value = false
-    router.push('/login')
+    router.push('/dang-nhap')
   }
 }
 

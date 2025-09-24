@@ -1,4 +1,4 @@
-<template>
+<template class="view">
     <div class="container product-page-container">
         <div class="row">
             <div class="col-md-3">
@@ -10,15 +10,15 @@
                         </div>
                         <div v-show="expandedSections.price" class="filter-content">
                             <div class="mb-3 d-flex align-items-center gap-2">
-                                <div class="input-group" style="max-width: 90px;">
+                                <div class="input-group" style="max-width: 900px;">
                                     <span class="input-group-text">VND</span>
-                                    <input type="number" class="form-control form-control-sm"
+                                    <input type="number max-width: 600px" class="form-control form-control-sm"
                                         v-model.number="priceRange[0]" @change="onPriceInputChange(0)" :min="minPrice"
                                         :max="priceRange[1]" />
                                 </div>
-                                <div class="input-group" style="max-width: 90px;">
+                                <div class="input-group" style="max-width: 900px;">
                                     <span class="input-group-text">VND</span>
-                                    <input type="number" class="form-control form-control-sm"
+                                    <input type="number max-width: 600px" class="form-control form-control-sm"
                                         v-model.number="priceRange[1]" @change="onPriceInputChange(1)"
                                         :min="priceRange[0]" :max="maxPrice" />
                                 </div>
@@ -32,7 +32,7 @@
                         <div class="filter-header" @click="toggleSection('category')">
                             <h5>Thể loại</h5>
                             <span class="filter-count" v-if="categoryCounts.total > 0">({{ categoryCounts.total
-                            }})</span>
+                                }})</span>
                             <i :class="expandedSections.category ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"></i>
                         </div>
                         <div v-show="expandedSections.category" class="filter-content">
@@ -42,7 +42,7 @@
                                 <label class="form-check-label" :for="cat">
                                     {{ cat }}
                                     <span class="filter-item-count" v-if="categoryCounts[cat]">({{ categoryCounts[cat]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -74,9 +74,9 @@
                         </div>
                         <div v-show="expandedSections.color" class="filter-content">
                             <div class="color-options mb-3">
-                                <div v-for="color in uniqueColors" :key="color"
-                                    :class="['color-box', mapColorToCssClass(color), selectedColors.includes(color) ? 'selected' : '']"
-                                    @click="toggleColor(color)">
+                                <div v-for="color in uniqueColors" :key="color" class="color-box"
+                                    :style="{ backgroundColor: mapColorToCssClass(color) }"
+                                    :class="{ selected: selectedColors.includes(color) }" @click="toggleColor(color)">
                                     <span v-if="selectedColors.includes(color)" class="checkmark">✓</span>
                                 </div>
                             </div>
@@ -86,7 +86,7 @@
                                 <label class="form-check-label" :for="color + '-checkbox'" @click="toggleColor(color)">
                                     {{ color }}
                                     <span class="filter-item-count" v-if="colorCounts[color]">({{ colorCounts[color]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -120,7 +120,7 @@
                                 <label class="form-check-label" :for="`rating-${star}`">
                                     <span class="stars">{{ '★'.repeat(star) }}</span> & hướng lên
                                     <span class="filter-item-count" v-if="ratingCounts[star]">({{ ratingCounts[star]
-                                    }})</span>
+                                        }})</span>
                                 </label>
                             </div>
                         </div>
@@ -166,34 +166,61 @@
                         </div>
                     </div>
 
-                    <div class="product-grid">
-                        <div class="product-card" v-for="product in paginatedProducts" :key="product.id">
-                              <div class="card h-100 position-relative" @click="goToProductDetail(product.id)">
-                                <img :src="product.image || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png'"
-                                    class="card-img-top" :alt="product.name" />
-                                <div v-if="product.discount && product.discount > 0" class="discount-badge">
-                                    -{{ product.discount }}%
-                                </div>
-                                <div class="card-body">
-                                    <h6 class="card-title">{{ product.name }}</h6>
-                                    <div class="rating-section">
-                                        <span v-for="star in 5" :key="star" class="star">
-                                            <i v-if="star <= product.rating" class="bi bi-star-fill"></i>
-                                            <i v-else class="bi bi-star"></i>
-                                        </span>
-                                        <small v-if="product.reviews !== undefined && product.reviews > 0">({{
-                                            product.reviews }})</small>
-                                        <small v-else>({{ product.quantity }})</small>
+                    <div class="product-page-content">
+                        <transition-group name="grid" tag="div" class="product-grid" appear>
+                            <div class="product-card" v-for="allProducts in paginatedProducts" :key="allProducts.id">
+                                <div class="card h-100 position-relative" @click="goToProductDetail(allProducts.id)">
+                                    <img :src="allProducts.image || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png'"
+                                        class="card-img-top" :alt="allProducts.name" />
+                                    <div v-if="allProducts.discount && allProducts.discount > 0" class="discount-badge">
+                                        -{{ allProducts.discount }}%
                                     </div>
-                                    <div class="price-section">
-                                        <span v-if="product.discount && product.discount > 0" class="original-price">
-                                            {{ formatCurrency(product.originalPrice) }}
-                                        </span>
-                                        <span class="current-price">{{ formatCurrency(product.price) }}</span>
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ allProducts.name }}</h6>
+                                        <div class="rating-section">
+                                            <span v-for="star in 5" :key="star" class="star">
+                                                <i :class="[
+                                                    'bi',
+                                                    star <= Math.round(allProducts.rating) ? 'bi-star-fill text-warning' : 'bi-star'
+                                                ]"></i>
+                                            </span>
+
+                                        </div>
+                                        <div class="price-section">
+                                            <!-- Nếu có giảm giá -->
+                                            <template v-if="allProducts.discount > 0">
+                                                <span class="original-price">
+                                                    {{ formatCurrency(allProducts.originalPriceRange.min) }}
+                                                    <template
+                                                        v-if="allProducts.originalPriceRange.min !== allProducts.originalPriceRange.max">
+                                                        - {{ formatCurrency(allProducts.originalPriceRange.max) }}
+                                                    </template>
+                                                </span>
+                                                <span class="current-price">
+                                                    {{ formatCurrency(allProducts.priceRange.min) }}
+                                                    <template
+                                                        v-if="allProducts.priceRange.min !== allProducts.priceRange.max">
+                                                        - {{ formatCurrency(allProducts.priceRange.max) }}
+                                                    </template>
+                                                </span>
+                                            </template>
+
+                                            <!-- Nếu không có giảm giá -->
+                                            <template v-else>
+                                                <span class="current-price">
+                                                    {{ formatCurrency(allProducts.priceRange.min) }}
+                                                    <template
+                                                        v-if="allProducts.priceRange.min !== allProducts.priceRange.max">
+                                                        - {{ formatCurrency(allProducts.priceRange.max) }}
+                                                    </template>
+                                                </span>
+                                            </template>
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </transition-group>
                     </div>
                 </div>
             </div>
@@ -224,12 +251,14 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import '@vueform/slider/themes/default.css'
 import Slider from '@vueform/slider'
 import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
+const toast = useToast();
 
-const router = useRouter() 
+const router = useRouter()
 const allProducts = ref([]);
 const loading = ref(true);
 
@@ -247,6 +276,7 @@ const selectedRating = ref(0)
 const currentPage = ref(1)
 const itemsPerPage = 24
 
+
 const expandedSections = ref({
     price: true,
     category: false,
@@ -255,7 +285,59 @@ const expandedSections = ref({
     discount: false,
     rating: false
 })
-
+const colorMap = {
+    'đỏ': '#FF0000',
+    'đỏ đậm': '#8B0000',
+    'đỏ tươi': '#FF2400',
+    'đỏ cam': '#FF4500',
+    'hồng': '#FFC0CB',
+    'hồng đậm': '#FF69B4',
+    'hồng phấn': '#FFB6C1',
+    'tím': '#800080',
+    'tím nhạt': '#DA70D6',
+    'tím huế': '#9932CC',
+    'xanh': '#0000FF',
+    'xanh dương': '#0000CD',
+    'xanh da trời': '#87CEEB',
+    'xanh navy': '#000080',
+    'xanh lá': '#008000',
+    'xanh lá nhạt': '#00FF7F',
+    'xanh rêu': '#556B2F',
+    'xanh ngọc': '#20B2AA',
+    'xanh lục bảo': '#50C878',
+    'xanh pastel': '#77DD77',
+    'vàng': '#FFFF00',
+    'vàng nghệ': '#FFD700',
+    'vàng nhạt': '#FFFACD',
+    'cam': '#FFA500',
+    'cam đất': '#E9967A',
+    'nâu': '#8B4513',
+    'nâu nhạt': '#A0522D',
+    'nâu đất': '#7B3F00',
+    'đen': '#000000',
+    'xám': '#808080',
+    'xám nhạt': '#D3D3D3',
+    'trắng': '#FFFFFF',
+    'be': '#F5F5DC',
+    'kem': '#FAF0E6',
+    'bạc': '#C0C0C0',
+    'vàng đồng': '#B8860B',
+    'xanh mint': '#98FF98',
+    'xanh lam': '#1E90FF',
+    'xanh teal': '#008080',
+    'hồng đất': '#C48189',
+    'hồng đào': '#FFDAB9',
+    'đỏ rượu': '#800000',
+    'đỏ đô': '#8B0000',
+    'tím than': '#4B0082',
+    'tím oải hương': '#E6E6FA',
+    'xanh coban': '#0047AB',
+    'xanh ngọc bích': '#00CED1',
+    'nâu socola': '#381819',
+    'cam san hô': '#FF7F50',
+    'xanh olive': '#808000',
+    'vàng chanh': '#FFF44F'
+};
 // === Computed properties for dynamic filters and counts ===
 
 // Compute counts for categories
@@ -273,7 +355,7 @@ const categoryCounts = computed(() => {
 });
 function goToProductDetail(productId) {
     router.push({ name: 'client-san-pham-detail', params: { id: productId } })
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 // Unique categories (already exists, but ensures it's based on loaded products)
 const uniqueCategories = computed(() => {
@@ -301,15 +383,14 @@ const sizeCounts = computed(() => {
     return counts;
 });
 
-// Unique sizes (already exists, but ensures it's based on loaded products)
 const uniqueSizes = computed(() => {
-    // Filter out 'total' key and ensure it's sorted alphabetically
+
     return Object.keys(sizeCounts.value)
         .filter(key => key !== 'total')
         .sort((a, b) => a.localeCompare(b));
 });
 
-// Compute counts for colors
+
 const colorCounts = computed(() => {
     const counts = {};
     let total = 0;
@@ -399,14 +480,21 @@ function toggleColor(color) {
 }
 
 function toggleSortDirection() {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+    sortDirection.value = sortDirection.value === 'desc' ? 'asc' : 'desc'
     window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const filteredProducts = computed(() => {
     return allProducts.value.filter((p) => {
-        const productPrice = typeof p.price === 'number' ? p.price : 0;
-        const inPriceRange = productPrice >= priceRange.value[0] && productPrice <= priceRange.value[1];
+        // Tính giá trung bình
+        const avgPrice =
+            p.priceRange && p.priceRange.min !== undefined && p.priceRange.max !== undefined
+                ? Math.round((p.priceRange.min + p.priceRange.max) / 2)
+                : 0;
+        const inPriceRange =
+            avgPrice >= priceRange.value[0] &&
+            avgPrice <= priceRange.value[1];
+
         const inCategory = selectedCategories.value.length === 0 || (p.category && selectedCategories.value.includes(p.category));
         const inSize = selectedSizes.value.length === 0 || (p.sizes && p.sizes.some((s) => selectedSizes.value.includes(s)));
         const inColor = selectedColors.value.length === 0 || (p.colors && p.colors.some((c) => selectedColors.value.includes(c)));
@@ -418,15 +506,19 @@ const filteredProducts = computed(() => {
 
 
 const sortedProducts = computed(() => {
-    const sorted = filteredProducts.value.slice(); // bản sao an toàn, không gây thay đổi dữ liệu gốc
-
+    const sorted = filteredProducts.value.slice();
     const dir = sortDirection.value === 'asc' ? 1 : -1;
     switch (sortOrder.value) {
         case 'alphabet':
             sorted.sort((a, b) => (a.name || '').localeCompare(b.name || '') * dir);
             break;
         case 'price':
-            sorted.sort((a, b) => ((a.price || 0) - (b.price || 0)) * dir);
+            // Sắp xếp theo giá trung bình
+            sorted.sort((a, b) => {
+                const avgA = a.priceRange ? ((a.priceRange.min + a.priceRange.max) / 2) : 0;
+                const avgB = b.priceRange ? ((b.priceRange.min + b.priceRange.max) / 2) : 0;
+                return (avgA - avgB) * dir;
+            });
             break;
         case 'rating':
             sorted.sort((a, b) => ((b.rating || 0) - (a.rating || 0)) * dir);
@@ -436,25 +528,35 @@ const sortedProducts = computed(() => {
             break;
         case 'latest':
             sorted.sort((a, b) => {
-                const dateA = new Date(a.createdAt || 0);
-                const dateB = new Date(b.createdAt || 0);
-                return (dateB - dateA) * dir;
+                const dateA = new Date(a.createdAt).getTime();
+                const dateB = new Date(b.createdAt).getTime();
+                return (dateB - dateA); // Mới nhất lên đầu
             });
             break;
     }
-
     return sorted;
 });
 
 
 function onPriceInputChange(index) {
-    if (priceRange.value[index] < minPrice.value) priceRange.value[index] = minPrice.value
-    if (priceRange.value[index] > maxPrice.value) priceRange.value[index] = maxPrice.value
+    // Ensure the input value stays within the overall minPrice and maxPrice bounds
+    let value = priceRange.value[index];
+    if (value < minPrice.value) {
+        value = minPrice.value;
+    } else if (value > maxPrice.value) {
+        value = maxPrice.value;
+    }
 
-    if (index === 0 && priceRange.value[0] > priceRange.value[1]) {
-        priceRange.value[0] = priceRange.value[1]
-    } else if (index === 1 && priceRange.value[1] < priceRange.value[0]) {
-        priceRange.value[1] = priceRange.value[0]
+    // Update the specific end of the price range
+    priceRange.value[index] = value;
+
+    // Ensure priceRange[0] <= priceRange[1]
+    if (priceRange.value[0] > priceRange.value[1]) {
+        if (index === 0) {
+            priceRange.value[1] = priceRange.value[0];
+        } else {
+            priceRange.value[0] = priceRange.value[1];
+        }
     }
     currentPage.value = 1; // Reset page when filter changes
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -466,20 +568,9 @@ function formatCurrency(value) {
 }
 
 function mapColorToCssClass(apiColor) {
-    if (!apiColor) return '';
-    const lowerCaseColor = apiColor.toLowerCase();
-    switch (lowerCaseColor) {
-        case 'đỏ': return 'red';
-        case 'xanh': return 'blue';
-        case 'xanh lá': return 'green';
-        case 'đen': return 'black';
-        case 'xám': return 'gray';
-        case 'cam': return 'orange';
-        case 'vàng': return 'yellow';
-        case 'trắng': return 'white';
-        case 'be': return 'beige';
-        default: return lowerCaseColor;
-    }
+    if (!apiColor) return '#CCCCCC';
+    const key = apiColor.trim().toLowerCase();
+    return colorMap[key] || '#CCCCCC';
 }
 
 const fetchProducts = async () => {
@@ -491,39 +582,99 @@ const fetchProducts = async () => {
         }
         const data = await response.json();
 
-        if (Array.isArray(data) && data.length > 0) {
-            const mapped = data.map(item => ({
-                id: item.idSanPham,
-                name: item.tenSanPham,
-                image: item.anhSanPham,
-                price: item.giaSauKhiGiam,
-                originalPrice: item.giaTruocKhiGiam,
-                discount: item.phamTramGiam,
-                rating: item.diemDanhGia,
-                reviews: item.soLuongDanhGia,
-                category: item.tenDanhMuc,
-                sizes: item.kichCo ? [item.kichCo] : [],
-                colors: item.mauSac ? [item.mauSac] : [],
-                createdAt: item.ngayTaoChiTietSanPham,
-                quantity: item.soLuong
+        console.log("Raw data from API:", data);
+        const products = data.data || [];
+
+        if (Array.isArray(products) && products.length > 0) {
+            const filteredData = products.filter(item =>
+                Array.isArray(item.chiTietSanPham) &&
+                item.chiTietSanPham.some(ct => ct.trangThai === 1 && ct.soLuong > 0)
+            );
+
+            console.log("Filtered (trangThai == 1 & soLuong > 0):", filteredData);
+
+            const mapped = await Promise.all(filteredData.map(async (item) => {
+                const firstDanhMuc = item.danhMucList?.[0] || {};
+                const danhGiaList = item.danhGiaList || [];
+
+                // Chỉ lấy các chi tiết sản phẩm có số lượng > 0 và trạng thái hợp lệ
+                const ctspList = (item.chiTietSanPham || []).filter(ct => ct.trangThai === 1 && ct.soLuong > 0);
+
+                const giaList = ctspList
+                    .filter(ct => typeof ct.gia === 'number')
+                    .map(ct => ct.gia);
+
+                let originalPriceRange = { min: Math.min(...giaList), max: Math.max(...giaList) };
+                let discountPercentage = 0;
+
+                try {
+                    const discountResponse = await fetch(`http://localhost:8080/client/giam-gia/${item.sanPham.id}`);
+                    if (discountResponse.ok) {
+                        const discountData = await discountResponse.json();
+                        const discountList = Array.isArray(discountData.data) ? discountData.data : [];
+
+                        const percents = discountList
+                            .map(d => Number(d))
+                            .filter(p => !isNaN(p));
+
+                        if (percents.length > 0) {
+                            const sum = percents.reduce((a, b) => a + b, 0);
+                            discountPercentage = Math.round(sum / percents.length);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Lỗi khi fetch phần trăm giảm giá:", err);
+                }
+
+                let priceRange = { ...originalPriceRange };
+                if (discountPercentage > 0) {
+                    priceRange = {
+                        min: Math.round(originalPriceRange.min * (1 - discountPercentage / 100)),
+                        max: Math.round(originalPriceRange.max * (1 - discountPercentage / 100)),
+                    };
+                }
+
+                const validDanhGia = danhGiaList.filter(dg =>
+                    dg && typeof dg.diemDanhGia === 'number' && dg.diemDanhGia >= 0
+                );
+
+                const totalScore = validDanhGia.reduce((sum, dg) => sum + dg.diemDanhGia, 0);
+                const rating = validDanhGia.length > 0 ? totalScore / validDanhGia.length : 0;
+                const totalQuantity = ctspList.reduce((sum, ct) => sum + (ct.soLuong || 0), 0);
+                // console.log(">> Tổng số lượng:", item.sanPham.tenSanPham, totalQuantity);
+
+                return {
+                    id: item.sanPham.id,
+                    name: item.sanPham.tenSanPham,
+                    image: item.anhSanPham?.[0] || 'https://woocommerce.com/wp-content/uploads/2020/03/product-image-placeholder.png',
+
+                    discount: discountPercentage,
+                    priceRange,
+                    originalPriceRange: discountPercentage > 0 ? originalPriceRange : null,
+
+                    rating: Math.round(rating * 10) / 10,
+                    reviews: validDanhGia.length,
+
+                    category: firstDanhMuc.tenDanhMuc || '',
+
+                    sizes: [...new Set(ctspList.map(ct => ct.idSize?.soCo).filter(Boolean))],
+                    colors: [...new Set(ctspList.map(ct => ct.idMau?.ten).filter(Boolean))],
+
+                    createdAt: ctspList[0]?.ngayTao || null,
+                    quantity: totalQuantity
+                };
             }));
 
             allProducts.value = mapped;
-            // Tính toán minPrice và maxPrice
-            minPrice.value = 0; // Đặt giá thấp nhất mặc định là 0
+            const allMinDiscountedPrices = allProducts.value.map(p => p.priceRange?.min || 0);
+            const allMaxOriginalPrices = allProducts.value.map(p =>
+                (p.originalPriceRange?.max ?? p.priceRange?.max) || 0
+            );
 
-            const allOriginalPrices = allProducts.value
-                .map(p => p.originalPrice)
-                .filter(price => typeof price === 'number' && price > 0); // Chỉ lấy giá trị hợp lệ > 0
+            minPrice.value = Math.min(...allMinDiscountedPrices);
+            maxPrice.value = Math.max(...allMaxOriginalPrices);
 
-            if (allOriginalPrices.length > 0) {
-                maxPrice.value = Math.max(...allOriginalPrices);
-            } else {
-                maxPrice.value = 1000000; // Giá trị mặc định nếu không có giá gốc hợp lệ
-            }
-
-            priceRange.value = [minPrice.value, maxPrice.value]; // Gán giá trị mặc định cho priceRange
-            console.log("Initial Price Range:", priceRange.value); // Để kiểm tra trong console
+            priceRange.value = [minPrice.value, maxPrice.value];
 
         } else {
             minPrice.value = 0;
@@ -543,6 +694,7 @@ const fetchProducts = async () => {
 
 onMounted(fetchProducts);
 
+
 watch(sortOrder, () => {
     currentPage.value = 1;
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -553,18 +705,25 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     currentPage.value = 1;
     window.scrollTo({ top: 0, behavior: 'smooth' })
 }, { deep: true })
+
 </script>
+
 
 <style scoped>
 @import 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css';
 
 /* Container chính */
+.view {
+    background-color: #F3F4F6;
+}
+
 .product-page-container {
     margin-left: 88px;
     padding-top: 120px;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    background-color: #F3F4F6;
 }
 
 /* Ẩn tooltip slider */
@@ -574,10 +733,8 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
 
 /* Filter Sidebar */
 .filter-sidebar {
-    background: #fff;
-    border-radius: 8px;
+    background-color: #f1f1f1;
     padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Filter Section */
@@ -734,7 +891,6 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
     width: 100%;
     background-color: #f3f4f6;
     color: #374151;
-    border: 1px solid #d1d5db;
     padding: 10px 15px;
     border-radius: 6px;
     margin-top: 20px;
@@ -748,111 +904,136 @@ watch([selectedCategories, selectedSizes, selectedColors, discountOnly, selected
 }
 
 /* Product Header */
-.product-header {
-    background: #fff;
-    border-radius: 8px;
-    padding: 15px 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-}
 
 .product-header .form-select {
     border-radius: 6px;
     font-size: 15px;
 }
 
-/* Product Grid */
+/* Bọc ngoài product-grid */
+.product-page-content {
+    max-width: 1200px;
+    /* hoặc 1280px tùy ý */
+    margin: 0 auto;
+    /* căn giữa */
+    padding: 0 20px;
+    /* thêm khoảng cách lề */
+}
+
+/* Product Grid giống ảnh 2 */
 .product-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 20px;
+    margin-top: 20px;
 }
 
+/* Transition-group animations for filtering */
+.grid-enter-from,
+.grid-leave-to {
+    opacity: 0;
+    transform: translateY(12px);
+}
+
+.grid-enter-active {
+    transition: all 250ms ease;
+}
+
+.grid-leave-active {
+    transition: all 220ms ease;
+    position: relative;
+}
+
+.grid-move {
+    transition: transform 300ms ease;
+}
+
+/* Card sản phẩm */
 .product-card .card {
-    border: none;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: none !important;
+    border-radius: 0;
+    box-shadow: none;
+    transition: all 0.3s ease-in-out;
+    text-align: left;
+    background-color: #e3e1e1;
 }
 
+/* Hiệu ứng hover */
 .product-card .card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    /* Nổi lên nhẹ */
+    border: 2px solid #0088ff;
+    /* Viền màu xanh */
+    box-shadow: 0 4px 12px rgba(0, 136, 255, 0.3);
+    /* Đổ bóng nhẹ */
 }
 
+
+
+/* Ảnh sản phẩm */
 .product-card .card-img-top {
-    height: 200px;
+    width: 100%;
+    height: 300px;
     object-fit: cover;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
 }
 
-.product-card .discount-badge {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background-color: #dc3545;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.85em;
-    font-weight: bold;
-    z-index: 10;
-}
-
-.product-card .card-body {
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
+/* Tên sản phẩm */
 .product-card .card-title {
-    font-size: 1.1em;
-    font-weight: 600;
-    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: normal;
     color: #333;
-    white-space: nowrap;
+    white-space: normal;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.product-card .rating-section {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.product-card .rating-section .star {
-    color: #ffc107;
-    margin-right: 2px;
-}
-
-.product-card .rating-section small {
-    font-size: 0.85em;
-    color: #6c757d;
-    margin-left: 5px;
-    /* Space between stars and count */
-}
-
+/* Giá sản phẩm */
 .product-card .price-section {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
+    display: block;
+    margin-top: 5px;
+}
+
+.product-card .current-price {
+    font-size: 16px;
+    font-weight: bold;
+    color: #000;
 }
 
 .product-card .original-price {
     text-decoration: line-through;
-    color: #6c757d;
-    font-size: 0.9em;
+    color: #888;
+    font-size: 14px;
+    margin-left: 5px;
 }
 
-.product-card .current-price {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #007bff;
+/* Rating */
+.product-card .rating-section {
+    margin: 5px 0;
+    font-size: 12px;
+    color: #999;
 }
+
+/* Discount badge */
+.product-card .discount-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #dc3545;
+    color: #fff;
+    padding: 3px 6px;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .product-card .card-img-top {
+        height: 200px;
+        padding: 10px;
+    }
+}
+
 
 /* No Products Found */
 .no-products {

@@ -1,30 +1,22 @@
 <template>
-  <div class="">
-    <div class="bg-white p-3 rounded border mb-4">
-      <div class="d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold mb-0">Quản lý phiếu giảm giá</h5>
-        <router-link to="/phieu-giam-gia/them" class="btn btn-primary btn-sm">
-          <i class="fa-solid fa-plus me-2"></i><span class="fw-bold">Thêm phiếu giảm giá</span>
-        </router-link>
-      </div>
+  <div class="full-width-container">
+    <div class="d-flex align-items-center justify-content-between bg-white p-3 rounded mb-3 border">
+      <h2 class="fw-bold mb-0">Quản lý phiếu giảm giá</h2>
+      <router-link to="/phieu-giam-gia/them" class="btn"
+     style="background-color: #0a2c57; color: white">
+     <Plus class="me-1" size="16" />Thêm phiếu giảm giá
+</router-link>
     </div>
-    <!-- Voucher List Section -->
-    <div class="bg-white p-3 rounded border mb-4">
-      <!-- Filter Section -->
-      <div class="card-body">
-        <h6 style="margin-bottom: 1em">
-          <i><FilterIcon></FilterIcon></i> Bộ lọc
-        </h6>
-        <div class="row g-3 align-items-end">
-          <!-- Keyword Search -->
-          <div class="col-md-6">
-            <label class="form-label">Tìm kiếm</label>
-            <input v-model="keyword" @keyup.enter="applyFilter" type="text" class="form-control"
-              placeholder="Nhập tên, mã hoặc giá trị giảm" />
-          </div>
-          <!-- Status -->
-          <div class="col-md-6">
-            <label class="form-label">Trạng thái</label>
+
+    <div class="bg-white p-3 rounded mb-3 border">
+      <h5 class="d-flex align-items-center gap-2 mb-3">
+        <FilterIcon size="20" /> Bộ lọc
+      </h5>
+      <div class="px-3">
+        <input v-model="keyword" type="text" class="form-control mb-3" placeholder="Tìm kiếm theo mã, tên" />
+        <div class="d-flex flex-wrap gap-3">
+          <div class="d-flex flex-column" style="width: 250px;">
+            <label class="form-label fw-bold" style="color: #0a2c57;">Trạng thái</label>
             <select v-model="trangThai" class="form-select">
               <option value="">Tất cả</option>
               <option value="0">Đã hủy</option>
@@ -33,132 +25,113 @@
               <option value="3">Đã kết thúc</option>
             </select>
           </div>
-        </div>
-        <div class="row g-3 align-items-end mt-2">
-          <!-- Start Date -->
-          <div class="col-md-4">
-            <label class="form-label">Ngày bắt đầu</label>
+          <div class="d-flex flex-column" style="width: 250px;">
+            <label class="form-label fw-bold" style="color: #0a2c57;">Loại phiếu giảm giá</label>
+            <select v-model="loaiPhieu" class="form-select">
+              <option value="">Tất cả</option>
+              <option value="Công khai">Công khai</option>
+              <option value="Cá nhân">Cá nhân</option>
+            </select>
+          </div>
+          <div class="d-flex flex-column" style="width: 250px;">
+            <label class="form-label fw-bold" style="color: #0a2c57;">Ngày bắt đầu</label>
             <input type="date" v-model="ngayBatDau" class="form-control" />
           </div>
-          <!-- End Date -->
-          <div class="col-md-4">
-            <label class="form-label">Ngày kết thúc</label>
+          <div class="d-flex flex-column" style="width: 250px;">
+            <label class="form-label fw-bold" style="color: #0a2c57;">Ngày kết thúc</label>
             <input type="date" v-model="ngayKetThuc" class="form-control" />
-          </div>
-          <!-- Voucher Type -->
-          <div class="col-md-4">
-            <label class="form-label">Loại phiếu giảm giá</label>
-            <div class="d-flex gap-2">
-              <div class="form-check">
-                <input type="radio" v-model="loaiPhieu" value="" id="loaiTatCa" class="form-check-input" />
-                <label class="form-check-label" for="loaiTatCa">Tất cả</label>
-              </div>
-              <div class="form-check">
-                <input type="radio" v-model="loaiPhieu" value="Công khai" id="loaiCongKhai" class="form-check-input" />
-                <label class="form-check-label" for="loaiCongKhai">Công khai</label>
-              </div>
-              <div class="form-check">
-                <input type="radio" v-model="loaiPhieu" value="Cá nhân" id="loaiCaNhan" class="form-check-input" />
-                <label class="form-check-label" for="loaiCaNhan">Cá nhân</label>
-              </div>
-            </div>
           </div>
         </div>
       </div>
-      <br><br>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead class="table-light">
-              <tr>
-                <th scope="col">STT</th>
-                <th scope="col">Mã</th>
-                <th scope="col">Tên</th>
-                <th scope="col">Giá trị giảm</th>
-                <th scope="col">Loại</th>
-                <th scope="col">Giảm tối thiểu</th>
-                <th scope="col">Giảm tối đa</th>
-                <th scope="col">Số lượng</th>
-                <th scope="col">Ngày bắt đầu</th>
-                <th scope="col">Ngày kết thúc</th>
-                <th scope="col">Trạng thái</th>
-                <th scope="col">Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(phieu, index) in paginatedPhieuGiamGias" :key="phieu.id">
-                <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
-                <td>{{ phieu.maPhieuGiamGia }}</td>
-                <td>{{ phieu.tenPhieu }}</td>
-                <td>
-                  {{
-                    phieu.phamTramGiamGia
-                      ? phieu.phamTramGiamGia + "%"
-                      : formatCurrency(phieu.soTienGiam)
-                  }}
-                </td>
-                <td>
-                  <span :class="getLoaiPhieuClass(phieu.loaiPhieu)">{{
-                    phieu.loaiPhieu
-                  }}</span>
-                </td>
-                <td>{{ formatCurrency(phieu.giamToiThieu) }}</td>
-                <td>{{ formatCurrency(phieu.giamToiDa) }}</td>
-                <td>{{ phieu.soLuong ?? "N/A" }}</td>
-                <td>{{ formatDate(phieu.ngayBatDau) }}</td>
-                <td>{{ formatDate(phieu.ngayKetThuc) }}</td>
-                <td>
-                  <span :class="getTrangThaiClass(phieu.trangThai)">
-                    {{ getTrangThaiText(phieu.trangThai) }}
-                  </span>
-                </td>
-                <td class="d-flex align-items-center justify-content-center gap-2">
-                  <router-link :to="{ name: 'SuaPhieuGiamGia', params: { id: phieu.id } }" class="btn btn-flat btn-sm"
-                    title="Chỉnh sửa phiếu giảm giá" data-bs-toggle="tooltip" data-bs-placement="top">
-                    <Edit :size="18" class="edit-icon" />
-                  </router-link>
-                  <div v-if="isSwitchVisible(phieu.ngayKetThuc)" class="form-check form-switch"
-                    :title="phieu.trangThai === 0 ? 'Kích hoạt lại phiếu giảm giá' : 'Hủy phiếu giảm giá'"
-                    data-bs-toggle="tooltip" data-bs-placement="top">
-                    <input class="form-check-input" type="checkbox" :id="'switchCheckbox-' + phieu.id"
-                      v-model="phieu.isChecked" @change="toggleStatus(phieu)" :disabled="phieu.loading" />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    </div>
 
-        <!-- Pagination -->
-        <nav class="d-flex justify-content-center mt-3">
-          <ul class="pagination justify-content-center">
-            <li class="page-item" :class="{ disabled: currentPage === 1 }">
-              <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">«</a>
-            </li>
-            <li class="page-item" v-for="page in totalPages" :key="page" :class="{ active: currentPage === page }">
-              <a class="page-link" href="#" @click.prevent="changePage(page)">{{ page }}</a>
-            </li>
-            <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-              <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">»</a>
-            </li>
-          </ul>
-        </nav>
+    <div class="bg-white p-3 rounded border mb-4">
+      <h5 class="text-start ps-3 pt-3">Danh sách phiếu giảm giá</h5>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">STT</th>
+              <th scope="col">Mã</th>
+              <th scope="col">Tên</th>
+              <th scope="col">Giá trị giảm</th>
+              <th scope="col">Loại</th>
+              <th scope="col">Giá trị tối thiểu</th>
+              <th scope="col">Đơn tối thiểu</th>
+              <th scope="col">Giảm tối đa</th>
+              <th scope="col">Số lượng</th>
+              <th scope="col">Ngày bắt đầu</th>
+              <th scope="col">Ngày kết thúc</th>
+              <th scope="col">Trạng thái</th>
+              <th scope="col">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(phieu, index) in paginatedPhieuGiamGias" :key="phieu.id">
+              <td>{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
+              <td>{{ phieu.maPhieuGiamGia }}</td>
+              <td>{{ phieu.tenPhieu }}</td>
+              <td>
+                {{
+                  phieu.phamTramGiamGia
+                    ? phieu.phamTramGiamGia + "%"
+                    : formatCurrency(phieu.soTienGiam)
+                }}
+              </td>
+              <td>
+                <span :class="getLoaiPhieuClass(phieu.loaiPhieu)">{{ phieu.loaiPhieu }}</span>
+              </td>
+              <td>{{ formatCurrency(phieu.giamToiThieu) }}</td>
+              <td>{{ formatCurrency(phieu.giamToiDa) }}</td>
+              <td>{{ phieu.soLuong ?? "N/A" }}</td>
+              <td>{{ formatDate(phieu.ngayBatDau) }}</td>
+              <td>{{ formatDate(phieu.ngayKetThuc) }}</td>
+              <td>
+                <span :class="['status-badge', getTrangThaiClass(phieu.trangThai)]">
+                  {{ getTrangThaiText(phieu.trangThai) }}
+                </span>
+              </td>
+              <td class="d-flex align-items-center justify-content-center gap-2">
+                <router-link :to="{ name: 'SuaPhieuGiamGia', params: { id: phieu.id } }" class="btn btn-flat btn-sm"
+                  title="Chỉnh sửa phiếu giảm giá" data-bs-toggle="tooltip" data-bs-placement="top">
+                  <Edit style="color: #4ccc7a;" />
+                </router-link>
+                <div v-if="isSwitchVisible(phieu.ngayKetThuc)" class="form-check form-switch"
+                  :title="phieu.trangThai === 0 ? 'Kích hoạt lại phiếu giảm giá' : 'Hủy phiếu giảm giá'"
+                  data-bs-toggle="tooltip" data-bs-placement="top">
+                  <input class="form-check-input" type="checkbox" :id="'switchCheckbox-' + phieu.id"
+                    v-model="phieu.isChecked" @change="toggleStatus(phieu)" :disabled="phieu.loading" />
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-4 d-flex align-items-center justify-content-center gap-2">
+        <button class="btn custom-btn" @click="prevPage" :disabled="currentPage === 1">Trước</button>
+        <input v-model.number="inputPage" @keyup.enter="goToPage" type="number" min="1" :max="totalPages"
+          class="form-control w-auto text-center" />
+        <span>/ {{ totalPages }}</span>
+        <button class="btn custom-btn" @click="nextPage" :disabled="currentPage >= totalPages">Tiếp</button>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { FilterIcon, Edit } from "lucide-vue-next";
+import { FilterIcon, Edit, Plus} from "lucide-vue-next";
 import { useToast } from "vue-toastification";
 import * as bootstrap from "bootstrap";
 import Swal from "sweetalert2";
 import Cookies from 'js-cookie'
+
 export default {
   name: "PhieuGiamGia",
   components: {
     FilterIcon,
     Edit,
+    Plus
   },
   setup() {
     const toast = useToast();
@@ -171,6 +144,7 @@ export default {
       allPhieuGiamGias: [],
       currentPage: 1,
       itemsPerPage: 5,
+      inputPage: 1, // Thêm biến inputPage
       keyword: "",
       ngayBatDau: "",
       ngayKetThuc: "",
@@ -241,10 +215,10 @@ export default {
     async getPhieuGiamGias() {
       try {
         const response = await fetch("http://localhost:8080/phieuGiamGias", {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          }
+        });
         if (!response.ok) {
           throw new Error("Không thể tải danh sách phiếu giảm giá");
         }
@@ -255,6 +229,7 @@ export default {
           loading: false, // Initialize loading state
         }));
         this.phieuGiamGias = [...this.allPhieuGiamGias];
+        this.applyFilter(); // Cập nhật lại danh sách khi tải dữ liệu
       } catch (err) {
         console.error("Lỗi khi lấy danh sách phiếu giảm giá:", err);
         this.toast.error("Không thể tải danh sách phiếu giảm giá: " + err.message);
@@ -273,11 +248,28 @@ export default {
     },
     applyFilter() {
       this.currentPage = 1;
-      this.phieuGiamGias = [...this.filteredPhieuGiamGias];
+      this.inputPage = 1; // Reset input page on filter change
     },
     changePage(page) {
       if (page >= 1 && page <= this.totalPages) {
         this.currentPage = page;
+      }
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
+    goToPage() {
+      if (this.inputPage >= 1 && this.inputPage <= this.totalPages) {
+        this.currentPage = this.inputPage;
+      } else {
+        this.toast.error("Số trang không hợp lệ!");
       }
     },
     formatCurrency(val) {
@@ -303,19 +295,20 @@ export default {
     getTrangThaiClass(trangThai) {
       switch (trangThai) {
         case 0: // Đã hủy
-          return "badge custom-primary";
+          return "cancelled";
         case 1: // Đang diễn ra
-          return "badge custom-accent";
+          return "confirmed";
         case 2: // Chưa diễn ra
-          return "badge custom-accent1";
+          return "shipping";
         case 3: // Đã kết thúc
-          return "badge custom-primary1";
+          return "completed";
         default:
-          return "badge custom-primary";
+          return "inactive";
       }
     },
     getLoaiPhieuClass(loaiPhieu) {
-      return "badge custom-accent1";
+      // Bạn có thể định nghĩa các class riêng cho loại phiếu nếu cần
+      return "badge bg-secondary";
     },
     isSwitchVisible(ngayKetThuc) {
       const currentDate = new Date('2025-07-01T23:48:00+07:00');
@@ -402,11 +395,21 @@ export default {
     },
   },
   watch: {
-    totalPages(newTotalPages) {
-      if (this.currentPage > newTotalPages && newTotalPages > 0) {
-        this.currentPage = 1;
+    // Watch for changes in filter inputs and apply filter
+    keyword() { this.applyFilter() },
+    ngayBatDau() { this.applyFilter() },
+    ngayKetThuc() { this.applyFilter() },
+    trangThai() { this.applyFilter() },
+    loaiPhieu() { this.applyFilter() },
+    // Watch for page changes from input and go to that page
+    inputPage(newPage) {
+      if (newPage !== this.currentPage) {
+        this.goToPage();
       }
     },
+    currentPage(newPage) {
+      this.inputPage = newPage;
+    }
   },
   mounted() {
     this.getPhieuGiamGias();
@@ -425,76 +428,106 @@ export default {
 </script>
 
 <style scoped>
-.card {
-  border-radius: 0.5rem;
-}
-
-.btn-primary {
-  background-color: #0a2c57;
-  border-color: #0a2c57;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #08203e;
-  border-color: #08203e;
-}
-
-.badge {
-  font-size: 0.85rem;
-  padding: 0.5em 1em;
-}
-
-.custom-primary {
-  background-color: #cc0000;
-  color: white;
-  border-radius: 50rem !important;
-}
-
-.custom-primary1 {
-  background-color: #0a2c57;
-  color: white;
-  border-radius: 50rem !important;
-}
-
-.custom-accent {
-  background-color: #66ff99;
+/* Các kiểu chung */
+h2,
+h5 {
+  font-weight: bold;
   color: #0a2c57;
-  border-radius: 50rem !important;
-}
-
-.custom-accent1 {
-  background-color: #66ff99;
-  color: white;
-  border-radius: 50rem !important;
-}
-
-.btn-flat {
-  background: none;
-  border: none;
-  padding: 0.25rem;
-}
-
-.btn-flat:hover .edit-icon {
-  color: #4ccc7a;
-}
-
-.edit-icon {
-  color: #66ff99;
-}
-
-.form-check-input {
-  cursor: pointer;
-}
-
-.form-check-input:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
 }
 
 .table th,
 .table td {
   vertical-align: middle;
   text-align: center;
+}
+
+/* Kiểu cho phân trang mới */
+.custom-btn {
+  background-color: #f0f0f0;
+  color: #0a2c57;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.custom-btn:hover {
+  background-color: #0a2c57;
+  color: white;
+}
+
+.custom-btn:disabled {
+  cursor: not-allowed;
+  background-color: #e0e0e0;
+  color: #999;
+  border: 1px solid #ddd;
+}
+
+/* Kiểu cho badge trạng thái */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Các trạng thái mới */
+.status-badge.cancelled {
+  background-color: #fce4ec;
+  color: #d32f2f;
+}
+
+.status-badge.confirmed {
+  background-color: #e7f4e8;
+  color: #388e3c;
+}
+
+.status-badge.shipping {
+  background-color: #fff3e0;
+  color: #fb8c00;
+}
+
+.status-badge.completed {
+  background-color: #f1f8e9;
+  color: #8bc34a;
+}
+
+.bg-danger-subtle {
+  background-color: #f8d7da !important;
+}
+
+.text-danger-emphasis {
+  color: #842029 !important;
+}
+
+.bg-success-subtle {
+  background-color: #d1e7dd !important;
+}
+
+.text-success-emphasis {
+  color: #0f5132 !important;
+}
+
+.bg-secondary-subtle {
+  background-color: #e2e3e5 !important;
+}
+
+.text-secondary-emphasis {
+  color: #41464b !important;
+}
+
+.bg-warning-subtle {
+  background-color: #fff3cd !important;
+}
+
+.text-warning-emphasis {
+  color: #664d03 !important;
+}
+
+.badge {
+  font-size: 0.85rem;
 }
 </style>

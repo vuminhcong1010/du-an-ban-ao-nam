@@ -599,7 +599,9 @@ function clearForm(){
   req.value.soLuong = null
   req.value.trongLuong = null
   req.value.moTa = null
-  
+  req.value.images = []
+  removeExistingImage()
+  removeSelectedFile()
 }
 // Xử lý chọn file
 function handleFileChange(event) {
@@ -675,7 +677,7 @@ async function uploadAllImages() {
     }
   })
      setTimeout(() => {
-  }, 1000);
+  }, 200);
     toast.success("Cập nhật thành công");
     clearForm()
     submitAndClose()

@@ -71,12 +71,21 @@
             </div>
           </div>
           
-          <div v-else-if="!isEmployee" class="room-info-header">
+          <!-- 👇 Chỗ này dành cho khách hàng -->
+          <div v-else-if="!isEmployee" class="room-info-header flex items-center gap-2 mb-2">
             <div class="room-avatar-small">CS</div>
             <div>
               <h4 class="room-title">Chat hỗ trợ khách hàng</h4>
               <div class="customer-name">Đang chờ hỗ trợ</div>
             </div>
+            <!-- Nút Chat với nhân viên -->
+            <button 
+              @click="yeuCauNhanVien()" 
+              class="ml-3 px-2 py-0.5 text-xs bg-blue-500 text-black rounded hover:bg-blue-600 transition w-[60px]"
+            >
+              <div v-if="ChatAI" class="customer-name">Chat với nhân viên</div>
+              <div v-else class="customer-name">Chat với AI</div>
+            </button>
           </div>
           
           <div v-else class="room-info-header">
@@ -109,10 +118,7 @@
         
         <!-- Messages -->
         <div v-else class="messages-list">
-          <div v-if="messages.length === 0" class="empty-messages">
-            <div class="empty-icon">💭</div>
-            <p>Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!</p>
-          </div>
+          
           
           <div 
             v-for="(msg, index) in messages" 
@@ -157,11 +163,10 @@
             </button>
           </div>
           
-          <div v-if="!isConnected || !roomId" class="input-status">
-            {{ !isConnected ? 'Đang kết nối...' : 'Chọn phòng để gửi tin nhắn' }}
-          </div>
+
         </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -180,20 +185,44 @@ const messages = ref([])
 const isConnected = ref(false)
 const isLoadingMessages = ref(false)
 let stompClient = null
-const roomId = ref('')
+const roomId = ref('waiting-room')
 const danhSachPhongChat = ref([])
 const selectedRoom = ref('')
 const isEmployee = ref(false)
 const activeSubscriptions = new Map()
 const messagesContainer = ref(null)
-
+let ChatAI = ref(true)
 const isUser = Cookies.get("token")
 
+// Track các tin nhắn local đang chờ xác nhận từ server
+const pendingMessages = ref(new Set())
+
+// --- Utility: cleanup connection / subscriptions ---
+function cleanupStompClient() {
+  try {
+    if (stompClient) {
+      // hủy tất cả subscription (dành cho employee use-case)
+      activeSubscriptions.forEach(sub => {
+        try { sub.unsubscribe() } catch(e){ /* ignore */ }
+      })
+      activeSubscriptions.clear()
+      // deactivate stomp client
+      try { stompClient.deactivate() } catch (e) { /* ignore */ }
+      stompClient = null
+    }
+  } catch (e) {
+    console.error("❌ Lỗi cleanup stomp:", e)
+  } finally {
+    isConnected.value = false
+  }
+}
+
 // Hàm tải lịch sử tin nhắn
-const loadMessageHistory = async (roomId) => {
+const loadMessageHistory = async (rId) => {
+  if (!rId) return
   isLoadingMessages.value = true
   try {
-    const response = await axios.get(`http://localhost:8080/lich-su-phong-chat/${roomId}`)
+    const response = await axios.get(`http://localhost:8080/lich-su-phong-chat/${rId}`)
     const history = response.data.data || []
     messages.value = history.map(msg => ({
       sender: msg.sender,
@@ -208,7 +237,6 @@ const loadMessageHistory = async (roomId) => {
   }
 }
 
-// Scroll to bottom when new message arrives
 const scrollToBottom = () => {
   nextTick(() => {
     if (messagesContainer.value) {
@@ -217,275 +245,218 @@ const scrollToBottom = () => {
   })
 }
 
-// Watch messages to auto scroll
 watch(messages, () => {
   scrollToBottom()
 }, { deep: true })
 
-onMounted(async () => {
-  if (!isUser) {
-    // Xử lý khách hàng
-    isEmployee.value = false
-    const thongTinCookie = Cookies.get("thongTinKhachHang")
-    
-    if (!thongTinCookie) {
-      toast.error('Vui lòng đăng nhập để sử dụng chức năng này')
-      return
-    }
-    
-    let thongTin
-    try {
-      thongTin = JSON.parse(thongTinCookie)
-    } catch (e) {
-      console.error("❌ Cookie 'thongTinKhachHang' không hợp lệ JSON:", e)
-      return
-    }
-    
-    const idKH = thongTin.maKhachHang
-    await axios.get(`http://localhost:8080/create-room/${idKH}`).then((response) => {
-      if (response.data.data === false) {
-        roomId.value = 'waiting-room'
-      } else {
-        roomId.value = response.data.message
-      }
-      connectWebSocket()
-      if (roomId.value !== 'waiting-room') {
-        loadMessageHistory(roomId.value)
-      }
-    }).catch((error) => {
-      console.error('Lỗi khi tạo phòng:', error)
-    })
-    
-  } else {
-    // Xử lý nhân viên
-    isEmployee.value = true
-    const token = Cookies.get("token")
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    let idNV = payload.idNv
-    
-    if (!idNV) {
-      console.error("❌ Không tìm thấy idNV cho nhân viên")
-      return
-    }
-    
-    await axios.get(`http://localhost:8080/danh-sach-phong-chat/${idNV}`).then(res => {
-      danhSachPhongChat.value = res.data.data.map(roomId => ({
-        id: roomId,
-        name: `Phòng ${roomId}`,
-        tenKhachHang: roomId.split('-')[0],
-        lastMessage: '',
-        lastMessageTime: '',
-        unreadCount: 0
-      }))
-      console.log('Danh sách phòng chat:', res.data.data)
-      
-      connectWebSocketForEmployee()
-      
-      if (danhSachPhongChat.value && danhSachPhongChat.value.length > 0) {
-        selectRoom(danhSachPhongChat.value[0])
-        loadMessageHistory(danhSachPhongChat.value[0].id)
-      }
-      
-    }).catch((err) => {
-      console.error("❌ Lỗi khi lấy danh sách phòng chat:", err)
-    })
-  }
-})
+// Gửi tin nhắn (optimistic UI)
+function sendMessage() {
+  if (!message.value.trim() || !roomId.value) return
 
-function connectWebSocket() {
-  if (!roomId.value) {
-    console.warn("⚠️ Không có roomId để kết nối WebSocket")
-    return
+  const messageContent = message.value
+  const messageTimestamp = new Date().toISOString()
+  const messageId = `local-${Date.now()}-${Math.random()}`
+
+  const customerMessage = {
+    id: messageId,
+    sender: isEmployee.value ? 'Nhân viên' : 'Khách hàng',
+    content: messageContent,
+    timestamp: new Date(messageTimestamp).toLocaleTimeString(),
+    isLocal: true,
+    isPending: true
   }
-  
+
+  messages.value.push(customerMessage)
+  pendingMessages.value.add(messageId)
+
+  if (stompClient && stompClient.connected) {
+    try {
+      stompClient.publish({
+        destination: `/app/room/${roomId.value}/send`,
+        body: JSON.stringify({
+          sender: customerMessage.sender,
+          content: messageContent,
+          timestamp: messageTimestamp,
+          localId: messageId,
+          roomId: roomId.value // Thêm roomId để server biết phòng nào
+        })
+      })
+    } catch (error) {
+      console.error('Lỗi gửi tin nhắn:', error)
+      toast.error('Không thể gửi tin nhắn.')
+      const index = messages.value.findIndex(m => m.id === messageId)
+      if (index > -1) messages.value.splice(index, 1)
+      pendingMessages.value.delete(messageId)
+    }
+  } else {
+    toast.error('WebSocket chưa kết nối.')
+    const index = messages.value.findIndex(m => m.id === messageId)
+    if (index > -1) messages.value.splice(index, 1)
+    pendingMessages.value.delete(messageId)
+  }
+
+  message.value = ''
+}
+
+// Kết nối WebSocket cho user (client)
+function connectWebSocket() {
+  if (!roomId.value) return
+
+  // cleanup nếu có connection cũ
+  cleanupStompClient()
+
   const socket = new SockJS('/ws')
   stompClient = new Client({
     webSocketFactory: () => socket,
-    debug: (str) => console.log(str),
     reconnectDelay: 5000,
     heartbeatIncoming: 4000,
     heartbeatOutgoing: 4000,
     onConnect: () => {
-      console.log('✅ STOMP kết nối thành công')
+      console.log('✅ WebSocket connected for client')
       isConnected.value = true
-      
-      stompClient.subscribe(`/topic/room/${roomId.value}/messages`, (msg) => {
+      // subscribe phòng hiện tại (chỉ 1 subscribe cho client)
+      const subscription = stompClient.subscribe(`/topic/room/${roomId.value}/messages`, (msg) => {
         try {
           const body = JSON.parse(msg.body)
-          
-          // Kiểm tra nếu đang ở waiting room và đây là tin nhắn từ khách hàng thì không hiển thị
-          if (roomId.value === 'waiting-room' && body.sender === 'Khách hàng') {
-            return // Không xử lý tin nhắn của chính khách hàng trong waiting room
-          }
-          
-          let messageData
-          
-          if (roomId.value === 'waiting-room') {
-            // Chỉ hiển thị thông báo hệ thống khi có tin nhắn từ server/nhân viên
-            messageData = {
-              sender: "Hệ thống",
-              content: "Hiện tại không có nhân viên trực tuyến. Vui lòng thử lại sau vài phút.",
-              timestamp: new Date().toLocaleTimeString()
+          console.log('📨 Client nhận tin nhắn:', body)
+
+          if (body.localId && pendingMessages.value.has(body.localId)) {
+            const localMessageIndex = messages.value.findIndex(m => m.id === body.localId)
+            if (localMessageIndex > -1) {
+              messages.value[localMessageIndex] = {
+                ...messages.value[localMessageIndex],
+                isPending: false,
+                isLocal: false,
+                timestamp: new Date(body.timestamp).toLocaleTimeString()
+              }
             }
-          } else {
-            messageData = {
-              sender: body.sender,
-              content: body.content,
-              timestamp: new Date().toLocaleTimeString()
-            }
+            pendingMessages.value.delete(body.localId)
+            return
           }
-          
-          // Kiểm tra trùng lặp tin nhắn
-          const isDuplicate = messages.value.some(
-            m => m.content === messageData.content && 
-                 m.timestamp === messageData.timestamp &&
-                 m.sender === messageData.sender
+
+          const messageData = {
+            id: `server-${body.timestamp}-${Math.random()}`,
+            sender: body.sender,
+            content: body.content,
+            timestamp: new Date(body.timestamp).toLocaleTimeString(),
+            isLocal: false,
+            isPending: false
+          }
+
+          const isDuplicate = messages.value.some(m => 
+            m.content === messageData.content && 
+            m.sender === messageData.sender &&
+            Math.abs(new Date(`1970-01-01 ${m.timestamp}`).getTime() - 
+                    new Date(`1970-01-01 ${messageData.timestamp}`).getTime()) < 2000
           )
-          
-          if (!isDuplicate) {
-            messages.value.push(messageData)
-          }
-          
+
+          if (!isDuplicate) messages.value.push(messageData)
         } catch (error) {
           console.error('Lỗi parse message:', error)
         }
       })
+
+      // lưu subscription tạm để có thể unsubscribe khi rời phòng
+      activeSubscriptions.set(roomId.value, subscription)
+    },
+    onStompError: (err) => {
+      console.error("STOMP Error:", err)
     },
     onDisconnect: () => {
-      console.log('STOMP ngắt kết nối')
-      isConnected.value = false
-    },
-    onStompError: (frame) => {
-      console.error('❌ Lỗi STOMP:', frame)
       isConnected.value = false
     }
   })
-  
   stompClient.activate()
 }
 
-// Sửa hàm sendMessage để xử lý trường hợp waiting room
-function sendMessage() {
-  if (!message.value.trim() || !roomId.value) {
-    return
-  }
-  
-  if (stompClient && stompClient.connected) {
-    try {
-      // Nếu đang ở waiting room, hiển thị tin nhắn của khách hàng trước
-      if (roomId.value === 'waiting-room') {
-        const customerMessage = {
-          sender: 'Khách hàng',
-          content: message.value,
-          timestamp: new Date().toLocaleTimeString()
-        }
-        
-        // Kiểm tra trùng lặp
-        const isDuplicate = messages.value.some(
-          m => m.content === customerMessage.content && 
-               m.timestamp === customerMessage.timestamp &&
-               m.sender === customerMessage.sender
-        )
-        
-        if (!isDuplicate) {
-          messages.value.push(customerMessage)
-        }
-        
-        // Sau đó hiển thị thông báo hệ thống
-        setTimeout(() => {
-          const systemMessage = {
-            sender: "Hệ thống",
-            content: "Hiện tại không có nhân viên trực tuyến. Vui lòng thử lại sau vài phút.",
-            timestamp: new Date().toLocaleTimeString()
-          }
-          
-          const isSystemDuplicate = messages.value.some(
-            m => m.content === systemMessage.content && 
-                 m.sender === systemMessage.sender &&
-                 Math.abs(new Date(`1970/01/01 ${m.timestamp}`) - new Date(`1970/01/01 ${systemMessage.timestamp}`)) < 2000
-          )
-          
-          if (!isSystemDuplicate) {
-            messages.value.push(systemMessage)
-          }
-        }, 500)
-        
-        message.value = ''
-        return
-      }
-      
-      // Xử lý bình thường cho phòng chat có nhân viên
-      stompClient.publish({
-        destination: `/app/room/${roomId.value}/send`,
-        body: JSON.stringify({
-          sender: isEmployee.value ? 'Nhân viên' : 'Khách hàng',
-          content: message.value
-        })
-      })
-      message.value = ''
-    } catch (error) {
-      console.error('Lỗi gửi tin nhắn:', error)
-      alert('Không thể gửi tin nhắn.')
-    }
-  } else {
-    alert('WebSocket chưa kết nối.')
-  }
-}
-
-// Kết nối WebSocket cho nhân viên
+// Kết nối WebSocket cho employee (nhiều phòng) - SỬA CHÍNH Ở ĐÂY
 function connectWebSocketForEmployee() {
+  if (!danhSachPhongChat.value || danhSachPhongChat.value.length === 0) return
+
+  cleanupStompClient()
+
   const socket = new SockJS('/ws')
   stompClient = new Client({
     webSocketFactory: () => socket,
-    debug: (str) => console.log(str),
     reconnectDelay: 5000,
     heartbeatIncoming: 4000,
     heartbeatOutgoing: 4000,
     onConnect: () => {
-      console.log('✅ STOMP kết nối thành công cho nhân viên')
+      console.log('✅ WebSocket connected for employee')
       isConnected.value = true
       
+      // Subscribe tất cả phòng chat của nhân viên
       danhSachPhongChat.value.forEach(room => {
         const roomIdToSubscribe = typeof room === 'object' ? room.id : room
+        console.log(`📡 Employee subscribing to room: ${roomIdToSubscribe}`)
         
         const subscription = stompClient.subscribe(`/topic/room/${roomIdToSubscribe}/messages`, (msg) => {
           try {
             const body = JSON.parse(msg.body)
-            const messageData = {
-              roomId: roomIdToSubscribe,
-              sender: body.sender,
-              content: body.content,
-              timestamp: new Date().toLocaleTimeString()
-            }
-            
-            // Kiểm tra trùng lặp tin nhắn
-            const isDuplicate = messages.value.some(
-              m => m.content === messageData.content && m.timestamp === messageData.timestamp
-            )
-            if (!isDuplicate && roomIdToSubscribe === roomId.value) {
-              messages.value.push(messageData)
-            }
-            
-            // Cập nhật danh sách phòng chat
-            const roomIndex = danhSachPhongChat.value.findIndex(r => 
-              (typeof r === 'object' ? r.id : r) === roomIdToSubscribe
-            )
-            if (roomIndex !== -1) {
-              danhSachPhongChat.value[roomIndex] = {
-                ...danhSachPhongChat.value[roomIndex],
-                lastMessage: body.content,
-                lastMessageTime: new Date().toLocaleTimeString(),
-                unreadCount: roomIdToSubscribe === roomId.value ? 0 : 
-                  (danhSachPhongChat.value[roomIndex].unreadCount || 0) + 1
+            console.log(`📨 Employee nhận tin nhắn từ phòng ${roomIdToSubscribe}:`, body)
+
+            // Nếu là phòng đang được chọn, hiển thị tin nhắn
+            if (roomIdToSubscribe === roomId.value) {
+              if (body.localId && pendingMessages.value.has(body.localId)) {
+                const localMessageIndex = messages.value.findIndex(m => m.id === body.localId)
+                if (localMessageIndex > -1) {
+                  messages.value[localMessageIndex] = {
+                    ...messages.value[localMessageIndex],
+                    isPending: false,
+                    isLocal: false,
+                    timestamp: new Date(body.timestamp).toLocaleTimeString()
+                  }
+                }
+                pendingMessages.value.delete(body.localId)
+                return
+              }
+
+              const messageData = {
+                id: `server-${body.timestamp}-${Math.random()}`,
+                roomId: roomIdToSubscribe,
+                sender: body.sender,
+                content: body.content,
+                timestamp: new Date(body.timestamp).toLocaleTimeString(),
+                isLocal: false,
+                isPending: false
+              }
+
+              const isDuplicate = messages.value.some(m => 
+                m.content === messageData.content && 
+                m.sender === messageData.sender &&
+                Math.abs(new Date(`1970-01-01 ${m.timestamp}`).getTime() - 
+                        new Date(`1970-01-01 ${messageData.timestamp}`).getTime()) < 2000
+              )
+
+              if (!isDuplicate) {
+                messages.value.push(messageData)
+              }
+            } else {
+              // Tin nhắn từ phòng khác - cập nhật thông báo
+              console.log(`🔔 Tin nhắn mới từ phòng ${roomIdToSubscribe}`)
+              
+              // Cập nhật lastMessage và unreadCount cho phòng đó
+              const roomIndex = danhSachPhongChat.value.findIndex(r => 
+                (typeof r === 'object' ? r.id : r) === roomIdToSubscribe
+              )
+              
+              if (roomIndex > -1) {
+                // Chỉ tăng unreadCount nếu tin nhắn không phải từ nhân viên
+                if (body.sender !== 'Nhân viên') {
+                  danhSachPhongChat.value[roomIndex].unreadCount = 
+                    (danhSachPhongChat.value[roomIndex].unreadCount || 0) + 1
+                }
+                
+                danhSachPhongChat.value[roomIndex].lastMessage = body.content
+                danhSachPhongChat.value[roomIndex].lastMessageTime = 
+                  new Date(body.timestamp).toLocaleTimeString()
+                
+                // Hiển thị notification toast
+                if (body.sender !== 'Nhân viên') {
+                  toast.info(`Tin nhắn mới từ phòng ${roomIdToSubscribe}: ${body.content}`)
+                }
               }
             }
-            
-            // Hiển thị thông báo (có thể thay bằng toast notification)
-            if (roomIdToSubscribe !== roomId.value) {
-              // Không hiển thị alert để tránh làm phiền người dùng
-              console.log(`Tin nhắn mới từ phòng ${roomIdToSubscribe}: ${body.content}`)
-            }
-            
           } catch (error) {
             console.error('Lỗi parse message:', error)
           }
@@ -494,82 +465,246 @@ function connectWebSocketForEmployee() {
         activeSubscriptions.set(roomIdToSubscribe, subscription)
       })
     },
-    onDisconnect: () => {
-      console.log('STOMP ngắt kết nối')
-      isConnected.value = false
+    onStompError: (err) => {
+      console.error("STOMP Error:", err)
     },
-    onStompError: (frame) => {
-      console.error('❌ Lỗi STOMP:', frame)
+    onDisconnect: () => {
       isConnected.value = false
     }
   })
-  
   stompClient.activate()
 }
 
-// Chọn phòng chat
+// Timeout cleanup tin nhắn pending quá lâu
+setInterval(() => {
+  pendingMessages.value.forEach(messageId => {
+    const messageIndex = messages.value.findIndex(m => m.id === messageId && m.isPending)
+    if (messageIndex > -1) {
+      messages.value[messageIndex].isPending = false
+      messages.value[messageIndex].failed = true
+    }
+    pendingMessages.value.delete(messageId)
+  })
+}, 10000)
+
+// Chọn phòng (khi employee click) - SỬA CHÍNH Ở ĐÂY
 function selectRoom(room) {
   selectedRoom.value = room
+  const newRoomId = typeof room === 'object' ? room.id : room
   
-  if (typeof room === 'object' && room.id) {
-    roomId.value = room.id
-  } else if (typeof room === 'string') {
-    roomId.value = room
-  } else {
-    console.error('❌ Định dạng phòng không hợp lệ:', room)
-    return
+  // Cập nhật roomId hiện tại
+  roomId.value = newRoomId
+  
+  // Reset unreadCount khi vào phòng
+  const roomIndex = danhSachPhongChat.value.findIndex(r => 
+    (typeof r === 'object' ? r.id : r) === newRoomId
+  )
+  if (roomIndex > -1) {
+    danhSachPhongChat.value[roomIndex].unreadCount = 0
   }
   
+  // Xóa tin nhắn cũ và load lịch sử mới
   messages.value = []
   loadMessageHistory(roomId.value)
   
-  // Đặt lại số lượng tin nhắn chưa đọc
-  const roomIndex = danhSachPhongChat.value.findIndex(r => 
-    (typeof r === 'object' ? r.id : r) === roomId.value
-  )
-  if (roomIndex !== -1) {
-    danhSachPhongChat.value[roomIndex] = {
-      ...danhSachPhongChat.value[roomIndex],
-      unreadCount: 0
-    }
-  }
-  
-  console.log('✅ Đã chuyển sang phòng:', roomId.value)
-}
-
-
-
-// Handle typing (có thể mở rộng để hiển thị typing indicator)
-function handleTyping() {
-  // Logic for typing indicator nếu cần
+  console.log(`🔄 Employee chuyển sang phòng: ${newRoomId}`)
 }
 
 onBeforeUnmount(() => {
-  if (stompClient) {
-    activeSubscriptions.forEach(subscription => {
-      subscription.unsubscribe()
-    })
-    activeSubscriptions.clear()
-    stompClient.deactivate()
+  cleanupStompClient()
+})
+
+// Hàm yêu cầu nhân viên / chuyển AI <-> nhân viên
+async function yeuCauNhanVien() {
+  // toggle chế độ
+  ChatAI.value = !ChatAI.value
+  toast.success(ChatAI.value ? 'Đã chuyển sang chat với AI' : 'Đã chuyển sang chat với nhân viên')
+
+  // leave current room subscription nếu có
+  if (!roomId.value) {
+    console.warn("⚠ Không có roomId để hủy đăng ký.");
+  } else {
+    const subscription = activeSubscriptions.get(roomId.value);
+    if (subscription) {
+      try { subscription.unsubscribe(); } catch (e) {}
+      activeSubscriptions.delete(roomId.value);
+      console.log(`✅ Đã hủy đăng ký phòng ${roomId.value}`);
+    }
+  }
+
+  // reset trạng thái phòng
+  roomId.value = ''
+  selectedRoom.value = ''
+  messages.value = []
+
+  // xử lý cho khách (không đăng nhập)
+  if (!isUser) {
+    isEmployee.value = false
+    let thongTinCookie = Cookies.get("thongTinKhachHang")
+
+    // nếu không có cookie thông tin khách => tạo guest tạm
+    if (!thongTinCookie) {
+      const guest = {
+        maKhachHang: `guest-${Date.now()}`,
+        tenKhachHang: 'Khách'
+      }
+      Cookies.set("thongTinKhachHang", JSON.stringify(guest), { expires: 1/24 }) // tồn tại 1 giờ
+      thongTinCookie = Cookies.get("thongTinKhachHang")
+      console.log("ℹ Tạo guest tạm:", guest)
+    }
+
+    let thongTin
+    try {
+      thongTin = JSON.parse(thongTinCookie)
+    } catch (e) {
+      console.error("❌ Cookie 'thongTinKhachHang' không hợp lệ JSON:", e)
+      // fallback: tạo guest
+      const guest = { maKhachHang: `guest-${Date.now()}`, tenKhachHang: 'Khách' }
+      Cookies.set("thongTinKhachHang", JSON.stringify(guest), { expires: 1/24 })
+      thongTin = guest
+    }
+
+    if (!ChatAI.value) {
+      // user muốn chat với nhân viên -> tạo room (server có thể trả false nếu không có NV online)
+      const idKH = thongTin.maKhachHang
+      try {
+        const response = await axios.get(`http://localhost:8080/create-room/${idKH}`);
+        if (response.data.data === false) {
+          toast.info("Hiện tại không có nhân viên nào đang online, vui lòng thử lại sau")
+          // fallback về waiting-room
+          roomId.value = 'waiting-room'
+          connectWebSocket()
+        } else {
+          roomId.value = response.data.message // server trả roomId
+          connectWebSocket()
+        }
+      } catch (error) {
+        console.error('Lỗi khi tạo phòng:', error);
+        // fallback về waiting-room
+        roomId.value = 'waiting-room'
+        connectWebSocket()
+      }
+    } else {
+      // Chat với AI / waiting-room
+      roomId.value = 'waiting-room'
+      connectWebSocket()
+    }
+
+  } else {
+    // xử lý cho nhân viên (giữ nguyên flow cũ)
+    isEmployee.value = true
+    const token = Cookies.get("token")
+    let payload = null
+    try { payload = JSON.parse(atob(token.split('.')[1])) } catch(e){ console.error("❌ JWT parse error", e); return }
+    const idNV = payload.idNv
+    if (!idNV) {
+      console.error("❌ Không tìm thấy idNV cho nhân viên")
+      return
+    }
+
+    try {
+      const res = await axios.get(`http://localhost:8080/danh-sach-phong-chat/${idNV}`);
+      danhSachPhongChat.value = res.data.data.map(roomId => ({
+        id: roomId,
+        name: `Phòng ${roomId}`,
+        tenKhachHang: roomId.split('-')[0],
+        lastMessage: '',
+        lastMessageTime: '',
+        unreadCount: 0
+      }));
+      connectWebSocketForEmployee();
+      if (danhSachPhongChat.value && danhSachPhongChat.value.length > 0) {
+        selectRoom(danhSachPhongChat.value[0]);
+        loadMessageHistory(danhSachPhongChat.value[0].id);
+      }
+    } catch (err) {
+      console.error("❌ Lỗi khi lấy danh sách phòng chat:", err);
+    }
+  }
+}
+
+// --- Mounted: nếu user chưa login thì cho phép vào waiting-room (tạo guest tạm nếu cần) ---
+onMounted(async () => {
+  if (!isUser) {
+    isEmployee.value = false
+    const thongTinCookie = Cookies.get("thongTinKhachHang")
+    
+    if (!thongTinCookie) {
+      // tạo guest tạm và vào waiting-room luôn (không bắt đăng nhập)
+      const guest = {
+        maKhachHang: `guest-${Date.now()}`,
+        tenKhachHang: 'Khách'
+      }
+      Cookies.set("thongTinKhachHang", JSON.stringify(guest), { expires: 1/24 }) // 1 giờ
+      roomId.value = 'waiting-room'
+      connectWebSocket()
+      return
+    }
+
+    // nếu có cookie hợp lệ -> connect (vẫn vào waiting-room mặc định)
+    roomId.value = 'waiting-room'
+    connectWebSocket()
+
+  } else {
+    // Employee flow (giữ nguyên)
+    isEmployee.value = true
+    const token = Cookies.get("token")
+    let payload = null
+    try { payload = JSON.parse(atob(token.split('.')[1])) } catch(e){ console.error("❌ JWT parse error", e); return }
+    const idNV = payload.idNv
+    
+    if (!idNV) {
+      console.error("❌ Không tìm thấy idNV cho nhân viên")
+      return
+    }
+    
+    try {
+      const res = await axios.get(`http://localhost:8080/danh-sach-phong-chat/${idNV}`)
+      danhSachPhongChat.value = res.data.data.map(roomId => ({
+        id: roomId,
+        name: `Phòng ${roomId}`,
+        tenKhachHang: roomId.split('-')[0],
+        lastMessage: '',
+        lastMessageTime: '',
+        unreadCount: 0
+      }))
+      connectWebSocketForEmployee()
+      
+      if (danhSachPhongChat.value && danhSachPhongChat.value.length > 0) {
+        selectRoom(danhSachPhongChat.value[0])
+        loadMessageHistory(danhSachPhongChat.value[0].id)
+      }
+    } catch (err) {
+      console.error("❌ Lỗi khi lấy danh sách phòng chat:", err)
+    }
+  }
+})
+
+// Watch roomId: khi thay đổi (không phải waiting-room) load lịch sử
+watch(roomId, async (newVal) => {
+  if (newVal && newVal !== 'waiting-room') {
+    await loadMessageHistory(newVal)
   }
 })
 </script>
 
+
+
 <style scoped>
 .chat-container {
   display: flex;
-  height: 100%; /* Loại bỏ chiều cao cố định 700px, sử dụng 100% để linh hoạt */
-  min-height: 400px; /* Đặt min-height để tránh co lại quá nhỏ */
+  width: 370px;
+  height: 450px;
   border: 1px solid #e0e0e0;
-  border-radius: 12px;
+  border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   background: white;
 }
 
 /* === SIDEBAR === */
 .rooms-sidebar {
-  width: 320px;
+  width: 100px;
   background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
   border-right: 1px solid #e0e0e0;
   display: flex;
@@ -577,20 +712,20 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-header {
-  padding: 20px;
+  padding: 8px;
   border-bottom: 1px solid #e0e0e0;
   background: white;
 }
 
 .sidebar-header h3 {
-  margin: 0 0 8px 0;
-  font-size: 1.2em;
+  margin: 0 0 3px 0;
+  font-size: 0.8em;
   font-weight: 600;
   color: #1a1a1a;
 }
 
 .room-count {
-  font-size: 0.9em;
+  font-size: 0.6em;
   color: #666;
 }
 
@@ -600,7 +735,7 @@ onBeforeUnmount(() => {
 }
 
 .room-item {
-  padding: 16px 20px;
+  padding: 6px 8px;
   cursor: pointer;
   border-bottom: 1px solid #f0f0f0;
   transition: all 0.2s ease;
@@ -622,19 +757,19 @@ onBeforeUnmount(() => {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
+  width: 2px;
   background: #ffc107;
 }
 
 .room-content {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
 }
 
 .room-avatar {
-  width: 48px;
-  height: 48px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
   display: flex;
@@ -642,13 +777,13 @@ onBeforeUnmount(() => {
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 1.2em;
+  font-size: 0.8em;
   flex-shrink: 0;
 }
 
 .room-item.active .room-avatar {
   background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px);
 }
 
 .room-details {
@@ -658,8 +793,8 @@ onBeforeUnmount(() => {
 
 .room-name {
   font-weight: 600;
-  margin-bottom: 4px;
-  font-size: 1em;
+  margin-bottom: 1px;
+  font-size: 0.7em;
   color: inherit;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -667,13 +802,13 @@ onBeforeUnmount(() => {
 }
 
 .room-info {
-  font-size: 0.9em;
+  font-size: 0.6em;
   opacity: 0.7;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .last-message {
-  font-size: 0.8em;
+  font-size: 0.55em;
   opacity: 0.6;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -684,24 +819,24 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 1px;
 }
 
 .unread-badge {
   background: #dc3545;
   color: white;
-  border-radius: 50%; /* Hình tròn để làm chấm đỏ */
-  width: 20px;
-  height: 20px;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75em;
+  font-size: 0.55em;
   font-weight: 600;
 }
 
 .time {
-  font-size: 0.75em;
+  font-size: 0.55em;
   opacity: 0.6;
 }
 
@@ -710,18 +845,19 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 200px;
+  height: 80px;
   color: #666;
 }
 
 .empty-icon {
-  font-size: 3em;
-  margin-bottom: 16px;
+  font-size: 1.5em;
+  margin-bottom: 6px;
 }
 
 .empty-text {
   text-align: center;
   color: #999;
+  font-size: 0.7em;
 }
 
 /* === CHAT MAIN === */
@@ -729,17 +865,16 @@ onBeforeUnmount(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%; /* Đảm bảo chiếm toàn bộ chiều cao của container */
 }
 
 .chat-header {
-  padding: 20px 24px;
+  padding: 5px 6px;
   background: white;
   border-bottom: 1px solid #e0e0e0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
 }
 
 .header-left {
@@ -750,12 +885,12 @@ onBeforeUnmount(() => {
 .room-info-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 2px;
 }
 
 .room-avatar-small {
-  width: 40px;
-  height: 40px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
   display: flex;
@@ -763,20 +898,20 @@ onBeforeUnmount(() => {
   justify-content: center;
   color: white;
   font-weight: 600;
-  font-size: 1em;
+  font-size: 0.6em;
 }
 
 .room-title {
   margin: 0;
-  font-size: 1.1em;
+  font-size: 0.7em;
   font-weight: 600;
   color: #1a1a1a;
 }
 
 .customer-name {
-  font-size: 0.9em;
+  font-size: 0.5em;
   color: #666;
-  margin-top: 2px;
+  margin-top: 0.5px;
 }
 
 .header-right {
@@ -787,8 +922,8 @@ onBeforeUnmount(() => {
 .connection-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9em;
+  gap: 2px;
+  font-size: 0.5em;
   color: #dc3545;
   font-weight: 500;
 }
@@ -798,8 +933,8 @@ onBeforeUnmount(() => {
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 3px;
+  height: 3px;
   border-radius: 50%;
   background: currentColor;
   animation: pulse 2s infinite;
@@ -816,7 +951,7 @@ onBeforeUnmount(() => {
   flex: 1;
   overflow-y: auto;
   background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
-  padding: 20px 24px;
+  padding: 5px 6px;
 }
 
 .no-room-selected {
@@ -827,27 +962,28 @@ onBeforeUnmount(() => {
   height: 100%;
   color: #666;
   text-align: center;
-  padding: 40px;
+  padding: 8px;
 }
 
 .no-room-icon {
-  font-size: 4em;
-  margin-bottom: 20px;
+  font-size: 1.2em;
+  margin-bottom: 4px;
   opacity: 0.6;
 }
 
 .no-room-selected h3 {
-  margin: 0 0 12px 0;
+  margin: 0 0 2px 0;
   color: #333;
   font-weight: 600;
+  font-size: 0.7em;
 }
 
 .no-room-selected p {
   margin: 0;
   color: #666;
-  font-size: 0.95em;
-  line-height: 1.5;
-  max-width: 300px;
+  font-size: 0.6em;
+  line-height: 1.2;
+  max-width: 140px;
 }
 
 .loading-messages {
@@ -859,13 +995,13 @@ onBeforeUnmount(() => {
 }
 
 .spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
+  border: 1.5px solid #f3f3f3;
+  border-top: 1.5px solid #007bff;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 10px;
+  height: 10px;
   animation: spin 1s linear infinite;
-  margin-right: 8px;
+  margin-right: 2px;
 }
 
 @keyframes spin {
@@ -874,10 +1010,9 @@ onBeforeUnmount(() => {
 }
 
 .messages-list {
-  padding: 0 0; /* Loại bỏ padding bên trong để tối ưu không gian */
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 3px;
   min-height: 100%;
 }
 
@@ -892,14 +1027,14 @@ onBeforeUnmount(() => {
 }
 
 .empty-messages .empty-icon {
-  font-size: 3em;
-  margin-bottom: 16px;
+  font-size: 1em;
+  margin-bottom: 3px;
   opacity: 0.5;
 }
 
 .message {
   display: flex;
-  margin-bottom: 8px;
+  margin-bottom: 1px;
 }
 
 .message.own-message {
@@ -911,9 +1046,9 @@ onBeforeUnmount(() => {
 }
 
 .message-bubble {
-  max-width: 70%;
-  padding: 12px 16px;
-  border-radius: 18px;
+  max-width: 85%;
+  padding: 4px 6px;
+  border-radius: 8px;
   position: relative;
   word-wrap: break-word;
 }
@@ -921,48 +1056,48 @@ onBeforeUnmount(() => {
 .own-message .message-bubble {
   background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
   color: white;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: 1px;
 }
 
 .other-message .message-bubble {
   background: white;
   color: #333;
   border: 1px solid #e0e0e0;
-  border-bottom-left-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-bottom-left-radius: 1px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .message-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
-  gap: 12px;
+  margin-bottom: 1px;
+  gap: 2px;
 }
 
 .message-sender {
   font-weight: 600;
-  font-size: 0.85em;
+  font-size: 0.5em;
   opacity: 0.9;
 }
 
 .message-time {
-  font-size: 0.75em;
+  font-size: 0.45em;
   opacity: 0.7;
   white-space: nowrap;
 }
 
 .message-content {
-  font-size: 0.95em;
-  line-height: 1.4;
+  font-size: 0.6em;
+  line-height: 1.1;
 }
 
 /* === INPUT === */
 .message-input-container {
   background: white;
   border-top: 1px solid #e0e0e0;
-  padding: 20px 24px;
-  z-index: 10; /* Đảm bảo hiển thị trên cùng */
+  padding: 5px 6px;
+  z-index: 10;
 }
 
 .message-input {
@@ -977,25 +1112,25 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   background: #f8f9fa;
-  border: 2px solid #e9ecef;
-  border-radius: 24px;
-  padding: 4px;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 1px;
   transition: all 0.2s ease;
-  width: 100%; /* Đảm bảo chiếm toàn bộ chiều rộng */
+  width: 100%;
 }
 
 .input-wrapper:focus-within {
   border-color: #007bff;
   background: white;
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  box-shadow: 0 0 0 1px rgba(0, 123, 255, 0.1);
 }
 
 .message-input-field {
   flex: 1;
   border: none;
   outline: none;
-  padding: 12px 16px;
-  font-size: 0.95em;
+  padding: 4px 6px;
+  font-size: 0.6em;
   background: transparent;
   color: #333;
 }
@@ -1005,8 +1140,8 @@ onBeforeUnmount(() => {
 }
 
 .send-button {
-  width: 44px;
-  height: 44px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   border: none;
   background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
@@ -1032,16 +1167,16 @@ onBeforeUnmount(() => {
 
 .input-status {
   text-align: center;
-  font-size: 0.8em;
+  font-size: 0.5em;
   color: #666;
-  margin-top: 8px;
+  margin-top: 2px;
   font-style: italic;
 }
 
 /* === SCROLLBAR === */
 .rooms-list::-webkit-scrollbar,
 .messages-container::-webkit-scrollbar {
-  width: 6px;
+  width: 3px;
 }
 
 .rooms-list::-webkit-scrollbar-track,
@@ -1052,45 +1187,11 @@ onBeforeUnmount(() => {
 .rooms-list::-webkit-scrollbar-thumb,
 .messages-container::-webkit-scrollbar-thumb {
   background: #ccc;
-  border-radius: 3px;
+  border-radius: 1px;
 }
 
 .rooms-list::-webkit-scrollbar-thumb:hover,
 .messages-container::-webkit-scrollbar-thumb:hover {
   background: #999;
-}
-
-/* === RESPONSIVE === */
-@media (max-width: 768px) {
-  .chat-container {
-    height: 100vh;
-    border-radius: 0;
-  }
-  
-  .rooms-sidebar {
-    width: 280px;
-  }
-  
-  .room-content {
-    gap: 10px;
-  }
-  
-  .room-avatar {
-    width: 40px;
-    height: 40px;
-    font-size: 1em;
-  }
-  
-  .messages-list {
-    padding: 16px 20px;
-  }
-  
-  .message-bubble {
-    max-width: 85%;
-  }
-  
-  .message-input-container {
-    padding: 16px 20px;
-  }
 }
 </style>

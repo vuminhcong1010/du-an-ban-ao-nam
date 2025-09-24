@@ -4,6 +4,7 @@ import vue from "@vitejs/plugin-vue";
 import vueDevTools from "vite-plugin-vue-devtools";
 import path from "path"; // Đảm bảo đã import path
 
+
 export default defineConfig({
   plugins: [
     vue(), // Plugin Vue để hỗ trợ Vue.js
@@ -21,6 +22,7 @@ export default defineConfig({
     global: "window", // 🛠 Thêm dòng này để fix lỗi "global is not defined"
   },
 
+
   server: {
     proxy: {
       '/api': {
@@ -33,25 +35,16 @@ export default defineConfig({
       // },
       "/ws": {
         target: "http://localhost:8080",
-        ws: true, // ⚠️ Quan trọng: bật hỗ trợ WebSocket
+        ws: true,
         changeOrigin: true,
         secure: false,
       },
-      '/client': { // <-- Đường dẫn mà frontend gọi
-        target: 'http://localhost:8080', // <-- Địa chỉ của backend Spring Boot API
-        changeOrigin: true, // Quan trọng để xử lý CORS
-        // rewrite: (path) => path.replace(/^\/danh-muc-hien-thi/, '/danh-muc-hien-thi'), // Có thể không cần dòng này nếu path trùng khớp
+       '/api-provinces': {
+        target: 'https://provinces.open-api.vn',
+        changeOrigin: true, // Thay đổi origin host thành target URL
+        rewrite: (path) => path.replace(/^\/api-provinces/, ''), // Xóa '/api-provinces' khỏi URL
       },
-      '/danh-muc-hien-thi': { // <-- Đường dẫn mà frontend gọi
-        target: 'http://localhost:8080', // <-- Địa chỉ của backend Spring Boot API
-        changeOrigin: true, // Quan trọng để xử lý CORS
-        // rewrite: (path) => path.replace(/^\/danh-muc-hien-thi/, '/danh-muc-hien-thi'), // Có thể không cần dòng này nếu path trùng khớp
-      },
-      //  '/hoa-don': { // <-- Đường dẫn mà frontend gọi
-      //   target: 'http://localhost:8080', // <-- Địa chỉ của backend Spring Boot API
-      //   changeOrigin: true, // Quan trọng để xử lý CORS
-      //   // rewrite: (path) => path.replace(/^\/danh-muc-hien-thi/, '/danh-muc-hien-thi'), // Có thể không cần dòng này nếu path trùng khớp
-      // },
     },
   },
 });
+

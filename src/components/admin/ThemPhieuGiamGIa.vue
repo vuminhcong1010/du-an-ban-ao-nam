@@ -1,11 +1,16 @@
 <template>
   <div v-if="!isLoading" class="container-fluid mt-4">
+    <div class="header-section">
+      <button @click="goBack" class="back-button">
+        <i class="fa-solid fa-arrow-left"></i> Quay lại
+      </button>
+      <h2 class="page-title-aligned">Thêm phiếu giảm giá mới</h2>
+    </div>
+
     <div class="card mb-4">
       <div class="card-body">
-        <h2 class="fw-bold mb-4">Thêm Phiếu Giảm Giá</h2>
-        <div class="row gx-4">
-          <!-- Cột 1 -->
-          <div class="col-md-3">
+        <div class="row gx-5">
+          <div class="col-md-6">
             <div class="mb-3">
               <label class="form-label">Mã phiếu giảm giá</label>
               <input v-model="maPhieu" type="text" class="form-control"
@@ -17,7 +22,7 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Hình thức giảm <span class="text-danger">*</span></label>
-              <div style="margin-top: 15px; margin-bottom: 23px;">
+              <div style="margin-top: 5px;">
                 <div class="form-check form-check-inline">
                   <input class="form-check-input" type="radio" name="giatri" id="phanTram" value="phanTram"
                     v-model="giaTriOption" @change="validateGiaTriOption" />
@@ -58,8 +63,7 @@
               </div>
             </div>
           </div>
-          <!-- Cột 2 -->
-          <div class="col-md-3">
+          <div class="col-md-6">
             <div class="mb-3">
               <label class="form-label">Tên phiếu giảm giá <span class="text-danger">*</span></label>
               <input v-model="tenPhieu" type="text" class="form-control" placeholder="Nhập tên phiếu giảm giá"
@@ -68,7 +72,7 @@
                 {{ errors.tenPhieu }}
               </div>
             </div>
-            <div class="mb-4">
+            <div class="mb-3">
               <label class="form-label">Giá trị giảm <span class="text-danger">*</span></label>
               <div class="input-group">
                 <input v-model="giaTriGiamFormatted" type="text" class="form-control"
@@ -101,29 +105,33 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Loại phiếu giảm giá <span class="text-danger">*</span></label>
-              <br>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="loai" id="congkhai" value="Công khai"
-                  v-model="loaiPhieu" @change="validateLoaiPhieu" />
-                <label class="form-check-label" for="congkhai">Công khai</label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="loai" id="canhan" value="Cá nhân" v-model="loaiPhieu"
-                  @change="validateLoaiPhieu" />
-                <label class="form-check-label" for="canhan">Cá nhân</label>
+              <div style="margin-top: 5px;">
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="loai" id="congkhai" value="Công khai"
+                    v-model="loaiPhieu" @change="validateLoaiPhieu" />
+                  <label class="form-check-label" for="congkhai">Công khai</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" name="loai" id="canhan" value="Cá nhân" v-model="loaiPhieu"
+                    @change="validateLoaiPhieu" />
+                  <label class="form-check-label" for="canhan">Cá nhân</label>
+                </div>
               </div>
               <div v-if="errors.loaiPhieu" class="invalid-feedback d-block">
                 {{ errors.loaiPhieu }}
               </div>
             </div>
           </div>
-          <!-- Cột 3: Bảng khách hàng -->
-          <div class="col-md-6" v-if="loaiPhieu === 'Cá nhân'">
-            <div class="mb-2">
-              <label class="form-label">Tìm kiếm:</label>
-              <input v-model="searchQuery" type="text" class="form-control"
+        </div>
+
+        <div class="row" v-if="loaiPhieu === 'Cá nhân'">
+          <div class="col-md-12">
+            <h5 class="mt-4 mb-3">Chọn khách hàng</h5>
+            <div class="mb-2 d-flex align-items-center">
+              <label class="form-label me-2 mb-0">Tìm kiếm:</label>
+              <input v-model="searchQuery" type="text" class="form-control w-25 me-3"
                 placeholder="Nhập tên, email hoặc số điện thoại" @input="currentPage = 1" />
-              <label class="form-label mt-2" style="margin-right: 20px;">Giới tính:</label>
+              <label class="form-label me-2 mb-0">Giới tính:</label>
               <div class="form-check form-check-inline">
                 <input class="form-check-input" type="radio" name="gioitinh" id="gioiTinhTatCa" value=""
                   v-model="gioiTinhFilter" />
@@ -163,7 +171,7 @@
                     <td>{{ kh.email }}</td>
                     <td>{{ kh.soDienThoai }}</td>
                     <td>{{ kh.gioiTinh ? "Nam" : "Nữ" }}</td>
-                    <td>{{ kh.soLanMua || 0 }}</td> <!-- Hiển thị số lần mua -->
+                    <td>{{ kh.soLanMua || 0 }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -181,17 +189,18 @@
                 </li>
               </ul>
             </nav>
-            <div v-if="errors.selectedRows" class="text-danger mt-2">
+            <div v-if="errors.selectedRows" class="text-danger mt-2 text-center">
               {{ errors.selectedRows }}
             </div>
           </div>
         </div>
+
         <div class="d-flex justify-content-end mt-4">
-          <button @click="$router.push('/phieu-giam-gia')" class="btn btn-danger me-2">
-            Quay lại
+          <button @click="goBack" class="btn btn-secondary me-2">
+            Hủy
           </button>
           <button @click="confirmThemPhieuGiamGia" class="btn btn-primary" :disabled="isLoading">
-            Thêm phiếu giảm giá
+            Lưu
           </button>
         </div>
       </div>
@@ -331,8 +340,10 @@ export default {
       if (this.giaTriOption === "vnd") {
         this.giaTriToiDa = newVal;
         this.giaTriToiDaFormatted = this.formatCurrency(newVal);
+        this.giaTriGiamFormatted = this.formatCurrency(newVal);
+      } else {
+        this.giaTriGiamFormatted = newVal !== null ? newVal.toString() : "";
       }
-      this.giaTriGiamFormatted = this.giaTriOption === "vnd" ? this.formatCurrency(newVal) : newVal;
       this.validateGiaTriGiam();
     },
     giaTriToiThieu(newVal) {
@@ -358,41 +369,81 @@ export default {
     },
   },
   methods: {
+    goBack() {
+      this.$router.push('/phieu-giam-gia');
+    },
     formatCurrency(value) {
       if (value === null || value === "" || isNaN(value)) return "";
       return Number(value).toLocaleString("vi-VN", { minimumFractionDigits: 0 });
     },
     parseCurrency(value) {
       if (!value) return null;
-      const cleaned = value.replace(/[^\d]/g, "");
+      const cleaned = value.replace(/[^\d-]/g, ""); // Cho phép dấu trừ
       return cleaned ? Number(cleaned) : null;
     },
     handleGiaTriGiamInput(event) {
-      const value = event.target.value;
-      if (this.giaTriOption === "phanTram") {
-        this.giaTriGiam = this.parseCurrency(value);
+      let value = event.target.value.replace(/[^\d-]/g, ""); // Cho phép số và dấu trừ
+      if (value === "" || value === "-") {
+        this.giaTriGiam = null;
         this.giaTriGiamFormatted = value;
-      } else {
-        this.giaTriGiam = this.parseCurrency(value);
-        this.giaTriGiamFormatted = this.formatCurrency(this.giaTriGiam);
+        if (this.giaTriOption === "vnd") {
+          this.giaTriToiDa = null;
+          this.giaTriToiDaFormatted = "";
+        }
+        this.validateGiaTriGiam();
+        return;
       }
+      const numValue = Number(value);
+      if (isNaN(numValue)) {
+        event.target.value = this.giaTriGiamFormatted;
+        this.errors.giaTriGiam = "Vui lòng nhập số hợp lệ!";
+        return;
+      }
+      this.giaTriGiam = numValue;
       if (this.giaTriOption === "vnd") {
-        this.giaTriToiDa = this.giaTriGiam;
-        this.giaTriToiDaFormatted = this.giaTriGiamFormatted;
+        this.giaTriGiamFormatted = this.formatCurrency(numValue);
+        this.giaTriToiDa = numValue;
+        this.giaTriToiDaFormatted = this.formatCurrency(numValue);
+      } else {
+        this.giaTriGiamFormatted = numValue.toString();
       }
       this.validateGiaTriGiam();
     },
     handleGiaTriToiThieuInput(event) {
-      const value = event.target.value;
-      this.giaTriToiThieu = this.parseCurrency(value);
-      this.giaTriToiThieuFormatted = this.formatCurrency(this.giaTriToiThieu);
+      let value = event.target.value.replace(/[^\d-]/g, ""); // Cho phép số và dấu trừ
+      if (value === "" || value === "-") {
+        this.giaTriToiThieu = null;
+        this.giaTriToiThieuFormatted = value;
+        this.validateGiaTriToiThieu();
+        return;
+      }
+      const numValue = Number(value);
+      if (isNaN(numValue)) {
+        event.target.value = this.giaTriToiThieuFormatted;
+        this.errors.giaTriToiThieu = "Vui lòng nhập số hợp lệ!";
+        return;
+      }
+      this.giaTriToiThieu = numValue;
+      this.giaTriToiThieuFormatted = this.formatCurrency(numValue);
       this.validateGiaTriToiThieu();
     },
     handleGiaTriToiDaInput(event) {
       if (this.giaTriOption === "vnd") return;
-      const value = event.target.value;
-      this.giaTriToiDa = this.parseCurrency(value);
-      this.giaTriToiDaFormatted = this.formatCurrency(this.giaTriToiDa);
+      let value = event.target.value.replace(/[^\d-]/g, ""); // Cho phép số và dấu trừ
+      if (value === "" || value === "-") {
+        this.giaTriToiDa = null;
+        this.giaTriToiDaFormatted = value;
+        this.validateGiaTriToiDa();
+        return;
+      }
+      const numValue = Number(value);
+      if (isNaN(numValue)) {
+        event.target.value = this.giaTriToiDaFormatted;
+        this.errors.giaTriToiDa = "Vui lòng nhập số hợp lệ!";
+        return;
+      }
+      this.giaTriToiDa = numValue;
+      this.giaTriToiDaFormatted = this.formatCurrency(numValue);
       this.validateGiaTriToiDa();
     },
     toggleAllCheckboxes() {
@@ -407,47 +458,55 @@ export default {
       this.validateSelectedRows();
     },
     async getDanhSachKhachHang() {
-  try {
-    const response = await fetch("http://localhost:8080/danhSachKhachHang", {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
-    if (!response.ok) throw new Error("Không thể tải danh sách khách hàng");
-    const data = await response.json();
-    this.danhSachKhachHang = data.map(kh => ({
-      id: kh.id,
-      maKhachHang: kh.maKhachHang,
-      tenTaiKhoan: kh.tenTaiKhoan,
-      matKhau: kh.matKhau,
-      tenKhachHang: kh.tenKhachHang,
-      email: kh.email,
-      gioiTinh: kh.gioiTinh,
-      soDienThoai: kh.soDienThoai,
-      ngaySinh: kh.ngaySinh,
-      ghiChu: kh.ghiChu,
-      ngayTao: kh.ngayTao,
-      hinhAnh: kh.hinhAnh,
-      trangThai: kh.trangThai,
-      soLanMua: kh.soLanMua || 0 // Thêm số lần mua
-    }));
-    this.currentPage = 1;
-  } catch (err) {
-    console.error("Lỗi:", err);
-    this.danhSachKhachHang = [];
-    this.dataFetchFailed = true;
-    this.toast.error("Không thể tải danh sách khách hàng: " + err.message);
-  }
-},
+      try {
+        const response = await fetch("http://localhost:8080/danhSachKhachHang", {
+          headers: {
+            Authorization: `Bearer ${this.token}`
+          }
+        });
+        if (!response.ok) throw new Error("Không thể tải danh sách khách hàng");
+        const data = await response.json();
+        this.danhSachKhachHang = data.map(kh => ({
+          id: kh.id,
+          maKhachHang: kh.maKhachHang,
+          tenTaiKhoan: kh.tenTaiKhoan,
+          matKhau: kh.matKhau,
+          tenKhachHang: kh.tenKhachHang,
+          email: kh.email,
+          gioiTinh: kh.gioiTinh,
+          soDienThoai: kh.soDienThoai,
+          ngaySinh: kh.ngaySinh,
+          ghiChu: kh.ghiChu,
+          ngayTao: kh.ngayTao,
+          hinhAnh: kh.hinhAnh,
+          trangThai: kh.trangThai,
+          soLanMua: kh.soLanMua || 0
+        }));
+        this.currentPage = 1;
+      } catch (err) {
+        console.error("Lỗi:", err);
+        this.danhSachKhachHang = [];
+        this.dataFetchFailed = true;
+        this.toast.error("Không thể tải danh sách khách hàng: " + err.message);
+      }
+    },
     validateMaPhieu() {
       this.errors.maPhieu = this.maPhieu && this.maPhieu.trim() === ""
         ? "Mã phiếu không được để trống nếu đã nhập!"
         : "";
     },
     validateTenPhieu() {
-      this.errors.tenPhieu = !this.tenPhieu || this.tenPhieu.trim() === ""
-        ? "Tên phiếu là bắt buộc!"
-        : "";
+      const tenPhieuTrimmed = this.tenPhieu.trim();
+      const validNameRegex = /^[a-zA-Z0-9\sÀ-ỹ]*$/; // Cho phép chữ, số, khoảng trắng và ký tự tiếng Việt
+      if (!tenPhieuTrimmed) {
+        this.errors.tenPhieu = "Tên phiếu là bắt buộc!";
+      } else if (!validNameRegex.test(tenPhieuTrimmed)) {
+        this.errors.tenPhieu = "Tên phiếu chỉ được chứa chữ, số, khoảng trắng và ký tự tiếng Việt!";
+      } else if (tenPhieuTrimmed.length > 255) {
+        this.errors.tenPhieu = "Tên phiếu không được vượt quá 255 ký tự!";
+      } else {
+        this.errors.tenPhieu = "";
+      }
     },
     validateGiaTriOption() {
       this.errors.giaTriOption = !["phanTram", "vnd"].includes(this.giaTriOption)
@@ -461,19 +520,23 @@ export default {
         return;
       }
       const giaTriGiamNum = Number(this.giaTriGiam);
-      if (giaTriGiamNum < 0) {
-        this.errors.giaTriGiam = "Giá trị giảm không được âm!";
+      if (giaTriGiamNum <= 0) {
+        this.errors.giaTriGiam = "Giá trị giảm phải là số dương!";
         return;
       }
       if (this.giaTriOption === "phanTram") {
         if (giaTriGiamNum > 100) {
-          this.errors.giaTriGiam = "Giá trị giảm phải từ 0 đến 100!";
+          this.errors.giaTriGiam = "Giá trị giảm phải từ 1 đến 100!";
+        } else if (giaTriGiamNum < 1) {
+          this.errors.giaTriGiam = "Giá trị giảm phải từ 1 đến 100!";
         } else {
           this.errors.giaTriGiam = "";
         }
       } else if (this.giaTriOption === "vnd") {
         if (giaTriGiamNum < 1000) {
           this.errors.giaTriGiam = "Giá trị giảm phải từ 1000 trở lên!";
+        } else if (giaTriGiamNum > 100000000) {
+          this.errors.giaTriGiam = "Giá trị giảm không quá 100 triệu!";
         } else {
           this.errors.giaTriGiam = "";
         }
@@ -482,8 +545,10 @@ export default {
     validateGiaTriToiThieu() {
       if (this.giaTriToiThieu === null || this.giaTriToiThieu === "" || isNaN(this.giaTriToiThieu)) {
         this.errors.giaTriToiThieu = "Giá trị tối thiểu là bắt buộc!";
-      } else if (this.giaTriToiThieu < 0) {
-        this.errors.giaTriToiThieu = "Giá trị tối thiểu không được âm!";
+      } else if (this.giaTriToiThieu <= 0) {
+        this.errors.giaTriToiThieu = "Giá trị tối thiểu phải là số dương!";
+      } else if (this.giaTriToiThieu > 100000000) {
+        this.errors.giaTriToiThieu = "Giá trị tối thiểu không quá 100 triệu!";
       } else {
         this.errors.giaTriToiThieu = "";
       }
@@ -491,8 +556,10 @@ export default {
     validateGiaTriToiDa() {
       if (this.giaTriToiDa === null || this.giaTriToiDa === "" || isNaN(this.giaTriToiDa)) {
         this.errors.giaTriToiDa = "Giá trị tối đa là bắt buộc!";
-      } else if (this.giaTriToiDa < 0) {
-        this.errors.giaTriToiDa = "Giá trị tối đa không được âm!";
+      } else if (this.giaTriToiDa <= 0) {
+        this.errors.giaTriToiDa = "Giá trị tối đa phải là số dương!";
+      } else if (this.giaTriToiDa > 100000000) {
+        this.errors.giaTriToiDa = "Giá trị tối đa không quá 100 triệu!";
       } else if (this.giaTriOption === "vnd" && this.giaTriToiDa !== this.giaTriGiam) {
         this.errors.giaTriToiDa = "Giá trị tối đa phải bằng giá trị giảm khi chọn VNĐ!";
       } else {
@@ -562,6 +629,23 @@ export default {
       this.validateLoaiPhieu();
       this.validateSelectedRows();
       this.validateSoLuong();
+
+      // Additional validation on form submission
+      const tenPhieuTrimmed = this.tenPhieu.trim();
+      const validNameRegex = /^[a-zA-Z0-9\sÀ-ỹ]*$/;
+      if (!validNameRegex.test(tenPhieuTrimmed)) {
+        this.errors.tenPhieu = "Tên phiếu chỉ được chứa chữ, số, khoảng trắng và ký tự tiếng Việt!";
+      }
+      if (this.giaTriGiam !== null && (isNaN(this.giaTriGiam) || this.giaTriGiam <= 0)) {
+        this.errors.giaTriGiam = "Giá trị giảm phải là số dương!";
+      }
+      if (this.giaTriToiThieu !== null && (isNaN(this.giaTriToiThieu) || this.giaTriToiThieu <= 0)) {
+        this.errors.giaTriToiThieu = "Giá trị tối thiểu phải là số dương!";
+      }
+      if (this.giaTriToiDa !== null && (isNaN(this.giaTriToiDa) || this.giaTriToiDa <= 0)) {
+        this.errors.giaTriToiDa = "Giá trị tối đa phải là số dương!";
+      }
+
       return Object.values(this.errors).every((error) => error === "");
     },
     async confirmThemPhieuGiamGia() {
@@ -624,7 +708,7 @@ export default {
           headers: { 
             Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json"
-           },
+          },
           body: JSON.stringify(phieu),
         });
         if (response.ok) {
@@ -682,6 +766,11 @@ export default {
 </script>
 
 <style scoped>
+
+.btn-secondary:hover{
+  transform: translateY(-1px);
+}
+
 .btn-primary {
   background-color: #0a2c57;
   border-color: #0a2c57;
@@ -690,6 +779,7 @@ export default {
 .btn-primary:hover {
   background-color: #08203e;
   border-color: #08203e;
+  transform: translateY(-1px);
 }
 
 .btn-primary:disabled {
@@ -734,5 +824,48 @@ export default {
   color: white;
   font-size: 1.2rem;
   margin-top: 10px;
+}
+
+/* Header Section (Quay lại và Tiêu đề) */
+.header-section {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  gap: 2rem;
+}
+
+.back-button {
+  background-color: #e9ecef;
+  color: #495057;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.4rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+
+.back-button:hover {
+  background-color: #dee2e6;
+  color: #0a2c57;
+}
+
+.page-title-aligned {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #0a2c57;
+  margin: 0;
+  line-height: 1;
+}
+
+/* Các trường input/select */
+.form-label {
+  font-weight: 600;
+}
+
+.form-control, .form-select {
+  border-radius: 0.5rem;
 }
 </style>

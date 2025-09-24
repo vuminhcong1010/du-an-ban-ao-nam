@@ -49,11 +49,11 @@ const roles = ref([]); // Danh sách vai trò
 
 const getAllNhanVien = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/home',{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+    const response = await axios.get('http://localhost:8080/api/home', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
     allNhanVien.value = response.data;
   } catch (error) {
     console.error("Lỗi khi load danh sách nhân viên:", error);
@@ -77,20 +77,20 @@ onMounted(async () => {
   await fetchProvinces();
   getAllNhanVien();
   axios.get('http://localhost:8080/vai-tro/list-vai-Tro', {
-  headers: {
-    Authorization: `Bearer ${token}` 
-  }
-}).then(res => {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }).then(res => {
     roles.value = res.data;
   });
 
   if (route.params.id) {
     try {
-      const res = await axios.get(`http://localhost:8080/api/${route.params.id}`,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+      const res = await axios.get(`http://localhost:8080/api/${route.params.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       Object.assign(formData.value, res.data);
       // Nếu có ảnh và đường dẫn không phải http, thêm host vào
       if (formData.value.anh && !formData.value.anh.startsWith('http')) {
@@ -146,38 +146,58 @@ const validateForm = () => {
   let valid = true;
 
   // Validate tất cả các trường bắt buộc
-  if (!formData.value.tenNhanVien) {
+  if (!formData.value.tenNhanVien || formData.value.tenNhanVien.trim() === '') {
     fieldErrors.value.tenNhanVien = 'Vui lòng nhập tên nhân viên';
     valid = false;
   }
-  if (!formData.value.email) {
+
+  // Kiểm tra email (bỏ khoảng trắng)
+  if (!formData.value.email || formData.value.email.trim() === '') {
     fieldErrors.value.email = 'Vui lòng nhập email';
     valid = false;
   }
-  if (!formData.value.sdt) {
+
+  // Kiểm tra số điện thoại (bỏ khoảng trắng)
+  if (!formData.value.sdt || formData.value.sdt.trim() === '') {
     fieldErrors.value.sdt = 'Vui lòng nhập số điện thoại';
     valid = false;
   }
-  if (!formData.value.gioiTinh && formData.value.gioiTinh !== false) {
+  // Kiểm tra số điện thoại (bỏ khoảng trắng)
+  if (!formData.value.cccd || formData.value.cccd.trim() === '') {
+    fieldErrors.value.cccd = 'Vui lòng nhập CCCD';
+    valid = false;
+  }
+
+  // Kiểm tra giới tính (có thể là true/false, nên check null/undefined)
+  if (formData.value.gioiTinh === null) {
     fieldErrors.value.gioiTinh = 'Vui lòng chọn giới tính';
     valid = false;
   }
+
+  // Kiểm tra ngày sinh
   if (!formData.value.ngaySinh) {
     fieldErrors.value.ngaySinh = 'Vui lòng chọn ngày sinh';
     valid = false;
   }
+
+  // Kiểm tra tỉnh/thành
   if (!selectedProvince.value) {
     fieldErrors.value.tinhThanh = 'Vui lòng chọn tỉnh/thành';
     valid = false;
   }
+
+  // Kiểm tra quận/huyện
   if (!selectedDistrict.value) {
     fieldErrors.value.quanHuyen = 'Vui lòng chọn quận/huyện';
     valid = false;
   }
+
+  // Kiểm tra xã/phường
   if (!selectedWard.value) {
     fieldErrors.value.xaPhuong = 'Vui lòng chọn xã/phường';
     valid = false;
   }
+
 
   // Kiểm tra trùng số điện thoại
   if (formData.value.sdt) {
@@ -187,22 +207,26 @@ const validateForm = () => {
       valid = false;
     }
   }
-  // Kiểm tra trùng email
-  if (formData.value.email) {
-    const existedEmail = allNhanVien.value.some(nv => nv.email === formData.value.email && (!route.params.id || nv.id != route.params.id));
-    if (existedEmail) {
-      fieldErrors.value.email = 'Email đã tồn tại';
+  if (formData.value.cccd) {
+    const existedCCCD = allNhanVien.value.some(nv => nv.cccd === formData.value.cccd && (!route.params.id || nv.id != route.params.id));
+    if (existedCCCD) {
+      fieldErrors.value.cccd = 'CCCD đã tồn tại';
       valid = false;
     }
   }
-  // Kiểm tra trùng tên nhân viên
-  if (formData.value.tenNhanVien) {
-    const existedName = allNhanVien.value.some(nv => nv.tenNhanVien.trim().toLowerCase() === formData.value.tenNhanVien.trim().toLowerCase() && (!route.params.id || nv.id != route.params.id));
-    if (existedName) {
-      fieldErrors.value.tenNhanVien = 'Tên nhân viên đã tồn tại';
-      valid = false;
-    }
+// Kiểm tra trùng email
+if (formData.value.email) {
+  const existedEmail = allNhanVien.value.some(nv => 
+    nv.trangThai === 1 && // Chỉ kiểm tra nhân viên đang hoạt động
+    nv.email === formData.value.email &&
+    (!route.params.id || nv.id != route.params.id)
+  );
+  if (existedEmail) {
+    fieldErrors.value.email = 'Email đã tồn tại';
+    valid = false;
   }
+}
+
 
   // Validate email format
   if (formData.value.email) {
@@ -220,6 +244,17 @@ const validateForm = () => {
       valid = false;
     }
   }
+  // Validate CCCD format
+  if (formData.value.cccd) {
+    const cccdTrimmed = formData.value.cccd.trim();
+    const cccdRegex = /^\d{12}$/; // 12 chữ số bất kỳ
+
+    if (!cccdRegex.test(cccdTrimmed)) {
+      fieldErrors.value.cccd = 'CCCD phải gồm đúng 12 chữ số';
+      valid = false;
+    }
+  }
+
   // Validate tuổi > 16
   if (formData.value.ngaySinh) {
     const birth = new Date(formData.value.ngaySinh);
@@ -265,19 +300,19 @@ const handleSubmit = async () => {
       await axios.put(`http://localhost:8080/api/update/${route.params.id}`, form, {
         headers: {
           'Content-Type': 'multipart/form-data',
-           Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         }
       });
       router.push({ path: '/nhan-vien', query: { updated: 'true' } });
     } else {
       toast.info('Đang gửi mail về nhân viên...', { timeout: 4000 });
-      await axios.post('http://localhost:8080/api/addNhanVien', form,{
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
+      await axios.post('http://localhost:8080/api/addNhanVien', form, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       // Đợi toast gửi mail xong rồi mới hiện toast thành công và chuyển trang
-        router.push({ path: '/nhan-vien', query: { success: 'true' } });
+      router.push({ path: '/nhan-vien', query: { success: 'true' } });
     }
   } catch (error) {
     if (error.response && error.response.data) {
@@ -516,7 +551,8 @@ function handleQRScanned(data) {
 
               <div class="form-group">
                 <label>Ghi chú</label>
-                <textarea v-model="formData.ghiChu" title="Nhập ghi chú cho nhân viên" rows="3" style="min-height: 80px;"></textarea>
+                <textarea v-model="formData.ghiChu" title="Nhập ghi chú cho nhân viên" rows="3"
+                  style="min-height: 80px;"></textarea>
               </div>
             </div>
           </div>
@@ -582,19 +618,19 @@ function handleQRScanned(data) {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border: 1.5px solid #ddd;
+  border: 1.5px solid #0A2A5B;
   border-radius: 8px;
-  background: #fff;
+  background: #0A2A5B;
   cursor: pointer;
   font-weight: 500;
-  color: #222;
+  color: #ffffff;
   transition: all 0.18s;
 }
 
 .back-btn:hover {
-  background: #f5faff;
-  border-color: #339cf1;
-  color: #339cf1;
+  background: #0a2a5bae;
+  border-color: #0A2A5B;
+  color: #ffffff;
 }
 
 .form-container {
@@ -655,16 +691,16 @@ function handleQRScanned(data) {
 .btn-upload {
   padding: 8px 18px;
   border-radius: 6px;
-  border: 1.5px solid #339cf1;
-  background: #fff;
-  color: #339cf1;
+  border: 1.5px solid #0A2A5B;
+  background: #0A2A5B;
+  color: #ffffff;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.18s;
 }
 
 .btn-upload:hover {
-  background: #e3eafc;
+  background: #0a2a5bb0;
 }
 
 .form-fields {
@@ -724,7 +760,7 @@ function handleQRScanned(data) {
 
 .submit-btn {
   padding: 10px 24px;
-  background: #339cf1;
+  background: #0A2A5B;
   color: white;
   border: none;
   border-radius: 8px;
@@ -736,7 +772,7 @@ function handleQRScanned(data) {
 }
 
 .submit-btn:hover {
-  background: #1a8de8;
+  background: #0a2a5bac;
   box-shadow: 0 2px 8px #339cf133;
 }
 

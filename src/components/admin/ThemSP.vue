@@ -1,5 +1,12 @@
 <template>
-  <div class="container py-4">
+  <div class=" full-width-container">
+    <div class="header-section">
+      <button @click="goBack" class="back-button">
+        <i class="fa-solid fa-arrow-left"></i> Quay lại
+      </button>
+      <h2 class="page-title-aligned">Thêm sản phẩm mới</h2>
+    </div>
+    
     <form @submit.prevent="uploadAllImages()">
       <div class="row">
         <div class="col-md-8 mb-3">
@@ -131,7 +138,7 @@
               </div>
               <div class="col-md-6 mb-3 mt-2">
                 <label for="trongLuong" class="form-label fw-bolder"
-                  >Trọng lượng</label
+                  >Trọng lượng(Kg)</label
                 >
                 <input
                   type="number"
@@ -672,6 +679,12 @@ function deleteBienThe(index) {
   variantData.value.splice(index, 1); // nếu bạn dùng cả variantData
   checked.value.splice(index, 1); // nếu bạn dùng checked
 }
+
+// --- Navigation ---
+  const goBack = () => {
+  router.push('/san-pham');
+  };
+
 // Synchronize variant arrays
 const dongBoMangBienThe = () => {
   const idMau = tempMau.value || [];
@@ -1203,7 +1216,7 @@ const uploadAllImages = async () => {
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',
                     cancelButtonColor: '#d33',
-                    confirmButtonText: 'Sửa',
+                    confirmButtonText: 'Thêm',
                     cancelButtonText: 'Hủy'
                 });
     if (!result.isConfirmed) {
@@ -1413,7 +1426,54 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style>
+<style scoped>
+/* Header Section (Quay lại và Tiêu đề) */
+.header-section {
+  display: flex;
+  align-items: center;
+  /* Căn giữa theo chiều dọc */
+  margin-bottom: 2.5rem;
+  /* Khoảng cách lớn hơn dưới header */
+  gap: 2rem;
+  /* Khoảng cách lớn hơn giữa nút và tiêu đề */
+}
+
+.back-button {
+  background-color: #e9ecef;
+  /* Màu xám nhạt */
+  color: #495057;
+  /* Màu chữ xám đậm */
+  padding: 0.75rem 1.25rem;
+  /* Tăng padding cho nút */
+  border-radius: 0.4rem;
+  /* Bo tròn vừa phải */
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  flex-shrink: 0;
+  /* Không co lại */
+  font-size: 1rem;
+  /* Kích thước font cho nút */
+}
+.back-button:hover {
+  background-color: #dee2e6;
+  color: #0a2c57;
+}
+
+.page-title-aligned {
+  font-size: 2.2rem;
+  /* Tăng kích thước font cho tiêu đề */
+  font-weight: 700;
+  /* Đậm hơn */
+  color: #0a2c57;
+  /* Màu chữ rất đậm */
+  margin: 0;
+  /* Đảm bảo không có margin mặc định */
+  line-height: 1;
+  /* Căn chỉnh dòng */
+}
+
 td > {
   padding-left: 20%px;
   padding-right: 10%px;

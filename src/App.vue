@@ -1,6 +1,7 @@
 <script setup>
-import { ref, provide, watch } from 'vue';
+import { ref, provide, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
+import Cookies from 'js-cookie'
 import Sidebar from './components/admin/Sidebar.vue';
 import Topbar from './components/admin/Topbar.vue';
 import Chat from './components/admin/Chat.vue';
@@ -9,7 +10,6 @@ import Chat from './components/admin/Chat.vue';
 const showSidebar = ref(false);
 const showTopbar = ref(false);
 
-// Toggle Sidebar
 function toggleSidebar() {
   showSidebar.value = !showSidebar.value;
 }
@@ -18,77 +18,139 @@ provide('toggleSidebar', toggleSidebar);
 // Toggle Chat
 const showChat = ref(false);
 const unreadMessagesCount = ref(0);
+const chatComponent = ref(null);
+
+// Kiểm tra token để xác định user type
+const isUser = Cookies.get("token");
+const isEmployee = ref(!!isUser);
+
+console.log('🔍 User type:', isEmployee.value ? 'Employee' : 'Customer');
 
 const toggleChat = () => {
+  const wasVisible = showChat.value;
   showChat.value = !showChat.value;
+  
+  console.log(`💬 Chat toggle: ${wasVisible ? 'visible' : 'hidden'} -> ${showChat.value ? 'visible' : 'hidden'}`);
+  
+  if (isEmployee.value) {
+    // Logic cho nhân viên: ngắt/tạo lại kết nối
+    if (showChat.value) {
+      // Mở chat - tạo kết nối mới
+      console.log('🔌 Employee: Tạo kết nối WebSocket mới');
+      // Chat component sẽ tự động kết nối khi được mount/show
+    } else {
+      // Đóng chat - ngắt kết nối
+      console.log('🔌 Employee: Ngắt kết nối WebSocket');
+      if (chatComponent.value && typeof chatComponent.value.disconnectWebSocket === 'function') {
+        chatComponent.value.disconnectWebSocket();
+      }
+    }
+  } else {
+    // Logic cho khách hàng: giữ kết nối liên tục
+    console.log('👤 Customer: Giữ kết nối WebSocket liên tục');
+    // Không làm gì với WebSocket connection
+  }
 };
 
-// Xử lý khi đóng chat từ component Chat
 const handleChatClose = () => {
+  console.log('🔒 Chat close triggered');
+  
+  if (isEmployee.value) {
+    // Nhân viên: ngắt kết nối khi đóng
+    console.log('🔌 Employee: Ngắt kết nối WebSocket do đóng chat');
+    if (chatComponent.value && typeof chatComponent.value.disconnectWebSocket === 'function') {
+      chatComponent.value.disconnectWebSocket();
+    }
+  }
+  
   showChat.value = false;
 };
 
-// Xử lý khi chọn phòng
 const handleRoomSelected = (roomId) => {
-  console.log('Phòng đã chọn:', roomId);
+  console.log('📍 Phòng đã chọn:', roomId);
 };
+
+// Xử lý khi component bị unmount
+onBeforeUnmount(() => {
+  if (isEmployee.value && chatComponent.value && typeof chatComponent.value.disconnectWebSocket === 'function') {
+    console.log('🔌 App unmount: Ngắt kết nối WebSocket');
+    chatComponent.value.disconnectWebSocket();
+  }
+});
+
+// Cung cấp thông tin user type cho Chat component
+provide('isEmployee', isEmployee);
+provide('shouldPersistConnection', !isEmployee.value);
 </script>
 
 <template>
   <div id="app-wrapper">
     <!-- Topbar -->
     <Topbar v-if="showTopbar" />
-
+    
     <!-- Nội dung chính -->
     <div class="main-content">
       <router-view />
     </div>
-
+    
     <!-- Nút toggle chat -->
     <div class="chat-toggle" @click="toggleChat">
       <div class="chat-icon">💬</div>
       <div v-if="unreadMessagesCount > 0" class="unread-badge">
         {{ unreadMessagesCount }}
       </div>
+      <!-- Hiển thị trạng thái user -->
+      <div class="user-type-indicator">
+        {{ isEmployee ? '👨‍💼' : '👤' }}
+      </div>
     </div>
-
-    <!-- Chat Overlay -->
-    <div v-if="showChat" class="chat-overlay" @click.self="handleChatClose">
-      <div class="chat-container-wrapper">
-        <Chat @room-selected="handleRoomSelected" @close="handleChatClose" />
+    
+    <!-- Bong bóng chat -->
+    <!-- Sử dụng v-show cho khách hàng để giữ kết nối, v-if cho nhân viên để ngắt kết nối -->
+    <div v-if="isEmployee ? showChat : true" 
+         v-show="showChat" 
+         class="chat-bubble-wrapper">
+      <div class="chat-bubble-header">
+        <span>Hỗ trợ trực tuyến</span>
+        <span class="user-type-badge">
+          {{ isEmployee ? 'Nhân viên' : 'Khách hàng' }}
+        </span>
+        <button class="close-btn" @click="handleChatClose">✖</button>
+      </div>
+      <div class="chat-bubble-content">
+        <Chat 
+          ref="chatComponent"
+          :is-visible="showChat"
+          @room-selected="handleRoomSelected" 
+          @close="handleChatClose" 
+        />
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Reset và base styles */
 #app-wrapper {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: #2c3e50;
   position: relative;
+  height: 100vh;
 }
 
-/* Main content - cho phép scroll tự nhiên */
 .main-content {
-  width: 100%;
-  min-height: 100vh; /* Đảm bảo chiều cao tối thiểu */
+  height: 100%;
+  padding: 0;
 }
 
-/* Chat toggle button */
 .chat-toggle {
   position: fixed;
-  bottom: 80px; /* Tăng khoảng cách từ bottom để tránh taskbar/dock */
-  right: 20px; /* Giảm khoảng cách từ right để gần nội dung hơn */
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background: #007bff;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 45px; /* Giảm kích thước để ít chiếm chỗ hơn */
-  height: 45px;
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-  border-radius: 50%;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
   transition: all 0.3s ease;
@@ -96,12 +158,12 @@ const handleRoomSelected = (roomId) => {
 }
 
 .chat-toggle:hover {
-  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
   transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
 }
 
 .chat-icon {
-  font-size: 26px;
+  font-size: 24px;
   color: white;
 }
 
@@ -112,94 +174,99 @@ const handleRoomSelected = (roomId) => {
   background: #dc3545;
   color: white;
   border-radius: 50%;
-  min-width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  font-weight: 600;
-  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
-  border: 2px solid white;
+  font-weight: bold;
 }
 
-/* Chat overlay */
-.chat-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-  padding: 20px;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.chat-container-wrapper {
-  width: 90%;
-  max-width: 1200px;
-  height: 85vh;
-  max-height: 900px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+.user-type-indicator {
+  position: absolute;
+  bottom: -5px;
+  left: -5px;
   background: white;
-  animation: slideUp 0.3s ease;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.chat-bubble-wrapper {
+  position: fixed;
+  bottom: 100px;
+  right: 20px;
+  width: 370px;
+  height: 510px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-bubble-header {
+  background: #007bff;
+  color: white;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+}
+
+.user-type-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.chat-bubble-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Animation cho chat bubble */
+.chat-bubble-wrapper {
+  animation: slideUp 0.3s ease-out;
 }
 
 @keyframes slideUp {
   from {
-    transform: translateY(50px);
     opacity: 0;
+    transform: translateY(20px);
   }
   to {
-    transform: translateY(0);
     opacity: 1;
-  }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .chat-toggle {
-    bottom: 20px;
-    right: 20px;
-    width: 56px;
-    height: 56px;
-  }
-
-  .chat-icon {
-    font-size: 24px;
-  }
-
-  .chat-container-wrapper {
-    width: 95%;
-    height: 90vh;
-    border-radius: 12px;
-  }
-}
-
-@media (max-width: 576px) {
-  .chat-overlay {
-    padding: 10px;
-  }
-
-  .chat-container-wrapper {
-    width: 100%;
-    height: 95vh;
-    border-radius: 8px;
+    transform: translateY(0);
   }
 }
 </style>
