@@ -2,19 +2,24 @@
 import { ref, onMounted, computed } from "vue";
 import { useRoute } from "vue-router";
 import Cookies from "js-cookie";
-
+const mau = ref([]);     // dữ liệu màu từ API
+const kichco = ref([]);  // dữ liệu kích cỡ từ API
 const token = Cookies.get("token");
-const search = ref("");
+const timKiem = ref("");
 const selected = ref({});
 const quantities = ref({});
 let listSanPham = ref([]);
+const selectedKichCoId = ref(null);
+const selectedMauId = ref(null);
 // phân trang:
 const currentPage = ref(0);
 const pageSize = ref(5);
 const totalPages = ref(0);
 
+
 // lay ảnh sản phẩm
 const anhMap = ref({}); // Lưu ảnh theo id sản phẩm
+
 
 const fetchAnhSanPham = async (id) => {
   console.log(id);
@@ -34,6 +39,29 @@ const fetchAnhSanPham = async (id) => {
   }
 };
 
+
+const fetchMau = async () => {
+  try {
+    const response = await fetch("http://localhost:8080/doi-giam-gia/mau", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    mau.value = await response.json();   // 🔥 dùng response
+  } catch (err) {
+    console.error("Lỗi khi gọi API màu:", err);
+  }
+};
+
+
+const fetchKichCo = async () => {
+  try {
+    const response = await fetch("http://localhost:8080/doi-giam-gia/kich-co", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    kichco.value = await response.json();  // 🔥 dùng response
+  } catch (err) {
+    console.error("Lỗi khi gọi API kích cỡ:", err);
+  }
+};
 const fetchSanPhamPaginated = async () => {
   try {
     const response = await fetch(
@@ -46,6 +74,7 @@ const fetchSanPhamPaginated = async () => {
     );
     const data = await response.json();
     listSanPham.value = data.content; // Spring Data trả về `content`, `totalPages`, ...
+    filteredSanPham.value = listSanPham.value.filter((sp) => sp.soLuong > 0);
     // lấy ảnh:
     listSanPham.value.forEach((sp) => {
       fetchAnhSanPham(sp.id);
@@ -56,9 +85,44 @@ const fetchSanPhamPaginated = async () => {
   }
 };
 
+
+// Lọc danh sách sản phẩm theo từ khóa, màu, kích cỡ
+const locSanPham = () => {
+  let filtered = listSanPham.value;
+
+
+  // Lọc theo từ khóa (mã hoặc tên sản phẩm)
+  if (timKiem.value && timKiem.value.trim() !== "") {
+    const keyword = timKiem.value.toLowerCase();
+    filtered = filtered.filter(
+      (sp) =>
+        sp.maChiTietSapPham.toLowerCase().includes(keyword) ||
+        sp.idSanPham.tenSanPham.toLowerCase().includes(keyword)
+    );
+  }
+
+
+  // Lọc theo kích cỡ
+  if (selectedKichCoId.value) {
+    filtered = filtered.filter((sp) => sp.idSize.id === selectedKichCoId.value);
+  }
+
+
+  // Lọc theo màu
+  if (selectedMauId.value) {
+    filtered = filtered.filter((sp) => sp.idMau.id === selectedMauId.value);
+  }
+
+
+  // Cập nhật danh sách sau khi lọc
+  filteredSanPham.value = filtered;
+};
 onMounted(() => {
   fetchSanPhamPaginated();
+   fetchMau();
+  fetchKichCo();
 });
+
 
 // Hàm chuyển trang
 const nextPage = () => {
@@ -68,6 +132,7 @@ const nextPage = () => {
   }
 };
 
+
 const prevPage = () => {
   if (currentPage.value > 0) {
     currentPage.value--;
@@ -75,9 +140,11 @@ const prevPage = () => {
   }
 };
 
+
 // khác
 const route = useRoute();
 const maHoaDon = route.params.maHoaDon;
+
 
 // const fetchTodos = async () => {
 //   try {
@@ -89,11 +156,14 @@ const maHoaDon = route.params.maHoaDon;
 //   }
 // };
 
+
 // onMounted(() => {
 //   fetchTodos();
 // });
 
+
 // thêm sản phẩm vào cthd
+
 
 const emit = defineEmits(["chonSanPham"]);
 const selectedItems = ref([]);
@@ -101,6 +171,7 @@ const toggleSelection = (item) => {
   const index = selectedItems.value.findIndex(
     (i) => i.maChiTietSapPham === item.maChiTietSapPham
   );
+
 
   if (index === -1) {
     selectedItems.value.push(item);
@@ -110,6 +181,7 @@ const toggleSelection = (item) => {
     delete quantities.value[item.maChiTietSapPham];
   }
 };
+
 
 // const apply = async () => {
 //   const result = selectedItems.value.map((item) => {
@@ -125,17 +197,21 @@ const toggleSelection = (item) => {
 //     };
 //   });
 
+
 //   //kiểm tra dữ liệu:
 //   // 👉 Kiểm tra dữ liệu gốc
 //   console.log("✅ Dữ liệu result gửi xuống:", result);
+
 
 //   const bodyUpdateSoLuong = result.map((r) => ({
 //     idSanPhamChiTiet: r.idSanPhamChiTiet,
 //     soLuongMua: r.soLuong,
 //   }));
 
+
 //   // 👉 Kiểm tra body gửi xuống API update số lượng
 //   console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
+
 
 //   // 1. Cập nhật tồn kho
 //   try {
@@ -151,6 +227,7 @@ const toggleSelection = (item) => {
 //     console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
 //   }
 
+
 //   // 2. Lưu chi tiết hóa đơn
 //   try {
 //     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
@@ -161,6 +238,7 @@ const toggleSelection = (item) => {
 //       },
 //       body: JSON.stringify(result),
 //     });
+
 
 //     // 3. Ghi lịch sử cho từng sản phẩm vừa thêm
 //     for (const r of result) {
@@ -191,6 +269,7 @@ const apply = async () => {
     const productIds = selectedItems.value.map((item) => item.id);
     if (productIds.length === 0) return;
 
+
     // Gọi API check giảm giá
     const response = await fetch("http://localhost:8080/api/discounts/check", {
       method: "POST",
@@ -201,7 +280,9 @@ const apply = async () => {
       body: JSON.stringify(productIds),
     });
 
+
     if (!response.ok) throw new Error("Lỗi khi kiểm tra giảm giá");
+
 
     const discountInfos = await response.json(); // [{ chiTietSanPhamId, phamTramGiam, soTienGiam }]
     const discountMap = new Map();
@@ -209,10 +290,12 @@ const apply = async () => {
       discountMap.set(info.chiTietSanPhamId, info);
     });
 
+
     // Tạo mảng kết quả để gửi backend
     const result = selectedItems.value.map((item) => {
       let giaGoc = parseFloat(item.gia) || 0;
       let giaSauGiam = giaGoc;
+
 
       const discount = discountMap.get(item.id);
       if (discount) {
@@ -223,9 +306,12 @@ const apply = async () => {
         }
       }
 
+
       giaSauGiam = Math.max(Math.round(giaSauGiam), 0);
 
+
       const soLuongMua = 1;
+
 
       return {
         idSanPhamChiTiet: item.maChiTietSapPham,
@@ -238,7 +324,9 @@ const apply = async () => {
       };
     });
 
+
     console.log("✅ Dữ liệu gửi xuống:", result);
+
 
     // TODO: gọi API update số lượng, lưu hóa đơn chi tiết, ghi lịch sử như bạn viết tiếp
 // -------------------
@@ -248,7 +336,9 @@ const apply = async () => {
       soLuongMua: r.soLuong,
     }));
 
+
     console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
+
 
     await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
       method: "POST",
@@ -258,6 +348,7 @@ const apply = async () => {
       },
       body: JSON.stringify(bodyUpdateSoLuong),
     });
+
 
     // -------------------
     // 2. Lưu chi tiết hóa đơn
@@ -269,6 +360,7 @@ const apply = async () => {
       },
       body: JSON.stringify(result),
     });
+
 
     // -------------------
     // 3. Ghi lịch sử cho từng sản phẩm vừa thêm
@@ -289,6 +381,7 @@ const apply = async () => {
       });
     }
 
+
     // -------------------
     // 4. Emit ra ngoài để đóng modal + reload
     emit("selected", selectedItems.value);
@@ -299,10 +392,22 @@ const apply = async () => {
 };
 
 
-const filteredSanPham = computed(() => {
-  return listSanPham.value.filter((sp) => sp.soLuong > 0);
+
+
+const filteredSanPham = ref([]);
+
+
+onMounted(() => {
+  fetchSanPhamPaginated().then(() => {
+    filteredSanPham.value = listSanPham.value.filter((sp) => sp.soLuong > 0);
+  });
+  fetchMau();
+  fetchKichCo();
 });
+
+
 </script>
+
 
 <template>
   <div
@@ -313,7 +418,7 @@ const filteredSanPham = computed(() => {
     <div class="modal-dialog custom-modal modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Chọn nhiều sản phẩm</h5> 
+          <h5 class="modal-title">Chọn nhiều sản phẩm</h5>
           <button
             type="button"
             class="btn-close"
@@ -353,42 +458,33 @@ const filteredSanPham = computed(() => {
                 </div>
               </div>
 
-              <!-- Trạng thái -->
-              <div class="col-md-5 ms-2">
-                <label class="form-label fw-bold">Trạng thái</label>
-                <div class="d-flex gap-3">
-                  <input type="radio" checked /> Đang bán <input type="radio" /> Ngừng
-                  bán
-                </div>
-              </div>
 
-              <!-- Danh mục -->
+               <!-- Kích cỡ -->
               <div class="col-md-3">
-                <label class="form-label fw-bold">Danh mục</label>
-                <select
-                  class="form-select"
-                >
-                  <option selected>Tất cả danh mục</option>
-                  <option >Áo</option>
-                  <option >Quần</option>
+                <label class="form-label fw-bold" style="color: #0a2c57;">Kích cỡ</label>
+                <select class="form-select" v-model="selectedKichCoId" @change="locSanPham">
+                  <option :value="null">Tất cả Kích cỡ</option>
+                  <option v-for="kc in kichco" :key="kc.id" :value="kc.id">
+                    {{ kc.soCo }}
+                  </option>
                 </select>
               </div>
 
-              <!-- Chất liệu -->
+
+              <!-- Màu -->
               <div class="col-md-3">
-                <label class="form-label fw-bold">Chất liệu</label>
-                <select
-                  class="form-select"
-                >
-                  <option selected>Tất cả chất liệu</option>
-                  <option >Cotton</option>
-                  <option >Nano</option>
-                  <option >Poly</option>
+                <label class="form-label fw-bold" style="color: #0a2c57;">Màu</label>
+                <select class="form-select" v-model="selectedMauId" @change="locSanPham">
+                  <option :value="null">Tất cả màu</option>
+                  <option v-for="m in mau" :key="m.id" :value="m.id">
+                    {{ m.ten }}
+                  </option>
                 </select>
               </div>
             </div>
           </div>
           <br />
+
 
           <div class="table-responsive">
             <table class="table align-middle">
@@ -483,11 +579,13 @@ const filteredSanPham = computed(() => {
       </div>
     </div>
   </div>
-  
+ 
 </template>
+
 
 <style scoped>
 .custom-modal {
   max-width: 80vw;
 }
 </style>
+

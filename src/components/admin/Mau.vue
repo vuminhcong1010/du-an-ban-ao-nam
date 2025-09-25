@@ -78,20 +78,17 @@ const add = async () => {
     toast.error("Tên màu đã tồn tại!");
     return;
   }
-  
+
   // Hardcoded list of allowed colors for validation
-  const mauSacCoSan = [
-    'Đỏ', 'Xanh Dương', 'Xanh Lá', 'Vàng', 'Trắng', 'Đen',
-    'Hồng', 'Tím', 'Cam', 'Nâu', 'Xám', 'Bạc',
-    'Xanh Ngọc', 'Xanh Navy', 'Vàng Chanh', 'Xanh Mint', 'Be', 'Rượu Vang'
-  ];
+  const mauSacCoSan = ['đỏ', 'đỏ đậm', 'đỏ tươi', 'đỏ cam', 'hồng', 'hồng đậm', 'hồng phấn', 'tím', 'tím nhạt', 'tím huế', 'xanh', 'xanh dương', 'xanh da trời', 'xanh navy', 'xanh lá', 'xanh lá nhạt', 'xanh rêu', 'xanh ngọc', 'xanh lục bảo', 'xanh pastel', 'vàng', 'vàng nghệ', 'vàng nhạt', 'cam', 'cam đất', 'nâu', 'nâu nhạt', 'nâu đất', 'đen', 'xám', 'xám nhạt', 'trắng', 'be', 'kem', 'bạc', 'vàng đồng', 'xanh mint', 'xanh lam', 'xanh teal', 'hồng đất', 'hồng đào', 'đỏ rượu', 'đỏ đô', 'tím than', 'tím oải hương', 'xanh coban', 'xanh ngọc bích', 'nâu socola', 'cam san hô', 'xanh olive', 'vàng chanh']
+
 
   if (!mauSacCoSan.includes(req.value.tenMau)) {
     toast.error("Màu không hợp lệ");
     reset();
     return;
   }
-  
+
   try {
     await axios.post("http://localhost:8080/mau/add", { ten: req.value.tenMau }, {
       headers: { Authorization: `Bearer ${token}` }
@@ -120,7 +117,7 @@ const update = async () => {
     toast.error("Tên màu đã tồn tại!");
     return;
   }
-  
+
   // Hardcoded list of allowed colors for validation
   const mauSacCoSan = [
     'Đỏ', 'Xanh Dương', 'Xanh Lá', 'Vàng', 'Trắng', 'Đen',
@@ -212,13 +209,8 @@ function reset() {
     <div class="d-flex align-items-center justify-content-between bg-white p-3 rounded mb-3 border">
       <h2 class="fw-bold mb-0">Quản lý màu sắc</h2>
       <div class="d-flex gap-2">
-        <button
-          @click="reset"
-          data-bs-toggle="modal"
-          data-bs-target="#exampleModal"
-          style="background-color: #0a2c57; color: white; border: none"
-          class="btn"
-        >
+        <button @click="reset" data-bs-toggle="modal" data-bs-target="#exampleModal"
+          style="background-color: #0a2c57; color: white; border: none" class="btn">
           <Plus class="me-1" size="16" /> Thêm màu sắc
         </button>
       </div>
@@ -230,12 +222,7 @@ function reset() {
           <FilterIcon></FilterIcon>
         </i> Bộ lọc
       </h5>
-      <input
-        type="text"
-        class="form-control"
-        placeholder="Tìm theo mã, tên màu..."
-        v-model="searchText"
-      />
+      <input type="text" class="form-control" placeholder="Tìm theo mã, tên màu..." v-model="searchText" />
     </div>
 
     <div class="bg-white p-3 rounded mb-4 border">
@@ -256,24 +243,11 @@ function reset() {
               <td>{{ ds.maMau }}</td>
               <td>{{ ds.ten }}</td>
               <td>
-                <Eye
-                  class="me-3"
-                  data-bs-toggle="modal"
-                  data-bs-target="#exampleModal1"
-                  @click="detail(ds.id)"
-                  style="color: #0a2c57"
-                />
-                <Edit
-                  class="me-3"
-                  data-bs-toggle="modal"
-                  data-bs-target="#exampleModal2"
-                  @click="save(ds.id)"
-                  style="color: #4ccc7a"
-                />
-                <Trash
-                  style="color: #dc3545"
-                  @click="remove(ds.id)"
-                />
+                <Eye class="me-3" data-bs-toggle="modal" data-bs-target="#exampleModal1" @click="detail(ds.id)"
+                  style="color: #0a2c57" />
+                <Edit class="me-3" data-bs-toggle="modal" data-bs-target="#exampleModal2" @click="save(ds.id)"
+                  style="color: #4ccc7a" />
+                <Trash style="color: #dc3545" @click="remove(ds.id)" />
               </td>
             </tr>
           </tbody>
@@ -290,13 +264,7 @@ function reset() {
   </div>
 
   <!-- modal add -->
-  <div
-    class="modal fade"
-    id="exampleModal"
-    tabindex="-1"
-    aria-labelledby="exampleModalLabel"
-    aria-hidden="true"
-  >
+  <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -311,12 +279,7 @@ function reset() {
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            @click="add"
-            data-bs-dismiss="modal"
-          >
+          <button type="button" class="btn btn-primary" @click="add" data-bs-dismiss="modal">
             Thêm
           </button>
         </div>
@@ -325,13 +288,7 @@ function reset() {
   </div>
 
   <!-- modal update -->
-  <div
-    class="modal fade"
-    id="exampleModal2"
-    tabindex="-1"
-    aria-labelledby="exampleModalLabel"
-    aria-hidden="true"
-  >
+  <div class="modal fade" id="exampleModal2" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -347,12 +304,7 @@ function reset() {
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            data-bs-dismiss="modal"
-            @click="update"
-          >
+          <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @click="update">
             Cập nhật
           </button>
         </div>
@@ -361,13 +313,7 @@ function reset() {
   </div>
 
   <!-- modal detail -->
-  <div
-    class="modal fade"
-    id="exampleModal1"
-    tabindex="-1"
-    aria-labelledby="exampleModalLabel"
-    aria-hidden="true"
-  >
+  <div class="modal fade" id="exampleModal1" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -379,13 +325,7 @@ function reset() {
             <label for="form" class="form-label">Mã màu</label>
             <input type="text" class="form-control" id="form" v-model="details.maMau" readonly />
             <label for="form1" class="form-label">Tên màu</label>
-            <input
-              type="text"
-              class="form-control"
-              id="form1"
-              v-model="details.tenMau"
-              readonly
-            />
+            <input type="text" class="form-control" id="form1" v-model="details.tenMau" readonly />
           </div>
         </div>
         <div class="modal-footer">
@@ -397,7 +337,8 @@ function reset() {
 </template>
 
 <style scoped>
-h2, h5 {
+h2,
+h5 {
   font-weight: bold;
   color: #0a2c57;
 }

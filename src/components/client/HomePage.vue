@@ -304,7 +304,6 @@
 </template>
 
 <script>
-
 import Swiper from 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.mjs';
 
 export default {
@@ -743,11 +742,27 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import Cookies from 'js-cookie'
-
+import { useAuthStore } from '../../stores/auth'
 const categories = ref([])
 const bestSellers = ref([])
 const router = useRouter()
-
+const authStore = useAuthStore()
+const email = Cookies.get('email') || null
+if(email){
+  axios.get(`http://localhost:8080/find-by-email/${email}`)
+  .then((response) => {
+    let userData = response.data;
+    // Ghi vào store + localStorage
+    authStore.setUser(userData);
+    authStore.setLoginData(userData,"fake token")
+    localStorage.setItem("loggedInUser", JSON.stringify(userData));
+    
+    console.log("Đã lưu localStorage:", localStorage.getItem("loggedInUser"));
+  })
+  .catch((error) => {
+    console.error("Không lấy được user từ API:", error);
+  });
+}
 
 const testimonials = [
   {

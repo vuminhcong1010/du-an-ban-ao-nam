@@ -631,9 +631,7 @@ export default {
       // Additional validation on form submission
       const tenPhieuTrimmed = this.tenPhieu.trim();
       const validNameRegex = /^[a-zA-Z0-9\sÀ-ỹ]*$/;
-      if (!validNameRegex.test(tenPhieuTrimmed)) {
-        this.errors.tenPhieu = "Tên phiếu chỉ được chứa chữ, số, khoảng trắng và ký tự tiếng Việt!";
-      }
+   
       if (this.giaTriGiam !== null && (isNaN(this.giaTriGiam) || this.giaTriGiam <= 0)) {
         this.errors.giaTriGiam = "Giá trị giảm phải là số dương!";
       }

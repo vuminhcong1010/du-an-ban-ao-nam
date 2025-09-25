@@ -5,9 +5,9 @@
     <!-- PHẦN 1: THÔNG TIN TÓM TẮT -->
     <section class="account-info-summary">
       <div v-if="user">
-        <p><strong>Tên tài khoản:</strong> {{ user.tenTaiKhoan }}</p>
-        <p><strong>Email:</strong> {{ user.email }}</p>
         <p><strong>Tên khách hàng:</strong> {{ user.tenKhachHang }}</p>
+        <p><strong>Số điện thoại</strong> {{ user.soDienThoai }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
       </div>
     </section>
 

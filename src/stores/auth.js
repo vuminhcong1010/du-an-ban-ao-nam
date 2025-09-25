@@ -27,6 +27,8 @@ export const useAuthStore = defineStore("auth", {
       this.token = authToken;
       // Lưu vào localStorage
       localStorage.setItem("loggedInUser", JSON.stringify(userData));
+      
+      
       localStorage.setItem("clientAuthToken", authToken);
       // Lưu vào Cookies (nếu cần)
       Cookies.set("thongTinKhachHang", JSON.stringify(userData));
@@ -40,7 +42,7 @@ export const useAuthStore = defineStore("auth", {
       // Xóa dữ liệu khỏi localStorage và Cookies
       localStorage.removeItem("loggedInUser");
       localStorage.removeItem("clientAuthToken");
-      Cookies.remove("thongTinKhachHang");
+      Cookies.remove("email");
     },
    
     // Bạn có thể giữ lại hàm setUser nếu cần
@@ -50,6 +52,3 @@ export const useAuthStore = defineStore("auth", {
     },
   },
 });
-
-
-

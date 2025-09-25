@@ -894,11 +894,8 @@ const themKieuAo = async (tenKieuAo) => {
     console.error(err);
   }
 };
-const mauSacCoSan = [
-  'Đỏ', 'Xanh Dương', 'Xanh Lá', 'Vàng', 'Trắng', 'Đen',
-  'Hồng', 'Tím', 'Cam', 'Nâu', 'Xám', 'Bạc',
-  'Xanh Ngọc', 'Xanh Navy', 'Vàng Chanh', 'Xanh Mint', 'Be', 'Rượu Vang'
-];
+const mauSacCoSan = ['đỏ', 'đỏ đậm', 'đỏ tươi', 'đỏ cam', 'hồng', 'hồng đậm', 'hồng phấn', 'tím', 'tím nhạt', 'tím huế', 'xanh', 'xanh dương', 'xanh da trời', 'xanh navy', 'xanh lá', 'xanh lá nhạt', 'xanh rêu', 'xanh ngọc', 'xanh lục bảo', 'xanh pastel', 'vàng', 'vàng nghệ', 'vàng nhạt', 'cam', 'cam đất', 'nâu', 'nâu nhạt', 'nâu đất', 'đen', 'xám', 'xám nhạt', 'trắng', 'be', 'kem', 'bạc', 'vàng đồng', 'xanh mint', 'xanh lam', 'xanh teal', 'hồng đất', 'hồng đào', 'đỏ rượu', 'đỏ đô', 'tím than', 'tím oải hương', 'xanh coban', 'xanh ngọc bích', 'nâu socola', 'cam san hô', 'xanh olive', 'vàng chanh']
+
 
 const themMau = async (ten) => {
   if (!ten || !ten.trim()) {
