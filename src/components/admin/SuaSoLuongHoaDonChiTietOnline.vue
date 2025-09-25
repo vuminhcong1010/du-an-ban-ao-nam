@@ -1,6 +1,7 @@
 <!-- <script setup>
 import { ref } from "vue";
 
+
 const props = defineProps({
   kho: Number,
   soLuongHienTai: Number,
@@ -10,9 +11,12 @@ const props = defineProps({
   maChiTietSanPham: String
 });
 
+
 const emit = defineEmits(["close", "update"]);
 
+
 const soLuongMoi = ref(props.soLuongHienTai);
+
 
 // const xacNhan = () => {
 //   if (soLuongMoi.value <= 0) {
@@ -23,11 +27,13 @@ const soLuongMoi = ref(props.soLuongHienTai);
 //   emit("close");
 // };
 
+
 const apply = async () => {
   try {
     // Lấy danh sách id sản phẩm đã chọn
     const productIds = selectedItems.value.map((item) => item.id);
     if (productIds.length === 0) return;
+
 
     // Gọi API check giảm giá
     const response = await fetch("http://localhost:8080/api/discounts/check", {
@@ -39,7 +45,9 @@ const apply = async () => {
       body: JSON.stringify(productIds),
     });
 
+
     if (!response.ok) throw new Error("Lỗi khi kiểm tra giảm giá");
+
 
     const discountInfos = await response.json(); // [{ chiTietSanPhamId, phamTramGiam, soTienGiam }]
     const discountMap = new Map();
@@ -47,10 +55,12 @@ const apply = async () => {
       discountMap.set(info.chiTietSanPhamId, info);
     });
 
+
     // Tạo mảng kết quả để gửi backend
     const result = selectedItems.value.map((item) => {
       let giaGoc = parseFloat(item.gia) || 0;
       let giaSauGiam = giaGoc;
+
 
       const discount = discountMap.get(item.id);
       if (discount) {
@@ -61,9 +71,12 @@ const apply = async () => {
         }
       }
 
+
       giaSauGiam = Math.max(Math.round(giaSauGiam), 0);
 
+
       const soLuongMua = quantities.value[item.maChiTietSapPham] || 1;
+
 
       return {
         idSanPhamChiTiet: item.maChiTietSapPham,
@@ -75,7 +88,9 @@ const apply = async () => {
       };
     });
 
+
     console.log("✅ Dữ liệu gửi xuống:", result);
+
 
     // TODO: gọi API update số lượng, lưu hóa đơn chi tiết, ghi lịch sử như bạn viết tiếp
 // -------------------
@@ -85,7 +100,9 @@ const apply = async () => {
       soLuongMua: r.soLuong,
     }));
 
+
     console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
+
 
     await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
       method: "POST",
@@ -95,6 +112,7 @@ const apply = async () => {
       },
       body: JSON.stringify(bodyUpdateSoLuong),
     });
+
 
     // -------------------
     // 2. Lưu chi tiết hóa đơn
@@ -106,6 +124,7 @@ const apply = async () => {
       },
       body: JSON.stringify(result),
     });
+
 
     // -------------------
     // 3. Ghi lịch sử cho từng sản phẩm vừa thêm
@@ -125,6 +144,7 @@ const apply = async () => {
         }),
       });
     }
+
 
     // -------------------
     // 4. Emit ra ngoài để đóng modal + reload
@@ -148,10 +168,14 @@ const props = defineProps({
 });
 
 
+
+
 const token = Cookies.get("token");
 const emit = defineEmits(["close", "update"]);
 
+
 const soLuongMoi = ref(props.soLuongHienTai);
+
 
 // // Hàm apply mới
 // const apply = async () => {
@@ -160,6 +184,7 @@ const soLuongMoi = ref(props.soLuongHienTai);
 //       alert("Số lượng phải lớn hơn 0");
 //       return;
 //     }
+
 
 //     // --- 1. Kiểm tra giảm giá cho sản phẩm hiện tại ---
 //     const response = await fetch("http://localhost:8080/api/discounts/check", {
@@ -171,10 +196,13 @@ const soLuongMoi = ref(props.soLuongHienTai);
 //       body: JSON.stringify([props.idChiTietSanPham]), // chỉ gửi id sản phẩm hiện tại
 //     });
 
+
 //     if (!response.ok) throw new Error("Lỗi khi kiểm tra giảm giá");
+
 
 //     const discountInfos = await response.json(); // [{ chiTietSanPhamId, phamTramGiam, soTienGiam }]
 //     const discount = discountInfos.find(d => d.chiTietSanPhamId === props.idChiTietSanPham);
+
 
 //     // --- 2. Tính giá sau giảm ---
 //     let giaSauGiam = parseFloat(props.gia) || 0;
@@ -186,6 +214,7 @@ const soLuongMoi = ref(props.soLuongHienTai);
 //       }
 //     }
 //     giaSauGiam = Math.max(Math.round(giaSauGiam), 0);
+
 
 //     // // --- 3. Cập nhật tồn kho ---
 //     // await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
@@ -200,6 +229,7 @@ const soLuongMoi = ref(props.soLuongHienTai);
 //     //   }]),
 //     // });
 
+
 //     // --- 4. Lưu chi tiết hóa đơn ---
 //     const chiTietHoaDon = [{
 //       idSanPhamChiTiet: props.maChiTietSanPham,
@@ -210,6 +240,7 @@ const soLuongMoi = ref(props.soLuongHienTai);
 //       trangThai: 0,
 //     }];
 
+
 //     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
 //       method: "POST",
 //       headers: {
@@ -218,6 +249,7 @@ const soLuongMoi = ref(props.soLuongHienTai);
 //       },
 //       body: JSON.stringify(chiTietHoaDon),
 //     });
+
 
 //     // --- 5. Ghi lịch sử ---
 //     await fetch("http://localhost:8080/lich-su-hoa-don/them", {
@@ -235,9 +267,11 @@ const soLuongMoi = ref(props.soLuongHienTai);
 //       }),
 //     });
 
+
 //     // --- 6. Emit ra ngoài ---
 //     emit("update"); // cập nhật lại số lượng
 //     emit("close");
+
 
 //   } catch (err) {
 //     console.error(err);
@@ -245,12 +279,18 @@ const soLuongMoi = ref(props.soLuongHienTai);
 // };
 import Swal from "sweetalert2";
 
+
 const apply = async () => {
   try {
     if (soLuongMoi.value <= 0) {
       Swal.fire("Lỗi", "Số lượng phải lớn hơn 0", "error");
       return;
     }
+    if (soLuongMoi.value > props.kho) {
+      Swal.fire("Lỗi", "Số lượng vượt quá số lượng tồn", "error");
+      return;
+    }
+
 
     // --- 0. Xác nhận thay đổi ---
     const result = await Swal.fire({
@@ -263,10 +303,12 @@ const apply = async () => {
       reverseButtons: true,
     });
 
+
     if (!result.isConfirmed) {
       console.log("❌ Người dùng đã hủy cập nhật số lượng");
       return;
     }
+
 
     // --- 1. Kiểm tra giảm giá cho sản phẩm hiện tại ---
     const response = await fetch("http://localhost:8080/api/discounts/check", {
@@ -278,10 +320,13 @@ const apply = async () => {
       body: JSON.stringify([props.idChiTietSanPham]), // chỉ gửi id sản phẩm hiện tại
     });
 
+
     if (!response.ok) throw new Error("Lỗi khi kiểm tra giảm giá");
+
 
     const discountInfos = await response.json(); // [{ chiTietSanPhamId, phamTramGiam, soTienGiam }]
     const discount = discountInfos.find(d => d.chiTietSanPhamId === props.idChiTietSanPham);
+
 
     // --- 2. Tính giá sau giảm ---
     let giaSauGiam = parseFloat(props.gia) || 0;
@@ -294,15 +339,17 @@ const apply = async () => {
     }
     giaSauGiam = Math.max(Math.round(giaSauGiam), 0);
 
+
     // --- 3. Lưu chi tiết hóa đơn ---
     const chiTietHoaDon = [{
       idSanPhamChiTiet: props.maChiTietSanPham,
       gia: giaSauGiam,
-      soLuong: soLuongMoi.value - props.soLuongHienTai,
+      soLuong: soLuongMoi.value,
       thanhTien: giaSauGiam * soLuongMoi.value,
       idHoaDon: props.idHoaDon,
       trangThai: 0,
     }];
+
 
     await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
       method: "POST",
@@ -312,6 +359,7 @@ const apply = async () => {
       },
       body: JSON.stringify(chiTietHoaDon),
     });
+
 
     // --- 4. Ghi lịch sử ---
     await fetch("http://localhost:8080/lich-su-hoa-don/them", {
@@ -329,11 +377,14 @@ const apply = async () => {
       }),
     });
 
+
     // --- 5. Emit ra ngoài ---
     emit("update"); // cập nhật lại số lượng
     emit("close");
 
+
     // Swal.fire("Thành công", "Cập nhật số lượng sản phẩm thành công!", "success");
+
 
   } catch (err) {
     console.error(err);
@@ -341,12 +392,16 @@ const apply = async () => {
   }
 };
 
+
 </script>
+
+
 
 
 <template>
   <!-- Nền tối -->
   <div class="modal-backdrop fade show" @click="emit('close')"></div>
+
 
   <!-- Popup -->
   <div class="modal show d-block" tabindex="-1">
@@ -356,6 +411,7 @@ const apply = async () => {
           <h5 class="modal-title">Sửa số lượng</h5>
           <button type="button" class="btn-close" @click="emit('close')"></button>
         </div>
+
 
         <div class="modal-body">
           <p><strong>Kho:</strong> {{ kho }}</p>
@@ -373,6 +429,7 @@ const apply = async () => {
           </div>
         </div>
 
+
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="emit('close')">Hủy</button>
           <button class="btn btn-primary" @click="apply">Xác nhận</button>
@@ -381,3 +438,4 @@ const apply = async () => {
     </div>
   </div>
 </template>
+

@@ -134,7 +134,7 @@ const sendEmail = async () => {
 
 const xacNhanDonHang = async () => {
   if(hienNut.value){
-    alert("Vui long xac nhan phu/hoan phi 1")
+    toast.error("Vui lòng xác nhận hoàn phụ phí!")
     return
   }
   const result = listHoaDonChiTiet.value;
@@ -147,19 +147,38 @@ const xacNhanDonHang = async () => {
   // 👉 Kiểm tra body gửi xuống API update số lượng
   console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
 
-  // 1. Cập nhật tồn kho
-  try {
-    await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(bodyUpdateSoLuong),
-    });
-  } catch (error) {
-    console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
-  }
+  // // 1. Cập nhật tồn kho
+  // try {
+  //   await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
+  //     method: "POST",
+  //     headers: {
+  //       Authorization: `Bearer ${token}`,
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify(bodyUpdateSoLuong),
+  //   });
+  // } catch (error) {
+  //   console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
+  // }
+  // ✅ Gọi API cập nhật tồn kho
+      const updateSoLuongRes = await fetch(
+        "http://localhost:8080/chi-tiet-san-pham/update-so-luong",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(bodyUpdateSoLuong),
+        }
+      );
+
+      if (!updateSoLuongRes.ok) {
+        const errorMsg = await updateSoLuongRes.text();
+        toast.error(`Không thể cập nhật số lượng tồn kho: ${errorMsg}`);
+        return;
+      }
+      thayDoiTrangThai(1);
 };
 
 // hủy đơn hàng:
@@ -220,11 +239,11 @@ const handleNextClick = () => {
   // Nếu là nút "Xác nhận" và trạng thái chỉnh sửa = 0 → gọi hàm xacNhanDonHang()
   if (currentLabel === "Xác nhận" && trangThaiChinhSua.value === 0) {
     xacNhanDonHang();
-    thayDoiTrangThai(1);
+    
   } else {
     console.log(hienNut.value)
     if(hienNut.value){
-    alert("Vui long xac nhan phu/hoan phi!")
+    toast.error("Vui lòng xác nhận hoàn phụ phí!")
     return
     }
     // Các trường hợp khác → giữ nguyên logic cũ
@@ -625,11 +644,11 @@ const thayDoiTrangThai = async (moiTrangThai) => {
       idHoaDon: { maHoaDon: maHoaDon },
       noiDungThayDoi: "Thay đổi trạng thái",
       nguoiThucHien: "admin",
-      ghiChu: `admin đã thực hiện thay đổi trạng thái từ ${trangThai.value} sang ${moiTrangThai}. Ghi chú: ${note.value}`,
+      ghiChu: `admin đã thực hiện thay đổi trạng thái từ ${steps[trangThai.value]} sang ${steps[moiTrangThai]}. Ghi chú: ${note.value}`,
     });
 
     listLichSuThayDoi.value.push(
-      `admin đã thực hiện thay đổi trạng thái từ ${trangThai.value} sang ${moiTrangThai}. Ghi chú: ${note.value}`
+      `admin đã thực hiện thay đổi trạng thái từ ${steps[trangThai.value]} sang ${steps[moiTrangThai]}. Ghi chú: ${note.value}`
     );
 
     // --- 5. Cập nhật trạng thái hiện tại ---
@@ -638,6 +657,8 @@ const thayDoiTrangThai = async (moiTrangThai) => {
     // --- 6. Thông báo ---
     await nhanSanPhamTuThem("Cập nhật trạng thái thành công!");
     // toast.success("Đã cập nhật trạng thái!");
+    console.log("lich su thay doi",listLichSuThayDoi.value)
+    sendEmail()
   } catch (error) {
     console.error("❌ Lỗi cập nhật trạng thái:", error);
     Swal.fire("Lỗi", "Có lỗi xảy ra khi cập nhật trạng thái!", "error");
@@ -916,6 +937,8 @@ const fetchAnhSanPham = async (id) => {
     anhMap.value[id] = "https://via.placeholder.com/50"; // Ảnh mặc định khi lỗi
   }
 };
+
+
 </script>
 
 <template>
@@ -1150,9 +1173,9 @@ const fetchAnhSanPham = async (id) => {
                   </button>
                 </td>
                 <td class="text-center align-middle">
-                  {{ item.gia }}
+                  {{ item.gia.toLocaleString("vi-VN") }}
                 </td>
-                <td class="text-center align-middle">{{ item.thanhTien }}</td>
+                <td class="text-center align-middle">{{ item.thanhTien.toLocaleString("vi-VN") }}</td>
                 <td class="text-center align-middle">
                   <button
                     class="btn p-1 border-0 bg-transparent d-flex align-items-center justify-content-center mx-auto"

@@ -18,10 +18,6 @@
       </router-link>
     </div>
 
-
-    <div v-else class="loading-box">
-      <h2>⏳ Đang xử lý kết quả thanh toán...</h2>
-    </div>
   </div>
 </template>
 

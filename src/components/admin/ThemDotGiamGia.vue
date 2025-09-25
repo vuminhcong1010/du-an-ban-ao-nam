@@ -6,14 +6,14 @@
             </button>
             <h2 class="page-title-aligned">Thêm đợt giảm giá mới</h2>
         </div>
-    
+
         <div class="bg-white p-4 rounded-3 shadow-sm">
             <div class="row gx-5">
                 <div class="col-md-6 border-end">
                     <div class="mb-3">
                         <label class="form-label fw-bold">Mã đợt giảm giá</label>
                         <input type="text" class="form-control" v-model="form.maDotGiamGia"
-                               :class="{ 'is-invalid': errors.maDotGiamGia }" @input="validateField('maDotGiamGia')" />
+                            :class="{ 'is-invalid': errors.maDotGiamGia }" @input="validateField('maDotGiamGia')" />
                         <small class="text-muted">Để trống để tự động sinh mã</small>
                         <div class="invalid-feedback">{{ errors.maDotGiamGia }}</div>
                     </div>
@@ -21,7 +21,7 @@
                     <div class="mb-3">
                         <label class="form-label fw-bold">Tên đợt giảm giá <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" v-model="form.tenDotGiamGia"
-                               :class="{ 'is-invalid': errors.tenDotGiamGia }" @input="validateField('tenDotGiamGia')" />
+                            :class="{ 'is-invalid': errors.tenDotGiamGia }" @input="validateField('tenDotGiamGia')" />
                         <div class="invalid-feedback">{{ errors.tenDotGiamGia }}</div>
                     </div>
 
@@ -29,7 +29,8 @@
                         <label class="form-label fw-bold">Phần trăm giảm <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="number" class="form-control" v-model.number="form.giaTri"
-                                   :class="{ 'is-invalid': errors.giaTri }" @input="validateField('giaTri')" min="0.01" max="100" />
+                                :class="{ 'is-invalid': errors.giaTri }" @input="validateField('giaTri')" min="0.01"
+                                max="100" />
                             <span class="input-group-text">%</span>
                         </div>
                         <div class="invalid-feedback d-block">{{ errors.giaTri }}</div>
@@ -39,15 +40,15 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Ngày bắt đầu <span class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control" v-model="form.ngayBatDau"
-                                   :class="{ 'is-invalid': errors.ngayBatDau }" :min="minDateTime"
-                                   @input="validateField('ngayBatDau')" />
+                                :class="{ 'is-invalid': errors.ngayBatDau }" :min="minDateTime"
+                                @input="validateField('ngayBatDau')" />
                             <div class="invalid-feedback">{{ errors.ngayBatDau }}</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Ngày kết thúc <span class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control" v-model="form.ngayKetThuc"
-                                   :class="{ 'is-invalid': errors.ngayKetThuc }" :min="minDateTime"
-                                   @input="validateField('ngayKetThuc')" />
+                                :class="{ 'is-invalid': errors.ngayKetThuc }" :min="minDateTime"
+                                @input="validateField('ngayKetThuc')" />
                             <div class="invalid-feedback">{{ errors.ngayKetThuc }}</div>
                         </div>
                     </div>
@@ -58,7 +59,7 @@
                         <label class="fw-bold">Danh sách sản phẩm</label>
                         <div class="input-group input-group-sm w-50">
                             <input type="text" class="form-control" placeholder="Tìm theo tên..." v-model="searchQuery"
-                                   @input="filterProducts" />
+                                @input="filterProducts" />
                             <span class="input-group-text search-icon"><i class="fa fa-search"></i></span>
                         </div>
                     </div>
@@ -76,13 +77,13 @@
                                 <tr v-for="sanpham in paginatedProducts" :key="sanpham.id">
                                     <td>
                                         <input type="checkbox" :value="sanpham.id" v-model="selectedProductIds"
-                                               @change="fetchProductVariants" />
+                                            @change="fetchProductVariants" />
                                     </td>
                                     <td>{{ sanpham.tenSanPham }}</td>
                                     <td>{{ soLuongTheoSanPham[sanpham.id] || 0 }}</td>
                                     <td>
                                         <span class="badge rounded-pill"
-                                              :class="{'bg-success': sanpham.trangThai === 1, 'bg-danger': sanpham.trangThai !== 1}">
+                                            :class="{ 'bg-success': sanpham.trangThai === 1, 'bg-danger': sanpham.trangThai !== 1 }">
                                             {{ sanpham.trangThai === 1 ? 'Đang bán' : 'Ngừng bán' }}
                                         </span>
                                     </td>
@@ -114,20 +115,21 @@
                     <div class="col-md-2">
                         <label class="form-label fw-bold">Tìm kiếm</label>
                         <div class="input-group">
-                            <input type="text" class="form-control" placeholder="Nhập tên, mã" v-model="variantSearchQuery" @input="filterVariants" />
+                            <input type="text" class="form-control" placeholder="Nhập tên, mã"
+                                v-model="variantSearchQuery" @input="filterVariants" />
                             <span class="input-group-text search-icon"><i class="fa fa-search"></i></span>
                         </div>
                     </div>
-                    </div>
-                
+                </div>
+
                 <div class="table-container">
                     <table class="table table-hover variant-table">
                         <thead class="table-light">
                             <tr>
                                 <th>
                                     <input type="checkbox"
-                                           :checked="selectedVariantIds.length === filteredVariants.length && filteredVariants.length > 0"
-                                           @change="toggleSelectAllVariants" />
+                                        :checked="selectedVariantIds.length === filteredVariants.length && filteredVariants.length > 0"
+                                        @change="toggleSelectAllVariants" />
                                 </th>
                                 <th>STT</th>
                                 <th>Ảnh sản phẩm</th>
@@ -139,23 +141,29 @@
                         </thead>
                         <tbody>
                             <tr v-for="(variant, index) in paginatedVariants" :key="variant.id">
-                                <td><input type="checkbox" :value="variant.id" v-model="selectedVariantIds" @change="validateField('selectedVariantIds')" /></td>
+                                <td><input type="checkbox" :value="variant.id" v-model="selectedVariantIds"
+                                        @change="validateField('selectedVariantIds')" /></td>
                                 <td>{{ (variantPage * itemsPerPage) + index + 1 }}</td>
                                 <td>
                                     <div class="icon-container">
-                                        <img :src="variant.images.length > 0 ? variant.images[0].duongDanAnh : 'https://via.placeholder.com/50'" alt="Ảnh sản phẩm" style="width: 50px; height: 50px; object-fit: cover;" />
-                                        <span v-if="variant.images.length > 1" class="badge bg-secondary position-absolute top-0 end-0 translate-middle badge-plus">+{{ variant.images.length - 1 }}</span>
+                                        <img :src="variant.images.length > 0 ? variant.images[0].duongDanAnh : 'https://via.placeholder.com/50'"
+                                            alt="Ảnh sản phẩm" style="width: 50px; height: 50px; object-fit: cover;" />
+                                        <span v-if="variant.images.length > 1"
+                                            class="badge bg-secondary position-absolute top-0 end-0 translate-middle badge-plus">+{{
+                                            variant.images.length - 1 }}</span>
                                     </div>
                                 </td>
                                 <td>{{ variant.maChiTietSanPham || 'N/A' }}</td>
                                 <td>{{ variant.idSanPham?.tenSanPham || 'N/A' }}</td>
                                 <td>{{ variant.soLuong || 0 }}</td>
-                                <td>{{ variant.gia ? variant.gia.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) : 'N/A' }}</td>
+                                <td>{{ variant.gia ? variant.gia.toLocaleString('vi-VN', {
+                                    style: 'currency', currency:
+                                    'VND' }) : 'N/A' }}</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-                
+
                 <nav class="mt-4">
                     <ul class="pagination justify-content-end">
                         <li class="page-item" :class="{ disabled: variantPage === 0 }">
@@ -170,7 +178,8 @@
                         </li>
                     </ul>
                 </nav>
-                <div class="invalid-feedback d-block" v-if="errors.selectedVariantIds">{{ errors.selectedVariantIds }}</div>
+                <div class="invalid-feedback d-block" v-if="errors.selectedVariantIds">{{ errors.selectedVariantIds }}
+                </div>
             </div>
 
             <div class="d-flex justify-content-end mt-4">
@@ -365,7 +374,8 @@ export default {
                 if (!response.ok) throw new Error(`Không thể lấy danh sách sản phẩm: ${response.statusText}`);
                 const json = await response.json();
                 if (json.message !== 'Success') throw new Error(json.message);
-                this.allDanhSachSP = (json.data || []).filter(sp => sp.trangThai === 1);
+                // Lọc sản phẩm có trạng thái đang bán và số lượng lớn hơn 0
+                this.allDanhSachSP = (json.data || []).filter(sp => sp.trangThai === 1 && (json.soLuong[sp.id] || 0) > 0);
                 this.soLuongTheoSanPham = json.soLuong || {};
                 this.filteredProducts = [...this.allDanhSachSP];
             } catch (error) {
@@ -709,41 +719,42 @@ export default {
 
 /* Header Section */
 .header-section {
-  display: flex;
-  align-items: center;
-  margin-bottom: 2.5rem;
-  gap: 2rem;
+    display: flex;
+    align-items: center;
+    margin-bottom: 2.5rem;
+    gap: 2rem;
 }
 
 .back-button {
-  background-color: #e9ecef;
-  /* Màu xám nhạt */
-  color: #495057;
-  /* Màu chữ xám đậm */
-  padding: 0.75rem 1.25rem;
-  /* Tăng padding cho nút */
-  border-radius: 0.4rem;
-  /* Bo tròn vừa phải */
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  flex-shrink: 0;
-  /* Không co lại */
-  font-size: 1rem;
-  /* Kích thước font cho nút */
+    background-color: #e9ecef;
+    /* Màu xám nhạt */
+    color: #495057;
+    /* Màu chữ xám đậm */
+    padding: 0.75rem 1.25rem;
+    /* Tăng padding cho nút */
+    border-radius: 0.4rem;
+    /* Bo tròn vừa phải */
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    flex-shrink: 0;
+    /* Không co lại */
+    font-size: 1rem;
+    /* Kích thước font cho nút */
 }
+
 .back-button:hover {
-  background-color: #dee2e6;
-  color: #0a2c57;
+    background-color: #dee2e6;
+    color: #0a2c57;
 }
 
 .page-title-aligned {
-  font-size: 2.2rem;
-  font-weight: 700;
-  color: #0a2c57;
-  margin: 0;
-  line-height: 1;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #0a2c57;
+    margin: 0;
+    line-height: 1;
 }
 
 /* Form Styling */
@@ -752,12 +763,14 @@ export default {
     color: #495057;
 }
 
-.form-control, .form-select {
+.form-control,
+.form-select {
     border-radius: 6px;
     border: 1px solid #e0e0e0;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
     box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     border-color: #86b7fe;
 }
@@ -768,7 +781,8 @@ export default {
     overflow-y: auto;
 }
 
-.product-table, .variant-table {
+.product-table,
+.variant-table {
     width: 100%;
     margin-bottom: 0;
 }
@@ -814,6 +828,7 @@ export default {
     font-size: 0.75rem;
     padding: 0.3em 0.6em;
 }
+
 /* Action Buttons */
 .btn-save {
     background-color: #0a2c57;
@@ -846,6 +861,4 @@ export default {
 .border-end {
     border-right: 1px solid #e0e0e0 !important;
 }
-
-
 </style>

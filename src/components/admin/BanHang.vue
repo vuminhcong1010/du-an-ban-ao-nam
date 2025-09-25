@@ -230,7 +230,7 @@ async function closeOrder(id) {
       return;
     }
 
-    
+
 
     // 3. Xóa hóa đơn
     await axios.delete(`http://localhost:8080/hoa-don/xoa/${order.maHoaDon}`, {
@@ -256,7 +256,6 @@ async function closeOrder(id) {
     Swal.fire("Lỗi", "Xóa hóa đơn thất bại! Vui lòng thử lại.", "error");
   }
 }
-
 
 // đóng đơn hàng tự động:
 async function closeOrderTuDong(id) {
@@ -626,9 +625,32 @@ const hoanThanhDonHang = async (order) => {
 
       // ✅ Kiểm tra thanh toán
       if (!order.thanhToan || order.thanhToan.length === 0) {
-        toast.error("❌ Vui lòng chọn phương thức thanh toán trước khi hoàn tất đơn hàng.");
+        toast.error(
+          "❌ Vui lòng chọn phương thức thanh toán trước khi hoàn tất đơn hàng."
+        );
         return;
       }
+// kiểm tra phiếu giảm giá:
+      // ✅ Chỉ kiểm tra số lượng phiếu GG khi thực sự có phiếu được áp dụng
+      if (order?.giamGia !== null) {
+        const checkRes = await fetch(
+          `http://localhost:8080/ban_hang/kiem-tra-so-luong/${order.giamGia.id}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!checkRes.ok) {
+          const errorMsg = await checkRes.text();
+          toast.error(`Lỗi kiểm tra số lượng: ${errorMsg}`);
+          return;
+        }
+      }
+
+      // toast.success("Phiếu giảm giá còn số lượng hợp lệ");
 
       const maHoaDon = order.maHoaDon;
       const selectedItems = order.listSanPham;
@@ -713,25 +735,23 @@ const hoanThanhDonHang = async (order) => {
       await axios.post("http://localhost:8080/ban_hang/hoan-thanh", payload);
 
       // ✅ Giảm số lượng phiếu giảm giá nếu có
-    // ✅ Giảm số lượng phiếu giảm giá nếu có
-if (order.giamGia && order.giamGia.id) {
-  try {
-    await axios.put(
-      `http://localhost:8080/ban_hang/phieuGG/decrease/${order.giamGia.id}`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      if (order.giamGia && order.giamGia.id) {
+        try {
+          await axios.put(
+            `http://localhost:8080/ban_hang/phieuGG/decrease/${order.giamGia.id}`,
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          console.log(`✅ Đã giảm số lượng phiếu giảm giá ID: ${order.giamGia.id}`);
+        } catch (err) {
+          console.error(`❌ Lỗi giảm số lượng phiếu giảm giá:`, err);
+          // Không nên dừng tiến trình hoàn tất đơn hàng vì lỗi này
+        }
       }
-    );
-    console.log(`✅ Đã giảm số lượng phiếu giảm giá ID: ${order.giamGia.id}`);
-  } catch (err) {
-    console.error(`❌ Lỗi giảm số lượng phiếu giảm giá:`, err);
-    // Không nên dừng tiến trình hoàn tất đơn hàng vì lỗi này
-  }
-}
-
       // ✅ Xóa đơn hàng sau khi hoàn thành
       orders.value = orders.value.filter((o) => o.id !== order.id);
       if (activeTab.value === order.id) {
@@ -745,8 +765,6 @@ if (order.giamGia && order.giamGia.id) {
     }
   });
 };
-
-
 
 function xoaToanBoLocal() {
   const confirmed = window.confirm(
@@ -766,16 +784,9 @@ const currentOrder = computed(() =>
 </script>
 
 <template>
-  <div
-    class="bg-white p-3 rounded mb-4 d-flex align-items-center justify-content-between border"
-    style="height: 60px"
-  >
+  <div class="bg-white p-3 rounded mb-4 d-flex align-items-center justify-content-between border" style="height: 60px">
     <h5 class="fw-bold mb-0">Bán hàng tại quầy</h5>
-    <button
-      class="btn success"
-      style="background-color: #0a2c57; color: white"
-      @click="createNewOrder"
-    >
+    <button class="btn success" style="background-color: #0a2c57; color: white" @click="createNewOrder">
       <Plus class="me-1" size="16" /> Tạo đơn mới
     </button>
     <button class="btn btn-danger" @click="xoaToanBoLocal" v-if="true">
@@ -785,52 +796,31 @@ const currentOrder = computed(() =>
 
   <ul class="nav nav-tabs">
     <li class="nav-item" v-for="order in orders" :key="order.id">
-      <a
-        class="nav-link"
-        :class="{ active: order.id === activeTab }"
-        href="#"
-        @click.prevent="activeTab = order.id"
-      >
+      <a class="nav-link" :class="{ active: order.id === activeTab }" href="#" @click.prevent="activeTab = order.id">
         {{ order.maHoaDon }}
         <!-- 🔽 Nếu có sản phẩm thì hiển thị số lượng -->
         <span v-if="order.listSanPham.length > 0" class="badge bg-danger ms-1">
           {{ order.listSanPham.length }}
         </span>
-        <span class="ms-1 text-danger" @click.stop="closeOrder(order.id)"
-          >×</span
-        >
+        <span class="ms-1 text-danger" @click.stop="closeOrder(order.id)">×</span>
       </a>
     </li>
   </ul>
 
   <div v-if="orders.length === 0" class="text-center mt-5">
-    <img
-      src="https://web.nvnstatic.net/tp/T0213/img/tmp/cart-empty.png?v=9"
-      alt="No orders"
-      width="170"
-    />
+    <img src="https://web.nvnstatic.net/tp/T0213/img/tmp/cart-empty.png?v=9" alt="No orders" width="170" />
     <p class="mt-2">Không có bất kỳ đơn hàng nào !!!</p>
   </div>
 
-  <div
-    v-if="activeTab !== null"
-    class="bg-white p-3 rounded mb-4 align-items-center border"
-  >
-    <div
-      v-for="order in orders"
-      :key="order.id"
-      v-show="order.id === activeTab"
-    >
+  <div v-if="activeTab !== null" class="bg-white p-3 rounded mb-4 align-items-center border">
+    <div v-for="order in orders" :key="order.id" v-show="order.id === activeTab">
       <h6>Chi tiết hóa đơn {{ order.maHoaDon }}</h6>
 
       <!-- Giỏ hàng -->
       <GioHang :order="order" :activeTab="activeTab" :orders="orders" />
 
       <!-- Khách hàng -->
-      <KhachHang
-        :order="order"
-        @capNhatThongTinKhachHang="capNhatThongTinKhachHang"
-      />
+      <KhachHang :order="order" @capNhatThongTinKhachHang="capNhatThongTinKhachHang" />
 
       <!-- Phiếu giảm giá -->
       <GiamGia :order="order" :activeTab="activeTab" :orders="orders" />
@@ -854,33 +844,24 @@ const currentOrder = computed(() =>
       <!-- Phương thức thanh toán -->
       <div class="d-flex align-items-center gap-3 mb-3">
         <label class="fw-bold mb-0">Phương thức thanh toán:</label>
-        <button
-          class="btn border rounded-circle d-flex align-items-center justify-content-center"
-          style="
+        <button class="btn border rounded-circle d-flex align-items-center justify-content-center" style="
             width: 36px;
             height: 36px;
             background-color: #0a2c57;
             color: white;
-          "
-          title="Chuyển khoản"
-          @click="showThanhToan = true"
-        >
+          " title="Chuyển khoản" @click="showThanhToan = true">
           <CreditCard size="18" />
         </button>
-        <ThanhToan
-          v-if="showThanhToan"
-          :tongTien="order.tongTien"
-          @close="showThanhToan = false"
-          @xac-nhan="handleXacNhan"
-        />
+        <ThanhToan v-if="showThanhToan" :tongTien="order.tongTien" @close="showThanhToan = false"
+          @xac-nhan="handleXacNhan" />
         <span>{{
           Array.isArray(order.thanhToan)
             ? order.thanhToan.map((pt) => pt.tenPhuongThuc).join(" + ")
             : order.thanhToan?.hinhThuc === "tien_mat"
-            ? "Tiền mặt"
-            : order.thanhToan?.hinhThuc === "chuyen_khoan"
-            ? "Chuyển khoản"
-            : "Thanh toán + Chuyển khoản"
+              ? "Tiền mặt"
+              : order.thanhToan?.hinhThuc === "chuyen_khoan"
+                ? "Chuyển khoản"
+                : "Thanh toán + Chuyển khoản"
         }}</span>
       </div>
 
@@ -895,16 +876,12 @@ const currentOrder = computed(() =>
 
       <!-- Nút hoàn tất -->
       <div class="text-end">
-        <button
-          class="btn"
-          style="
+        <button class="btn" style="
             background-color: #0a2c57;
             color: white;
             min-width: 200px;
             font-weight: bold;
-          "
-          @click="hoanThanhDonHang(order)"
-        >
+          " @click="hoanThanhDonHang(order)">
           Hoàn thành đơn hàng
         </button>
       </div>
