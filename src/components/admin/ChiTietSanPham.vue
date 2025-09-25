@@ -131,7 +131,22 @@
             </span>
           </td>
           <td>
-            <i class="fa-solid fa-repeat me-3" title="thay đổi trạng thái" style="color: #CC0000; font-size: 1.3rem;" @click="remove(ds.id)"></i>
+            <template v-if="ds.trangThai == 1">
+              <Trash
+                class="me-3"
+                :title="'Chuyển sang Ngừng bán'"
+                style="color: #cc0000"
+                @click="remove(ds.id, ds.trangThai)"
+              />
+            </template>
+            <template v-else>
+              <i
+                class="fa-solid fa-repeat me-3"
+                :title="'Chuyển lại Đang bán'"
+                style="color: #CC0000; font-size: 1.3rem;"
+                @click="remove(ds.id, ds.trangThai)"
+              ></i>
+            </template>
             <i class="fa-solid fa-pen-to-square" title="cập nhật thông tin" data-bs-toggle="modal" data-bs-target="#exampleModal" @click="moModal(ds.id)" style="color: #28a745;font-size: 1.3rem;"></i>
           </td>
         </tr>
@@ -200,6 +215,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
 import { Modal } from 'bootstrap'
 import { Eye, FilterIcon, Trash, Upload, Plus } from "lucide-vue-next";
+import Swal from 'sweetalert2'
 import UpdateSanPham from './UpdateSanPham.vue'
 import AddChiTietSanPham from './AddChiTietSanPham.vue'
 import QRCode from 'qrcode'
@@ -373,14 +389,37 @@ onMounted(() => {
 // ============================
 // Xoá
 // ============================
-function remove(id) {
-  if (confirm('Bạn có chắc chắn muốn xóa?')) {
-    axios.get(`http://localhost:8080/san-pham/delete-chi-tiet-san-pham/${id}`, {
+async function remove(id, trangThaiHienTai) {
+  try {
+    const isDangBan = Number(trangThaiHienTai) === 1
+    const result = await Swal.fire({
+      title: 'Xác nhận chuyển trạng thái?',
+      text: isDangBan
+        ? 'Bạn có chắc chắn muốn chuyển trạng thái thành Ngừng bán?'
+        : 'Bạn có muốn xác nhận chuyển trạng thái quay lại Đang bán?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy'
+    })
+
+    if (!result.isConfirmed) {
+      toast.info('Đã hủy thao tác chuyển trạng thái')
+      return
+    }
+
+    await axios.get(`http://localhost:8080/san-pham/delete-chi-tiet-san-pham/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     })
     setTimeout(() => ham(), 300)
+    toast.success('Chuyển trạng thái biến thể thành công!')
+  } catch (e) {
+    console.error('Lỗi khi chuyển trạng thái biến thể:', e)
+    toast.error('Lỗi khi chuyển trạng thái biến thể!')
   }
 }
 

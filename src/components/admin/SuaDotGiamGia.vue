@@ -45,7 +45,7 @@
                             <div v-if="errors.ngayKetThuc" class="text-danger small">{{ errors.ngayKetThuc }}</div>
                         </div>
                     </div>
-                  
+
                 </div>
                 <!-- Danh sách sản phẩm bên phải -->
                 <div class="col-md-6">
@@ -85,8 +85,9 @@
                     </table>
                     <div class="d-flex justify-content-center">
                         <button class="btn btn-outline-secondary btn-sm me-1" :disabled="productPage === 1"
-                            @click="goToProductPage(productPage - 1)"><</button>
-                          
+                            @click="goToProductPage(productPage - 1)">
+                            </button>
+
                                 <button v-for="page in totalProductPages" :key="page"
                                     class="btn btn-outline-secondary btn-sm mx-1"
                                     :class="{ 'active': page === productPage }" @click="goToProductPage(page)">{{ page
@@ -215,27 +216,28 @@
                 </table>
                 <div class="d-flex justify-content-center">
                     <button class="btn btn-outline-secondary btn-sm me-1" :disabled="variantPage === 1"
-                        @click="goToVariantPage(variantPage - 1)"><</button>
-                      
+                        @click="goToVariantPage(variantPage - 1)">
+                        </button>
+
                             <button v-for="page in totalVariantPages" :key="page"
                                 class="btn btn-outline-secondary btn-sm mx-1"
                                 :class="{ 'active': page === variantPage }" @click="goToVariantPage(page)">{{ page
                                 }}</button>
                             <button class="btn btn-outline-secondary btn-sm ms-1"
                                 :disabled="variantPage === totalVariantPages"
-                                @click="goToVariantPage(variantPage + 1)">></button>
+                                @click="goToVariantPage(variantPage + 1)"></button>
                 </div>
                 <div class="invalid-feedback d-block" v-if="errors.selectedVariantIds">{{ errors.selectedVariantIds }}
                 </div>
             </div>
-              <div class="mt-4 d-flex gap-2">
-                        <button class="btn btn-primary" @click="updateDotGiamGia">
-                            <i class="fas fa-save me-1"></i> Cập nhật
-                        </button>
-                        <router-link to="/dot-giam-gia" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-1"></i> Quay lại
-                        </router-link>
-                    </div>
+            <div class="mt-4 d-flex gap-2">
+                <button class="btn btn-primary" @click="updateDotGiamGia">
+                    <i class="fas fa-save me-1"></i> Cập nhật
+                </button>
+                <router-link to="/dot-giam-gia" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Quay lại
+                </router-link>
+            </div>
         </div>
     </div>
 </template>
@@ -328,10 +330,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/chat-lieu', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách chất liệu: ${res.statusText}`);
                 const json = await res.json();
                 this.chatLieu = json || [];
@@ -346,10 +348,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/tay-ao', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách tay áo: ${res.statusText}`);
                 const json = await res.json();
                 this.tayAo = json || [];
@@ -364,10 +366,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/co-ao', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách cổ áo: ${res.statusText}`);
                 const json = await res.json();
                 this.coAo = json || [];
@@ -382,10 +384,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/kich-co', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách kích cỡ: ${res.statusText}`);
                 const json = await res.json();
                 this.kichCo = json || [];
@@ -400,10 +402,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/mau', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách màu: ${res.statusText}`);
                 const json = await res.json();
                 this.mau = json || [];
@@ -422,10 +424,10 @@ export default {
 
                 // Fetch DotGiamGia details
                 const response = await fetch(`http://localhost:8080/doi-giam-gia/${id}`, {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!response.ok) {
                     const errorText = await response.text();
                     throw new Error(`Không thể lấy thông tin đợt giảm giá: ${errorText}`);
@@ -450,10 +452,10 @@ export default {
 
                 // Fetch associated ChiTietDotGiamGia
                 const chiTietResponse = await fetch(`http://localhost:8080/chi-tiet-dot-giam-gia/${id}`, {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!chiTietResponse.ok) {
                     const errorText = await chiTietResponse.text();
                     throw new Error(`Không thể lấy danh sách sản phẩm chi tiết: ${errorText}`);
@@ -482,10 +484,10 @@ export default {
             const toast = useToast();
             try {
                 const response = await fetch('http://localhost:8080/doi-giam-gia/san-pham-giam-gia', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!response.ok) throw new Error('Không thể lấy danh sách sản phẩm');
                 const json = await response.json();
                 this.allDanhSachSP = (json.data || []).filter(sp => sp.trangThai === 1);
@@ -503,13 +505,14 @@ export default {
                 this.filteredVariants = [];
                 this.selectAllVariants = false;
                 this.variantPage = 1; // Reset variant page when fetching new variants
+
                 if (this.selectedProductIds.length > 0) {
                     const promises = this.selectedProductIds.map(id =>
                         fetch(`http://localhost:8080/doi-giam-gia/san-pham-chi-tiet/${id}`, {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-}).then(res => {
+                            headers: {
+                                Authorization: `Bearer ${this.token}`
+                            }
+                        }).then(res => {
                             if (!res.ok) throw new Error(`Không thể lấy biến thể cho sản phẩm ${id}`);
                             return res.json();
                         })
@@ -517,40 +520,46 @@ export default {
                     const chiTietSanPhamResults = await Promise.all(promises);
 
                     const variantWithImages = await Promise.all(
-                        chiTietSanPhamResults.flat().map(async (variant) => {
-                            try {
-                                const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`, {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
-                                const images = await response.json();
-                                const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`;
-                                const discountPercentage = await this.calculateDiscountPercentage(variant.id);
-                                return {
-                                    ...variant,
-                                    maChiTietSanPham,
-                                    images: images || [],
-                                    mainImage: images.length > 0 ? images[0].duongDanAnh : 'https://via.placeholder.com/50',
-                                    discountPercentage: discountPercentage.toFixed(2)
-                                };
-                            } catch (error) {
-                                console.error(`Lỗi khi lấy ảnh hoặc tính phần trăm giảm cho variant ${variant.id}:`, error);
-                                return {
-                                    ...variant,
-                                    images: [],
-                                    mainImage: 'https://via.placeholder.com/50',
-                                    discountPercentage: '0.00'
-                                };
-                            }
-                        })
+                        chiTietSanPhamResults.flat()
+                            // Lọc ngay từ đầu để chỉ lấy sản phẩm có số lượng > 0
+                            .filter(variant => variant.soLuong > 0)
+                            .map(async (variant) => {
+                                try {
+                                    const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`, {
+                                        headers: {
+                                            Authorization: `Bearer ${this.token}`
+                                        }
+                                    });
+                                    const images = await response.json();
+                                    const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`;
+                                    const discountPercentage = await this.calculateDiscountPercentage(variant.id);
+                                    return {
+                                        ...variant,
+                                        maChiTietSanPham,
+                                        images: images || [],
+                                        mainImage: images.length > 0 ? images[0].duongDanAnh : 'https://via.placeholder.com/50',
+                                        discountPercentage: discountPercentage.toFixed(2)
+                                    };
+                                } catch (error) {
+                                    console.error(`Lỗi khi lấy ảnh hoặc tính phần trăm giảm cho variant ${variant.id}:`, error);
+                                    return {
+                                        ...variant,
+                                        images: [],
+                                        mainImage: 'https://via.placeholder.com/50',
+                                        discountPercentage: '0.00'
+                                    };
+                                }
+                            })
                     );
 
                     this.productVariants = variantWithImages;
                     this.filteredVariants = [...this.productVariants];
-                    this.selectedVariantIds = this.productVariants
-                        .filter(v => this.selectedVariantIds.includes(v.id))
-                        .map(v => v.id);
+
+                    // Chỉ giữ lại các selectedVariantIds có trong danh sách đã lọc
+                    this.selectedVariantIds = this.selectedVariantIds.filter(id =>
+                        this.productVariants.some(v => v.id === id)
+                    );
+
                     this.selectAllVariants = this.selectedVariantIds.length === this.productVariants.length;
                     this.validateSelectedVariantIds();
                 }
@@ -583,10 +592,10 @@ export default {
                         const endDate = new Date(discount.ngayKetThuc);
 
                         // Chỉ tính nếu trạng thái khác 0 (không bị hủy)
-                if (discount.trangThai !== 0 && startDate <= now && endDate >= now) {
-                    totalPercentage += discount.phamTramGiam;
-                    activeCount++;
-                }
+                        if (discount.trangThai !== 0 && startDate <= now && endDate >= now) {
+                            totalPercentage += discount.phamTramGiam;
+                            activeCount++;
+                        }
                     }
                 });
 
@@ -645,9 +654,9 @@ export default {
                 const response = await fetch(`http://localhost:8080/doi-giam-gia/${id}`, {
                     method: 'PUT',
                     headers: {
-                         Authorization: `Bearer ${this.token}`,
+                        Authorization: `Bearer ${this.token}`,
                         'Content-Type': 'application/json'
-                     },
+                    },
                     body: JSON.stringify(payload)
                 });
 
@@ -696,6 +705,9 @@ export default {
         },
         filterVariants() {
             this.filteredVariants = this.productVariants.filter(variant => {
+                // Điều kiện bắt buộc: số lượng tồn phải > 0
+                const hasValidInventory = variant.soLuong > 0;
+
                 const matchesSearch = !this.variantSearchQuery ||
                     (variant.maChiTietSanPham?.toLowerCase().includes(this.variantSearchQuery.toLowerCase()) ||
                         variant.idSanPham?.tenSanPham?.toLowerCase().includes(this.variantSearchQuery.toLowerCase()));
@@ -715,22 +727,58 @@ export default {
                 const matchesTayAo = !this.selectedLoai4 ||
                     variant.idTayAo?.id === this.selectedLoai4;
 
-                return matchesSearch && matchesChatLieu && matchesMau && matchesKichCo && matchesCoAo && matchesTayAo;
+                // Chỉ trả về true nếu tất cả điều kiện thỏa mãn VÀ số lượng > 0
+                return hasValidInventory && matchesSearch && matchesChatLieu &&
+                    matchesMau && matchesKichCo && matchesCoAo && matchesTayAo;
             });
 
+            // Cập nhật selectedVariantIds để loại bỏ những variant không còn hợp lệ
             this.selectedVariantIds = this.selectedVariantIds.filter(id =>
                 this.filteredVariants.some(v => v.id === id)
             );
-            this.selectAllVariants = this.selectedVariantIds.length === this.filteredVariants.length && this.filteredVariants.length > 0;
+
+            // Cập nhật trạng thái checkbox "chọn tất cả"
+            this.selectAllVariants = this.selectedVariantIds.length === this.filteredVariants.length &&
+                this.filteredVariants.length > 0;
+
+            // Validate lại
             this.validateSelectedVariantIds();
-            this.variantPage = 1; // Reset to first page on filter
+
+            // Reset về trang đầu khi filter
+            this.variantPage = 1;
+        },
+        // Thêm method để validate số lượng tồn khi cần thiết
+        validateInventoryPositive() {
+            // Kiểm tra và loại bỏ các variant có số lượng <= 0 khỏi selection
+            this.selectedVariantIds = this.selectedVariantIds.filter(id => {
+                const variant = this.productVariants.find(v => v.id === id);
+                return variant && variant.soLuong > 0;
+            });
+
+            // Cập nhật filteredVariants
+            this.filteredVariants = this.filteredVariants.filter(variant => variant.soLuong > 0);
+
+            // Validate lại form
+            this.validateSelectedVariantIds();
+        },
+        // Cập nhật hàm toggleSelectAllVariants để đảm bảo chỉ chọn variant có số lượng > 0
+        toggleSelectAllVariants() {
+            if (this.selectedVariantIds.length === this.filteredVariants.length && this.filteredVariants.length > 0) {
+                this.selectedVariantIds = [];
+            } else {
+                // Chỉ chọn những variant có số lượng > 0
+                this.selectedVariantIds = this.filteredVariants
+                    .filter(variant => variant.soLuong > 0)
+                    .map(variant => variant.id);
+            }
+            this.validateSelectedVariantIds();
         },
         updateDiscountValue() {
             this.discountValue = null;
             this.validateDiscountValue();
         },
         validateTenDotGiamGia() {
-            if (!this.dotGiamGia.tenDotGiamGia ||this.dotGiamGia.tenDotGiamGia.trim() === '') {
+            if (!this.dotGiamGia.tenDotGiamGia || this.dotGiamGia.tenDotGiamGia.trim() === '') {
                 this.errors.tenDotGiamGia = 'Tên đợt giảm giá là bắt buộc';
             } else if (this.dotGiamGia.tenDotGiamGia.length > 255) {
                 this.errors.tenDotGiamGia = 'Tên đợt giảm giá không được vượt quá 255 ký tự';

@@ -5,6 +5,7 @@ import LichSuThanhToan from "./LichSuThanhToan.vue";
 import { computed } from "vue";
 import {
   Backpack,
+  Pencil,
   Delete,
   Edit,
   List,
@@ -31,12 +32,13 @@ import {
 } from "lucide-vue-next";
 import { ref, onMounted, watch, nextTick } from "vue";
 import ThemSanPhamHoaDon from "./ThemSanPhamHoaDon.vue";
+import SuaSoLuongHoaDonChiTiet from "./SuaSoLuongHoaDonChiTiet.vue";
 import ThemSanPhamHoaDonOnline from "./ThemSanPhamHoaDonOnline.vue";
 import HoanPhuPhi from "./HoanPhuPhi.vue";
 import "vue-select/dist/vue-select.css";
 import Cookies from "js-cookie";
 const token = Cookies.get("token");
-
+import Swal from "sweetalert2";
 // const isPhuPhi = computed(() => {
 //   const giaTri =
 //     tongTienSanPham -
@@ -46,6 +48,28 @@ const token = Cookies.get("token");
 
 //   return giaTri > tongTienDaThanhToanKhiNhanHang;
 // });
+// sửa số lượng hóa đơn chi tiết
+const hienSua = ref(false);
+const itemDangSua = ref(null);
+
+const moSua = (item) => {
+  hienSua.value = true;
+  itemDangSua.value = item;
+};
+
+// Tách phần payload (phần giữa)
+const payloadBase64 = token.split(".")[1];
+
+// Giải mã từ Base64 sang JSON
+const payloadJson = atob(payloadBase64);
+
+// Chuyển chuỗi JSON thành object
+const payload = JSON.parse(payloadJson);
+
+// Truy cập idNv
+const idNv = payload.idNv;
+console.log("idNv:", idNv);
+
 const tongTienSanPhamBanDau = ref(0);
 const giamGia = ref(0);
 const phiVanChuyen = ref(0);
@@ -109,6 +133,10 @@ const sendEmail = async () => {
 };
 
 const xacNhanDonHang = async () => {
+  if(hienNut.value){
+    toast.error("Vui lòng xác nhận hoàn phụ phí!")
+    return
+  }
   const result = listHoaDonChiTiet.value;
   console.log("✅ Dữ liệu result gửi xuống:", result);
 
@@ -119,19 +147,38 @@ const xacNhanDonHang = async () => {
   // 👉 Kiểm tra body gửi xuống API update số lượng
   console.log("📦 Body gửi update số lượng:", bodyUpdateSoLuong);
 
-  // 1. Cập nhật tồn kho
-  try {
-    await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(bodyUpdateSoLuong),
-    });
-  } catch (error) {
-    console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
-  }
+  // // 1. Cập nhật tồn kho
+  // try {
+  //   await fetch("http://localhost:8080/chi-tiet-san-pham/update-so-luong", {
+  //     method: "POST",
+  //     headers: {
+  //       Authorization: `Bearer ${token}`,
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify(bodyUpdateSoLuong),
+  //   });
+  // } catch (error) {
+  //   console.error("Lỗi khi cập nhật số lượng tồn kho:", error);
+  // }
+  // ✅ Gọi API cập nhật tồn kho
+      const updateSoLuongRes = await fetch(
+        "http://localhost:8080/chi-tiet-san-pham/update-so-luong",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(bodyUpdateSoLuong),
+        }
+      );
+
+      if (!updateSoLuongRes.ok) {
+        const errorMsg = await updateSoLuongRes.text();
+        toast.error(`Không thể cập nhật số lượng tồn kho: ${errorMsg}`);
+        return;
+      }
+      thayDoiTrangThai(1);
 };
 
 // hủy đơn hàng:
@@ -140,7 +187,7 @@ const handleHuyDonHang = () => {
     // mở popup hoàn phí
     huyDonHang.value = true;
     // thayDoiTrangThai(5);
-    console.log("tien da thanh toan: ", tongTienDaThanhToan.value)
+    console.log("tien da thanh toan: ", tongTienDaThanhToan.value);
   } else {
     // nếu chưa thanh toán gì → cho hủy thẳng
     thayDoiTrangThai(5); // giả sử trạng thái 5 = Hủy
@@ -149,19 +196,56 @@ const handleHuyDonHang = () => {
 
 // khi popup hủy confirm xong
 const handleXacNhanHuy = () => {
-  thayDoiTrangThai(5); 
-  huyDonHang.value = false; 
+  thayDoiTrangThai(5);
+  huyDonHang.value = false;
   reloadTrang(); // nếu muốn reload sau khi hủy
 };
+
+//thay đổi trạng thái khi hoàn thành
+const thayDoiTrangThaiKhiHoanThanh = async () => {
+  try {
+    const response = await fetch(
+      `http://localhost:8080/thanh-toan/reset-trang-thai/${maHoaDon}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Lỗi khi reset trạng thái!");
+    }
+
+    const message = await response.text();
+    console.log("✅ Reset trạng thái thành công:", message);
+    toast.success("Đã reset trạng thái thanh toán!");
+  } catch (error) {
+    console.error("❌ Lỗi reset trạng thái:", error);
+    toast.error("Không thể reset trạng thái thanh toán!");
+  }
+};
+
+
 
 const handleNextClick = () => {
   const currentLabel = buttons.value[trangThai.value][1];
 
+  if (currentLabel === "Hoàn thành") {
+    thayDoiTrangThaiKhiHoanThanh();
+  }
+
   // Nếu là nút "Xác nhận" và trạng thái chỉnh sửa = 0 → gọi hàm xacNhanDonHang()
   if (currentLabel === "Xác nhận" && trangThaiChinhSua.value === 0) {
     xacNhanDonHang();
-    thayDoiTrangThai(1);
+    
   } else {
+    console.log(hienNut.value)
+    if(hienNut.value){
+    toast.error("Vui lòng xác nhận hoàn phụ phí!")
+    return
+    }
     // Các trường hợp khác → giữ nguyên logic cũ
     thayDoiTrangThai(trangThai.value + 1);
   }
@@ -177,7 +261,7 @@ const steps = [
   "Đã hủy",
 ];
 
-const trangThaiChinhSua = ref(1);
+const trangThaiChinhSua = ref(0);
 
 const reasons = ["Khách muốn huỷ đơn", "Khác"];
 const selectedReason = ref(reasons[0]);
@@ -200,10 +284,15 @@ const fetchTodos = async () => {
     );
     const json = await response.json();
     listHoaDonChiTiet.value = json;
+
+    // lấy ảnh:
+    listHoaDonChiTiet.value.forEach((hdct) => {
+      fetchAnhSanPham(hdct.idSanPhamChiTiet.id);
+    });
     // Gán tổng tiền sản phẩm ban đầu **chỉ 1 lần**
-    if (tongTienSanPhamBanDau.value === 0) {
-      tongTienSanPhamBanDau.value = tongTienSanPham.value;
-    }
+    // if (tongTienSanPhamBanDau.value === 0) {
+    //   tongTienSanPhamBanDau.value = tongTienSanPham.value;
+    // }
 
     console.log(tongTienSanPhamBanDau.value);
     // Cập nhật trangThai sau khi có dữ liệu
@@ -309,8 +398,8 @@ onMounted(() => {
 });
 
 // thêm sản phẩm vào hóa đơn chi tiết:
-const nhanSanPhamTuThem = async () => {
-  toast.success("Thêm thành công!");
+const nhanSanPhamTuThem = async (message) => {
+  toast.success(`${message}`);
   await fetchTodos(); // gọi lại API để cập nhật danh sách chi tiết hóa đơn
 };
 
@@ -336,8 +425,66 @@ watch(
   { immediate: true }
 );
 
+// const luuThongTin = async () => {
+//   try {
+//     const response = await fetch(`http://localhost:8080/hoa-don/${maHoaDon}`, {
+//       method: "PUT",
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify(receiverInfo.value),
+//     });
+//     console.log(maHoaDon);
+//     console.log(receiverInfo.value.diaChi);
+//     console.log(receiverInfo.value.tenKhachHang);
+
+//     const text = await response.text(); // nhận phản hồi từ backend
+//     comfirm.value = text; // gán cho biến để hiển thị thông báo
+//     console.log(comfirm.value);
+
+//     // Thêm lịch sử
+//     await axios.post("http://localhost:8080/lich-su-hoa-don/them", {
+//       idHoaDon: { maHoaDon: maHoaDon },
+//       noiDungThayDoi: "Thay đổi thông tin người nhận",
+//       nguoiThucHien: "admin",
+//       ghiChu: `admin đã thực hiện thay đổi thông tin người nhận`,
+//     });
+//     listLichSuThayDoi.value.push(
+//       `admin đã thực hiện thay đổi thông tin người nhận thành: ${receiverInfo.value.tenKhachHang}, ${receiverInfo.value.diaChi}, ${receiverInfo.value.sdt}`
+//     );
+//     console.log(listLichSuThayDoi.value);
+//     // 👉 Hiển thị hộp thoại xác nhận
+//     const xacNhan = window.confirm("Bạn có chắc chắn muốn lưu thay đổi không?");
+//     if (xacNhan) {
+//       await fetchTodos(); // load lại dữ liệu
+//       isEditing.value = false;
+//       thongBao(); // 👉 Hiển thị toast sau khi xác nhận
+//     }
+//   } catch (err) {
+//     console.error(err);
+//     alert("Có lỗi xảy ra!");
+//   }
+// };
 const luuThongTin = async () => {
   try {
+    // 👉 Hỏi xác nhận trước khi lưu
+    const result = await Swal.fire({
+      title: "Xác nhận",
+      text: "Bạn có chắc chắn muốn lưu thay đổi thông tin người nhận không?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Đồng ý",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) {
+      console.log("❌ Người dùng đã hủy thay đổi thông tin");
+      return;
+    }
+
+    // --- Nếu người dùng đồng ý thì mới gọi API ---
     const response = await fetch(`http://localhost:8080/hoa-don/${maHoaDon}`, {
       method: "PUT",
       headers: {
@@ -346,35 +493,32 @@ const luuThongTin = async () => {
       },
       body: JSON.stringify(receiverInfo.value),
     });
-    console.log(maHoaDon);
-    console.log(receiverInfo.value.diaChi);
-    console.log(receiverInfo.value.tenKhachHang);
 
-    const text = await response.text(); // nhận phản hồi từ backend
-    comfirm.value = text; // gán cho biến để hiển thị thông báo
+    const text = await response.text();
+    comfirm.value = text;
     console.log(comfirm.value);
 
-    // Thêm lịch sử
+    // --- Ghi lịch sử ---
     await axios.post("http://localhost:8080/lich-su-hoa-don/them", {
       idHoaDon: { maHoaDon: maHoaDon },
       noiDungThayDoi: "Thay đổi thông tin người nhận",
       nguoiThucHien: "admin",
       ghiChu: `admin đã thực hiện thay đổi thông tin người nhận`,
     });
+
     listLichSuThayDoi.value.push(
       `admin đã thực hiện thay đổi thông tin người nhận thành: ${receiverInfo.value.tenKhachHang}, ${receiverInfo.value.diaChi}, ${receiverInfo.value.sdt}`
     );
-    console.log(listLichSuThayDoi.value);
-    // 👉 Hiển thị hộp thoại xác nhận
-    const xacNhan = window.confirm("Bạn có chắc chắn muốn lưu thay đổi không?");
-    if (xacNhan) {
-      await fetchTodos(); // load lại dữ liệu
-      isEditing.value = false;
-      thongBao(); // 👉 Hiển thị toast sau khi xác nhận
-    }
+
+    // --- Reload lại dữ liệu & thoát edit ---
+    await fetchTodos();
+    isEditing.value = false;
+
+    // --- Thông báo ---
+    thongBao(); // ví dụ toast.success
   } catch (err) {
-    console.error(err);
-    alert("Có lỗi xảy ra!");
+    console.error("❌ Lỗi khi lưu thông tin:", err);
+    Swal.fire("Lỗi", "Có lỗi xảy ra khi lưu thông tin!", "error");
   }
 };
 
@@ -393,58 +537,131 @@ const tongTienSanPham = computed(() => {
   }, 0);
 });
 import axios from "axios";
+import SuaSoLuongHoaDonChiTietOnline from "./SuaSoLuongHoaDonChiTietOnline.vue";
+
 // import HoanPhuPhi from "./HoanPhuPhi.vue";
 // import HoanPhuPhi from "./HoanPhuPhi.vue";
 
 // thay doi trang thai:
 const prevTrangThaiBeforeCancel = ref(null); // dùng để hiển thị bước trước hủy
 
-const thayDoiTrangThai = async (moiTrangThai) => {
-  const confirm = window.confirm("Bạn có chắc chắn muốn thay đổi trạng thái?");
-  if (!confirm) return;
+// const thayDoiTrangThai = async (moiTrangThai) => {
+//   const confirm = window.confirm("Bạn có chắc chắn muốn thay đổi trạng thái?");
+//   if (!confirm) return;
 
+//   try {
+//     // Gửi PUT: cập nhật trạng thái + ghi chú
+//     await axios({
+//       method: "put",
+//       url: `http://localhost:8080/hoa-don/cap-nhat-trang-thai/${maHoaDon}?trangThai=${moiTrangThai}`,
+//       headers: {
+//         "Content-Type": "application/json",
+//         // Authorization: `Bearer ${token}`,
+//       },
+//       data: {
+//         ghiChu: note.value,
+//         idNv: idNv,
+//       },
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//       },
+//     });
+
+//     // Lưu trạng thái trước khi huỷ/hoàn
+//     if (moiTrangThai === 5) {
+//       prevTrangThaiBeforeCancel.value = trangThai.value;
+//     }
+
+//     // Nếu từ trạng thái 0 sang 1 thì gọi in PDF
+//     if (trangThai.value === 0 && moiTrangThai === 1) {
+//       downloadPDF(maHoaDon);
+//     }
+
+//     // Ghi lại lịch sử
+//     await axios.post("http://localhost:8080/lich-su-hoa-don/them", {
+//       idHoaDon: { maHoaDon: maHoaDon },
+//       noiDungThayDoi: "Thay đổi trạng thái",
+//       nguoiThucHien: "admin",
+//       ghiChu: `admin đã thực hiện thay đổi trạng thái từ ${trangThai.value} sang ${moiTrangThai}. Ghi chú: ${note.value}`,
+//     });
+//     listLichSuThayDoi.value.push(
+//       `admin đã thực hiện thay đổi trạng thái từ ${trangThai.value} sang ${moiTrangThai}. Ghi chú: ${note.value}`
+//     );
+//     trangThai.value = moiTrangThai;
+//     // sendEmail();
+//     // 
+//     await nhanSanPhamTuThem("Cập nhật trạng thái thành công!");
+//     // toast.success("Đã cập nhật trạng thái!");
+//   } catch (error) {
+//     console.error("Lỗi cập nhật trạng thái:", error);
+//     toast.error("Lỗi khi cập nhật trạng thái!");
+//   }
+// };
+const thayDoiTrangThai = async (moiTrangThai) => {
   try {
-    // Gửi PUT: cập nhật trạng thái + ghi chú
+    // Hiển thị popup xác nhận
+    const result = await Swal.fire({
+      title: "Xác nhận thay đổi",
+      text: `Bạn có chắc chắn muốn thay đổi trạng thái hoá đơn thành ${steps[moiTrangThai]}?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Đồng ý",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) {
+      console.log("❌ Người dùng đã hủy thay đổi trạng thái");
+      return;
+    }
+
+    // --- 1. Gửi PUT cập nhật trạng thái ---
     await axios({
       method: "put",
       url: `http://localhost:8080/hoa-don/cap-nhat-trang-thai/${maHoaDon}?trangThai=${moiTrangThai}`,
       headers: {
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       data: {
         ghiChu: note.value,
-      },
-      headers: {
-        Authorization: `Bearer ${token}`,
+        idNv: idNv,
       },
     });
 
-    // Lưu trạng thái trước khi huỷ/hoàn
+    // --- 2. Lưu trạng thái trước khi huỷ/hoàn ---
     if (moiTrangThai === 5) {
       prevTrangThaiBeforeCancel.value = trangThai.value;
     }
 
-    // Nếu từ trạng thái 0 sang 1 thì gọi in PDF
+    // --- 3. Nếu từ trạng thái 0 sang 1 thì in PDF ---
     if (trangThai.value === 0 && moiTrangThai === 1) {
       downloadPDF(maHoaDon);
     }
 
-    // Ghi lại lịch sử
+    // --- 4. Ghi lịch sử ---
     await axios.post("http://localhost:8080/lich-su-hoa-don/them", {
       idHoaDon: { maHoaDon: maHoaDon },
       noiDungThayDoi: "Thay đổi trạng thái",
       nguoiThucHien: "admin",
-      ghiChu: `admin đã thực hiện thay đổi trạng thái từ ${trangThai.value} sang ${moiTrangThai}. Ghi chú: ${note.value}`,
+      ghiChu: `admin đã thực hiện thay đổi trạng thái từ ${steps[trangThai.value]} sang ${steps[moiTrangThai]}. Ghi chú: ${note.value}`,
     });
+
     listLichSuThayDoi.value.push(
-      `admin đã thực hiện thay đổi trạng thái từ ${trangThai.value} sang ${moiTrangThai}. Ghi chú: ${note.value}`
+      `admin đã thực hiện thay đổi trạng thái từ ${steps[trangThai.value]} sang ${steps[moiTrangThai]}. Ghi chú: ${note.value}`
     );
+
+    // --- 5. Cập nhật trạng thái hiện tại ---
     trangThai.value = moiTrangThai;
-    sendEmail();
-    toast.success("Đã cập nhật trạng thái!");
+
+    // --- 6. Thông báo ---
+    await nhanSanPhamTuThem("Cập nhật trạng thái thành công!");
+    // toast.success("Đã cập nhật trạng thái!");
+    console.log("lich su thay doi",listLichSuThayDoi.value)
+    sendEmail()
   } catch (error) {
-    console.error("Lỗi cập nhật trạng thái:", error);
-    toast.error("Lỗi khi cập nhật trạng thái!");
+    console.error("❌ Lỗi cập nhật trạng thái:", error);
+    Swal.fire("Lỗi", "Có lỗi xảy ra khi cập nhật trạng thái!", "error");
   }
 };
 
@@ -462,15 +679,70 @@ const visibleSteps = computed(() => {
   return steps.slice(0, trangThai.value + 1);
 });
 
-// xoa san pham:
-const xoaSanPham = async (id, ten, mau, size) => {
-  const confirmDelete = window.confirm(
-    "Bạn có chắc chắn muốn xóa sản phẩm này?"
-  );
-  if (!confirmDelete) return;
+// // xoa san pham:
+// const xoaSanPham = async (id, ten, mau, size) => {
+//   const confirmDelete = window.confirm(
+//     "Bạn có chắc chắn muốn xóa sản phẩm này?"
+//   );
+//   if (!confirmDelete) return;
 
+//   try {
+//     // Xóa sản phẩm
+//     await axios.delete(`http://localhost:8080/hoa-don-chi-tiet/xoa/${id}`, {
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//         "Content-Type": "application/json",
+//       },
+//     });
+
+//     toast.success("Xóa sản phẩm thành công!");
+//     await fetchTodos(); // reload danh sách
+
+//     // Ghi lịch sử
+//     await axios.post(
+//       "http://localhost:8080/lich-su-hoa-don/them",
+//       {
+//         idHoaDon: { maHoaDon: maHoaDon },
+//         noiDungThayDoi: "Xóa sản phẩm",
+//         nguoiThucHien: "admin",
+//         ghiChu: `admin đã thực hiện xóa sản phẩm ${ten}, Size: ${size}, Màu: ${mau}`,
+//       },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
+//     listLichSuThayDoi.value.push(
+//       `admin đã thực hiện xóa sản phẩm ${ten} - ${mau} - ${size}`
+//     );
+//     console.log(listLichSuThayDoi.value);
+//   } catch (error) {
+//     console.error("Lỗi khi xóa sản phẩm:", error);
+//     toast.error("Có lỗi xảy ra khi xóa sản phẩm!");
+//   }
+// };
+// Xoá sản phẩm:
+const xoaSanPham = async (id, ten, mau, size) => {
   try {
-    // Xóa sản phẩm
+    // Hiển thị popup xác nhận
+    const result = await Swal.fire({
+      title: "Xác nhận xoá",
+      text: `Bạn có chắc chắn muốn xoá sản phẩm ${ten} - Màu: ${mau} - Size: ${size}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Đồng ý",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) {
+      console.log("❌ Người dùng đã hủy xoá sản phẩm");
+      return;
+    }
+
+    // --- 1. Gọi API xoá sản phẩm ---
     await axios.delete(`http://localhost:8080/hoa-don-chi-tiet/xoa/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -481,14 +753,14 @@ const xoaSanPham = async (id, ten, mau, size) => {
     toast.success("Xóa sản phẩm thành công!");
     await fetchTodos(); // reload danh sách
 
-    // Ghi lịch sử
+    // --- 2. Ghi lịch sử ---
     await axios.post(
       "http://localhost:8080/lich-su-hoa-don/them",
       {
         idHoaDon: { maHoaDon: maHoaDon },
         noiDungThayDoi: "Xóa sản phẩm",
         nguoiThucHien: "admin",
-        ghiChu: `admin đã thực hiện xóa sản phẩm`,
+        ghiChu: `admin đã thực hiện xóa sản phẩm ${ten}, Size: ${size}, Màu: ${mau}`,
       },
       {
         headers: {
@@ -497,23 +769,81 @@ const xoaSanPham = async (id, ten, mau, size) => {
         },
       }
     );
+
     listLichSuThayDoi.value.push(
       `admin đã thực hiện xóa sản phẩm ${ten} - ${mau} - ${size}`
     );
     console.log(listLichSuThayDoi.value);
   } catch (error) {
-    console.error("Lỗi khi xóa sản phẩm:", error);
-    toast.error("Có lỗi xảy ra khi xóa sản phẩm!");
+    console.error("❌ Lỗi khi xoá sản phẩm:", error);
+    Swal.fire("Lỗi", "Có lỗi xảy ra khi xoá sản phẩm!", "error");
   }
 };
-const xoaSanPhamOnline = async (id) => {
-  const confirmDelete = window.confirm(
-    "Bạn có chắc chắn muốn xóa sản phẩm này?"
-  );
-  if (!confirmDelete) return;
 
+// const xoaSanPhamOnline = async (id, ten, mau, size) => {
+//   const confirmDelete = window.confirm(
+//     "Bạn có chắc chắn muốn xóa sản phẩm này?"
+//   );
+//   if (!confirmDelete) return;
+
+//   try {
+//     // Xóa sản phẩm
+//     await axios.delete(
+//       `http://localhost:8080/hoa-don-chi-tiet/xoa/online/${id}`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
+
+//     toast.success("Xóa sản phẩm thành công!");
+//     await fetchTodos(); // reload danh sách
+
+//     // Ghi lịch sử
+//     await axios.post(
+//       "http://localhost:8080/lich-su-hoa-don/them",
+//       {
+//         idHoaDon: { maHoaDon: maHoaDon },
+//         noiDungThayDoi: "Xóa sản phẩm",
+//         nguoiThucHien: "admin",
+//         ghiChu: `admin đã thực hiện xóa sản phẩm ${ten}, Size: ${size}, Màu: ${mau}`,
+//       },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`,
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
+//     listLichSuThayDoi.value.push(
+//       `admin đã thực hiện xóa sản phẩm ${ten} - ${mau} - ${size}`
+//     );
+//   } catch (error) {
+//     console.error("Lỗi khi xóa sản phẩm:", error);
+//     toast.error("Có lỗi xảy ra khi xóa sản phẩm!");
+//   }
+// };
+const xoaSanPhamOnline = async (id, ten, mau, size) => {
   try {
-    // Xóa sản phẩm
+    // Hiển thị popup xác nhận
+    const result = await Swal.fire({
+      title: "Xác nhận xoá",
+      text: `Bạn có chắc chắn muốn xoá sản phẩm ${ten} - Màu: ${mau} - Size: ${size}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Đồng ý",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) {
+      console.log("❌ Người dùng đã hủy xoá sản phẩm online");
+      return;
+    }
+
+    // --- 1. Gọi API xoá sản phẩm ---
     await axios.delete(
       `http://localhost:8080/hoa-don-chi-tiet/xoa/online/${id}`,
       {
@@ -527,14 +857,14 @@ const xoaSanPhamOnline = async (id) => {
     toast.success("Xóa sản phẩm thành công!");
     await fetchTodos(); // reload danh sách
 
-    // Ghi lịch sử
+    // --- 2. Ghi lịch sử ---
     await axios.post(
       "http://localhost:8080/lich-su-hoa-don/them",
       {
         idHoaDon: { maHoaDon: maHoaDon },
         noiDungThayDoi: "Xóa sản phẩm",
         nguoiThucHien: "admin",
-        ghiChu: `admin đã thực hiện xóa sản phẩm`,
+        ghiChu: `admin đã thực hiện xóa sản phẩm ${ten}, Size: ${size}, Màu: ${mau}`,
       },
       {
         headers: {
@@ -543,12 +873,13 @@ const xoaSanPhamOnline = async (id) => {
         },
       }
     );
+
     listLichSuThayDoi.value.push(
       `admin đã thực hiện xóa sản phẩm ${ten} - ${mau} - ${size}`
     );
   } catch (error) {
-    console.error("Lỗi khi xóa sản phẩm:", error);
-    toast.error("Có lỗi xảy ra khi xóa sản phẩm!");
+    console.error("❌ Lỗi khi xoá sản phẩm online:", error);
+    Swal.fire("Lỗi", "Có lỗi xảy ra khi xoá sản phẩm!", "error");
   }
 };
 
@@ -586,13 +917,35 @@ onMounted(() => {
 const reloadTrang = () => {
   window.location.reload();
 };
+
+const anhMap = ref({}); // Lưu ảnh theo id sản phẩm
+// lay ảnh sản phẩm
+const fetchAnhSanPham = async (id) => {
+  console.log(id);
+  try {
+    const response = await fetch(
+      `http://localhost:8080/chi-tiet-san-pham/lay-anh/${id}`
+    );
+    if (response.ok) {
+      const url = await response.text();
+      console.log(url);
+      anhMap.value[id] = url; // Gán đường dẫn ảnh vào map
+    } else {
+      anhMap.value[id] = "https://via.placeholder.com/50"; // Ảnh mặc định khi không có ảnh
+    }
+  } catch (error) {
+    anhMap.value[id] = "https://via.placeholder.com/50"; // Ảnh mặc định khi lỗi
+  }
+};
+
+
 </script>
 
 <template>
-  <div class="d-flex justify-content-between">
+  <div class="d-flex justify-content-between row g-4">
     <!-- Cột trái -->
-    <div class="d-flex flex-column" style="flex: 1">
-      <div class="container-fixed bg-white p-3 rounded border mb-4">
+    <div class="col-12 col-lg-8" style="flex: 1">
+      <div class="bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">
             <RouterLink to="/hoa-don">
@@ -622,7 +975,10 @@ const reloadTrang = () => {
           </LichSuHoaDon>
         </div>
         <!-- thanh trang thai -->
-        <div class="d-flex justify-content-between mb-4 border">
+        <div
+          class="d-flex justify-content-between mb-4 border"
+          v-if="trangThai !== 4 && trangThai !== 5"
+        >
           <div
             v-for="(step, index) in visibleSteps"
             :key="index"
@@ -664,7 +1020,7 @@ const reloadTrang = () => {
         </div>
 
         <!-- Textarea -->
-       <div class="mb-3" v-if="trangThai == 0">
+        <div class="mb-3" v-if="trangThai == 0">
           <textarea
             class="form-control"
             rows="3"
@@ -682,11 +1038,12 @@ const reloadTrang = () => {
           >
             {{ buttons[trangThai][0] }}
           </button>
+
           <!-- nut huy/hoan -->
           <button
             v-if="trangThai === 0 || trangThai === 3"
             class="btn btn-outline-secondary"
-             @click="handleHuyDonHang"
+            @click="handleHuyDonHang"
           >
             {{ trangThai === 0 ? "Hủy" : "Hoàn hàng" }}
           </button>
@@ -698,6 +1055,7 @@ const reloadTrang = () => {
             @close="huyDonHang = false"
             @thanh-toan-thanh-cong="handleXacNhanHuy"
           />
+
           <!-- Nút Tiếp tục -->
           <button
             v-if="trangThai !== 4 && trangThai != 5"
@@ -710,7 +1068,7 @@ const reloadTrang = () => {
         </div>
       </div>
 
-      <div class="container-fixed bg-white p-3 rounded border mb-4">
+      <div class="bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">Sản phẩm:</h5>
 
@@ -737,7 +1095,7 @@ const reloadTrang = () => {
                 v-if="showThemSanPham && trangThaiChinhSua === 0"
                 key="online"
                 @close="showThemSanPham = false"
-                @selected="nhanSanPhamTuThem"
+                @selected="nhanSanPhamTuThem('Thêm sản phẩm thành công!')"
               />
 
               <!-- Nếu trạng thái chỉnh sửa = 1 -->
@@ -745,7 +1103,7 @@ const reloadTrang = () => {
                 v-else-if="showThemSanPham && trangThaiChinhSua === 1"
                 key="offline"
                 @close="showThemSanPham = false"
-                @selected="nhanSanPhamTuThem"
+                @selected="nhanSanPhamTuThem('Thêm sản phẩm thành công!')"
               />
             </teleport>
           </div>
@@ -770,7 +1128,10 @@ const reloadTrang = () => {
                   <div class="d-flex align-items-start">
                     <!-- Hình ảnh sản phẩm -->
                     <img
-                      src="https://img.lovepik.com/free-png/20210923/lovepik-t-shirt-png-image_401190055_wh1200.png"
+                      :src="
+                        anhMap[item.idSanPhamChiTiet.id] ||
+                        'https://via.placeholder.com/50'
+                      "
                       style="
                         width: 80px;
                         height: 100px;
@@ -801,15 +1162,24 @@ const reloadTrang = () => {
                     </div>
                   </div>
                 </td>
-                <td class="text-center align-middle">{{ item.soLuong }}</td>
                 <td class="text-center align-middle">
-                  {{ item.gia }}
+                  {{ item.soLuong }}
+                  <!-- nút sửa -->
+                  <button v-if="trangThai == 0"
+                    class="btn p-1 border-0 bg-transparent"
+                    @click="moSua(item)"
+                  >
+                    <Pencil style="width: 19px; height: 19px; color: #0a2c57" />
+                  </button>
                 </td>
-                <td class="text-center align-middle">{{ item.thanhTien }}</td>
+                <td class="text-center align-middle">
+                  {{ item.gia.toLocaleString("vi-VN") }}
+                </td>
+                <td class="text-center align-middle">{{ item.thanhTien.toLocaleString("vi-VN") }}</td>
                 <td class="text-center align-middle">
                   <button
                     class="btn p-1 border-0 bg-transparent d-flex align-items-center justify-content-center mx-auto"
-                    v-if="trangThai === 0"
+                    v-if="trangThai === 0 && listHoaDonChiTiet.length > 1"
                     @click="
                       trangThaiChinhSua === 0
                         ? xoaSanPhamOnline(
@@ -839,12 +1209,43 @@ const reloadTrang = () => {
               </tr>
             </tbody>
           </table>
+
+          <!-- Hiển thị popup khi bấm -->
+          <teleport to="body">
+            <!-- Nếu trạng thái chỉnh sửa = 0 -->
+            <SuaSoLuongHoaDonChiTietOnline
+              v-if="hienSua && trangThaiChinhSua === 0"
+              :kho="itemDangSua?.idSanPhamChiTiet.soLuong"
+              :idChiTietSanPham="itemDangSua?.idSanPhamChiTiet.id"
+              :maChiTietSanPham="itemDangSua?.idSanPhamChiTiet.maChiTietSapPham"
+              :gia="itemDangSua?.idSanPhamChiTiet.gia"
+              :soLuongHienTai="itemDangSua?.soLuong"
+              :idHoaDon="maHoaDon"
+              key="online"
+              @update="nhanSanPhamTuThem('Sửa số lượng sản phẩm thành công!')"
+              @close="hienSua = false"
+            />
+
+            <!-- Nếu trạng thái chỉnh sửa = 1 -->
+            <SuaSoLuongHoaDonChiTiet
+              v-if="hienSua && trangThaiChinhSua === 1"
+              :kho="itemDangSua?.idSanPhamChiTiet.soLuong"
+              :idChiTietSanPham="itemDangSua?.idSanPhamChiTiet.id"
+              :maChiTietSanPham="itemDangSua?.idSanPhamChiTiet.maChiTietSapPham"
+              :gia="itemDangSua?.idSanPhamChiTiet.gia"
+              :soLuongHienTai="itemDangSua?.soLuong"
+              :idHoaDon="maHoaDon"
+              key="offline"
+              @update="nhanSanPhamTuThem('Sửa số lượng sản phẩm thành công!')"
+              @close="hienSua = false"
+            />
+          </teleport>
         </div>
       </div>
     </div>
 
     <!-- Cột phải -->
-    <div class="d-flex flex-column ms-3" style="width: 400px">
+    <div class="col-12 col-lg-4" style="width: 400px">
       <div class="bg-white p-3 rounded border mb-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5 class="fw-semibold">

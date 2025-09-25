@@ -7,7 +7,6 @@
       </div>
     </div>
 
-
     <!-- RIGHT FORM -->
     <div class="auth-right">
       <div class="form-card" role="main" aria-labelledby="register-title">
@@ -15,12 +14,42 @@
           <img src="@/assets/logo.png" alt="CoolMen Logo" />
         </div>
 
-
         <h1 id="register-title">Đăng ký</h1>
         <p class="subtitle">Tạo tài khoản mới để trải nghiệm CoolMen</p>
 
-
         <form @submit.prevent="dangKy" novalidate>
+
+          <!-- Họ và tên -->
+          <div class="form-group">
+            <label for="ten">Họ và tên</label>
+            <input
+              id="ten"
+              type="text"
+              v-model.trim="register.ten"
+              :class="{ 'is-invalid': tenError }"
+              :aria-invalid="!!tenError"
+              required
+              placeholder="Nhập họ và tên"
+            />
+            <div class="invalid-feedback" v-if="tenError">{{ tenError }}</div>
+          </div>
+
+          <!-- Số điện thoại -->
+          <div class="form-group">
+            <label for="phone">Số điện thoại</label>
+            <input
+              id="phone"
+              type="text"
+              v-model.trim="register.phone"
+              maxlength="11"
+              :class="{ 'is-invalid': phoneError }"
+              :aria-invalid="!!phoneError"
+              required
+              placeholder="Nhập số điện thoại"
+            />
+            <div class="invalid-feedback" v-if="phoneError">{{ phoneError }}</div>
+          </div>
+
           <!-- Email -->
           <div class="form-group">
             <label for="email">Email</label>
@@ -31,42 +60,39 @@
               :class="{ 'is-invalid': emailError }"
               :aria-invalid="!!emailError"
               required
-               placeholder="Nhập email"
+              placeholder="Nhập email"
             />
             <div class="invalid-feedback" v-if="emailError">{{ emailError }}</div>
           </div>
 
-
+          <!-- OTP -->
           <div class="form-group otp-group">
-  <label for="otp">Xác nhận OTP</label>
-  <div class="otp-wrapper d-flex align-items-center gap-2">
-    <input
-      id="otp"
-      type="text"
-      v-model.trim="register.otp"
-      maxlength="6"
-      class="form-control"
-      :class="{ 'is-invalid': otpError }"
-      :aria-invalid="!!otpError"
-      required
-      placeholder="Nhập mã OTP"
-    />
-    <button
-      type="button"
-      class="btn btn-otp"
-      style="white-space: nowrap;background-color: #0a2c57;"
-      @click="guiOTP"
-      :disabled="loadingOTP"
-    >
-      <span v-if="loadingOTP">Đang gửi...</span>
-      <span v-else style="color: white;">Gửi OTP</span>
-    </button>
-  </div>
-  <div class="invalid-feedback" v-if="otpError">{{ otpError }}</div>
-</div>
-
-
-
+            <label for="otp">Xác nhận OTP</label>
+            <div class="otp-wrapper d-flex align-items-center gap-2">
+              <input
+                id="otp"
+                type="text"
+                v-model.trim="register.otp"
+                maxlength="6"
+                class="form-control"
+                :class="{ 'is-invalid': otpError }"
+                :aria-invalid="!!otpError"
+                required
+                placeholder="Nhập mã OTP"
+              />
+              <button
+                type="button"
+                class="btn btn-otp"
+                style="white-space: nowrap;background-color: #0a2c57;"
+                @click="guiOTP"
+                :disabled="loadingOTP"
+              >
+                <span v-if="loadingOTP">Đang gửi...</span>
+                <span v-else style="color: white;">Gửi OTP</span>
+              </button>
+            </div>
+            <div class="invalid-feedback" v-if="otpError">{{ otpError }}</div>
+          </div>
 
           <!-- Password -->
           <div class="form-group">
@@ -78,11 +104,10 @@
               :class="{ 'is-invalid': passwordError }"
               :aria-invalid="!!passwordError"
               required
-               placeholder="Nhập mật khẩu"
+              placeholder="Nhập mật khẩu"
             />
             <div class="invalid-feedback" v-if="passwordError">{{ passwordError }}</div>
           </div>
-
 
           <!-- Confirm Password -->
           <div class="form-group">
@@ -93,12 +118,11 @@
               v-model="register.confirmPassword"
               :class="{ 'is-invalid': confirmPasswordError }"
               :aria-invalid="!!confirmPasswordError"
-               placeholder="Xác nhận mật khẩu"
+              placeholder="Xác nhận mật khẩu"
               required
             />
             <div class="invalid-feedback" v-if="confirmPasswordError">{{ confirmPasswordError }}</div>
           </div>
-
 
           <button
             class="btn-submit"
@@ -110,7 +134,6 @@
             <span v-else>Đăng ký</span>
           </button>
 
-
           <p class="signup-line">
             Đã có tài khoản? <router-link to="/coolmen/dang-nhap-khach-hang">Đăng nhập</router-link>
           </p>
@@ -121,35 +144,38 @@
 </template>
 
 
+
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import axios from 'axios'
 import { useToast } from 'vue-toastification'
 const toast = useToast()
 
-
 const register = ref({
+  ten: '',
   email: '',
+  phone: '',     // ✅ thêm phone
   otp: '',
   password: '',
   confirmPassword: ''
 })
 
-
 const emailError = ref('')
+const phoneError = ref('')
 const otpError = ref('')
 const passwordError = ref('')
 const confirmPasswordError = ref('')
-
 
 const showPassword = ref(false)
 const loading = ref(false)
 const loadingOTP = ref(false)
 
-
+// Regex email
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Regex số điện thoại VN (10 số, đầu 03,05,07,08,09 hoặc +84)
+const phoneRegex = /^(0|\+84)(3[2-9]|5[689]|7[06-9]|8[1-5]|9[0-46-9])[0-9]{7}$/
 
-
+// Validate email
 watch(() => register.value.email, (val) => {
   if (val.trim() && !emailRegex.test(val)) {
     emailError.value = 'Email không hợp lệ'
@@ -158,7 +184,16 @@ watch(() => register.value.email, (val) => {
   }
 })
 
+// Validate phone
+watch(() => register.value.phone, (val) => {
+  if (val.trim() && !phoneRegex.test(val)) {
+    phoneError.value = 'Số điện thoại không hợp lệ'
+  } else {
+    phoneError.value = ''
+  }
+})
 
+// Validate OTP
 watch(() => register.value.otp, (val) => {
   if (val.trim().length > 0 && val.trim().length < 6) {
     otpError.value = 'OTP phải có 6 ký tự'
@@ -167,7 +202,7 @@ watch(() => register.value.otp, (val) => {
   }
 })
 
-
+// Validate password
 watch(() => register.value.password, (val) => {
   if (val.length > 0 && val.length < 6) {
     passwordError.value = 'Mật khẩu phải dài hơn 5 ký tự'
@@ -176,7 +211,7 @@ watch(() => register.value.password, (val) => {
   }
 })
 
-
+// Confirm password
 watch([() => register.value.password, () => register.value.confirmPassword], () => {
   if (register.value.confirmPassword && register.value.confirmPassword !== register.value.password) {
     confirmPasswordError.value = 'Mật khẩu xác nhận không khớp'
@@ -184,7 +219,6 @@ watch([() => register.value.password, () => register.value.confirmPassword], () 
     confirmPasswordError.value = ''
   }
 })
-
 
 const guiOTP = async () => {
   if (!emailRegex.test(register.value.email)) {
@@ -202,23 +236,22 @@ const guiOTP = async () => {
   }
 }
 
-
-
-
 const dangKy = async () => {
-  if (!emailRegex.test(register.value.email) || register.value.otp.length !== 6 || register.value.password.length < 6 || register.value.confirmPassword !== register.value.password) {
+  if (!emailRegex.test(register.value.email) 
+      || !phoneRegex.test(register.value.phone)    // ✅ check phone
+      || register.value.otp.length !== 6 
+      || register.value.password.length < 6 
+      || register.value.confirmPassword !== register.value.password) {
     toast.error('Vui lòng kiểm tra lại thông tin đăng ký')
     return
   }
-
 
   loading.value = true
   try {
     const res = await axios.post('http://localhost:8080/register-customer', register.value)
 
-
     if (res?.data?.status === 'error') {
-      toast.error(res.data.message || 'Đăng ký thất bại email này đã được đăng kí')
+      toast.error(res.data.message || 'Đăng ký thất bại tài khoản đã tồn tại')
     } else {
       toast.success('Đăng ký thành công, vui lòng đăng nhập')
       setTimeout(() => {
@@ -231,6 +264,7 @@ const dangKy = async () => {
     loading.value = false
   }
 }
+
 </script>
 
 
@@ -467,6 +501,3 @@ h1 {
 
 
 </style>
-
-
-

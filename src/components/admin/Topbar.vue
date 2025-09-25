@@ -14,7 +14,7 @@ const token = Cookies.get('token')
 let trangThai = ref(true)
 let tenNhanVien = ref()
 let image = ref()
-
+let vaiTro = ref()
 let req = {
   token: token
 }
@@ -28,7 +28,11 @@ if (!token) {
     const now = Math.floor(Date.now() / 1000)
     image.value =`http://localhost:8080`+payload.anh
     console.log('image.value', payload.anh);
-    tenNhanVien.value = payload.tenNhanVien
+    const payloadForTen = JSON.parse(decodeURIComponent(escape(atob(token.split('.')[1]))));
+    tenNhanVien.value = payloadForTen.tenNhanVien
+    console.log(token);
+    vaiTro.value = payload.scope
+    
     if (exp <= now) {
       console.warn("⛔ Token đã hết hạn")
       Cookies.remove('token')       // ❌ Xóa token cũ
@@ -110,8 +114,10 @@ function removeToken(){
     data-bs-toggle="dropdown"
     aria-expanded="false"
   >
+  
     <img :src="image" alt="Avatar" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
     <div class="fw-medium ms-2">{{ tenNhanVien }}</div>
+    <div class="fw-medium ms-2">({{ vaiTro }})</div>
   </div>
 
   <!-- Menu xổ xuống -->
@@ -181,7 +187,7 @@ function removeToken(){
     </div>
   </div>
 </div>
-
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap&subset=vietnamese" rel="stylesheet">
 </template>
 <style scoped>
 .dropdown-item:active,
@@ -190,6 +196,10 @@ function removeToken(){
   background-color: #0a2c57 !important;
   color: white !important;
 }
-
-  
+.custom-text {
+  font-family: 'Roboto', 'Arial', 'Helvetica', sans-serif !important;
+  font-weight: 500 !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 </style>

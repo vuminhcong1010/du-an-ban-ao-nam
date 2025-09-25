@@ -1,15 +1,30 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
+import { QrcodeStream } from "vue-qrcode-reader";
+import { QrCode } from "lucide-vue-next";
+import Cookies from "js-cookie";
+
 
 const search = ref("");
 const selected = ref({});
-
+const mau = ref([]);     // dữ liệu màu từ API
+const kichco = ref([]);  // dữ liệu kích cỡ từ API
+const token = Cookies.get("token");
 const anhMap = ref({}); // Lưu ảnh theo id sản phẩm
 let listSanPham = ref([]);
-
+const selectedKichCoId = ref(null);
+const selectedMauId = ref(null);
+// ---- Biến lọc giá ----
+const revenueFilter = ref(0);
+const minRevenue = ref(0);
+const maxRevenue = ref(0);
 // Phân trang
 const currentPage = ref(0);
 const pageSize = ref(5);
+
+
+
+// Phân trang
 3;
 const totalPages = ref(0);
 
@@ -34,7 +49,12 @@ const fetchSanPhamPaginated = async () => {
     );
     const data = await response.json();
     listSanPham.value = data.content;
-
+    if (listSanPham.value.length > 0) {
+      const giaArr = listSanPham.value.map(sp => sp.gia);
+      minRevenue.value = Math.min(...giaArr);
+      maxRevenue.value = Math.max(...giaArr);
+      revenueFilter.value = maxRevenue.value; // mặc định hiển thị hết
+    }
     // lấy ảnh:
     listSanPham.value.forEach((sp) => {
       fetchAnhSanPham(sp.id);
@@ -46,6 +66,27 @@ const fetchSanPhamPaginated = async () => {
   }
 };
 
+const fetchMau = async () => {
+  try {
+    const response = await fetch("http://localhost:8080/doi-giam-gia/mau", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    mau.value = await response.json();   // 🔥 dùng response
+  } catch (err) {
+    console.error("Lỗi khi gọi API màu:", err);
+  }
+};
+
+const fetchKichCo = async () => {
+  try {
+    const response = await fetch("http://localhost:8080/doi-giam-gia/kich-co", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    kichco.value = await response.json();  // 🔥 dùng response
+  } catch (err) {
+    console.error("Lỗi khi gọi API kích cỡ:", err);
+  }
+};
 // lay ảnh sản phẩm
 const fetchAnhSanPham = async (id) => {
   console.log(id);
@@ -67,6 +108,8 @@ const fetchAnhSanPham = async (id) => {
 
 // Mounted
 onMounted(() => {
+  fetchMau();
+  fetchKichCo();
   fetchSanPhamPaginated();
 });
 
@@ -122,25 +165,72 @@ const apply = () => {
 };
 
 const filteredSanPham = computed(() => {
-  return listSanPham.value.filter((sp) => sp.soLuong > 0);
+  return listSanPham.value.filter((sp) => {
+    const matchSearch =
+      search.value === "" ||
+      sp.maChiTietSapPham.toLowerCase().includes(search.value.toLowerCase()) ||
+      sp.idSanPham.tenSanPham.toLowerCase().includes(search.value.toLowerCase());
+
+    const matchSize =
+      !selectedKichCoId.value || sp.idSize.id === selectedKichCoId.value;
+
+    const matchMau =
+      !selectedMauId.value || sp.idMau.id === selectedMauId.value;
+
+    const matchGia =
+      !revenueFilter.value || sp.gia <= revenueFilter.value;
+
+    return sp.soLuong > 0 && matchSearch && matchSize && matchMau && matchGia;
+  });
 });
+
+// ✅ QUÉT QR CODE
+const showScanner = ref(false);
+
+const startScan = () => {
+  showScanner.value = true;
+};
+
+const stopScan = () => {
+  showScanner.value = false;
+};
+
+const onDetect = async (detectedCodes) => {
+  if (!detectedCodes.length) return;
+
+  const result = detectedCodes[0].rawValue; // lấy QR đầu tiên
+  console.log("QR code:", result);
+
+  try {
+    const response = await fetch(
+      `http://localhost:8080/chi-tiet-san-pham/${result}`
+    );
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Có lỗi xảy ra khi tìm sản phẩm!");
+      return;
+    }
+
+    await fetchAnhSanPham(data.id);
+    selectedItems.value = [data];
+    apply();
+  } catch (error) {
+    console.error("Lỗi khi tìm sản phẩm bằng QR:", error);
+    alert("Không thể kết nối đến server!");
+  }
+};
+
+
 </script>
 
 <template>
-  <div
-    class="modal fade show d-block"
-    tabindex="-1"
-    style="background-color: rgba(0, 0, 0, 0.5); z-index: 1050"
-  >
+  <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5); z-index: 1050">
     <div class="modal-dialog custom-modal modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Chọn nhiều sản phẩm</h5>
-          <button
-            type="button"
-            class="btn-close"
-            @click="$emit('close')"
-          ></button>
+          <button type="button" class="btn-close" @click="$emit('close')"></button>
         </div>
 
         <div class="modal-body">
@@ -150,66 +240,59 @@ const filteredSanPham = computed(() => {
               <div class="col-md-12">
                 <label class="form-label fw-bold">Bộ lọc</label>
                 <div class="d-flex align-items-center gap-2">
-                  <input
-                    type="text"
-                    class="form-control"
-                    placeholder="Tìm theo mã, tên sản phẩm"
-                    v-model="timKiem"
-                  />
-                  <button
-                    type="button"
-                    class="btn"
-                    style="
+                  <input type="text" class="form-control" placeholder="Tìm theo mã, tên sản phẩm" v-model="search" />
+                  <!-- Nút bật camera -->
+                  <button class="btn d-flex align-items-center justify-content-center" style="
+                      background-color: #0a2c57;
+                      color: white;
+                      width: 42px;
+                      height: 38px;
+                    " @click="startScan" v-if="!showScanner">
+                    <QrCode :size="20" />
+                  </button>
+
+                  <!-- Camera + nút X -->
+                  <div v-if="showScanner" class="position-relative d-inline-block mb-3">
+                    <!-- Camera -->
+                    <qrcode-stream @detect="onDetect" :paused="!showScanner" style="
+                        width: 100px;
+                        height: 100px;
+                        border: 1px solid #ccc;
+                        border-radius: 8px;
+                      " />
+
+                    <!-- Nút X -->
+                    <button class="btn-close position-absolute" style="top: 5px; right: 5px; background-color: white"
+                      @click="stopScan"></button>
+                  </div>
+                  <button type="button" class="btn" style="
                       background-color: #0a2c57;
                       color: white;
                       white-space: nowrap;
-                    "
-                    @click="locSanPham"
-                  >
+                    " @click="locSanPham">
                     Tìm kiếm
                   </button>
                 </div>
               </div>
 
-              <!-- Trạng thái -->
-              <div class="col-md-5 ms-2">
-                <label class="form-label fw-bold">Trạng thái</label>
-                <div class="d-flex gap-3">
-                  <input type="radio" /> Đang bán <input type="radio" /> Ngừng
-                  bán
-                </div>
-              </div>
-
-              <!-- Danh mục -->
+              <!-- Kích cỡ -->
               <div class="col-md-3">
-                <label class="form-label fw-bold">Danh mục</label>
-                <select
-                  class="form-select"
-                  v-model="selectedDanhMucId"
-                  @change="locSanPham"
-                >
-                  <option :value="null">Tất cả danh mục</option>
-                  <option v-for="dm in danhMuc" :key="dm.id" :value="dm.id">
-                    {{ dm.tenDanhMuc }}
+                <label class="form-label fw-bold" style="color: #0a2c57;">Kích cỡ</label>
+                <select class="form-select" v-model="selectedKichCoId" @change="locSanPham">
+                  <option :value="null">Tất cả Kích cỡ</option>
+                  <option v-for="kc in kichco" :key="kc.id" :value="kc.id">
+                    {{ kc.soCo }}
                   </option>
                 </select>
               </div>
 
-              <!-- Chất liệu -->
+              <!-- Màu -->
               <div class="col-md-3">
-                <label class="form-label fw-bold">Chất liệu</label>
-                <select
-                  class="form-select"
-                  v-model="selectedChatLieuId"
-                  @change="locSanPham"
-                >
-                  <option :value="null">Tất cả chất liệu</option>
-                  <option
-                    v-for="cl in danhSachChatLieu"
-                    :key="cl.id"
-                    :value="cl.id"
-                  >
-                    {{ cl.tenChatLieu }}
+                <label class="form-label fw-bold" style="color: #0a2c57;">Màu</label>
+                <select class="form-select" v-model="selectedMauId" @change="locSanPham">
+                  <option :value="null">Tất cả màu</option>
+                  <option v-for="m in mau" :key="m.id" :value="m.id">
+                    {{ m.ten }}
                   </option>
                 </select>
               </div>
@@ -231,7 +314,6 @@ const filteredSanPham = computed(() => {
                   <th>Chất liệu</th>
                   <th>Giá</th>
                   <th>Kho</th>
-
                   <th>Chọn</th>
                 </tr>
               </thead>
@@ -239,10 +321,8 @@ const filteredSanPham = computed(() => {
                 <tr v-for="(item, index) in filteredSanPham" :key="index">
                   <td>{{ index + 1 }}</td>
                   <td>
-                    <img
-                      :src="anhMap[item.id] || 'https://via.placeholder.com/50'"
-                      style="width: 50px; height: 50px; object-fit: cover"
-                    />
+                    <img :src="anhMap[item.id] || 'https://via.placeholder.com/50'"
+                      style="width: 50px; height: 50px; object-fit: cover" />
                   </td>
                   <td>{{ item.maChiTietSapPham }}</td>
                   <td>{{ item.idSanPham.tenSanPham }}</td>
@@ -253,15 +333,10 @@ const filteredSanPham = computed(() => {
                   <td>{{ item.soLuong }}</td>
 
                   <td>
-                    <input
-                      type="checkbox"
-                      :checked="
-                        selectedItems.some(
-                          (i) => i.maChiTietSapPham === item.maChiTietSapPham
-                        )
-                      "
-                      @change="toggleSelection(item)"
-                    />
+                    <input type="checkbox" :checked="selectedItems.some(
+                      (i) => i.maChiTietSapPham === item.maChiTietSapPham
+                    )
+                      " @change="toggleSelection(item)" />
                   </td>
                 </tr>
               </tbody>
@@ -270,19 +345,11 @@ const filteredSanPham = computed(() => {
 
           <!-- Phân trang -->
           <div class="d-flex justify-content-between align-items-center mt-3">
-            <button
-              class="btn btn-outline-primary"
-              :disabled="currentPage === 0"
-              @click="prevPage"
-            >
+            <button class="btn btn-outline-primary" :disabled="currentPage === 0" @click="prevPage">
               Trang trước
             </button>
             <span>Trang {{ currentPage + 1 }} / {{ totalPages }}</span>
-            <button
-              class="btn btn-outline-primary"
-              :disabled="currentPage >= totalPages - 1"
-              @click="nextPage"
-            >
+            <button class="btn btn-outline-primary" :disabled="currentPage >= totalPages - 1" @click="nextPage">
               Trang sau
             </button>
           </div>

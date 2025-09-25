@@ -6,44 +6,36 @@ import ChonDiaChiKhachHang from "./ChonDiaChiKhachHangHoaDon.vue";
 import axios from "axios";
 import { defineEmits } from "vue";
 
-
 const emit = defineEmits(["capNhatThongTinKhachHang"]);
 const props = defineProps({
   order: Object,
 });
 
-
 // 0 = tại quầy, 1 = giao hàng
 const phuongThucVanChuyen = ref(0);
-
 
 // khách hàng:
 // Hiển thị popup chọn khách hàng
 const hienThiPopupChonKhach = ref(false);
 
-
 // Thông tin khách hàng đã chọn
 const khachHangDuocChon = ref(null);
-
 
 // Mở popup
 const moPopupChonKhach = () => {
   hienThiPopupChonKhach.value = true;
 };
 
-
 // Nhận khách hàng được chọn từ popup
 const chonKhachHang = (khachHang) => {
   khachHangDuocChon.value = khachHang;
   hienThiPopupChonKhach.value = false;
-
 
   // Gán mặc định tên/sđt người nhận
   tenNguoiNhan.value = khachHang.tenKhachHang;
   sdtNguoiNhan.value = khachHang.soDienThoai;
   emailNguoiNhan.value = khachHang.email;
 };
-
 
 // Bỏ chọn khách hàng
 const boChonKhachHang = () => {
@@ -59,26 +51,21 @@ const boChonKhachHang = () => {
   emailNguoiNhan.value = "";
   popupVisible.value = false;
 
-
   // 🔥 Xoá luôn mã giảm giá trong order
   if (props.order) {
     props.order.giamGia = null;
   }
 
-
   // Gửi cập nhật để xóa luôn trong component cha
   capNhatOrderKhachHang();
 };
-
 
 const tenNguoiNhan = ref("");
 const sdtNguoiNhan = ref("");
 const emailNguoiNhan = ref("");
 //-------//
 
-
 // lấy địa chỉ:
-
 
 const diaChiGiaoHang = ref({
   diaChiChiTiet: "",
@@ -93,7 +80,6 @@ watch(
   },
   { deep: true }
 );
-
 
 const popupVisible = ref(false); // Hiển thị popup chọn địa chỉ
 const moPopupDiaChi = () => {
@@ -112,7 +98,6 @@ const chonDiaChi = async (dc) => {
     tinhThanhPho: dc.tinhThanhPho,
   };
 
-
   // Tìm tỉnh theo tên và load quận
   const tinh = danhSachTinh.value.find((t) => t.name === dc.tinhThanhPho);
   if (tinh) {
@@ -120,7 +105,6 @@ const chonDiaChi = async (dc) => {
       `https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`
     );
     danhSachQuan.value = resQuan.data.districts;
-
 
     // Tìm quận và load phường
     const quan = resQuan.data.districts.find((q) => q.name === dc.quanHuyen);
@@ -132,23 +116,19 @@ const chonDiaChi = async (dc) => {
     }
   }
 
-
   // Đóng popup sau khi chọn xong
   popupVisible.value = false;
   // ✅ THÊM DÒNG NÀY để đảm bảo cập nhật địa chỉ sang order
   // capNhatOrderKhachHang();
 };
 
-
 const danhSachTinh = ref([]);
 const danhSachQuan = ref([]);
 const danhSachPhuong = ref([]);
 
-
 const tinhDuocChon = ref(null);
 const quanDuocChon = ref(null);
 const phuongDuocChon = ref(null);
-
 
 onMounted(async () => {
   const res = await axios.get("https://provinces.open-api.vn/api/?depth=1");
@@ -164,7 +144,6 @@ onMounted(async () => {
       );
       danhSachQuan.value = resQuan.data.districts;
 
-
       const quan = danhSachQuan.value.find(
         (q) => q.name === diaChiGiaoHang.value.quanHuyen
       );
@@ -178,25 +157,21 @@ onMounted(async () => {
   }
 });
 
-
 const layQuanTheoTinh = async () => {
   const tinh = danhSachTinh.value.find(
     (t) => t.name === diaChiGiaoHang.value.tinhThanhPho
   );
   if (!tinh) return;
 
-
   const res = await axios.get(
     `https://provinces.open-api.vn/api/p/${tinh.code}?depth=2`
   );
   danhSachQuan.value = res.data.districts;
 
-
   // Reset các trường phụ thuộc
   diaChiGiaoHang.value.quanHuyen = "";
   diaChiGiaoHang.value.xaPhuong = "";
 };
-
 
 const layPhuongTheoQuan = async () => {
   const quan = danhSachQuan.value.find(
@@ -204,16 +179,13 @@ const layPhuongTheoQuan = async () => {
   );
   if (!quan) return;
 
-
   const res = await axios.get(
     `https://provinces.open-api.vn/api/d/${quan.code}?depth=2`
   );
   danhSachPhuong.value = res.data.wards;
 
-
   diaChiGiaoHang.value.xaPhuong = "";
 };
-
 
 const diaChiDayDu = computed(() => {
   const dc = diaChiGiaoHang.value;
@@ -227,7 +199,6 @@ const diaChiDayDu = computed(() => {
     return "";
   return `${dc.diaChiChiTiet}, ${dc.xaPhuong}, ${dc.quanHuyen}, ${dc.tinhThanhPho}`;
 });
-
 
 // chuyển dữ liệu sang bán hàng:
 const capNhatOrderKhachHang = () => {
@@ -243,9 +214,7 @@ const capNhatOrderKhachHang = () => {
   });
 };
 
-
 const isUpdatingFromProps = ref(false);
-
 
 // Gọi khi chọn khách, chọn địa chỉ, hoặc thay đổi input
 watch(
@@ -265,12 +234,10 @@ watch(
   { deep: true }
 );
 
-
 watch(
   () => props.order,
   (newOrder) => {
     isUpdatingFromProps.value = true; // ⛔ chặn watcher emit tạm thời
-
 
     if (newOrder?.khachHang) {
       khachHangDuocChon.value = {
@@ -281,12 +248,10 @@ watch(
         gioiTinh: true,
       };
 
-
       tenNguoiNhan.value = newOrder.khachHang.tenNguoiNhan || "";
       sdtNguoiNhan.value = newOrder.khachHang.sdt || "";
       emailNguoiNhan.value = newOrder.khachHang.gmail || "";
       phuongThucVanChuyen.value = newOrder.hinhThucNhanHang ?? 0;
-
 
       if (newOrder.khachHang.diaChi) {
         const parts = newOrder.khachHang.diaChi.split(",").map((s) => s.trim());
@@ -299,7 +264,6 @@ watch(
       }
     }
 
-
     // Sau khi cập nhật xong props → cho phép emit lại
     setTimeout(() => {
       isUpdatingFromProps.value = false;
@@ -307,7 +271,6 @@ watch(
   },
   { immediate: true, deep: true }
 );
-
 
 // theo dõi địa chỉ:
 watch(
@@ -325,13 +288,10 @@ watch(
   }
 );
 
-
 // --------------------------------------------------------------------------------------------------------------------------
 // tính phí giao hàng:
 
-
 const tokenGHN = "8e2a56e5-6a41-11f0-8120-026f4833faa3";
-
 
 // Hàm chuẩn hóa tiếng Việt
 function normalizeVN(str) {
@@ -341,9 +301,7 @@ function normalizeVN(str) {
     .toLowerCase();
 }
 
-
 // Hàm lấy district_id và ward_code từ địa chỉ
-
 
 // =================== HÀM MỚI ĐỂ "DỌN DẸP" ĐỊA CHỈ ===================
 /**
@@ -364,7 +322,6 @@ function cleanAddressPart(str) {
     "thi tran",
   ];
 
-
   for (const prefix of prefixes) {
     if (cleanedStr.startsWith(prefix + " ")) {
       cleanedStr = cleanedStr.substring(prefix.length + 1);
@@ -373,12 +330,10 @@ function cleanAddressPart(str) {
   return cleanedStr.trim();
 }
 
-
 // =================== HÀM getDistrictAndWard ĐÃ ĐƯỢC NÂNG CẤP ===================
 async function getDistrictAndWard(address) {
   console.log(`Bắt đầu phân tích địa chỉ: "${address}"`);
   const addressParts = address.split(",").map((part) => part.trim());
-
 
   if (addressParts.length < 4) {
     console.error(
@@ -387,15 +342,12 @@ async function getDistrictAndWard(address) {
     return null;
   }
 
-
   const [street, wardName, districtName, provinceName] = addressParts;
-
 
   // Dọn dẹp trước các phần của địa chỉ người dùng nhập vào
   const cleanInputProvince = cleanAddressPart(provinceName);
   const cleanInputDistrict = cleanAddressPart(districtName);
   const cleanInputWard = cleanAddressPart(wardName);
-
 
   try {
     // 1. Tìm Tỉnh/Thành phố
@@ -414,7 +366,6 @@ async function getDistrictAndWard(address) {
       return null;
     }
     console.log("Tìm thấy Province:", province);
-
 
     // 2. Tìm Quận/Huyện
     const districtsRes = await fetch(
@@ -440,7 +391,6 @@ async function getDistrictAndWard(address) {
     }
     console.log("Tìm thấy District:", district);
 
-
     // 3. Tìm Phường/Xã
     const wardsRes = await fetch(
       `https://online-gateway.ghn.vn/shiip/public-api/master-data/ward?district_id=${district.DistrictID}`,
@@ -463,7 +413,6 @@ async function getDistrictAndWard(address) {
     }
     console.log("Tìm thấy Ward:", ward);
 
-
     return {
       district_id: district.DistrictID,
       ward_code: ward.WardCode,
@@ -474,15 +423,12 @@ async function getDistrictAndWard(address) {
   }
 }
 
-
 // Hàm tính phí vận chuyển
-
 
 const myShopInfo = {
   district_id: 1442, // Mã của Quận Cầu Giấy, Hà Nội
   shop_id: "5913364", // ShopId của bạn
 };
-
 
 async function tinhPhiVanChuyen({
   fromDistrictId,
@@ -513,7 +459,6 @@ async function tinhPhiVanChuyen({
       }
     );
 
-
     const result = await response.json();
     if (result.code !== 200) throw new Error(result.message);
     return result.data.total;
@@ -533,7 +478,6 @@ const tinhPhi = async () => {
     return;
   }
 
-
   const result = await getDistrictAndWard(diaChiDayDu.value);
   if (!result) {
     alert("Không thể xác định địa chỉ giao hàng.");
@@ -549,7 +493,6 @@ const tinhPhi = async () => {
   });
   console.log(phi);
 
-
   if (phi != null) {
     phivanchuyen.value = phi;
     theoDoiPhiVanChuyen.value = phi;
@@ -561,7 +504,6 @@ const suaPhi = async () => {
   theoDoiPhiVanChuyen.value = phivanchuyen.value
 }
 </script>
-
 
 <template>
   <!-- PHẦN KHÁCH HÀNG -->
@@ -618,7 +560,6 @@ const suaPhi = async () => {
       </div>
     </div>
 
-
     <div class="col-md-6">
       <div class="bg-white p-3 rounded mb-4 border">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -626,9 +567,8 @@ const suaPhi = async () => {
           <Truck size="20" class="text-muted" />
         </div>
 
-
         <div class="mb-3">
-          <label class="form-label">Phương thức vận chuyển:</label>
+          <label class="form-label">Hình thức mua hàng:</label>
           <div>
             <div class="form-check form-check-inline">
               <input
@@ -656,9 +596,7 @@ const suaPhi = async () => {
             </div>
           </div>
 
-
         </div>
-
 
         <!-- Nếu chọn GIAO HÀNG -->
         <div v-if="phuongThucVanChuyen === 1">
@@ -676,7 +614,6 @@ const suaPhi = async () => {
                 v-model="tenNguoiNhan"
               />
             </div>
-
 
             <!-- Số điện thoại người nhận -->
             <div class="col-md-6">
@@ -706,14 +643,11 @@ const suaPhi = async () => {
             </div>
           </div>
 
-
           <!-- dia chi -->
-
 
           <div class="alert alert-info py-2" role="alert">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="mb-0">Địa chỉ giao hàng:</h5>
-
 
               <button
                 class="btn border rounded-circle d-flex align-items-center justify-content-center"
@@ -729,7 +663,6 @@ const suaPhi = async () => {
                 <UserCog size="20" />
               </button>
             </div>
-
 
             <!-- Form địa chỉ -->
             <div class="row g-3">
@@ -752,7 +685,6 @@ const suaPhi = async () => {
                 </select>
               </div>
 
-
               <!-- Quận/Huyện -->
               <div class="col-md-6">
                 <label>Quận/Huyện</label>
@@ -773,7 +705,6 @@ const suaPhi = async () => {
                 </select>
               </div>
 
-
               <!-- Phường/Xã -->
               <div class="col-md-6">
                 <label>Phường/Xã</label>
@@ -793,7 +724,6 @@ const suaPhi = async () => {
                 </select>
               </div>
 
-
               <!-- Số nhà/Đường -->
               <div class="col-md-6">
                 <label>Địa chỉ chi tiết</label>
@@ -806,9 +736,7 @@ const suaPhi = async () => {
             </div>
           </div>
 
-
           <!-- --- -->
-
 
           <div class="mt-3">
             <div class="d-flex align-items-center mb-2">
@@ -819,12 +747,11 @@ const suaPhi = async () => {
               </button>
             </div>
 
-
             <div class="d-flex align-items-center mb-2">
               <strong class="me-2">Phí vận chuyển:</strong>
-              <input v-model="phivanchuyen" type="number"></input>đ
+              <input v-model="phivanchuyen" type="number"></input>đ 
               <!-- Hiện nút "Sửa" nếu có thay đổi -->
-     
+      
               <button
                 v-if="daThayDoiPhiVanChuyen"
                 @click="suaPhi"
@@ -834,7 +761,6 @@ const suaPhi = async () => {
               </button>
             </div>
 
-
             <div class="d-flex align-items-center">
               <strong class="me-2">Thời gian dự kiến:</strong>
               <span>17/5/2025</span>
@@ -842,12 +768,10 @@ const suaPhi = async () => {
           </div>
         </div>
 
-
         <!-- Nếu chọn TẠI QUẦY -->
         <div v-else class="text-muted">Đơn hàng sẽ được xử lý tại quầy.</div>
       </div>
     </div>
-
 
     <PopupChonKhachHang
       v-if="hienThiPopupChonKhach"
@@ -863,4 +787,3 @@ const suaPhi = async () => {
     />
   </div>
 </template>
-

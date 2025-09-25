@@ -103,6 +103,41 @@ const formatCurrency = (val) => {
   return val?.toLocaleString("vi-VN") + " ₫";
 };
 
+// const xacNhanThanhToan = async () => {
+//   const data = {
+//     maHoaDon: props.maHoaDon,
+//   };
+
+//   if (hinhThuc.value === "khac") {
+//     const tongNhap = danhSachThanhToan.reduce(
+//       (acc, pt) => acc + (pt.soTien || 0),
+//       0
+//     );
+//     if (tongNhap !== props.tongTien) {
+//       alert("Tổng số tiền các phương thức không khớp với tổng cần thanh toán.");
+//       return;
+//     }
+//     data.thanhToan = JSON.parse(JSON.stringify(danhSachThanhToan));
+//   } else {
+//     data.hinhThuc = hinhThuc.value;
+//     data.maGiaoDich = maGiaoDichChinh.value;
+//     data.soTienKhachTra = soTienKhachTra.value;
+//   }
+
+//   try {
+//     await thanhToanDonHang(data);
+
+//     // ✅ 1. Đóng modal
+//     emit("close");
+
+//     // ✅ 2. Gọi hàm ở cha
+//     emit("thanh-toan-thanh-cong"); // bạn đặt tên event tùy ý
+//   } catch (err) {
+//     console.error(err);
+//     alert("Thanh toán thất bại!");
+//   }
+// };
+import Swal from "sweetalert2";
 const xacNhanThanhToan = async () => {
   const data = {
     maHoaDon: props.maHoaDon,
@@ -114,7 +149,7 @@ const xacNhanThanhToan = async () => {
       0
     );
     if (tongNhap !== props.tongTien) {
-      alert("Tổng số tiền các phương thức không khớp với tổng cần thanh toán.");
+      await Swal.fire("Cảnh báo", "Tổng số tiền các phương thức không khớp với tổng cần thanh toán.", "warning");
       return;
     }
     data.thanhToan = JSON.parse(JSON.stringify(danhSachThanhToan));
@@ -125,16 +160,36 @@ const xacNhanThanhToan = async () => {
   }
 
   try {
+    // 👉 Hỏi xác nhận trước khi thanh toán
+    const result = await Swal.fire({
+      title: "Xác nhận thanh toán",
+      text: `Bạn có chắc chắn muốn xác nhận thanh toán cho hoá đơn ${props.maHoaDon}?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Đồng ý",
+      cancelButtonText: "Hủy",
+      reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) {
+      console.log("❌ Người dùng đã huỷ thanh toán");
+      return;
+    }
+
+    // --- Gọi API thanh toán ---
     await thanhToanDonHang(data);
+
+    // --- Thông báo thành công ---
+    await Swal.fire("Thành công", "Thanh toán thành công!", "success");
 
     // ✅ 1. Đóng modal
     emit("close");
 
     // ✅ 2. Gọi hàm ở cha
-    emit("thanh-toan-thanh-cong"); // bạn đặt tên event tùy ý
+    emit("thanh-toan-thanh-cong");
   } catch (err) {
-    console.error(err);
-    alert("Thanh toán thất bại!");
+    console.error("❌ Lỗi khi thanh toán:", err);
+    Swal.fire("Lỗi", "Thanh toán thất bại!", "error");
   }
 };
 
@@ -180,7 +235,7 @@ const thanhToanDonHang = async (data) => {
   try {
     const res = await axios.post(apiUrl, payload);
     console.log("✅ Thanh toán thành công:", res.data);
-    alert("Thanh toán thành công!");
+    // alert("Thanh toán thành công!");
   } catch (err) {
     console.error("❌ Lỗi khi thanh toán:", err);
     alert("Thanh toán thất bại!");
@@ -289,7 +344,7 @@ const thanhToanDonHang = async (data) => {
               />
             </div>
             <div class="col-md-6">
-              <label class="fw-bold">Số tiền khách trả:</label>
+              <label class="fw-bold">Số tiền:</label>
               <input
                 v-model.number="soTienKhachTra"
                 type="number"

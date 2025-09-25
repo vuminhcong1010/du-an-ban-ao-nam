@@ -10,7 +10,7 @@
                         <i class="fas fa-user"></i> Thông tin cá nhân
                     </li>
                     <li :class="{ active: currentView === 'orders' }" @click="changeView('orders')">
-                        <i class="fas fa-shopping-bag"></i> Lịch sử hóa đơn
+                        <i class="fas fa-shopping-bag"></i> Đơn hàng của tôi
                     </li>
                     <li @click="logout">
                         <i class="fas fa-sign-out-alt"></i> Đăng xuất

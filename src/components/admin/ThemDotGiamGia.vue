@@ -19,7 +19,8 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Tên đợt giảm giá <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Tên đợt giảm giá <span
+                                class="text-danger">*</span></label>
                         <input type="text" class="form-control" v-model="form.tenDotGiamGia"
                             :class="{ 'is-invalid': errors.tenDotGiamGia }" @input="validateField('tenDotGiamGia')" />
                         <div class="invalid-feedback">{{ errors.tenDotGiamGia }}</div>
@@ -29,7 +30,8 @@
                         <label class="form-label fw-semibold">Phần trăm giảm <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <input type="number" class="form-control" v-model.number="form.giaTri"
-                                :class="{ 'is-invalid': errors.giaTri }" @input="validateField('giaTri')" min="0.01" max="100" />
+                                :class="{ 'is-invalid': errors.giaTri }" @input="validateField('giaTri')" min="0.01"
+                                max="100" />
                             <span class="input-group-text">%</span>
                         </div>
                         <div class="invalid-feedback d-block">{{ errors.giaTri }}</div>
@@ -37,14 +39,16 @@
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Ngày bắt đầu <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Ngày bắt đầu <span
+                                    class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control" v-model="form.ngayBatDau"
                                 :class="{ 'is-invalid': errors.ngayBatDau }" :min="minDateTime"
                                 @input="validateField('ngayBatDau')" />
                             <div class="invalid-feedback">{{ errors.ngayBatDau }}</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Ngày kết thúc <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">Ngày kết thúc <span
+                                    class="text-danger">*</span></label>
                             <input type="datetime-local" class="form-control" v-model="form.ngayKetThuc"
                                 :class="{ 'is-invalid': errors.ngayKetThuc }" :min="minDateTime"
                                 @input="validateField('ngayKetThuc')" />
@@ -52,7 +56,7 @@
                         </div>
                     </div>
 
-                  
+
                 </div>
                 <div class="col-md-6">
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -197,12 +201,14 @@
                                         @click="showImageGallery(variant.images)" />
                                     <span v-if="variant.images.length > 1" class="badge bg-secondary">+{{
                                         variant.images.length - 1 }}</span>
-                                    <div class="percentage-tag">{{ form.giaTri ? '+' + form.giaTri + '%' : '+0%' }}</div>
+                                    <div class="percentage-tag">{{ form.giaTri ? '+' + form.giaTri + '%' : '+0%' }}
+                                    </div>
                                 </div>
                                 <div v-else class="icon-container">
                                     <img src="https://via.placeholder.com/50" alt="Ảnh sản phẩm"
                                         style="width: 50px; height: 50px; object-fit: cover;" />
-                                    <div class="percentage-tag">{{ form.giaTri ? '+' + form.giaTri + '%' : '+0%' }}</div>
+                                    <div class="percentage-tag">{{ form.giaTri ? '+' + form.giaTri + '%' : '+0%' }}
+                                    </div>
                                 </div>
                             </td>
                             <td>{{ variant.maChiTietSanPham || 'N/A' }}</td>
@@ -236,14 +242,14 @@
                 <div class="invalid-feedback d-block" v-if="errors.selectedVariantIds">{{ errors.selectedVariantIds }}
                 </div>
             </div>
-              <div class="mt-4">
-                        <button class="btn btn-primary me-2" @click="submitForm">
-                            <i class="fa fa-plus me-1"></i>Thêm mới
-                        </button>
-                        <router-link to="/dot-giam-gia" class="btn btn-outline-secondary">
-                            <i class="fa fa-arrow-left me-1"></i>Quay lại
-                        </router-link>
-                    </div>
+            <div class="mt-4">
+                <button class="btn btn-primary me-2" @click="submitForm">
+                    <i class="fa fa-plus me-1"></i>Thêm mới
+                </button>
+                <router-link to="/dot-giam-gia" class="btn btn-outline-secondary">
+                    <i class="fa fa-arrow-left me-1"></i>Quay lại
+                </router-link>
+            </div>
         </div>
     </div>
 </template>
@@ -340,9 +346,9 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/chat-lieu', {
-                headers: {
-                    Authorization: `Bearer ${this.token}` 
-                }
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
                 });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách chất liệu: ${res.statusText}`);
                 this.chatLieu = await res.json() || [];
@@ -357,10 +363,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/tay-ao', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách tay áo: ${res.statusText}`);
                 this.tayAo = await res.json() || [];
                 if (!this.tayAo.length) {
@@ -374,10 +380,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/co-ao', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách cổ áo: ${res.statusText}`);
                 this.coAo = await res.json() || [];
                 if (!this.coAo.length) {
@@ -391,10 +397,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/kich-co', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách kích cỡ: ${res.statusText}`);
                 this.kichCo = await res.json() || [];
                 if (!this.kichCo.length) {
@@ -408,10 +414,10 @@ export default {
             const toast = useToast();
             try {
                 const res = await fetch('http://localhost:8080/doi-giam-gia/mau', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!res.ok) throw new Error(`Không thể lấy danh sách màu: ${res.statusText}`);
                 this.mau = await res.json() || [];
                 if (!this.mau.length) {
@@ -425,14 +431,15 @@ export default {
             const toast = useToast();
             try {
                 const response = await fetch('http://localhost:8080/doi-giam-gia/san-pham-giam-gia', {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
+                    headers: {
+                        Authorization: `Bearer ${this.token}`
+                    }
+                });
                 if (!response.ok) throw new Error(`Không thể lấy danh sách sản phẩm: ${response.statusText}`);
                 const json = await response.json();
                 if (json.message !== 'Success') throw new Error(json.message);
-                this.allDanhSachSP = (json.data || []).filter(sp => sp.trangThai === 1);
+                // Lọc sản phẩm có trạng thái đang bán và số lượng lớn hơn 0
+                this.allDanhSachSP = (json.data || []).filter(sp => sp.trangThai === 1 && (json.soLuong[sp.id] || 0) > 0);
                 this.soLuongTheoSanPham = json.soLuong || {};
                 this.filteredProducts = [...this.allDanhSachSP];
             } catch (error) {
@@ -440,6 +447,7 @@ export default {
                 toast.error('Lỗi tải danh sách sản phẩm: ' + error.message);
             }
         },
+        // Cập nhật hàm fetchProductVariants để lọc ngay từ đầu
         async fetchProductVariants() {
             const toast = useToast();
             try {
@@ -447,45 +455,50 @@ export default {
                 this.filteredVariants = [];
                 this.selectedVariantIds = [];
                 this.selectAllVariants = false;
+
                 if (this.selectedProductIds.length > 0) {
                     const promises = this.selectedProductIds.map(id =>
                         fetch(`http://localhost:8080/doi-giam-gia/san-pham-chi-tiet/${id}`, {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-}).then(res => {
+                            headers: {
+                                Authorization: `Bearer ${this.token}`
+                            }
+                        }).then(res => {
                             if (!res.ok) throw new Error(`Không thể lấy biến thể cho sản phẩm ${id}`);
                             return res.json();
                         })
                     );
+
                     const chiTietSanPhamResults = await Promise.all(promises);
                     const variantWithImages = await Promise.all(
-                        chiTietSanPhamResults.flat().map(async (variant) => {
-                            try {
-                                const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`, {
-  headers: {
-    Authorization: `Bearer ${this.token}` 
-  }
-});
-                                const images = await response.json();
-                                const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`;
-                                return {
-                                    ...variant,
-                                    maChiTietSanPham,
-                                    images: images || [],
-                                    mainImage: images.length > 0 ? images[0].duongDanAnh : 'https://via.placeholder.com/50'
-                                };
-                            } catch (error) {
-                                console.error(`Lỗi khi lấy ảnh cho variant ${variant.id}:`, error);
-                                return {
-                                    ...variant,
-                                    maChiTietSanPham: variant.maChiTietSanPham || `SPCT-${variant.id}`,
-                                    images: [],
-                                    mainImage: 'https://via.placeholder.com/50'
-                                };
-                            }
-                        })
+                        chiTietSanPhamResults.flat()
+                            .filter(variant => variant.soLuong > 0) // Lọc ngay từ đầu
+                            .map(async (variant) => {
+                                try {
+                                    const response = await fetch(`http://localhost:8080/san-pham/anh-san-pham/${variant.id}`, {
+                                        headers: {
+                                            Authorization: `Bearer ${this.token}`
+                                        }
+                                    });
+                                    const images = await response.json();
+                                    const maChiTietSanPham = variant.maChiTietSanPham || `SPCT-${variant.id}`;
+                                    return {
+                                        ...variant,
+                                        maChiTietSanPham,
+                                        images: images || [],
+                                        mainImage: images.length > 0 ? images[0].duongDanAnh : 'https://via.placeholder.com/50'
+                                    };
+                                } catch (error) {
+                                    console.error(`Lỗi khi lấy ảnh cho variant ${variant.id}:`, error);
+                                    return {
+                                        ...variant,
+                                        maChiTietSanPham: variant.maChiTietSanPham || `SPCT-${variant.id}`,
+                                        images: [],
+                                        mainImage: 'https://via.placeholder.com/50'
+                                    };
+                                }
+                            })
                     );
+
                     this.productVariants = variantWithImages;
                     this.filteredVariants = [...this.productVariants];
                     this.selectedVariantIds = this.productVariants.map(variant => variant.id);
@@ -501,8 +514,12 @@ export default {
                 toast.error('Lỗi tải danh sách sản phẩm chi tiết: ' + error.message);
             }
         },
+        // Cập nhật hàm filterVariants trong methods
         filterVariants() {
             this.filteredVariants = this.productVariants.filter(variant => {
+                // Chỉ hiển thị sản phẩm có số lượng tồn > 0
+                const hasPositiveInventory = variant.soLuong > 0;
+
                 const matchesSearch = !this.variantSearchQuery ||
                     variant.maChiTietSanPham?.toLowerCase().includes(this.variantSearchQuery.toLowerCase()) ||
                     variant.idSanPham?.tenSanPham?.toLowerCase().includes(this.variantSearchQuery.toLowerCase());
@@ -522,14 +539,22 @@ export default {
                 const matchesTayAo = !this.selectedLoai4 ||
                     variant.idTayAo?.id === this.selectedLoai4;
 
-                return matchesSearch && matchesChatLieu && matchesMau && matchesKichCo && matchesCoAo && matchesTayAo;
+                // Trả về true chỉ khi tất cả điều kiện đều thỏa mãn VÀ số lượng tồn > 0
+                return hasPositiveInventory && matchesSearch && matchesChatLieu && matchesMau && matchesKichCo && matchesCoAo && matchesTayAo;
             });
 
+            // Cập nhật selectedVariantIds để loại bỏ các variant không còn trong filteredVariants
             this.selectedVariantIds = this.selectedVariantIds.filter(id =>
                 this.filteredVariants.some(variant => variant.id === id)
             );
+
+            // Cập nhật trạng thái checkbox "Chọn tất cả"
             this.selectAllVariants = this.selectedVariantIds.length === this.filteredVariants.length && this.filteredVariants.length > 0;
+
+            // Validate lại field
             this.validateField('selectedVariantIds');
+
+            // Reset về trang đầu
             this.goToVariantPage(0);
         },
         showImageGallery(images) {
@@ -557,7 +582,8 @@ export default {
         },
         filterProducts() {
             this.filteredProducts = this.allDanhSachSP.filter(sp =>
-                sp.tenSanPham.toLowerCase().includes(this.searchQuery.toLowerCase())
+                sp.tenSanPham.toLowerCase().includes(this.searchQuery.toLowerCase()) &&
+                (this.soLuongTheoSanPham[sp.id] || 0) > 0
             );
             this.selectedProductIds = this.selectedProductIds.filter(id =>
                 this.filteredProducts.some(sp => sp.id === id)
@@ -577,7 +603,7 @@ export default {
                     break;
                 case 'tenDotGiamGia':
                     const trimmedTenDotGiamGia = this.form.tenDotGiamGia ? this.form.tenDotGiamGia.trim() : '';
-                    if (!trimmedTenDotGiamGia ) {
+                    if (!trimmedTenDotGiamGia) {
                         this.errors.tenDotGiamGia = 'Vui lòng nhập tên đợt giảm giá';
                     } else if (trimmedTenDotGiamGia.length > 255) {
                         this.errors.tenDotGiamGia = 'Tên không được vượt quá 255 ký tự';
@@ -674,10 +700,10 @@ export default {
             try {
                 const response = await fetch('http://localhost:8080/doi-giam-gia', {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         Authorization: `Bearer ${this.token}`,
                         'Content-Type': 'application/json'
-                     },
+                    },
                     body: JSON.stringify(dotGiamGia)
                 });
                 const result = await response.json();

@@ -26,17 +26,17 @@ const nhanPhieuGiamGiaDaChon = async (phieu) => {
     props.order.giamGia = { ...phieu }; // Create a copy to avoid mutating the original
     errorMessage.value = "";
 
-    // Call API to decrease voucher quantity
-    if (phieu && phieu.id) {
-      await axios.put(`http://localhost:8080/ban_hang/phieuGG/decrease/${phieu.id}`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      // Update the quantity in the frontend
-      props.order.giamGia.soLuong -= 1;
-      console.log(`Decreased voucher quantity for ID: ${phieu.id}, new quantity: ${props.order.giamGia.soLuong}`);
-    }
+    // // Call API to decrease voucher quantity
+    // if (phieu && phieu.id) {
+    //   await axios.put(`http://localhost:8080/ban_hang/phieuGG/decrease/${phieu.id}`, {}, {
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //     },
+    //   });
+    //   // Update the quantity in the frontend
+    //   // props.order.giamGia.soLuong -= 1;
+    //   console.log(`Decreased voucher quantity for ID: ${phieu.id}, new quantity: ${props.order.giamGia.soLuong}`);
+    // }
 
     // Update discount and total
     capNhatTienGiamVaTongTien();
@@ -84,15 +84,7 @@ const validateMaGiamGia = async (maGiamGia) => {
 
 const huyChonPhieuGiamGia = async () => {
   try {
-    // Restore voucher quantity if one was previously selected
-    if (props.order.giamGia && props.order.giamGia.id) {
-      await axios.put(`http://localhost:8080/ban_hang/phieuGG/increase/${props.order.giamGia.id}`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      console.log(`Restored voucher quantity for ID: ${props.order.giamGia.id}`);
-    }
+ 
 
     // Clear the selected voucher
     props.order.giamGia = null;
