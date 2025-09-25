@@ -607,11 +607,15 @@ const userName = computed(() => {
 });
 
 
-const userAvatar = computed(() => {
-  return loggedInUserData.value && loggedInUserData.value.hinhAnh
-    ? loggedInUserData.value.hinhAnh
-    : '/src/assets/logo_icon-removebg-preview.png';
-});
+        const user = computed(() => authStore.user);
+
+
+        // Computed properties để lấy thông tin chi tiết từ user object
+        const userAvatar = computed(() => {
+            return user.value && user.value.hinhAnh
+                ? user.value.hinhAnh
+                : '/src/assets/logo_icon-removebg-preview.png';
+        });
 
 
 // Hàm
