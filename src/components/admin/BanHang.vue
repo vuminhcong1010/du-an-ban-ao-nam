@@ -118,32 +118,32 @@ function showToast(message) {
   alert(message); // hoặc dùng thư viện toast như vue-toastification nếu có
 }
 
-setInterval(() => {
-  const now = Date.now();
-  orders.value.forEach((order) => {
-    if (!order.startTime) return;
+// setInterval(() => {
+//   const now = Date.now();
+//   orders.value.forEach((order) => {
+//     if (!order.startTime) return;
 
-    const elapsed = Math.floor((now - order.startTime) / 1000);
-    const remaining = 300 - elapsed;
+//     const elapsed = Math.floor((now - order.startTime) / 1000);
+//     const remaining = 300 - elapsed;
 
-    // ⏱ Cập nhật đếm ngược cho hiển thị
-    // order.thoiGianConLai = Math.max(0, remaining);
+//     // ⏱ Cập nhật đếm ngược cho hiển thị
+//     // order.thoiGianConLai = Math.max(0, remaining);
 
-    // ⚠️ Hiển thị cảnh báo khi còn 1 phút
-    if (remaining <= 60 && remaining > 0 && !order.warningShown) {
-      toast.error(
-        `⚠️ Đơn hàng [${order.id}] sẽ bị xoá sau ${remaining} giâ y nếu không hoàn tất.`
-      );
-      order.warningShown = true;
-    }
+//     // ⚠️ Hiển thị cảnh báo khi còn 1 phút
+//     if (remaining <= 60 && remaining > 0 && !order.warningShown) {
+//       toast.error(
+//         `⚠️ Đơn hàng [${order.id}] sẽ bị xoá sau ${remaining} giâ y nếu không hoàn tất.`
+//       );
+//       order.warningShown = true;
+//     }
 
-    // ❌ Hết hạn đơn hàng sau 2 phút
-    if (remaining <= 0) {
-      console.log(`🗑 Đơn hàng [${order.id}] đã hết hạn, đang xoá...`);
-      closeOrderTuDong(order.id);
-    }
-  });
-}, 1000);
+//     // ❌ Hết hạn đơn hàng sau 2 phút
+//     if (remaining <= 0) {
+//       console.log(`🗑 Đơn hàng [${order.id}] đã hết hạn, đang xoá...`);
+//       closeOrderTuDong(order.id);
+//     }
+//   });
+// }, 1000);
 
 const remainingTime = (order) => {
   if (!order.startTime) return 120;

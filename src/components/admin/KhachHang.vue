@@ -761,10 +761,7 @@ const suaPhi = async () => {
               </button>
             </div>
 
-            <div class="d-flex align-items-center">
-              <strong class="me-2">Thời gian dự kiến:</strong>
-              <span>17/5/2025</span>
-            </div>
+          
           </div>
         </div>
 

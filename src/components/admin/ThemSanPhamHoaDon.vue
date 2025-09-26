@@ -352,7 +352,7 @@ const apply = async () => {
 
     // -------------------
     // 2. Lưu chi tiết hóa đơn
-    await fetch("http://localhost:8080/hoa-don-chi-tiet/add", {
+    await fetch("http://localhost:8080/hoa-don-chi-tiet/add/them-san-pham", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

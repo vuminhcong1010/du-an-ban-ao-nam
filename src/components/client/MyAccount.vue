@@ -53,12 +53,12 @@
 
       <!-- CỘT PHẢI: DANH SÁCH ĐỊA CHỈ -->
       <section class="billing-addresses">
-        <h2>
+        <h5>
           Thông tin địa chỉ
-          <button @click="openAddAddressModal" class="btn btn-add" :disabled="user?.diaChis?.length >= 5">
+          <button @click="openAddAddressModal" class="btn btn-primary ms-3" :disabled="user?.diaChis?.length >= 5">
             Thêm địa chỉ
           </button>
-        </h2>
+        </h5>
         <div v-if="user && user.diaChis && user.diaChis.length > 0" class="address-list">
           <div v-for="(address, index) in user.diaChis" :key="index" class="address-card">
             <p>
@@ -533,7 +533,7 @@ const setAsDefaultAddress = async (addressId) => {
     try {
       // GIẢ ĐỊNH MỘT API ĐỂ ĐẶT MẶC ĐỊNH ĐỊA CHỈ
       // Bạn cần triển khai API này trên backend
-      await apiClient.put(`/addresses/set-default/${addressId}`, {}, {
+      await apiClient.put(`/addresses/${addressId}/set-default`, {}, {
         headers: {
           'X-User-ID': user.value.id,
         },
